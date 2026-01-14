@@ -106,6 +106,11 @@ const Home = () => {
                         I miei Cocktail
                       </Link>
                     </li>
+                    <li style={{ padding: '5px 20px', borderTop: '1px solid #eee' }}>
+                      <Link to="/stampe3d" style={{ display: 'block', color: '#444', textDecoration: 'none' }}>
+                        Stampe 3D & Maker
+                      </Link>
+                    </li>
                   </ul>
                 )}
               </li>
@@ -170,7 +175,13 @@ const Home = () => {
               <article className="box post">
                 <header><h2><a href="#">Esperienze di <strong>Lavoro</strong></a></h2></header>
                 <h3>Freelance Fullstack Web Developer (2025 - Oggi)</h3>
-                <p>Sviluppo e manutenzione di applicazioni web dockerizzate restful API. Stack tecnologico: Backend (PHP, Python, Laravel 12+), Frontend (React, Vite), Database (MySQL, PhpMyAdmin), DevOps (Docker, Kubernetes).</p>
+                <p>
+                  Sviluppo di una piattaforma gestionale Fullstack per la <strong>digitalizzazione e l'automazione integrale dei processi aziendali</strong>, 
+                  dal reparto amministrativo fino alla linea di produzione.
+                  <br />
+                  Il progetto ha previsto la migrazione da sistemi legacy ad un'architettura web containerizzata sicura, 
+                  gestendo ordini, calcoli complessi e generando output diretti per i macchinari industriali.
+                </p>
                 <h3>Esperienze Precedenti</h3>
                 <ul>
                   <li><strong>Guardia Giurata (G.P.G.), CoopService (2023-2024):</strong> Attività di presidio e coordinamento in contesti sensibili.</li>

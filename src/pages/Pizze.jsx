@@ -1,19 +1,19 @@
-// src/pages/Ricette.jsx
+// src/pages/Pizze.jsx
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import TerminalText from '../components/TerminalText';
 
-const Ricette = () => {
+const Pizze = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const terminalLines = [
-    "> ./load_module.sh --recipes",
-    "> Loading Recipes database...",
-    "> Status: Kitchen Mode Activated.",
+    "> ./load_module.sh --pizza-oven",
+    "> Preheating to 450°C...",
+    "> Status: Dough Rising...",
     "> Ready."
   ];
 
-  // GESTIONE LAYOUT: Attiva la sidebar destra
+  // Layout Right Sidebar (per coerenza o per tornare indietro)
   useEffect(() => {
     document.body.classList.remove('homepage');
     document.body.classList.remove('no-sidebar');
@@ -75,60 +75,41 @@ const Ricette = () => {
         <div className="container">
           <div className="row">
             
-            {/* COLONNA SINISTRA: Contenuto */}
+            {/* CONTENT */}
             <div id="content" className="col-8 col-12-medium">
-               
                <article className="box post">
-                  <header><h2>Il codice del gusto</h2></header>
-                  <p>Quando chiudo il terminale, la cucina diventa il mio nuovo laboratorio. Qui raccolgo i miei esperimenti culinari preferiti.</p>
-               </article>
-
-               <article className="box post">
-                  <header><h2>Ricette di <strong>Mamma Niky</strong></h2></header>
-                  <a href="#" className="image featured"><img src="images/img2.jpg" alt="Cucina" /></a>
+                  <header><h2>Le mie Pizze</h2></header>
+                  <p>72 ore di lievitazione, idratazione al 70% e ingredienti selezionati.</p>
                   
-                  <p>Ricette testate, debuggate e pronte per il deploy in tavola.</p>
+                  <hr />
+                  
+                  <h3>Margherita 2.0</h3>
+                  <p>La regina delle pizze, ottimizzata.<br />
+                  <strong>Topping:</strong> Pomodoro San Marzano DOP, Mozzarella Fior di Latte, Basilico fresco, Olio EVO.<br />
+                  <strong>Impasto:</strong> Diretto lungo, 24h TA.</p>
 
                   <hr />
 
-                  <h3>Torta di Mele "Legacy Code"</h3>
-                  <p>Una ricetta tramandata da generazioni, stabile, robusta e priva di bug.<br />
-                  <strong>Ingredienti:</strong> 3 mele golden, 200g farina, 150g zucchero, 2 uova, lievito vanigliato.<br />
-                  <strong>Procedimento:</strong> Compilare tutti gli ingredienti in una ciotola, eseguire il render in forno a 180°C per 40 minuti.</p>
-
-                  <hr />
-
-                  <h3>Lasagne al Forno "Layer 7"</h3>
-                  <p>Sette strati di puro gusto, perfettamente incapsulati.<br />
-                  <strong>Ingredienti:</strong> Sfoglia all'uovo, Ragù bolognese (cottura lenta), Besciamella, Parmigiano Reggiano.<br />
-                  <strong>Procedimento:</strong> Assemblare i pacchetti (strati) sequenzialmente. Hardening della crosta in forno fino a doratura completa.</p>
-
-                  <hr />
-
-                  <h3>Tiramisù "Java(Script)"</h3>
-                  <p>Il boost di caffeina necessario per le nottate di coding.<br />
-                  <strong>Ingredienti:</strong> Mascarpone, Savoiardi, Caffè espresso forte, Cacao amaro.<br />
-                  <strong>Note:</strong> Nessuna cottura richiesta (Serverless architecture).</p>
+                  <h3>Diavola (Firewall Breach)</h3>
+                  <p>Piccante al punto giusto.<br />
+                  <strong>Topping:</strong> Pomodoro, Mozzarella, Salame piccante napoletano, 'Nduja di Spilinga.<br />
+                  <strong>Impasto:</strong> Biga 100%, 48h frigo.</p>
                </article>
-
             </div>
 
-            {/* COLONNA DESTRA: Sidebar */}
+            {/* SIDEBAR */}
             <div id="sidebar" className="col-4 col-12-medium">
-              
-              {/* Box Link Pizze */}
-              <section>
+               <section>
                 <ul className="divided">
                   <li>
                     <article className="box highlight">
-                      <header><h3><Link to="/pizze">Voglia di Pizza?</Link></h3></header>
-                      <p>Lievitazione lenta, alta idratazione e ingredienti di prima scelta. Scopri le mie pizze fatte in casa.</p>
-                      <Link to="/pizze" className="button icon solid fa-pizza-slice">Le mie Pizze</Link>
+                      <header><h3><Link to="/ricette">Torna alla cucina</Link></h3></header>
+                      <p>Preferisci qualcosa di dolce o un primo piatto? Torna alle ricette di Mamma Niky.</p>
+                      <Link to="/ricette" className="button icon solid fa-utensils">Tutte le Ricette</Link>
                     </article>
                   </li>
                 </ul>
               </section>
-
             </div>
 
           </div>
@@ -148,4 +129,4 @@ const Ricette = () => {
   );
 };
 
-export default Ricette;
+export default Pizze;

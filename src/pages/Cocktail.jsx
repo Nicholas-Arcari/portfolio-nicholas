@@ -104,6 +104,10 @@ const Cocktail = () => {
 
             </div>
           </div>
+        </div>
+        </section>
+
+      <section id="secondmain">
 
           {/* SECONDA RIGA: Lista Cocktail Tech (Larghezza Piena) */}
           <div className="row">
@@ -138,7 +142,6 @@ const Cocktail = () => {
             </div>
           </div>
 
-        </div>
       </section>
 
       {/* --- FOOTER --- */}
@@ -150,7 +153,9 @@ const Cocktail = () => {
            </ul>
         </div>
       </section>
+
     </div>
+  
   );
 };
 
