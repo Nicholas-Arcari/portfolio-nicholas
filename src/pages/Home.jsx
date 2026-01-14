@@ -43,7 +43,7 @@ const Home = () => {
                 <Link className="icon solid fa-home" to="/"><span>Home</span></Link>
               </li>
               
-              {/* Link Profilo con Scroll funzionante */}
+              {/* Link Profilo */}
               <li>
                 <a 
                   className="icon solid fa-user" 
@@ -54,7 +54,7 @@ const Home = () => {
                 </a>
               </li>
               
-              {/* Link Esperienza con Scroll funzionante */}
+              {/* Link Esperienza */}
               <li>
                 <a 
                   className="icon solid fa-briefcase" 
@@ -65,11 +65,11 @@ const Home = () => {
                 </a>
               </li>
               
-              {/* MENU A TENDINA PASSIONI (Gestito da React) */}
+              {/* MENU A TENDINA PASSIONI */}
               <li 
                 onMouseEnter={() => setIsDropdownOpen(true)}
                 onMouseLeave={() => setIsDropdownOpen(false)}
-                style={{ position: 'relative' }} // Necessario per posizionare il sottomenu
+                style={{ position: 'relative' }}
               >
                 <a 
                   className="icon solid fa-glass-cheers" 

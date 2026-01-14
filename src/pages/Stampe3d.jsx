@@ -65,7 +65,7 @@ const Stampe3d = () => {
                     </li>
                     {/* NUOVO LINK */}
                     <li style={{ padding: '5px 20px', borderTop: '1px solid #eee' }}>
-                      <Link to="/stampe3d" style={{ display: 'block', color: '#444', textDecoration: 'none' }}>Stampe 3D & Maker</Link>
+                      <Link to="/stampe3d" style={{ display: 'block', color: '#444', textDecoration: 'none' }}>Stampe 3D</Link>
                     </li>
                   </ul>
                 )}
@@ -95,25 +95,14 @@ const Stampe3d = () => {
                 {/* Immagine Principale */}
                 <a href="#" className="image featured"><img src="images/img4.jpg" alt="Stampe 3D" /></a> 
                 
-                <p>Utilizzo stampanti FDM/SLA per realizzare soluzioni custom per la casa e l'ufficio.</p>
+                <p>Utilizzo stampanti FDM/SLA per realizzare soluzioni custom per la casa in maniera amatoriale.</p>
 
                 <hr />
 
                 <h3>Supporti Funzionali</h3>
-                <p>Progettazione e stampa di supporti per cable management, stand per cuffie e organizzatori per la scrivania.<br />
-                <strong>Materiale:</strong> PLA / PETG.<br />
-                <strong>Software:</strong> Fusion 360 / Blender.</p>
-
-                <hr />
-
-                <h3>Prototipazione Rapida</h3>
-                <p>Creazione di case per Raspberry Pi e microcontrollori personalizzati.<br />
-                <strong>Note:</strong> Ottimizzazione dei flussi d'aria e accessibilità delle porte I/O.</p>
-
-                <hr />
-
-                <h3>Art & Lithophanes</h3>
-                <p>Stampe artistiche ad alta risoluzione e litofanie retroilluminate.<br />
+                <p>Progettazione e stampa di supporti per cable management, action figure, materiali per la cucina e oggetti di collezionismo.<br />
+                <strong>Materiale:</strong> PLA / PLA+ / PETG.<br />
+                <strong>Software:</strong> Bambulab studio / Blender.
                 <strong>Setup:</strong> Ugello 0.2mm, Layer height 0.12mm.</p>
              </article>
 
