@@ -5,6 +5,8 @@ import TerminalText from '../components/TerminalText';
 
 const Stampe3d = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [searchTermExecuted, setSearchTermExecuted] = useState(""); // Ricerca progetti eseguiti
+  const [searchTermFuture, setSearchTermFuture] = useState("");     // Ricerca progetti futuri
 
   const terminalLines = [
     "> ./load_module.sh --3d-print",
@@ -14,19 +16,19 @@ const Stampe3d = () => {
     "> Ready."
   ];
 
-  // --- DATI DEI PROGETTI (Modifica qui per aggiungere/rimuovere) ---
+  // --- DATI DEI PROGETTI ---
   
   // 1. LISTA PROGETTI ESEGUITI
   const executedProjects = [
     {
       title: "Cookiecutter",
-      description: "Formine per biscotti.",
-      material: "PLA Nero Opaco",
+      description: "Formine per biscotti personalizzate e a tema.",
+      material: "PLA Nero Opaco (Food Safe)",
       image: "images/pic07.jpg" 
     },
     {
       title: "Braccio destro cyberpunk",
-      description: "Prelevato il contenuto dai file di gico.",
+      description: "Prop dettagliato per cosplay, assemblato in più parti e dipinto.",
       material: "PLA Bianco + Primer e Acrilici",
       image: "images/pic07.jpg"
     },
@@ -53,6 +55,15 @@ const Stampe3d = () => {
       image: "images/pic06.jpg"
     }
   ];
+
+  // --- FILTRI ---
+  const filteredExecuted = executedProjects.filter(project => 
+    project.title.toLowerCase().includes(searchTermExecuted.toLowerCase())
+  );
+
+  const filteredFuture = futureProjects.filter(project => 
+    project.title.toLowerCase().includes(searchTermFuture.toLowerCase())
+  );
 
   // Gestione layout
   useEffect(() => {
@@ -132,8 +143,26 @@ const Stampe3d = () => {
                     <h2 style={{ fontSize: '2.5em', borderBottom: '2px solid #ddd', paddingBottom: '10px' }}>Progetti Eseguiti</h2>
                 </header>
                 
+                {/* SEARCH BAR ESEGUITI */}
+                <div style={{ marginBottom: '30px', textAlign: 'center' }}>
+                  <input
+                    type="text"
+                    placeholder="Cerca progetto eseguito..."
+                    value={searchTermExecuted}
+                    onChange={(e) => setSearchTermExecuted(e.target.value)}
+                    style={{ 
+                      width: '60%', 
+                      padding: '10px', 
+                      borderRadius: '5px', 
+                      border: '1px solid #ccc',
+                      fontSize: '1em'
+                    }}
+                  />
+                </div>
+
                 <div className="row">
-                    {executedProjects.map((project, index) => (
+                    {filteredExecuted.length > 0 ? (
+                      filteredExecuted.map((project, index) => (
                         <div key={index} className="col-6 col-12-medium">
                             <article className="box feature">
                                 <a href="#" className="image featured">
@@ -148,7 +177,10 @@ const Stampe3d = () => {
                                 </p>
                             </article>
                         </div>
-                    ))}
+                      ))
+                    ) : (
+                      <p style={{ width: '100%', textAlign: 'center' }}>Nessun progetto trovato.</p>
+                    )}
                 </div>
              </section>
 
@@ -161,12 +193,29 @@ const Stampe3d = () => {
                     <p>Work in Progress, rendering e idee pronte per lo slicing.</p>
                 </header>
 
+                {/* SEARCH BAR FUTURI */}
+                <div style={{ marginBottom: '30px', textAlign: 'center' }}>
+                  <input
+                    type="text"
+                    placeholder="Cerca progetto futuro..."
+                    value={searchTermFuture}
+                    onChange={(e) => setSearchTermFuture(e.target.value)}
+                    style={{ 
+                      width: '60%', 
+                      padding: '10px', 
+                      borderRadius: '5px', 
+                      border: '1px solid #ccc',
+                      fontSize: '1em'
+                    }}
+                  />
+                </div>
+
                 <div className="row">
-                    {futureProjects.map((project, index) => (
+                    {filteredFuture.length > 0 ? (
+                      filteredFuture.map((project, index) => (
                         <div key={index} className="col-6 col-12-medium">
-                            <article className="box feature" style={{ opacity: 0.9 }}> {/* Leggera trasparenza per indicare "futuro" */}
+                            <article className="box feature" style={{ opacity: 0.9 }}>
                                 <a href="#" className="image featured">
-                                    {/* Nota: Qui potresti usare un'immagine "placeholder" o un render 3D */}
                                     <img src={project.image} alt={project.title} style={{ objectFit: 'cover', height: '300px', filter: 'grayscale(30%)' }} />
                                 </a>
                                 <header>
@@ -178,7 +227,10 @@ const Stampe3d = () => {
                                 </p>
                             </article>
                         </div>
-                    ))}
+                      ))
+                    ) : (
+                      <p style={{ width: '100%', textAlign: 'center' }}>Nessun progetto trovato.</p>
+                    )}
                 </div>
              </section>
 

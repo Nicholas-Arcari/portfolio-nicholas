@@ -5,6 +5,7 @@ import TerminalText from '../components/TerminalText';
 
 const Ricette = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState(""); // Stato ricerca
 
   const terminalLines = [
     "> ./load_module.sh --recipes",
@@ -13,7 +14,7 @@ const Ricette = () => {
     "> Ready."
   ];
 
-  // GESTIONE LAYOUT: Attiva la sidebar destra
+  // Gestione layout (Sidebar Destra)
   useEffect(() => {
     document.body.classList.remove('homepage');
     document.body.classList.remove('no-sidebar');
@@ -26,10 +27,49 @@ const Ricette = () => {
     };
   }, []);
 
+  // --- DATABASE RICETTE ---
+  const recipesData = [
+    {
+      name: "Torta di Mele \"Legacy Code\"",
+      description: "Una ricetta scritta decenni fa che nessuno osa refattorizzare perché funziona perfettamente così.",
+      ingredients: "3 mele golden (Core Data), 200g farina (Base Class), 150g zucchero (Syntactic Sugar), 2 uova.",
+      preparation: "Compilare gli ingredienti in una ciotola, gestire le eccezioni (grumi) ed eseguire il render in forno a 180°C per 40 minuti."
+    },
+    {
+      name: "Lasagne al Forno \"OSI Model (Layer 7)\"",
+      description: "Sette strati di puro gusto, con incapsulamento perfetto dei pacchetti di sapore.",
+      ingredients: "Sfoglia all'uovo (Physical Layer), Ragù bolognese (Network), Besciamella (Transport), Parmigiano (Application).",
+      preparation: "Stacking dei layer in sequenza. Hardening della crosta in forno fino a doratura completa (Firewall attivo)."
+    },
+    {
+      name: "Tiramisù \"Java(Script)\"",
+      description: "Il boost di caffeina necessario per le nottate di coding. Pura energia asincrona.",
+      ingredients: "Mascarpone (Framework pesante), Savoiardi (Dependencies), Caffè espresso forte (Runtime), Cacao amaro (UI).",
+      preparation: "Architettura Serverless (nessuna cottura richiesta). Deploy istantaneo in frigo."
+    },
+    {
+      name: "Spaghetti alla Carbonara \"Spaghetti Code\"",
+      description: "Un groviglio delizioso dove le dipendenze sono strette, ma il risultato è perfetto.",
+      ingredients: "Spaghetti, Guanciale croccante (Hardware acceleration), Tuorli d'uovo, Pecorino Romano, Pepe nero.",
+      preparation: "Attenzione alla \"Race Condition\": l'uovo va unito a fuoco spento per evitare il crash (frittata). Mantecare in loop fino a cremosità."
+    },
+    {
+      name: "Polpette al Sugo \"Microservices\"",
+      description: "Piccoli moduli di gusto indipendenti, altamente scalabili e facili da consumare.",
+      ingredients: "Macinato misto, Pane raffermo, Prezzemolo, Aglio, Sugo di pomodoro (Message Broker).",
+      preparation: "Istanziare molteplici polpette e farle girare nel container (padella) con il sugo a fuoco lento."
+    }
+  ];
+
+  // Filtra le ricette
+  const filteredRecipes = recipesData.filter(recipe =>
+    recipe.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div id="page-wrapper">
       
-      {/* HEADER */}
+      {/* --- HEADER --- */}
       <section id="header">
         <div className="container">
           <h1 id="logo"><Link to="/">Nicholas Arcari</Link></h1>
@@ -45,11 +85,15 @@ const Ricette = () => {
                 onMouseLeave={() => setIsDropdownOpen(false)}
                 style={{ position: 'relative' }} 
               >
-                <a className="icon solid fa-glass-cheers" style={{ cursor: 'pointer' }}><span>Passioni</span></a>
+                <a className="icon solid fa-glass-cheers" style={{ cursor: 'pointer' }}>
+                  <span>Passioni</span>
+                </a>
+                
                 {isDropdownOpen && (
                   <ul style={{ 
-                    display: 'block', position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', 
-                    backgroundColor: '#fff', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', borderRadius: '4px', 
+                    display: 'block', position: 'absolute', top: '100%', left: '50%', 
+                    transform: 'translateX(-50%)', backgroundColor: '#fff', 
+                    boxShadow: '0 4px 6px rgba(0,0,0,0.1)', borderRadius: '4px', 
                     padding: '10px 0', minWidth: '200px', zIndex: 1000, listStyle: 'none', margin: 0
                   }}>
                     <li style={{ padding: '5px 20px', borderTop: 'none' }}>
@@ -64,13 +108,14 @@ const Ricette = () => {
                   </ul>
                 )}
               </li>
+
               <li><a className="icon brands fa-github" href="https://github.com/Nicholas-Arcari" target="_blank" rel="noreferrer"><span>GitHub</span></a></li>
             </ul>
           </nav>
         </div>
       </section>
 
-      {/* MAIN */}
+      {/* --- MAIN --- */}
       <section id="main">
         <div className="container">
           <div className="row">
@@ -83,46 +128,47 @@ const Ricette = () => {
                   <p>Quando chiudo il terminale, la cucina diventa il mio nuovo laboratorio. Qui raccolgo i miei esperimenti culinari preferiti.</p>
                </article>
 
-              <article className="box post">
+               <article className="box post">
                   <header><h2>Ricette di <strong>Mamma Niky</strong></h2></header>
                   <a href="#" className="image featured"><img src="images/img2.jpg" alt="Cucina" /></a>
                   
                   <p>Algoritmi culinari tramandati, debuggati e pronti per il deploy in tavola.</p>
 
-                  <hr />
+                  {/* BARRA DI RICERCA */}
+                  <input
+                    type="text"
+                    placeholder="Cerca una ricetta..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    style={{ 
+                      width: '100%', 
+                      padding: '15px', 
+                      borderRadius: '5px', 
+                      border: '1px solid #ccc',
+                      backgroundColor: '#f9f9f9',
+                      fontSize: '1.1em',
+                      marginBottom: '30px'
+                    }}
+                  />
 
-                  <h3>Torta di Mele "Legacy Code"</h3>
-                  <p>Una ricetta scritta decenni fa che nessuno osa refattorizzare perché funziona perfettamente così.<br />
-                  <strong>Ingredienti:</strong> 3 mele golden (Core Data), 200g farina (Base Class), 150g zucchero (Syntactic Sugar), 2 uova.<br />
-                  <strong>Procedimento:</strong> Compilare gli ingredienti in una ciotola, gestire le eccezioni (grumi) ed eseguire il render in forno a 180°C per 40 minuti.</p>
-
-                  <hr />
-
-                  <h3>Lasagne al Forno "OSI Model (Layer 7)"</h3>
-                  <p>Sette strati di puro gusto, con incapsulamento perfetto dei pacchetti di sapore.<br />
-                  <strong>Ingredienti:</strong> Sfoglia all'uovo (Physical Layer), Ragù bolognese (Network), Besciamella (Transport), Parmigiano (Application).<br />
-                  <strong>Procedimento:</strong> Stacking dei layer in sequenza. Hardening della crosta in forno fino a doratura completa (Firewall attivo).</p>
-
-                  <hr />
-
-                  <h3>Tiramisù "Java(Script)"</h3>
-                  <p>Il boost di caffeina necessario per le nottate di coding. Pura energia asincrona.<br />
-                  <strong>Ingredienti:</strong> Mascarpone (Framework pesante), Savoiardi (Dependencies), Caffè espresso forte (Runtime), Cacao amaro (UI).<br />
-                  <strong>Note:</strong> Architettura Serverless (nessuna cottura richiesta). Deploy istantaneo in frigo.</p>
-
-                  <hr />
-
-                  <h3>Spaghetti alla Carbonara "Spaghetti Code"</h3>
-                  <p>Un groviglio delizioso dove le dipendenze sono strette, ma il risultato è perfetto.<br />
-                  <strong>Ingredienti:</strong> Spaghetti, Guanciale croccante (Hardware acceleration), Tuorli d'uovo, Pecorino Romano, Pepe nero.<br />
-                  <strong>Procedimento:</strong> Attenzione alla "Race Condition": l'uovo va unito a fuoco spento per evitare il crash (frittata). Mantecare in loop fino a cremosità.</p>
-
-                  <hr />
-
-                  <h3>Polpette al Sugo "Microservices"</h3>
-                  <p>Piccoli moduli di gusto indipendenti, altamente scalabili e facili da consumare.<br />
-                  <strong>Ingredienti:</strong> Macinato misto, Pane raffermo, Prezzemolo, Aglio, Sugo di pomodoro (Message Broker).<br />
-                  <strong>Procedimento:</strong> Istanziare molteplici polpette e farle girare nel container (padella) con il sugo a fuoco lento.</p>
+                  {/* LISTA FILTRATA RICETTE */}
+                  {filteredRecipes.length > 0 ? (
+                    filteredRecipes.map((recipe, index) => (
+                      <React.Fragment key={index}>
+                        <hr />
+                        <h3>{recipe.name}</h3>
+                        <p>
+                          {recipe.description}<br />
+                          <strong>Ingredienti:</strong> {recipe.ingredients}<br />
+                          <strong>Procedimento:</strong> {recipe.preparation}
+                        </p>
+                      </React.Fragment>
+                    ))
+                  ) : (
+                    <p style={{textAlign: 'center', padding: '20px', fontStyle: 'italic'}}>
+                      Nessuna ricetta trovata. Forse è ancora in fase di compilazione?
+                    </p>
+                  )}
 
                </article>
 
@@ -150,7 +196,7 @@ const Ricette = () => {
         </div>
       </section>
 
-      {/* FOOTER */}
+      {/* --- FOOTER --- */}
       <section id="footer">
         <div id="copyright" className="container">
            <ul className="links">

@@ -5,6 +5,7 @@ import TerminalText from '../components/TerminalText';
 
 const Cocktail = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState(""); // Stato ricerca
 
   const terminalLines = [
     "> ./load_module.sh --bar",
@@ -24,6 +25,51 @@ const Cocktail = () => {
       document.body.classList.add('homepage');
     };
   }, []);
+
+  // --- DATABASE COCKTAIL TECH ---
+  const cocktailsData = [
+    {
+      name: "Gin(t) Commit -m \"Refreshing\"",
+      description: "La versione stabile per chiudere la giornata lavorativa senza conflitti di merge.",
+      ingredients: "50ml Gin (Libreria base), 150ml Tonica (Dependencies), Lime (Patch correttiva).",
+      preparation: "Eseguire il push del gin su ghiaccio, iniettare la tonica delicatamente per non rompere la build (carbonazione)."
+    },
+    {
+      name: "Dark Mode",
+      description: "Il tema preferito dagli sviluppatori. Riduce l'affaticamento visivo e aumenta la latenza cardiaca.",
+      ingredients: "50ml Vodka, 30ml Liquore al caffè (Kahlúa), 1 tazzina di espresso (Java Runtime).",
+      preparation: "Shakerare energicamente per compilare la schiuma perfetta in cima allo stack."
+    },
+    {
+      name: "Firewall",
+      description: "Un layer di sicurezza piccante che blocca le intrusioni della noia.",
+      ingredients: "50ml Tequila, 25ml Lime, 15ml Agave, Jalapeño (Packet Filter).",
+      preparation: "Configurare il bordo del bicchiere con sale e peperoncino. Servire ghiacciato per mitigare l'attacco DDoS al palato."
+    },
+    {
+      name: "Blue Screen of Death",
+      description: "Un errore di sistema fatale, ma tropicale. Riavviare l'utente dopo la consumazione.",
+      ingredients: "50ml Vodka, 20ml Blue Curaçao (System Error), Limonata.",
+      preparation: "Versare tutto nel bicchiere. Se lo schermo diventa blu, avete bevuto troppo."
+    },
+    {
+      name: "Legacy Code",
+      description: "Una ricetta deprecata dal 1800, ma che gira ancora perfettamente su tutti i sistemi.",
+      ingredients: "45ml Bourbon (Codice spaghetti), Zolletta di zucchero (Hardcoded value), Angostura.",
+      preparation: "Diluire lentamente come un refactoring doloroso ma necessario."
+    },
+    {
+      name: "Kernel Panic",
+      description: "Quando il sistema va in crash perché hai caricato troppi moduli (alcolici) insieme.",
+      ingredients: "Vodka, Rum, Gin, Tequila, Cointreau (Tutte le librerie possibili), Coca-Cola.",
+      preparation: "Mescolare tutto. Attenzione: alto rischio di shutdown improvviso del sistema nervoso."
+    }
+  ];
+
+  // Filtra i cocktail
+  const filteredCocktails = cocktailsData.filter(cocktail =>
+    cocktail.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div id="page-wrapper">
@@ -78,7 +124,7 @@ const Cocktail = () => {
       <section id="main">
         <div className="container">
           
-          {/* PRIMA RIGA: Intro + Sidebar (Solo Classici) */}
+          {/* PRIMA RIGA: Intro + Sidebar */}
           <div className="row">
             
             {/* 1. INTRO (Colonna Sinistra) */}
@@ -89,10 +135,9 @@ const Cocktail = () => {
                </article>
             </div>
 
-            {/* 2. SIDEBAR (Colonna Destra - SOLO CLASSICI) */}
+            {/* 2. SIDEBAR (Colonna Destra) */}
             <div id="sidebar" className="col-4 col-12-medium">
               
-              {/* Box Navigazione Classici */}
               <section>
                 <ul className="divided">
                   <li>
@@ -108,7 +153,7 @@ const Cocktail = () => {
             </div>
           </div>
 
-          {/* SECONDA RIGA: Lista Cocktail Tech (Larghezza Piena) */}
+          {/* SECONDA RIGA: Lista Cocktail Tech */}
           <div className="row">
             <div className="col-12">
                <article className="box post">
@@ -117,53 +162,45 @@ const Cocktail = () => {
                   
                   <p>Algoritmi liquidi compilati al momento per l'ottimizzazione delle prestazioni sociali.</p>
 
-                  <hr />
+                  {/* BARRA DI RICERCA */}
+                  <input
+                    type="text"
+                    placeholder="Cerca un cocktail tech..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    style={{ 
+                      width: '100%', 
+                      padding: '15px', 
+                      borderRadius: '5px', 
+                      border: '1px solid #ccc',
+                      backgroundColor: '#f9f9f9',
+                      fontSize: '1.1em',
+                      marginBottom: '30px'
+                    }}
+                  />
 
-                  <h3>Gin(t) Commit -m "Refreshing"</h3>
-                  <p>La versione stabile per chiudere la giornata lavorativa senza conflitti di merge.<br />
-                  <strong>Ingredienti:</strong> 50ml Gin (Libreria base), 150ml Tonica (Dependencies), Lime (Patch correttiva).<br />
-                  <strong>Procedimento:</strong> Eseguire il push del gin su ghiaccio, iniettare la tonica delicatamente per non rompere la build (carbonazione).</p>
-
-                  <hr />
-
-                  <h3>Dark Mode</h3>
-                  <p>Il tema preferito dagli sviluppatori. Riduce l'affaticamento visivo e aumenta la latenza cardiaca.<br />
-                  <strong>Ingredienti:</strong> 50ml Vodka, 30ml Liquore al caffè (Kahlúa), 1 tazzina di espresso (Java Runtime).<br />
-                  <strong>Procedimento:</strong> Shakerare energicamente per compilare la schiuma perfetta in cima allo stack.</p>
-
-                  <hr />
-
-                  <h3>Firewall</h3>
-                  <p>Un layer di sicurezza piccante che blocca le intrusioni della noia.<br />
-                  <strong>Ingredienti:</strong> 50ml Tequila, 25ml Lime, 15ml Agave, Jalapeño (Packet Filter).<br />
-                  <strong>Procedimento:</strong> Configurare il bordo del bicchiere con sale e peperoncino. Servire ghiacciato per mitigare l'attacco DDoS al palato.</p>
-
-                  <hr />
-
-                  <h3>Blue Screen of Death</h3>
-                  <p>Un errore di sistema fatale, ma tropicale. Riavviare l'utente dopo la consumazione.<br />
-                  <strong>Ingredienti:</strong> 50ml Vodka, 20ml Blue Curaçao (System Error), Limonata.<br />
-                  <strong>Procedimento:</strong> Versare tutto nel bicchiere. Se lo schermo diventa blu, avete bevuto troppo.</p>
-
-                  <hr />
-
-                  <h3>Legacy Code</h3>
-                  <p>Una ricetta deprecata dal 1800, ma che gira ancora perfettamente su tutti i sistemi.<br />
-                  <strong>Ingredienti:</strong> 45ml Bourbon (Codice spaghetti), Zolletta di zucchero (Hardcoded value), Angostura.<br />
-                  <strong>Procedimento:</strong> Diluire lentamente come un refactoring doloroso ma necessario.</p>
-
-                  <hr />
-
-                  <h3>Kernel Panic</h3>
-                  <p>Quando il sistema va in crash perché hai caricato troppi moduli (alcolici) insieme.<br />
-                  <strong>Ingredienti:</strong> Vodka, Rum, Gin, Tequila, Cointreau (Tutte le librerie possibili), Coca-Cola.<br />
-                  <strong>Procedimento:</strong> Mescolare tutto. Attenzione: alto rischio di shutdown improvviso del sistema nervoso.</p>
+                  {/* ELEMENTI FILTRATI */}
+                  {filteredCocktails.length > 0 ? (
+                    filteredCocktails.map((cocktail, index) => (
+                      <React.Fragment key={index}>
+                        <hr />
+                        <h3>{cocktail.name}</h3>
+                        <p>{cocktail.description}<br />
+                        <strong>Ingredienti:</strong> {cocktail.ingredients}<br />
+                        <strong>Procedimento:</strong> {cocktail.preparation}</p>
+                      </React.Fragment>
+                    ))
+                  ) : (
+                    <p style={{textAlign: 'center', padding: '20px', fontStyle: 'italic'}}>
+                      Nessun cocktail trovato con questo nome. Controlla il codice sorgente!
+                    </p>
+                  )}
 
                </article>
             </div>
           </div>
-        </div>
 
+        </div>
       </section>
 
       {/* --- FOOTER --- */}
@@ -177,7 +214,6 @@ const Cocktail = () => {
       </section>
 
     </div>
-  
   );
 };
 

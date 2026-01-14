@@ -5,6 +5,7 @@ import TerminalText from '../components/TerminalText';
 
 const Pizze = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState(""); // Stato ricerca
 
   const terminalLines = [
     "> ./load_module.sh --pizza-oven",
@@ -13,7 +14,7 @@ const Pizze = () => {
     "> Ready."
   ];
 
-  // Layout Right Sidebar (per coerenza o per tornare indietro)
+  // Layout Right Sidebar
   useEffect(() => {
     document.body.classList.remove('homepage');
     document.body.classList.remove('no-sidebar');
@@ -25,6 +26,57 @@ const Pizze = () => {
       document.body.classList.add('homepage');
     };
   }, []);
+
+  // --- DATABASE PIZZE ---
+  const pizzasData = [
+    {
+      name: "Margherita 2.0 (Stable Release)",
+      description: "La regina delle pizze, ottimizzata e priva di bug.",
+      topping: "Pomodoro San Marzano DOP, Mozzarella Fior di Latte, Basilico fresco, Olio EVO.",
+      dough: "Diretto lungo, 24h TA."
+    },
+    {
+      name: "Diavola (Firewall Breach)",
+      description: "Piccante al punto giusto, penetra ogni difesa.",
+      topping: "Pomodoro, Mozzarella, Salame piccante napoletano, 'Nduja di Spilinga.",
+      dough: "Biga 100%, 48h frigo."
+    },
+    {
+      name: "Quattro Formaggi \"Full Stack\"",
+      description: "Un'architettura a quattro livelli di pura cremosità.",
+      topping: "Gorgonzola dolce (Backend), Taleggio, Mozzarella (Frontend), Scaglie di Grana (UI).",
+      dough: "Poolish ad alta idratazione."
+    },
+    {
+      name: "Ortolana \"Root Access\"",
+      description: "Accesso privilegiato alle migliori verdure di stagione (vegan friendly).",
+      topping: "Crema di zucchine, Melanzane a funghetto, Peperoni arrostiti, Pomodori confit.",
+      dough: "Integrale al 30% (Legacy grain)."
+    },
+    {
+      name: "Napoli \"Salted Hash\"",
+      description: "Crittografia saporita con un pizzico di sapidità aggiunta.",
+      topping: "Pomodoro, Acciughe di Cetara, Capperi di Pantelleria, Origano, Olive nere.",
+      dough: "Classico Napoletano STG."
+    },
+    {
+      name: "Marinara \"Open Source\"",
+      description: "Pochi ingredienti, codice pulito, trasparente e accessibile a tutti.",
+      topping: "Pomodoro San Marzano, Aglio rosso, Origano di montagna, Olio EVO abbondante.",
+      dough: "Diretto veloce (per un deploy rapido)."
+    },
+    {
+      name: "Salsiccia e Friarielli \"Backend Heavy\"",
+      description: "Una pizza robusta che regge carichi di lavoro pesanti.",
+      topping: "Provola affumicata, Salsiccia a punta di coltello, Friarielli ripassati aglio e olio.",
+      dough: "Autolisi lunga per massimizzare la struttura."
+    }
+  ];
+
+  // Filtra le pizze
+  const filteredPizzas = pizzasData.filter(pizza =>
+    pizza.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div id="page-wrapper">
@@ -81,54 +133,42 @@ const Pizze = () => {
                   <header><h2>Le mie Pizze</h2></header>
                   <p>72 ore di lievitazione, idratazione al 70% e ingredienti selezionati. Un deploy di sapori in produzione.</p>
                   
-                  <hr />
-                  
-                  <h3>Margherita 2.0 (Stable Release)</h3>
-                  <p>La regina delle pizze, ottimizzata e priva di bug.<br />
-                  <strong>Topping:</strong> Pomodoro, Mozzarella, Basilico, Olio.<br />
-                  </p>
-                  
-                  <hr />
+                  {/* BARRA DI RICERCA */}
+                  <input
+                    type="text"
+                    placeholder="Cerca una pizza..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    style={{ 
+                      width: '100%', 
+                      padding: '15px', 
+                      borderRadius: '5px', 
+                      border: '1px solid #ccc',
+                      backgroundColor: '#f9f9f9',
+                      fontSize: '1.1em',
+                      marginBottom: '30px',
+                      marginTop: '10px'
+                    }}
+                  />
 
-                  <h3>Diavola (Firewall Breach)</h3>
-                  <p>Piccante al punto giusto, penetra ogni difesa.<br />
-                  <strong>Topping:</strong> Pomodoro, Mozzarella, Salame piccante, 'Nduja.<br />
-                  </p>
-
-                  <hr />
-
-                  <h3>Quattro Formaggi "Full Stack"</h3>
-                  <p>Un'architettura a quattro livelli di pura cremosità.<br />
-                  <strong>Topping:</strong> Gorgonzola dolce (Backend), Taleggio, Mozzarella (Frontend), Scaglie di Grana (UI).<br />
-                  </p>
-
-                  <hr />
-
-                  <h3>Ortolana "Root Access"</h3>
-                  <p>Accesso privilegiato alle migliori verdure di stagione (vegan friendly).<br />
-                  <strong>Topping:</strong> Crema di zucchine, Melanzane, Peperoni, Pomodori.<br />
-                  </p>
-
-                  <hr />
-
-                  <h3>Napoli "Salted Hash"</h3>
-                  <p>Crittografia saporita con un pizzico di sapidità aggiunta.<br />
-                  <strong>Topping:</strong> Pomodoro, Acciughe, Capperi, Origano, Olive nere.<br />
-                  </p>
-
-                  <hr />
-
-                  <h3>Marinara "Open Source"</h3>
-                  <p>Pochi ingredienti, codice pulito, trasparente e accessibile a tutti.<br />
-                  <strong>Topping:</strong> Pomodoro, Aglio, Origano, Olio.<br />
-                  </p>
-
-                  <hr />
-
-                  <h3>Salsiccia e Friarielli "Backend Heavy"</h3>
-                  <p>Una pizza robusta che regge carichi di lavoro pesanti.<br />
-                  <strong>Topping:</strong> Provola affumicata, Salsiccia, Friarielli ripassati aglio e olio.<br />
-                  </p>
+                  {/* LISTA FILTRATA */}
+                  {filteredPizzas.length > 0 ? (
+                    filteredPizzas.map((pizza, index) => (
+                      <React.Fragment key={index}>
+                        <hr />
+                        <h3>{pizza.name}</h3>
+                        <p>
+                          {pizza.description}<br />
+                          <strong>Topping:</strong> {pizza.topping}<br />
+                          <strong>Impasto:</strong> {pizza.dough}
+                        </p>
+                      </React.Fragment>
+                    ))
+                  ) : (
+                    <p style={{textAlign: 'center', padding: '20px', fontStyle: 'italic'}}>
+                      Nessuna pizza trovata. Forse è ancora in fase di lievitazione?
+                    </p>
+                  )}
 
                 </article>
             </div>
