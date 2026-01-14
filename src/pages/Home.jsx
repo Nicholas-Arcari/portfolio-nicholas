@@ -249,8 +249,11 @@ const Home = () => {
                 <ul className="divided">
                   <li>
                     <article className="box highlight">
-                      <header><h3><a href="#">Soft Skills</a></h3></header>
-                      <p>- Improvvisazione e flessibilità mentale.<br />- Gestione efficace dello stress che si riassume come "immunità all'ansia".<br />- Problem solving autonomo.</p>
+                      <header><h3><Link to="/ricette">Non solo codice...</Link></h3></header>
+                      <p>Quando non sono al terminale, mi dedico alla cucina e alla mixology. Scopri le mie ricette e i miei cocktail.</p>
+                      <Link to="/ricette" className="button icon solid fa-utensils">Vai alle Ricette</Link>
+                      <br /><br />
+                      <Link to="/cocktail" className="button icon solid fa-glass-martini">Vai ai Cocktail</Link>
                     </article>
                   </li>
                 </ul>
@@ -259,11 +262,8 @@ const Home = () => {
                 <ul className="divided">
                   <li>
                     <article className="box highlight">
-                      <header><h3><Link to="/ricette">Non solo codice...</Link></h3></header>
-                      <p>Quando non sono al terminale, mi dedico alla cucina e alla mixology. Scopri le mie ricette e i miei cocktail.</p>
-                      <Link to="/ricette" className="button icon solid fa-utensils">Vai alle Ricette</Link>
-                      <br /><br />
-                      <Link to="/cocktail" className="button icon solid fa-glass-martini">Vai ai Cocktail</Link>
+                      <header><h3><a href="#">Soft Skills</a></h3></header>
+                      <p>- Improvvisazione e flessibilità mentale.<br />- Gestione efficace dello stress che si riassume come "immunità all'ansia".<br />- Problem solving autonomo.</p>
                     </article>
                   </li>
                 </ul>
