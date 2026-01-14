@@ -1,20 +1,18 @@
-/* src/HackerTheme.css - Versione Pulita */
+/* src/HackerTheme.css - PULITO */
 
-/* Nessuna regola per body, header o banner qui! 
-   Lasciamo fare tutto al file main.css originale. */
+/* Nessuna regola globale qui! Lasciamo fare tutto a main.css */
 
-/* --- STILE UNICO PER EFFETTO TERMINALE --- */
+/* Solo l'effetto terminale */
 .terminal-container {
     font-family: 'Courier New', Courier, monospace;
     font-weight: bold;
-    color: #444; /* Grigio scuro: perfetto su sfondo chiaro */
+    color: #444; /* Grigio scuro, perfetto su sfondo chiaro */
     min-height: 4em;
     line-height: 1.5em;
     margin-top: 1em;
     white-space: pre-wrap;
 }
 
-/* Cursore lampeggiante */
 .cursor {
     display: inline-block;
     width: 10px;
