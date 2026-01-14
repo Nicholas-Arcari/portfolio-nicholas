@@ -13,15 +13,14 @@ const Cocktail = () => {
     "> Ready."
   ];
 
+  // GESTIONE LAYOUT
   useEffect(() => {
     document.body.classList.remove('homepage');
-    document.body.classList.remove('no-sidebar');
-    document.body.classList.add('right-sidebar'); 
-    
+    document.body.classList.add('no-sidebar'); 
     window.scrollTo(0, 0);
     
     return () => {
-      document.body.classList.remove('right-sidebar');
+      document.body.classList.remove('no-sidebar');
       document.body.classList.add('homepage');
     };
   }, []);
@@ -72,22 +71,46 @@ const Cocktail = () => {
         </div>
       </section>
 
-      {/* --- MAIN (Con Sidebar) --- */}
+      {/* --- MAIN --- */}
       <section id="main">
         <div className="container">
+          
+          {/* PRIMA RIGA: Intro + Sidebar (Solo Classici) */}
           <div className="row">
             
-            {/* CONTENUTO PRINCIPALE (Colonna Sinistra) */}
-            <div id="content" className="col-8 col-12-medium">
-             
+            {/* 1. INTRO (Colonna Sinistra) */}
+            <div className="col-8 col-12-medium">
                <article className="box post">
                   <header><h2>Mixology & Tech</h2></header>
                   <p>La precisione nel dosare gli ingredienti è importante quanto quella nel scrivere codice. Ecco le mie creazioni per il relax post-deploy.</p>
                </article>
+            </div>
 
+            {/* 2. SIDEBAR (Colonna Destra - SOLO CLASSICI) */}
+            <div id="sidebar" className="col-4 col-12-medium">
+              
+              {/* Box Navigazione Classici */}
+              <section>
+                <ul className="divided">
+                  <li>
+                    <article className="box highlight">
+                      <header><h3><Link to="/cocktail-classici">Torna alle origini</Link></h3></header>
+                      <p>Preferisci i sapori tradizionali? Ho raccolto qui i grandi classici IBA e le ricette senza tempo.</p>
+                      <Link to="/cocktail-classici" className="button icon solid fa-glass-martini-alt">I Grandi Classici</Link>
+                    </article>
+                  </li>
+                </ul>
+              </section>
+
+            </div>
+          </div>
+
+          {/* SECONDA RIGA: Lista Cocktail Tech (Larghezza Piena) */}
+          <div className="row">
+            <div className="col-12">
                <article className="box post">
                   <header><h2>I miei <strong>Cocktail</strong></h2></header>
-                  <a href="#" className="image featured"><img src="images/img2.jpg" alt="Cocktails" /></a> {/* Assicurati che il path immagine sia giusto */}
+                  <a href="#" className="image featured"><img src="images/img3.jpg" alt="Cocktails" /></a>
                   
                   <p>Mixology ispirata al mondo tech. Bere responsabilmente (nessun buffer overflow consentito).</p>
 
@@ -112,28 +135,9 @@ const Cocktail = () => {
                   <strong>Ingredienti:</strong> 50ml Tequila, 25ml Lime fresco, 15ml Sciroppo di Agave, 2 fettine di Jalapeño.<br />
                   <strong>Procedimento:</strong> Shakerare con ghiaccio, servire in bicchiere con bordo di sale e peperoncino.</p>
                </article>
-
             </div>
-
-            {/* SIDEBAR (Colonna Destra) */}
-            <div id="sidebar" className="col-4 col-12-medium">
-
-              {/* I Grandi Classici */}
-              <section>
-                <ul className="divided">
-                  <li>
-                    <article className="box highlight">
-                      <header><h3><Link to="/cocktail-classici">Torna alle origini</Link></h3></header>
-                      <p>Preferisci i sapori tradizionali? Ho raccolto qui i grandi classici IBA e le ricette senza tempo.</p>
-                      <Link to="/cocktail-classici" className="button icon solid fa-glass-martini-alt">I Grandi Classici</Link>
-                    </article>
-                  </li>
-                </ul>
-              </section>
-            
-            </div>
-
           </div>
+
         </div>
       </section>
 
