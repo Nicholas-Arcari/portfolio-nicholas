@@ -104,10 +104,6 @@ const Cocktail = () => {
 
             </div>
           </div>
-        </div>
-        </section>
-
-      <section id="secondmain">
 
           {/* SECONDA RIGA: Lista Cocktail Tech (Larghezza Piena) */}
           <div className="row">
@@ -141,6 +137,7 @@ const Cocktail = () => {
                </article>
             </div>
           </div>
+        </div>
 
       </section>
 

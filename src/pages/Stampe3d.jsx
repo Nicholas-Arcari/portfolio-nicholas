@@ -93,7 +93,7 @@ const Stampe3d = () => {
                 <header><h2>Progetti <strong>Maker</strong></h2></header>
                 
                 {/* Immagine Principale */}
-                <a href="#" className="image featured"><img src="/images/pic07.jpg" alt="Stampe 3D" /></a> 
+                <a href="#" className="image featured"><img src="images/img4.jpg" alt="Stampe 3D" /></a> 
                 
                 <p>Utilizzo stampanti FDM/SLA per realizzare soluzioni custom per la casa e l'ufficio.</p>
 
