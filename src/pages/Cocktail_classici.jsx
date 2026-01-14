@@ -518,6 +518,8 @@ const Cocktail_classici = () => {
 
           </div>
         </div>
+    </div>
+    
       </section>
 
       {/* FOOTER */}
