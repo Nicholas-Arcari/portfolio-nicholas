@@ -33,6 +33,7 @@ const Home = () => {
           <h1 id="logo"><Link to="/">Nicholas Arcari</Link></h1>
           
           {/* Effetto Terminale */}
+          <br />
           <TerminalText lines={terminalLines} />
           
           {/* Navigazione */}
@@ -70,12 +71,13 @@ const Home = () => {
                 onMouseLeave={() => setIsDropdownOpen(false)}
                 style={{ position: 'relative' }} // Necessario per posizionare il sottomenu
               >
-                <span 
+                {/* MODIFICA QUI: Usato tag <a> e cursor pointer per uniformare lo stile */}
+                <a 
                   className="icon solid fa-glass-cheers" 
-                  style={{ cursor: 'default' }}
+                  style={{ cursor: 'pointer' }}
                 >
                   <span>Passioni</span>
-                </span>
+                </a>
                 
                 {/* Sottomenu */}
                 {isDropdownOpen && (
@@ -129,21 +131,21 @@ const Home = () => {
               <section>
                 <a href="#" className="image featured"><img src="/images/pic01.jpg" alt="Cybersecurity" /></a>
                 <header><h3>Cybersecurity</h3></header>
-                <p>Vulnerability assessment, Sicurezza web (OWASP Top 10), Hardening Linux, Network Analysis (Nmap, Burp Suite, Wazuh).</p>
+                <p>Vulnerability assessment, <br />Sicurezza web (OWASP Top 10), <br />Hardening Linux, <br />Network Analysis (Nmap, Burp Suite, Wazuh).</p>
               </section>
             </div>
             <div className="col-4 col-6-medium col-12-small">
               <section>
                 <a href="#" className="image featured"><img src="/images/pic02.jpg" alt="Web Development" /></a>
                 <header><h3>Fullstack Web Dev</h3></header>
-                <p>Backend: PHP, Python, Laravel 12+. Frontend: React, Vite, HTML/CSS. Database: MySQL, PostgreSQL.</p>
+                <p>Backend: PHP, Python, Laravel 12+ <br />Frontend: React, Vite, HTML/CSS <br />Database: MySQL, PostgreSQL</p>
               </section>
             </div>
             <div className="col-4 col-6-medium col-12-small">
               <section>
                 <a href="#" className="image featured"><img src="/images/pic03.jpg" alt="DevOps" /></a>
                 <header><h3>DevOps & Systems</h3></header>
-                <p>Docker, Kubernetes, Git/GitHub, Bash Scripting, Linux (Ubuntu, Kali), Gestione servizi e networking TCP/IP.</p>
+                <p>Docker, Kubernetes, <br />Git/GitHub, <br />Bash Scripting, Linux (Ubuntu, Kali), <br />Gestione servizi e networking TCP/IP.</p>
               </section>
             </div>
           </div>
@@ -153,7 +155,7 @@ const Home = () => {
       {/* --- BANNER --- */}
       <section id="banner">
         <div className="container">
-          <p><strong>Neolaureato in Scienze Informatiche</strong> con forte interesse per la Cybersecurity e esperienza in laboratorio per vulnerability assessment, sicurezza web (OWASP Top 10) e hardening di sistemi Linux.</p>
+          <p><strong>Neolaureato in Scienze Informatiche</strong><br />con forte interesse per la Cybersecurity e esperienza in laboratorio per vulnerability assessment, sicurezza web (OWASP Top 10) e hardening di sistemi Linux.</p>
         </div>
       </section>
 
@@ -184,14 +186,17 @@ const Home = () => {
                 <h3>Cybersecurity Labs</h3>
                 <p>Laboratorio completo diviso in 10 moduli, dalla <strong>Recon</strong> alla <strong>Defense</strong>. Include tool custom per Social Engineering, simulazioni di Web Attacks, configurazione di Honeypots e Post-Exploitation.<br /><strong>Stack:</strong> <span className="tech-stack">Python, Bash, Docker, Linux Security</span></p>
                 <a href="https://github.com/Nicholas-Arcari/cybersecurity-labs" className="button icon brands fa-github">Vedi Repo</a>
+                <br /><br />
                 <hr />
                 <h3>RaspberryPi Home Lab</h3>
                 <p>Configurazione e hardening di un'infrastruttura di rete domestica sicura. Implementazione di <strong>VPN</strong> (WireGuard), blocco pubblicità (Pi-hole), <strong>NAS</strong> sicuro e un <strong>Honeypot</strong> di rete per rilevare intrusioni.<br /><strong>Stack:</strong> <span className="tech-stack">Linux (Raspbian), Docker, OpenVPN/WireGuard, Pi-hole</span></p>
                 <a href="https://github.com/Nicholas-Arcari/RaspberryPi" className="button icon brands fa-github">Vedi Repo</a>
+                <br /><br />
                 <hr />
                 <h3>Tor Networking Guide</h3>
                 <p>Guida e script per la navigazione anonima e la configurazione di servizi nascosti. Analisi del routing <strong>Onion</strong> e best practices per la privacy digitale.<br /><strong>Stack:</strong> <span className="tech-stack">Tor Browser, Proxychains, Network Privacy</span></p>
                 <a href="https://github.com/Nicholas-Arcari/tor-networking-guide" className="button icon brands fa-github">Vedi Repo</a>
+                <br /><br />
                 <hr />
                 <h3>Flipper Zero</h3>
                 <p>Esplorazione e auditing di protocolli radio e sistemi di controllo accessi. Analisi segnali <strong>Sub-GHz</strong>, clonazione tag <strong>NFC/RFID</strong> e automazione badUSB.<br /><strong>Stack:</strong> <span className="tech-stack">Flipper Zero, GPIO, Radio Protocols, Hardware Hacking</span></p>
@@ -257,7 +262,7 @@ const Home = () => {
                     <article className="box highlight" style={{ textAlign: 'center' }}>
                       <header><h3><a href="#">Curriculum Vitae</a></h3></header>
                       <p>Scarica il documento completo.</p>
-                      <a href="/assets/cv/cv_arcari_nicholas.pdf" className="button icon solid fa-download" download>Scarica CV (PDF)</a>
+                      <a href="../../public/assets/cv/cv_arcari_nicholas.pdf" className="button icon solid fa-download" download>Scarica CV (PDF)</a>
                     </article>
                   </li>
                 </ul>
@@ -283,7 +288,7 @@ const Home = () => {
                 </p>
                 
                 {/* Contenitore contatti centrato */}
-                <div style={{ display: 'inline-block', textAlign: 'left' }}>
+                <div style={{ display: 'inline-block', textAlign: 'center' }}>
                   <ul className="icons" style={{ listStyle: 'none', padding: 0 }}>
                     <li className="icon solid fa-home" style={{ marginBottom: '1em', display: 'flex', alignItems: 'center' }}>
                       <span style={{ marginLeft: '15px' }}>
@@ -296,7 +301,7 @@ const Home = () => {
                       <span style={{ marginLeft: '15px' }}>+39 351 714 0966</span>
                     </li>
                     <li className="icon solid fa-envelope" style={{ marginBottom: '1em', display: 'flex', alignItems: 'center' }}>
-                      <a href="mailto:arcari.nicholaso@gmail.com" style={{ marginLeft: '15px' }}>arcari.nicholaso@gmail.com</a>
+                      <a href="mailto:arcari.nicholaso@gmail.com" style={{ marginLeft: '15px' }}>arcari.nicholas0@gmail.com</a>
                     </li>
                     <li className="icon brands fa-github" style={{ display: 'flex', alignItems: 'center' }}>
                       <a href="https://github.com/Nicholas-Arcari" style={{ marginLeft: '15px' }}>github.com/Nicholas-Arcari</a>

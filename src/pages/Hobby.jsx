@@ -1,9 +1,12 @@
 // src/pages/Hobby.jsx
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import TerminalText from '../components/TerminalText';
 
 const Hobby = () => {
+  // Stato per gestire l'apertura del menu a tendina (come in Home.jsx)
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
   const terminalLines = [
     "> ./load_module.sh --hobby",
     "> Loading Recipes database...",
@@ -33,7 +36,7 @@ const Hobby = () => {
       if (element) {
         setTimeout(() => {
           element.scrollIntoView({ behavior: 'smooth' });
-        }, 100); // Piccolo delay per assicurare che il rendering sia finito
+        }, 100); 
       }
     } else {
       window.scrollTo(0, 0);
@@ -42,28 +45,69 @@ const Hobby = () => {
 
   return (
     <div id="page-wrapper">
+      
+      {/* --- HEADER --- */}
       <section id="header">
         <div className="container">
           <h1 id="logo"><Link to="/">Nicholas Arcari</Link></h1>
+          <br />
           <TerminalText lines={terminalLines} />
           
           <nav id="nav">
             <ul>
               <li><Link className="icon solid fa-home" to="/"><span>Home</span></Link></li>
-              <li className="current">
-                <span className="icon solid fa-glass-cheers"><span>Passioni</span></span>
-                <ul>
-                  <li><a href="#recipes">Ricette di Mamma Niky</a></li>
-                  <li><a href="#cocktails">I miei Cocktail</a></li>
-                </ul>
+              
+              {/* MENU A TENDINA PASSIONI (Logica Uniformata a Home.jsx) */}
+              <li 
+                onMouseEnter={() => setIsDropdownOpen(true)}
+                onMouseLeave={() => setIsDropdownOpen(false)}
+                style={{ position: 'relative' }} 
+              >
+                <a 
+                  className="icon solid fa-glass-cheers" 
+                  style={{ cursor: 'pointer' }} // Uniforma lo stile del cursore
+                >
+                  <span>Passioni</span>
+                </a>
+                
+                {/* Sottomenu */}
+                {isDropdownOpen && (
+                  <ul style={{ 
+                    display: 'block', 
+                    position: 'absolute', 
+                    top: '100%', 
+                    left: '50%', 
+                    transform: 'translateX(-50%)',
+                    backgroundColor: '#fff', 
+                    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                    borderRadius: '4px',
+                    padding: '10px 0',
+                    minWidth: '200px',
+                    zIndex: 1000,
+                    listStyle: 'none',
+                    margin: 0
+                  }}>
+                    <li style={{ padding: '5px 20px', borderTop: 'none' }}>
+                      <Link to="/hobby#recipes" style={{ display: 'block', color: '#444', textDecoration: 'none' }}>
+                        Ricette di Mamma Niky
+                      </Link>
+                    </li>
+                    <li style={{ padding: '5px 20px', borderTop: '1px solid #eee' }}>
+                      <Link to="/hobby#cocktails" style={{ display: 'block', color: '#444', textDecoration: 'none' }}>
+                        I miei Cocktail
+                      </Link>
+                    </li>
+                  </ul>
+                )}
               </li>
+
               <li><a className="icon brands fa-github" href="https://github.com/Nicholas-Arcari" target="_blank" rel="noreferrer"><span>GitHub</span></a></li>
             </ul>
           </nav>
         </div>
       </section>
 
-      {/* Main Section */}
+      {/* --- MAIN --- */}
       <section id="main">
         <div className="container">
           <div id="content">
@@ -137,7 +181,48 @@ const Hobby = () => {
         </div>
       </section>
 
+      {/* --- FOOTER PULITO --- */}
       <section id="footer">
+        <div className="container">
+          <header>
+            <h2>Contatti</h2>
+          </header>
+          <div className="row aln-center"> 
+            
+            <div className="col-12 col-12-medium" style={{ textAlign: 'center' }}>
+              <section>
+                <p style={{ fontSize: '1.2em', marginBottom: '2em' }}>
+                  Contattami per collaborazioni in ambito Sviluppo Web Fullstack o progetti di Cybersecurity.
+                </p>
+                
+                {/* Contenitore contatti centrato */}
+                <div style={{ display: 'inline-block', textAlign: 'center' }}>
+                  <ul className="icons" style={{ listStyle: 'none', padding: 0 }}>
+                    <li className="icon solid fa-home" style={{ marginBottom: '1em', display: 'flex', alignItems: 'center' }}>
+                      <span style={{ marginLeft: '15px' }}>
+                        Via Scipione 45/A<br />
+                        43039, Salsomaggiore Terme (PR)<br />
+                        Italia
+                      </span>
+                    </li>
+                    <li className="icon solid fa-phone" style={{ marginBottom: '1em', display: 'flex', alignItems: 'center' }}>
+                      <span style={{ marginLeft: '15px' }}>+39 351 714 0966</span>
+                    </li>
+                    <li className="icon solid fa-envelope" style={{ marginBottom: '1em', display: 'flex', alignItems: 'center' }}>
+                      <a href="mailto:arcari.nicholaso@gmail.com" style={{ marginLeft: '15px' }}>arcari.nicholaso@gmail.com</a>
+                    </li>
+                    <li className="icon brands fa-github" style={{ display: 'flex', alignItems: 'center' }}>
+                      <a href="https://github.com/Nicholas-Arcari" style={{ marginLeft: '15px' }}>github.com/Nicholas-Arcari</a>
+                    </li>
+                  </ul>
+                </div>
+
+              </section>
+            </div>
+
+          </div>
+        </div>
+        
         <div id="copyright" className="container">
            <ul className="links">
                <li>&copy; Nicholas Arcari.</li>
