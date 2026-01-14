@@ -59,7 +59,7 @@ const Pizze = () => {
                       <Link to="/cocktail" style={{ display: 'block', color: '#444', textDecoration: 'none' }}>I miei Cocktail</Link>
                     </li>
                     <li style={{ padding: '5px 20px', borderTop: '1px solid #eee' }}>
-                      <Link to="/stampe3d" style={{ display: 'block', color: '#444', textDecoration: 'none' }}>Stampe 3D & Maker</Link>
+                      <Link to="/stampe3d" style={{ display: 'block', color: '#444', textDecoration: 'none' }}>Stampe 3D</Link>
                     </li>
                   </ul>
                 )}

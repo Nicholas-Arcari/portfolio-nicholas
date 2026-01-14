@@ -71,7 +71,6 @@ const Home = () => {
                 onMouseLeave={() => setIsDropdownOpen(false)}
                 style={{ position: 'relative' }} // Necessario per posizionare il sottomenu
               >
-                {/* MODIFICA QUI: Usato tag <a> e cursor pointer per uniformare lo stile */}
                 <a 
                   className="icon solid fa-glass-cheers" 
                   style={{ cursor: 'pointer' }}
@@ -108,7 +107,7 @@ const Home = () => {
                     </li>
                     <li style={{ padding: '5px 20px', borderTop: '1px solid #eee' }}>
                       <Link to="/stampe3d" style={{ display: 'block', color: '#444', textDecoration: 'none' }}>
-                        Stampe 3D & Maker
+                        Stampe 3D
                       </Link>
                     </li>
                   </ul>
