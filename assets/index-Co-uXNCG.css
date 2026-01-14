@@ -1,0 +1,1 @@
+.terminal-container{font-family:Courier New,Courier,monospace;font-weight:700;color:#444;min-height:4em;line-height:1.5em;margin-top:1em;white-space:pre-wrap}.cursor{display:inline-block;width:10px;height:1em;background-color:#444;vertical-align:middle;animation:blink 1s infinite}@keyframes blink{0%{opacity:0}50%{opacity:1}to{opacity:0}}
