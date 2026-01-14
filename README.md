@@ -18,4 +18,4 @@ git add .
 
 git commit -m "Nuovo Deploy"
 
-git push
+git push -f https://github.com/Nicholas-Arcari/portfolio-nicholas.git main:gh-pages
