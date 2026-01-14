@@ -1,0 +1,113 @@
+/* src/HackerTheme.css */
+body, #page-wrapper, #footer, #features, #header, #banner, #main {
+    background-color: #0d1117;
+    color: #c9d1d9;
+}
+
+.box {
+    background-color: #161b22;
+    border: 1px solid #30363d;
+    color: #c9d1d9;
+    box-shadow: none;
+}
+
+h1, h2, h3, h4, h5, h6, strong, h1 a, h2 a, h3 a {
+    color: #58a6ff !important;
+    font-family: 'Courier New', Courier, monospace;
+    letter-spacing: -0.05em;
+}
+
+a {
+    color: #58a6ff;
+    border-bottom-color: rgba(88, 166, 255, 0.5);
+    transition: all 0.2s ease;
+}
+a:hover {
+    color: #79c0ff;
+    border-bottom-color: transparent;
+    text-shadow: 0 0 8px rgba(88, 166, 255, 0.6);
+}
+
+#header {
+    border-bottom: 1px solid #30363d;
+    padding-top: 4em;
+}
+
+#nav ul li a {
+    color: #c9d1d9;
+    font-family: monospace;
+}
+#nav ul li.current a {
+    background-color: #30363d;
+    color: #58a6ff;
+    font-weight: bold;
+}
+
+input[type="submit"], input[type="reset"], input[type="button"], .button {
+    background-color: #238636;
+    color: white !important;
+    box-shadow: none;
+    border: 1px solid rgba(240,246,252,0.1);
+    font-family: 'Courier New', Courier, monospace;
+    font-weight: bold;
+    text-transform: lowercase;
+}
+.button:hover {
+    background-color: #2ea043;
+    box-shadow: 0 0 10px rgba(46, 160, 67, 0.5);
+}
+
+#banner {
+    background-image: none;
+    background-color: #0d1117;
+    border-bottom: 1px solid #30363d;
+}
+
+#features section {
+    border-right: 1px solid #30363d;
+}
+#features section:last-child {
+    border-right: none;
+}
+
+hr {
+    border-top: solid 1px #30363d;
+}
+ul.divided li {
+    border-top: solid 1px #30363d;
+}
+
+.tech-stack {
+    font-family: monospace;
+    color: #ff7b72;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+/* Stile Terminale */
+.terminal-container {
+    font-family: 'Courier New', Courier, monospace;
+    font-weight: bold;
+    color: #444; /* Grigio scuro su sfondo chiaro, cambia in #58a6ff se usi sfondo scuro */
+    min-height: 4em;
+    line-height: 1.5em;
+    margin-top: 1em;
+    white-space: pre-wrap; /* Mantiene gli a capo */
+}
+
+.cursor {
+    display: inline-block;
+    width: 10px;
+    height: 1em;
+    background-color: currentColor;
+    vertical-align: middle;
+    animation: blink 1s infinite;
+}
+
+@keyframes blink {
+    0% { opacity: 0; }
+    50% { opacity: 1; }
+    100% { opacity: 0; }
+}
