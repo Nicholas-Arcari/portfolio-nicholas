@@ -14,7 +14,47 @@ const Stampe3d = () => {
     "> Ready."
   ];
 
-  // Gestione layout (No Sidebar per dare spazio alle foto)
+  // --- DATI DEI PROGETTI (Modifica qui per aggiungere/rimuovere) ---
+  
+  // 1. LISTA PROGETTI ESEGUITI
+  const executedProjects = [
+    {
+      title: "Cookiecutter",
+      description: "Formine per biscotti.",
+      material: "PLA Nero Opaco",
+      image: "images/pic07.jpg" 
+    },
+    {
+      title: "Braccio destro cyberpunk",
+      description: "Prelevato il contenuto dai file di gico.",
+      material: "PLA Bianco + Primer e Acrilici",
+      image: "images/pic07.jpg"
+    },
+    {
+      title: "Action Figure Denji",
+      description: "Modello artistico di un personaggio iconico, post-prodotto e dipinto a mano.",
+      material: "PLA Bianco + Primer e Acrilici",
+      image: "images/pic07.jpg"
+    }
+  ];
+
+  // 2. LISTA PROGETTI DA ESEGUIRE
+  const futureProjects = [
+    {
+      title: "Cane robotico programmabile",
+      description: "Progetto complesso che integra stampa 3D e motori passo-passo controllati da Arduino.",
+      material: "PETG / ABS (per resistenza meccanica)",
+      image: "images/pic06.jpg"
+    },
+    {
+      title: "Case Custom per Raspberry Pi",
+      description: "Case ventilato con alloggiamento per SSD NVMe e schermo OLED integrato.",
+      material: "PLA+ o ASA",
+      image: "images/pic06.jpg"
+    }
+  ];
+
+  // Gestione layout
   useEffect(() => {
     document.body.classList.remove('homepage');
     document.body.classList.add('no-sidebar');
@@ -40,7 +80,6 @@ const Stampe3d = () => {
             <ul>
               <li><Link className="icon solid fa-home" to="/"><span>Home</span></Link></li>
               
-              {/* MENU A TENDINA PASSIONI */}
               <li 
                 onMouseEnter={() => setIsDropdownOpen(true)}
                 onMouseLeave={() => setIsDropdownOpen(false)}
@@ -63,7 +102,6 @@ const Stampe3d = () => {
                     <li style={{ padding: '5px 20px', borderTop: '1px solid #eee' }}>
                       <Link to="/cocktail" style={{ display: 'block', color: '#444', textDecoration: 'none' }}>I miei Cocktail</Link>
                     </li>
-                    {/* NUOVO LINK */}
                     <li style={{ padding: '5px 20px', borderTop: '1px solid #eee' }}>
                       <Link to="/stampe3d" style={{ display: 'block', color: '#444', textDecoration: 'none' }}>Stampe 3D</Link>
                     </li>
@@ -85,26 +123,64 @@ const Stampe3d = () => {
              {/* Intro */}
              <article className="box post">
                 <header><h2>Dal Digitale al Fisico</h2></header>
-                <p>La stampa 3D unisce la mia passione per il software con la soddisfazione di creare oggetti tangibili. Qui raccolgo i miei progetti, dalle parti funzionali ai prototipi.</p>
+                <p>La stampa 3D unisce la mia passione per il software con la soddisfazione di creare oggetti tangibili. Qui raccolgo i miei progetti, divisi tra quelli già realizzati e le idee in cantiere.</p>
              </article>
 
-             {/* Esempi Progetti (Sostituisci i testi e le immagini con i tuoi reali) */}
-             <article className="box post">
-                <header><h2>Progetti <strong>Maker</strong></h2></header>
+             {/* --- SEZIONE 1: PROGETTI ESEGUITI --- */}
+             <section>
+                <header style={{ marginBottom: '2em', textAlign: 'center' }}>
+                    <h2 style={{ fontSize: '2.5em', borderBottom: '2px solid #ddd', paddingBottom: '10px' }}>Progetti Eseguiti</h2>
+                </header>
                 
-                {/* Immagine Principale */}
-                <a href="#" className="image featured"><img src="images/img4.jpg" alt="Stampe 3D" /></a> 
-                
-                <p>Utilizzo stampanti FDM/SLA per realizzare soluzioni custom per la casa in maniera amatoriale.</p>
+                <div className="row">
+                    {executedProjects.map((project, index) => (
+                        <div key={index} className="col-6 col-12-medium">
+                            <article className="box feature">
+                                <a href="#" className="image featured">
+                                    <img src={project.image} alt={project.title} style={{ objectFit: 'cover', height: '300px' }} />
+                                </a>
+                                <header>
+                                    <h3>{project.title}</h3>
+                                </header>
+                                <p>{project.description}</p>
+                                <p style={{ fontSize: '0.9em', color: '#555', borderTop: '1px solid #eee', paddingTop: '10px' }}>
+                                    <strong>Materiale:</strong> {project.material}
+                                </p>
+                            </article>
+                        </div>
+                    ))}
+                </div>
+             </section>
 
-                <hr />
+             <hr style={{ margin: '4em 0' }} />
 
-                <h3>Supporti Funzionali</h3>
-                <p>Progettazione e stampa di supporti per cable management, action figure, materiali per la cucina e oggetti di collezionismo.<br />
-                <strong>Materiale:</strong> PLA / PLA+ / PETG.<br />
-                <strong>Software:</strong> Bambulab studio / Blender.<br />
-                <strong>Setup:</strong> Ugello 0.2mm, Layer height 0.12mm.</p>
-             </article>
+             {/* --- SEZIONE 2: PROGETTI DA ESEGUIRE --- */}
+             <section>
+                <header style={{ marginBottom: '2em', textAlign: 'center' }}>
+                    <h2 style={{ fontSize: '2.5em', borderBottom: '2px solid #ddd', paddingBottom: '10px' }}>Progetti da Eseguire</h2>
+                    <p>Work in Progress, rendering e idee pronte per lo slicing.</p>
+                </header>
+
+                <div className="row">
+                    {futureProjects.map((project, index) => (
+                        <div key={index} className="col-6 col-12-medium">
+                            <article className="box feature" style={{ opacity: 0.9 }}> {/* Leggera trasparenza per indicare "futuro" */}
+                                <a href="#" className="image featured">
+                                    {/* Nota: Qui potresti usare un'immagine "placeholder" o un render 3D */}
+                                    <img src={project.image} alt={project.title} style={{ objectFit: 'cover', height: '300px', filter: 'grayscale(30%)' }} />
+                                </a>
+                                <header>
+                                    <h3>{project.title}</h3>
+                                </header>
+                                <p>{project.description}</p>
+                                <p style={{ fontSize: '0.9em', color: '#555', borderTop: '1px solid #eee', paddingTop: '10px' }}>
+                                    <strong>Materiale Previsto:</strong> {project.material}
+                                </p>
+                            </article>
+                        </div>
+                    ))}
+                </div>
+             </section>
 
           </div>
         </div>
