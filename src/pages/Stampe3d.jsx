@@ -102,7 +102,7 @@ const Stampe3d = () => {
                 <h3>Supporti Funzionali</h3>
                 <p>Progettazione e stampa di supporti per cable management, action figure, materiali per la cucina e oggetti di collezionismo.<br />
                 <strong>Materiale:</strong> PLA / PLA+ / PETG.<br />
-                <strong>Software:</strong> Bambulab studio / Blender.
+                <strong>Software:</strong> Bambulab studio / Blender.<br />
                 <strong>Setup:</strong> Ugello 0.2mm, Layer height 0.12mm.</p>
              </article>
 

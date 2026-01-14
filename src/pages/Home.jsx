@@ -195,22 +195,22 @@ const Home = () => {
                 <hr />
                 <h3>Cybersecurity Labs</h3>
                 <p>Laboratorio completo diviso in 10 moduli, dalla <strong>Recon</strong> alla <strong>Defense</strong>. Include tool custom per Social Engineering, simulazioni di Web Attacks, configurazione di Honeypots e Post-Exploitation.<br /><strong>Stack:</strong> <span className="tech-stack">Python, Bash, Docker, Linux Security</span></p>
-                <a href="https://github.com/Nicholas-Arcari/cybersecurity-labs" className="button icon brands fa-github">Vedi Repo</a>
+                <a href="https://github.com/Nicholas-Arcari/cybersecurity-labs" className="button icon brands fa-github" target="_blank" rel="noopener noreferrer">Vedi Repo</a>
                 <br /><br />
                 <hr />
                 <h3>RaspberryPi Home Lab</h3>
                 <p>Configurazione e hardening di un'infrastruttura di rete domestica sicura. Implementazione di <strong>VPN</strong> (WireGuard), blocco pubblicità (Pi-hole), <strong>NAS</strong> sicuro e un <strong>Honeypot</strong> di rete per rilevare intrusioni.<br /><strong>Stack:</strong> <span className="tech-stack">Linux (Raspbian), Docker, OpenVPN/WireGuard, Pi-hole</span></p>
-                <a href="https://github.com/Nicholas-Arcari/RaspberryPi" className="button icon brands fa-github">Vedi Repo</a>
+                <a href="https://github.com/Nicholas-Arcari/RaspberryPi" className="button icon brands fa-github" target="_blank" rel="noopener noreferrer">Vedi Repo</a>
                 <br /><br />
                 <hr />
                 <h3>Tor Networking Guide</h3>
                 <p>Guida e script per la navigazione anonima e la configurazione di servizi nascosti. Analisi del routing <strong>Onion</strong> e best practices per la privacy digitale.<br /><strong>Stack:</strong> <span className="tech-stack">Tor Browser, Proxychains, Network Privacy</span></p>
-                <a href="https://github.com/Nicholas-Arcari/tor-networking-guide" className="button icon brands fa-github">Vedi Repo</a>
+                <a href="https://github.com/Nicholas-Arcari/tor-networking-guide" className="button icon brands fa-github" target="_blank" rel="noopener noreferrer">Vedi Repo</a>
                 <br /><br />
                 <hr />
                 <h3>Flipper Zero</h3>
                 <p>Esplorazione e auditing di protocolli radio e sistemi di controllo accessi. Analisi segnali <strong>Sub-GHz</strong>, clonazione tag <strong>NFC/RFID</strong> e automazione badUSB.<br /><strong>Stack:</strong> <span className="tech-stack">Flipper Zero, GPIO, Radio Protocols, Hardware Hacking</span></p>
-                <a href="https://github.com/Nicholas-Arcari/FlipperZero-guide" className="button icon brands fa-github">Vedi Repo</a>
+                <a href="https://github.com/Nicholas-Arcari/FlipperZero-guide" className="button icon brands fa-github" target="_blank" rel="noopener noreferrer">Vedi Repo</a>
               </article>
             </div>
 
@@ -249,11 +249,8 @@ const Home = () => {
                 <ul className="divided">
                   <li>
                     <article className="box highlight">
-                      <header><h3><Link to="/ricette">Non solo codice...</Link></h3></header>
-                      <p>Quando non sono al terminale, mi dedico alla cucina e alla mixology. Scopri le mie ricette e i miei cocktail.</p>
-                      <Link to="/ricette" className="button icon solid fa-utensils">Vai alle Ricette</Link>
-                      <br /><br />
-                      <Link to="/cocktail" className="button icon solid fa-glass-martini">Vai ai Cocktail</Link>
+                      <header><h3><a href="#">Soft Skills</a></h3></header>
+                      <p>- Improvvisazione e flessibilità mentale.<br />- Gestione efficace dello stress che si riassume come "immunità all'ansia".<br />- Problem solving autonomo.</p>
                     </article>
                   </li>
                 </ul>
@@ -262,8 +259,11 @@ const Home = () => {
                 <ul className="divided">
                   <li>
                     <article className="box highlight">
-                      <header><h3><a href="#">Soft Skills</a></h3></header>
-                      <p>- Improvvisazione e flessibilità mentale.<br />- Gestione efficace dello stress che si riassume come "immunità all'ansia".<br />- Problem solving autonomo.</p>
+                      <header><h3><Link to="/ricette">Non solo codice...</Link></h3></header>
+                      <p>Quando non sono al terminale, mi dedico alla cucina e alla mixology. Scopri le mie ricette e i miei cocktail.</p>
+                      <Link to="/ricette" className="button icon solid fa-utensils">Vai alle Ricette</Link>
+                      <br /><br />
+                      <Link to="/cocktail" className="button icon solid fa-glass-martini">Vai ai Cocktail</Link>
                     </article>
                   </li>
                 </ul>
