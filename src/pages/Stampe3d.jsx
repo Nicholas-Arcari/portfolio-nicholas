@@ -88,42 +88,42 @@ const Stampe3d = () => {
       title: "Cane robotico programmabile",
       description: "Progetto complesso che integra stampa 3D e motori passo-passo controllati da Arduino. https://www.instructables.com/GoodBoy-3D-Printed-Arduino-Robot-Dog/",
       material: "PETG / ABS (per resistenza meccanica)",
-      image: "images/stampa1.jpg"
+      image: "images/stampa1.png"
     },
     {
       title: "Emmi Metroid Dread",
-      description: "https://www.thingiverse.com/thing:5254236",
-      material: "PLA+ o ASA",
+      description: "Robot ispirato a Metroid Dread, con articolazioni mobili e dettagli precisi programmabili via Arduino",
+      material: "PLA",
       image: "images/pic06.jpg"
     },
     {
       title: "DreamOfProps for Trauma Team Helmet",
-      description: "https://www.thingiverse.com/thing:4897526",
-      material: "PLA+ o ASA",
+      description: "Elmo futuristico ispirato a Trauma Team in Cyberpunk 2077",
+      material: "PLA",
       image: "images/pic06.jpg"
     },
     {
       title: "Daedric Armor split for smaller printers",
-      description: "https://www.thingiverse.com/thing:3581525",
-      material: "PLA+ o ASA",
+      description: "Armatura Daedric da The Elder Scrolls V: Skyrim, progettata per essere stampata in più parti e indossata",
+      material: "PLA",
       image: "images/pic06.jpg"
     },
     {
       title: "Tea Dispenser (top-mounted)",
-      description: "https://www.thingiverse.com/thing:4763805",
-      material: "PLA+ o ASA",
+      description: "Dispenser carino per bustine di tè",
+      material: "PLA",
       image: "images/pic06.jpg"
     },
     {
       title: "Iron Man MK6 MK 6 Suit",
-      description: "https://www.thingiverse.com/thing:1779274",
-      material: "PLA+ o ASA",
+      description: "Armatura completa di iron man programmabile in Arduino",
+      material: "PLA",
       image: "images/pic06.jpg"
     },
     {
       title: "Hestia Knife with Hieroglyphics",
-      description: "https://www.thingiverse.com/thing:5185347",
-      material: "PLA+ o ASA",
+      description: "Replica di coltello da gioco con incisioni dettagliate",
+      material: "PLA",
       image: "images/pic06.jpg"
     },
     {
@@ -154,13 +154,13 @@ const Stampe3d = () => {
       title: "Cyberpunk Mecha Sci-fi Bonsai",
       description: "Bonsai in stile cyberpunk con dettagli mecha e futuristici",
       material: "PLA+",
-      image: "images/stampa2.jpg"
+      image: "images/stampa2.png"
     },
     {
       title: "Cyberpunk 2077 Ottiche Kiroshi",
       description: "CHOOMS! Che siate in giro per una notte in città a Night City, o che stiate prendendo d'assalto la torre Arasaka, è meglio avere le migliori ottiche che si possano comprare, e niente batte Kiroshi.",
       material: "PLA+",
-      image: "images/stampa3.jpg"
+      image: "images/stampa3.png"
     }
     
   ];
