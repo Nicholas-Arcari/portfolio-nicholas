@@ -83,32 +83,47 @@ const Ricette = () => {
                   <p>Quando chiudo il terminale, la cucina diventa il mio nuovo laboratorio. Qui raccolgo i miei esperimenti culinari preferiti.</p>
                </article>
 
-               <article className="box post">
+              <article className="box post">
                   <header><h2>Ricette di <strong>Mamma Niky</strong></h2></header>
                   <a href="#" className="image featured"><img src="images/img2.jpg" alt="Cucina" /></a>
                   
-                  <p>Ricette testate, debuggate e pronte per il deploy in tavola.</p>
+                  <p>Algoritmi culinari tramandati, debuggati e pronti per il deploy in tavola.</p>
 
                   <hr />
 
                   <h3>Torta di Mele "Legacy Code"</h3>
-                  <p>Una ricetta tramandata da generazioni, stabile, robusta e priva di bug.<br />
-                  <strong>Ingredienti:</strong> 3 mele golden, 200g farina, 150g zucchero, 2 uova, lievito vanigliato.<br />
-                  <strong>Procedimento:</strong> Compilare tutti gli ingredienti in una ciotola, eseguire il render in forno a 180°C per 40 minuti.</p>
+                  <p>Una ricetta scritta decenni fa che nessuno osa refattorizzare perché funziona perfettamente così.<br />
+                  <strong>Ingredienti:</strong> 3 mele golden (Core Data), 200g farina (Base Class), 150g zucchero (Syntactic Sugar), 2 uova.<br />
+                  <strong>Procedimento:</strong> Compilare gli ingredienti in una ciotola, gestire le eccezioni (grumi) ed eseguire il render in forno a 180°C per 40 minuti.</p>
 
                   <hr />
 
-                  <h3>Lasagne al Forno "Layer 7"</h3>
-                  <p>Sette strati di puro gusto, perfettamente incapsulati.<br />
-                  <strong>Ingredienti:</strong> Sfoglia all'uovo, Ragù bolognese (cottura lenta), Besciamella, Parmigiano Reggiano.<br />
-                  <strong>Procedimento:</strong> Assemblare i pacchetti (strati) sequenzialmente. Hardening della crosta in forno fino a doratura completa.</p>
+                  <h3>Lasagne al Forno "OSI Model (Layer 7)"</h3>
+                  <p>Sette strati di puro gusto, con incapsulamento perfetto dei pacchetti di sapore.<br />
+                  <strong>Ingredienti:</strong> Sfoglia all'uovo (Physical Layer), Ragù bolognese (Network), Besciamella (Transport), Parmigiano (Application).<br />
+                  <strong>Procedimento:</strong> Stacking dei layer in sequenza. Hardening della crosta in forno fino a doratura completa (Firewall attivo).</p>
 
                   <hr />
 
                   <h3>Tiramisù "Java(Script)"</h3>
-                  <p>Il boost di caffeina necessario per le nottate di coding.<br />
-                  <strong>Ingredienti:</strong> Mascarpone, Savoiardi, Caffè espresso forte, Cacao amaro.<br />
-                  <strong>Note:</strong> Nessuna cottura richiesta (Serverless architecture).</p>
+                  <p>Il boost di caffeina necessario per le nottate di coding. Pura energia asincrona.<br />
+                  <strong>Ingredienti:</strong> Mascarpone (Framework pesante), Savoiardi (Dependencies), Caffè espresso forte (Runtime), Cacao amaro (UI).<br />
+                  <strong>Note:</strong> Architettura Serverless (nessuna cottura richiesta). Deploy istantaneo in frigo.</p>
+
+                  <hr />
+
+                  <h3>Spaghetti alla Carbonara "Spaghetti Code"</h3>
+                  <p>Un groviglio delizioso dove le dipendenze sono strette, ma il risultato è perfetto.<br />
+                  <strong>Ingredienti:</strong> Spaghetti, Guanciale croccante (Hardware acceleration), Tuorli d'uovo, Pecorino Romano, Pepe nero.<br />
+                  <strong>Procedimento:</strong> Attenzione alla "Race Condition": l'uovo va unito a fuoco spento per evitare il crash (frittata). Mantecare in loop fino a cremosità.</p>
+
+                  <hr />
+
+                  <h3>Polpette al Sugo "Microservices"</h3>
+                  <p>Piccoli moduli di gusto indipendenti, altamente scalabili e facili da consumare.<br />
+                  <strong>Ingredienti:</strong> Macinato misto, Pane raffermo, Prezzemolo, Aglio, Sugo di pomodoro (Message Broker).<br />
+                  <strong>Procedimento:</strong> Istanziare molteplici polpette e farle girare nel container (padella) con il sugo a fuoco lento.</p>
+
                </article>
 
             </div>

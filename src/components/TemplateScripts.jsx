@@ -7,29 +7,30 @@ const TemplateScripts = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Funzione principale di inizializzazione
+    // Definiamo la funzione di inizializzazione
     const initThemeScripts = () => {
       const $ = window.jQuery;
 
-      // Se jQuery o il menu non esistono, fermati
-      if (!$ || $('#nav').length === 0) return;
+      // Se jQuery non c'è o il menu non è ancora stato disegnato da React, riprova dopo
+      if (!$ || $('#nav').length === 0) {
+        return; 
+      }
 
       const $body = $('body');
       const $nav = $('#nav');
 
-      // --- 1. PULIZIA TOTALE (Fondamentale) ---
-      // Rimuoviamo vecchi pannelli e barre per evitare duplicati che bloccano i click
+      // --- 1. PULIZIA (Reset) ---
+      // Rimuoviamo eventuali barre vecchie create da navigazioni precedenti
       $('#titleBar').remove();
       $('#navPanel').remove();
       $body.removeClass('navPanel-visible');
       
-      // Resettiamo eventuali eventi attaccati in precedenza per evitare doppi click
-      $('#navPanel').off(); 
+      // Sblocchiamo lo scroll se era rimasto bloccato
+      $('html, body').css('overflow', '');
 
-      // --- 2. DESKTOP: Dropdowns (Dropotron) ---
-      // Inizializziamo solo se ci sono sottomenu
+      // --- 2. DROPDOWNS (Menu Desktop) ---
       if ($nav.children('ul').length > 0) {
-        // Disattiva dropotron se era già attivo (per sicurezza)
+        // Se dropotron è già attivo, distruggilo per ricrearlo pulito
         if ($nav.children('ul').data('dropotron')) {
              $nav.children('ul').dropotron('destroy');
         }
@@ -43,16 +44,16 @@ const TemplateScripts = () => {
       }
 
       // --- 3. MOBILE: NavPanel ---
-      // Aggiungiamo il pulsante hamburger
+      // Creiamo il pulsante Hamburger
       $('<div id="titleBar">' +
         '<a href="#navPanel" class="toggle"></a>' +
         '</div>'
       ).appendTo($body);
 
-      // Creiamo il pannello laterale clonando il menu
+      // Creiamo il Pannello Laterale clonando i link del menu originale
       $('<div id="navPanel">' +
         '<nav>' +
-        $nav.navList() +
+        $nav.navList() + 
         '</nav>' +
         '</div>'
       )
@@ -68,46 +69,53 @@ const TemplateScripts = () => {
           visibleClass: 'navPanel-visible'
         });
 
-      // --- 4. GESTIONE CLICK MOBILE (React Router Fix) ---
-      // Intercettiamo i click sul menu mobile APPENA CREATO
-      // Nota: usiamo 'body' come delegato perché #navPanel viene creato dinamicamente
-      $('body').off('click', '#navPanel a'); // Rimuovi vecchi listener
-      $('body').on('click', '#navPanel a', function(e) {
+      // --- 4. GESTIONE CLICK (Il trucco per farli funzionare) ---
+      // Rimuoviamo vecchi eventi per evitare doppi click
+      $(document).off('click', '#navPanel a');
+      
+      // Aggiungiamo un listener su TUTTI i link del menu mobile
+      $(document).on('click', '#navPanel a', function(e) {
         const href = $(this).attr('href');
 
-        // Se è un link interno valido
+        // Se è un link interno (non inizia con http, non è vuoto, non è solo #)
         if (href && href !== '#' && !href.startsWith('http') && !href.startsWith('mailto')) {
-          e.preventDefault();
+          e.preventDefault(); // Ferma il browser (che ricaricherebbe la pagina)
           e.stopPropagation();
 
-          // Chiudi il menu
+          // 1. Chiudi graficamente il menu
           $body.removeClass('navPanel-visible');
 
-          // Naviga con React (rimuovendo l'eventuale # iniziale)
-          const path = href.replace('#', '');
+          // 2. Pulisci l'indirizzo (rimuovi il # se presente all'inizio)
+          // Esempio: se href="#/ricette" diventa "/ricette"
+          let path = href;
+          if (path.startsWith('#')) {
+             path = path.substring(1);
+          }
+          
+          // 3. Naviga usando React
           navigate(path);
         }
       });
     };
 
-    // Ritardo di 200ms per dare tempo a React di renderizzare il DOM
+    // Eseguiamo lo script con un piccolo ritardo (200ms) per essere SICURI 
+    // che React abbia finito di disegnare l'HTML della pagina.
     const timer = setTimeout(initThemeScripts, 200);
 
-    // Cleanup quando si cambia pagina
+    // Pulizia quando si smonta il componente
     return () => {
       clearTimeout(timer);
-      // Pulizia extra quando il componente si smonta
       const $ = window.jQuery;
-      if ($) {
-        $('#titleBar').remove();
-        $('#navPanel').remove();
-        $('body').removeClass('navPanel-visible');
+      if($) {
+          // Nota: Non rimuoviamo titleBar qui per evitare "flash" visivi durante la navigazione,
+          // la pulizia avverrà all'inizio del prossimo ciclo (punto 1).
+          $('body').removeClass('navPanel-visible');
       }
     };
 
-  }, [location, navigate]); // Riesegui ad ogni cambio pagina
+  }, [location, navigate]); // Riesegui ogni volta che l'utente cambia pagina
 
-  return null;
+  return null; // Questo componente non mostra nulla a video
 };
 
 export default TemplateScripts;

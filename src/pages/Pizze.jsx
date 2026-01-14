@@ -77,24 +77,60 @@ const Pizze = () => {
             
             {/* CONTENT */}
             <div id="content" className="col-8 col-12-medium">
-               <article className="box post">
+                <article className="box post">
                   <header><h2>Le mie Pizze</h2></header>
-                  <p>72 ore di lievitazione, idratazione al 70% e ingredienti selezionati.</p>
+                  <p>72 ore di lievitazione, idratazione al 70% e ingredienti selezionati. Un deploy di sapori in produzione.</p>
                   
                   <hr />
                   
-                  <h3>Margherita 2.0</h3>
-                  <p>La regina delle pizze, ottimizzata.<br />
-                  <strong>Topping:</strong> Pomodoro San Marzano DOP, Mozzarella Fior di Latte, Basilico fresco, Olio EVO.<br />
-                  <strong>Impasto:</strong> Diretto lungo, 24h TA.</p>
-
+                  <h3>Margherita 2.0 (Stable Release)</h3>
+                  <p>La regina delle pizze, ottimizzata e priva di bug.<br />
+                  <strong>Topping:</strong> Pomodoro, Mozzarella, Basilico, Olio.<br />
+                  </p>
+                  
                   <hr />
 
                   <h3>Diavola (Firewall Breach)</h3>
-                  <p>Piccante al punto giusto.<br />
-                  <strong>Topping:</strong> Pomodoro, Mozzarella, Salame piccante napoletano, 'Nduja di Spilinga.<br />
-                  <strong>Impasto:</strong> Biga 100%, 48h frigo.</p>
-               </article>
+                  <p>Piccante al punto giusto, penetra ogni difesa.<br />
+                  <strong>Topping:</strong> Pomodoro, Mozzarella, Salame piccante, 'Nduja.<br />
+                  </p>
+
+                  <hr />
+
+                  <h3>Quattro Formaggi "Full Stack"</h3>
+                  <p>Un'architettura a quattro livelli di pura cremosità.<br />
+                  <strong>Topping:</strong> Gorgonzola dolce (Backend), Taleggio, Mozzarella (Frontend), Scaglie di Grana (UI).<br />
+                  </p>
+
+                  <hr />
+
+                  <h3>Ortolana "Root Access"</h3>
+                  <p>Accesso privilegiato alle migliori verdure di stagione (vegan friendly).<br />
+                  <strong>Topping:</strong> Crema di zucchine, Melanzane, Peperoni, Pomodori.<br />
+                  </p>
+
+                  <hr />
+
+                  <h3>Napoli "Salted Hash"</h3>
+                  <p>Crittografia saporita con un pizzico di sapidità aggiunta.<br />
+                  <strong>Topping:</strong> Pomodoro, Acciughe, Capperi, Origano, Olive nere.<br />
+                  </p>
+
+                  <hr />
+
+                  <h3>Marinara "Open Source"</h3>
+                  <p>Pochi ingredienti, codice pulito, trasparente e accessibile a tutti.<br />
+                  <strong>Topping:</strong> Pomodoro, Aglio, Origano, Olio.<br />
+                  </p>
+
+                  <hr />
+
+                  <h3>Salsiccia e Friarielli "Backend Heavy"</h3>
+                  <p>Una pizza robusta che regge carichi di lavoro pesanti.<br />
+                  <strong>Topping:</strong> Provola affumicata, Salsiccia, Friarielli ripassati aglio e olio.<br />
+                  </p>
+
+                </article>
             </div>
 
             {/* SIDEBAR */}
@@ -111,8 +147,8 @@ const Pizze = () => {
                 </ul>
               </section>
             </div>
-
           </div>
+
         </div>
       </section>
 

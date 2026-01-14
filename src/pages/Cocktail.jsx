@@ -113,30 +113,52 @@ const Cocktail = () => {
             <div className="col-12">
                <article className="box post">
                   <header><h2>I miei <strong>Cocktail</strong></h2></header>
-                  <a href="#" className="image featured"><img src="images/img3.jpg" alt="Cocktails" /></a>
+                  <a href="#" className="image featured"><img src="/images/pic06.jpg" alt="Cocktails" /></a>
                   
-                  <p>Mixology ispirata al mondo tech. Bere responsabilmente (nessun buffer overflow consentito).</p>
+                  <p>Algoritmi liquidi compilati al momento per l'ottimizzazione delle prestazioni sociali.</p>
 
                   <hr />
 
                   <h3>Gin(t) Commit -m "Refreshing"</h3>
-                  <p>Il classico per chiudere la giornata lavorativa.<br />
-                  <strong>Ingredienti:</strong> 50ml Gin secco, 150ml Acqua tonica premium, Scorza di lime, Bacche di ginepro.<br />
-                  <strong>Procedimento:</strong> Versare il gin su ghiaccio, aggiungere la tonica delicatamente per non rompere la carbonazione (e il codice).</p>
+                  <p>La versione stabile per chiudere la giornata lavorativa senza conflitti di merge.<br />
+                  <strong>Ingredienti:</strong> 50ml Gin (Libreria base), 150ml Tonica (Dependencies), Lime (Patch correttiva).<br />
+                  <strong>Procedimento:</strong> Eseguire il push del gin su ghiaccio, iniettare la tonica delicatamente per non rompere la build (carbonazione).</p>
 
                   <hr />
 
-                  <h3>Dark Mode (Espresso Martini)</h3>
-                  <p>Elegante, scuro e ti tiene sveglio.<br />
-                  <strong>Ingredienti:</strong> 50ml Vodka, 30ml Liquore al caffè (Kahlúa), 1 tazzina di espresso fresco, Chicchi di caffè per decorazione.<br />
-                  <strong>Procedimento:</strong> Shakerare energicamente con ghiaccio per creare la schiuma perfetta.</p>
+                  <h3>Dark Mode</h3>
+                  <p>Il tema preferito dagli sviluppatori. Riduce l'affaticamento visivo e aumenta la latenza cardiaca.<br />
+                  <strong>Ingredienti:</strong> 50ml Vodka, 30ml Liquore al caffè (Kahlúa), 1 tazzina di espresso (Java Runtime).<br />
+                  <strong>Procedimento:</strong> Shakerare energicamente per compilare la schiuma perfetta in cima allo stack.</p>
 
                   <hr />
 
-                  <h3>Firewall (Spicy Margarita)</h3>
-                  <p>Blocca la noia con un tocco piccante.<br />
-                  <strong>Ingredienti:</strong> 50ml Tequila, 25ml Lime fresco, 15ml Sciroppo di Agave, 2 fettine di Jalapeño.<br />
-                  <strong>Procedimento:</strong> Shakerare con ghiaccio, servire in bicchiere con bordo di sale e peperoncino.</p>
+                  <h3>Firewall</h3>
+                  <p>Un layer di sicurezza piccante che blocca le intrusioni della noia.<br />
+                  <strong>Ingredienti:</strong> 50ml Tequila, 25ml Lime, 15ml Agave, Jalapeño (Packet Filter).<br />
+                  <strong>Procedimento:</strong> Configurare il bordo del bicchiere con sale e peperoncino. Servire ghiacciato per mitigare l'attacco DDoS al palato.</p>
+
+                  <hr />
+
+                  <h3>Blue Screen of Death</h3>
+                  <p>Un errore di sistema fatale, ma tropicale. Riavviare l'utente dopo la consumazione.<br />
+                  <strong>Ingredienti:</strong> 50ml Vodka, 20ml Blue Curaçao (System Error), Limonata.<br />
+                  <strong>Procedimento:</strong> Versare tutto nel bicchiere. Se lo schermo diventa blu, avete bevuto troppo.</p>
+
+                  <hr />
+
+                  <h3>Legacy Code</h3>
+                  <p>Una ricetta deprecata dal 1800, ma che gira ancora perfettamente su tutti i sistemi.<br />
+                  <strong>Ingredienti:</strong> 45ml Bourbon (Codice spaghetti), Zolletta di zucchero (Hardcoded value), Angostura.<br />
+                  <strong>Procedimento:</strong> Diluire lentamente come un refactoring doloroso ma necessario.</p>
+
+                  <hr />
+
+                  <h3>Kernel Panic</h3>
+                  <p>Quando il sistema va in crash perché hai caricato troppi moduli (alcolici) insieme.<br />
+                  <strong>Ingredienti:</strong> Vodka, Rum, Gin, Tequila, Cointreau (Tutte le librerie possibili), Coca-Cola.<br />
+                  <strong>Procedimento:</strong> Mescolare tutto. Attenzione: alto rischio di shutdown improvviso del sistema nervoso.</p>
+
                </article>
             </div>
           </div>
