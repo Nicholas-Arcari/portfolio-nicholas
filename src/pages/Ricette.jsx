@@ -87,7 +87,7 @@ const Ricette = () => {
              {/* Sezione Ricette */}
              <article className="box post">
                 <header><h2>Ricette di <strong>Mamma Niky</strong></h2></header>
-                <a href="#" className="image featured"><img src="/images/pic05.jpg" alt="Cucina" /></a>
+                <a href="#" className="image featured"><img src="images/img2.jpg" alt="Cucina" /></a>
                 
                 <p>Ricette testate, debuggate e pronte per il deploy in tavola.</p>
 

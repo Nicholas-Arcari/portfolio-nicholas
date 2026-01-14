@@ -15,11 +15,13 @@ const Cocktail = () => {
 
   useEffect(() => {
     document.body.classList.remove('homepage');
-    document.body.classList.add('no-sidebar');
+    document.body.classList.remove('no-sidebar');
+    document.body.classList.add('right-sidebar'); 
+    
     window.scrollTo(0, 0);
     
     return () => {
-      document.body.classList.remove('no-sidebar');
+      document.body.classList.remove('right-sidebar');
       document.body.classList.add('homepage');
     };
   }, []);
@@ -70,45 +72,66 @@ const Cocktail = () => {
         </div>
       </section>
 
-      {/* --- MAIN --- */}
+      {/* --- MAIN (Con Sidebar) --- */}
       <section id="main">
         <div className="container">
-          <div id="content">
+          <div className="row">
+            
+            {/* CONTENUTO PRINCIPALE (Colonna Sinistra) */}
+            <div id="content" className="col-8 col-12-medium">
              
-             {/* Intro */}
-             <article className="box post">
-                <header><h2>Mixology & Tech</h2></header>
-                <p>La precisione nel dosare gli ingredienti è importante quanto quella nel scrivere codice. Ecco le mie creazioni per il relax post-deploy.</p>
-             </article>
+               <article className="box post">
+                  <header><h2>Mixology & Tech</h2></header>
+                  <p>La precisione nel dosare gli ingredienti è importante quanto quella nel scrivere codice. Ecco le mie creazioni per il relax post-deploy.</p>
+               </article>
 
-             {/* Sezione Cocktail */}
-             <article className="box post">
-                <header><h2>I miei <strong>Cocktail</strong></h2></header>
-                <a href="#" className="image featured"><img src="/images/pic06.jpg" alt="Cocktails" /></a>
-                
-                <p>Mixology ispirata al mondo tech. Bere responsabilmente (nessun buffer overflow consentito).</p>
+               <article className="box post">
+                  <header><h2>I miei <strong>Cocktail</strong></h2></header>
+                  <a href="#" className="image featured"><img src="images/img2.jpg" alt="Cocktails" /></a> {/* Assicurati che il path immagine sia giusto */}
+                  
+                  <p>Mixology ispirata al mondo tech. Bere responsabilmente (nessun buffer overflow consentito).</p>
 
-                <hr />
+                  <hr />
 
-                <h3>Gin(t) Commit -m "Refreshing"</h3>
-                <p>Il classico per chiudere la giornata lavorativa.<br />
-                <strong>Ingredienti:</strong> 50ml Gin secco, 150ml Acqua tonica premium, Scorza di lime, Bacche di ginepro.<br />
-                <strong>Procedimento:</strong> Versare il gin su ghiaccio, aggiungere la tonica delicatamente per non rompere la carbonazione (e il codice).</p>
+                  <h3>Gin(t) Commit -m "Refreshing"</h3>
+                  <p>Il classico per chiudere la giornata lavorativa.<br />
+                  <strong>Ingredienti:</strong> 50ml Gin secco, 150ml Acqua tonica premium, Scorza di lime, Bacche di ginepro.<br />
+                  <strong>Procedimento:</strong> Versare il gin su ghiaccio, aggiungere la tonica delicatamente per non rompere la carbonazione (e il codice).</p>
 
-                <hr />
+                  <hr />
 
-                <h3>Dark Mode (Espresso Martini)</h3>
-                <p>Elegante, scuro e ti tiene sveglio.<br />
-                <strong>Ingredienti:</strong> 50ml Vodka, 30ml Liquore al caffè (Kahlúa), 1 tazzina di espresso fresco, Chicchi di caffè per decorazione.<br />
-                <strong>Procedimento:</strong> Shakerare energicamente con ghiaccio per creare la schiuma perfetta.</p>
+                  <h3>Dark Mode (Espresso Martini)</h3>
+                  <p>Elegante, scuro e ti tiene sveglio.<br />
+                  <strong>Ingredienti:</strong> 50ml Vodka, 30ml Liquore al caffè (Kahlúa), 1 tazzina di espresso fresco, Chicchi di caffè per decorazione.<br />
+                  <strong>Procedimento:</strong> Shakerare energicamente con ghiaccio per creare la schiuma perfetta.</p>
 
-                <hr />
+                  <hr />
 
-                <h3>Firewall (Spicy Margarita)</h3>
-                <p>Blocca la noia con un tocco piccante.<br />
-                <strong>Ingredienti:</strong> 50ml Tequila, 25ml Lime fresco, 15ml Sciroppo di Agave, 2 fettine di Jalapeño.<br />
-                <strong>Procedimento:</strong> Shakerare con ghiaccio, servire in bicchiere con bordo di sale e peperoncino.</p>
-             </article>
+                  <h3>Firewall (Spicy Margarita)</h3>
+                  <p>Blocca la noia con un tocco piccante.<br />
+                  <strong>Ingredienti:</strong> 50ml Tequila, 25ml Lime fresco, 15ml Sciroppo di Agave, 2 fettine di Jalapeño.<br />
+                  <strong>Procedimento:</strong> Shakerare con ghiaccio, servire in bicchiere con bordo di sale e peperoncino.</p>
+               </article>
+
+            </div>
+
+            {/* SIDEBAR (Colonna Destra) */}
+            <div id="sidebar" className="col-4 col-12-medium">
+
+              {/* I Grandi Classici */}
+              <section>
+                <ul className="divided">
+                  <li>
+                    <article className="box highlight">
+                      <header><h3><Link to="/cocktail-classici">Torna alle origini</Link></h3></header>
+                      <p>Preferisci i sapori tradizionali? Ho raccolto qui i grandi classici IBA e le ricette senza tempo.</p>
+                      <Link to="/cocktail-classici" className="button icon solid fa-glass-martini-alt">I Grandi Classici</Link>
+                    </article>
+                  </li>
+                </ul>
+              </section>
+            
+            </div>
 
           </div>
         </div>
