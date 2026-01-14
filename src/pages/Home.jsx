@@ -97,12 +97,12 @@ const Home = () => {
                     margin: 0
                   }}>
                     <li style={{ padding: '5px 20px', borderTop: 'none' }}>
-                      <Link to="/hobby#recipes" style={{ display: 'block', color: '#444', textDecoration: 'none' }}>
+                      <Link to="/ricette" style={{ display: 'block', color: '#444', textDecoration: 'none' }}>
                         Ricette di Mamma Niky
                       </Link>
                     </li>
                     <li style={{ padding: '5px 20px', borderTop: '1px solid #eee' }}>
-                      <Link to="/hobby#cocktails" style={{ display: 'block', color: '#444', textDecoration: 'none' }}>
+                      <Link to="/cocktail" style={{ display: 'block', color: '#444', textDecoration: 'none' }}>
                         I miei Cocktail
                       </Link>
                     </li>
@@ -239,9 +239,11 @@ const Home = () => {
                 <ul className="divided">
                   <li>
                     <article className="box highlight">
-                      <header><h3><Link to="/hobby">Non solo codice...</Link></h3></header>
+                      <header><h3><Link to="/ricette">Non solo codice...</Link></h3></header>
                       <p>Quando non sono al terminale, mi dedico alla cucina e alla mixology. Scopri le mie ricette e i miei cocktail.</p>
-                      <Link to="/hobby" className="button icon solid fa-utensils">Vai alle Ricette & Cocktail</Link>
+                      <Link to="/ricette" className="button icon solid fa-utensils">Vai alle Ricette</Link>
+                      <br /><br />
+                      <Link to="/cocktail" className="button icon solid fa-glass-martini">Vai ai Cocktail</Link>
                     </article>
                   </li>
                 </ul>
@@ -251,7 +253,7 @@ const Home = () => {
                   <li>
                     <article className="box highlight">
                       <header><h3><a href="#">Soft Skills</a></h3></header>
-                      <p>- Improvvisazione e flessibilità mentale.<br />- Gestione efficace dello stress.<br />- Problem solving autonomo.</p>
+                      <p>- Improvvisazione e flessibilità mentale.<br />- Gestione efficace dello stress che si riassume come "immunità all'ansia".<br />- Problem solving autonomo.</p>
                     </article>
                   </li>
                 </ul>
@@ -262,7 +264,7 @@ const Home = () => {
                     <article className="box highlight" style={{ textAlign: 'center' }}>
                       <header><h3><a href="#">Curriculum Vitae</a></h3></header>
                       <p>Scarica il documento completo.</p>
-                      <a href="../../public/assets/cv/cv_arcari_nicholas.pdf" className="button icon solid fa-download" download>Scarica CV (PDF)</a>
+                      <a href="assets/cv/cv_arcari_nicholas.pdf" className="button icon solid fa-download" download>Scarica CV (PDF)</a>
                     </article>
                   </li>
                 </ul>
@@ -283,9 +285,11 @@ const Home = () => {
             
             <div className="col-12 col-12-medium" style={{ textAlign: 'center' }}>
               <section>
+                {/*
                 <p style={{ fontSize: '1.2em', marginBottom: '2em' }}>
                   Contattami per collaborazioni in ambito Sviluppo Web Fullstack o progetti di Cybersecurity.
                 </p>
+                */}
                 
                 {/* Contenitore contatti centrato */}
                 <div style={{ display: 'inline-block', textAlign: 'center' }}>
@@ -302,6 +306,16 @@ const Home = () => {
                     </li>
                     <li className="icon solid fa-envelope" style={{ marginBottom: '1em', display: 'flex', alignItems: 'center' }}>
                       <a href="mailto:arcari.nicholaso@gmail.com" style={{ marginLeft: '15px' }}>arcari.nicholas0@gmail.com</a>
+                    </li>
+                    <li className="icon brands fa-instagram" style={{ marginBottom: '1em', display: 'flex', alignItems: 'center' }}>
+                      <a href="https://www.instagram.com/diokaneki_/" target="_blank" rel="noreferrer" style={{ marginLeft: '15px' }}>
+                        @diokaneki_
+                      </a>
+                    </li>
+                    <li className="icon brands fa-instagram" style={{ display: 'flex', alignItems: 'center' }}>
+                      <a href="https://www.instagram.com/nicholas.arcari/" target="_blank" rel="noreferrer" style={{ marginLeft: '15px' }}>
+                        @nicholas.arcari
+                      </a>
                     </li>
                     <li className="icon brands fa-github" style={{ display: 'flex', alignItems: 'center' }}>
                       <a href="https://github.com/Nicholas-Arcari" style={{ marginLeft: '15px' }}>github.com/Nicholas-Arcari</a>
