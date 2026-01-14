@@ -21,39 +21,148 @@ const Stampe3d = () => {
   // 1. LISTA PROGETTI ESEGUITI
   const executedProjects = [
     {
-      title: "Cookiecutter",
-      description: "Formine per biscotti personalizzate e a tema.",
+      title: "Cookie cutter",
+      description: "Formine per biscotti personalizzate e a tema",
       material: "PLA Nero Opaco (Food Safe)",
       image: "images/pic07.jpg" 
     },
     {
-      title: "Braccio destro cyberpunk",
-      description: "Prop dettagliato per cosplay, assemblato in più parti e dipinto.",
+      title: "Braccio dx Cyberpunk lame manitide",
+      description: "Prop dettagliato per cosplay, assemblato in più parti e dipinto",
       material: "PLA Bianco + Primer e Acrilici",
       image: "images/pic07.jpg"
     },
     {
       title: "Action Figure Denji",
-      description: "Modello artistico di un personaggio iconico, post-prodotto e dipinto a mano.",
+      description: "Modello artistico di un personaggio iconico, post-prodotto e dipinto a mano",
       material: "PLA Bianco + Primer e Acrilici",
       image: "images/pic07.jpg"
-    }
+    },
+    {
+      title: "Action Figure Kakashi",
+      description: "Modello artistico di un personaggio iconico, post-prodotto e dipinto a mano",
+      material: "PLA Bianco + Primer e Acrilici",
+      image: "images/pic07.jpg"
+    },
+    {
+      title: "Action Figure Mimikyu",
+      description: "Modello artistico di un personaggio iconico, post-prodotto e dipinto a mano",
+      material: "PLA Bianco + Primer e Acrilici",
+      image: "images/pic07.jpg"
+    },
+    {
+      title: "Case Custom per Raspberry Pi",
+      description: "Case ventilato con alloggiamento per SSD NVMe e schermo OLED integrato",
+      material: "PLA+ o ASA",
+      image: "images/pic07.jpg"
+    },
+    {
+      title: "Sponge Bed with Pillows",
+      description: "Letto in miniatura per spugna da cucina per lavare i piatti",
+      material: "PLA+ o ASA",
+      image: "images/pic07.jpg"
+    },
+    {
+      title: "Action Figure Kuromi",
+      description: "Modello artistico di un personaggio iconico, post-prodotto e dipinto a mano",
+      material: "PLA",
+      image: "images/pic07.jpg"
+    },
+    {
+      title: "Aperol Spritz LED Sign",
+      description: "Lampada a LED a tema Aperol Spritz per illuminare le serate estive",
+      material: "PLA+",
+      image: "images/pic07.jpg"
+    },
+    {
+      title: "Elucidator sword",
+      description: "Spada iconica di Sword Art Online, stampata in più parti e assemblata",
+      material: "PLA",
+      image: "images/pic07.jpg"
+    },
   ];
 
   // 2. LISTA PROGETTI DA ESEGUIRE
   const futureProjects = [
     {
       title: "Cane robotico programmabile",
-      description: "Progetto complesso che integra stampa 3D e motori passo-passo controllati da Arduino.",
+      description: "Progetto complesso che integra stampa 3D e motori passo-passo controllati da Arduino. https://www.instructables.com/GoodBoy-3D-Printed-Arduino-Robot-Dog/",
       material: "PETG / ABS (per resistenza meccanica)",
+      image: "images/stampa1.jpg"
+    },
+    {
+      title: "Emmi Metroid Dread",
+      description: "https://www.thingiverse.com/thing:5254236",
+      material: "PLA+ o ASA",
       image: "images/pic06.jpg"
     },
     {
-      title: "Case Custom per Raspberry Pi",
-      description: "Case ventilato con alloggiamento per SSD NVMe e schermo OLED integrato.",
+      title: "DreamOfProps for Trauma Team Helmet",
+      description: "https://www.thingiverse.com/thing:4897526",
       material: "PLA+ o ASA",
       image: "images/pic06.jpg"
+    },
+    {
+      title: "Daedric Armor split for smaller printers",
+      description: "https://www.thingiverse.com/thing:3581525",
+      material: "PLA+ o ASA",
+      image: "images/pic06.jpg"
+    },
+    {
+      title: "Tea Dispenser (top-mounted)",
+      description: "https://www.thingiverse.com/thing:4763805",
+      material: "PLA+ o ASA",
+      image: "images/pic06.jpg"
+    },
+    {
+      title: "Iron Man MK6 MK 6 Suit",
+      description: "https://www.thingiverse.com/thing:1779274",
+      material: "PLA+ o ASA",
+      image: "images/pic06.jpg"
+    },
+    {
+      title: "Hestia Knife with Hieroglyphics",
+      description: "https://www.thingiverse.com/thing:5185347",
+      material: "PLA+ o ASA",
+      image: "images/pic06.jpg"
+    },
+    {
+      title: "Jack Daniel's coasters",
+      description: "Sottobicchiere a tema Jack Daniel's",
+      material: "PLA",
+      image: "images/pic06.jpg"
+    },
+    {
+      title: "'wearable' T60b Power Armor from Fallout 4",
+      description: "Armatura alta più di 2 metri indossabile per affrontare al meglio la zona contaminata",
+      material: "PLA+",
+      image: "images/pic06.jpg"
+    },
+    {
+      title: "Iron Man Helmet, Articulated, Wearable",
+      description: "Maschera di Iron programmabile in Arduino",
+      material: "PLA",
+      image: "images/pic06.jpg"
+    },
+    {
+      title: "Tazzina da basket gioco",
+      description: "Canestro da basket con una clip regolabile che si adatta alla maggior parte delle tazze in modo da giocare a fare canestro nella tazza con i vostri cereali o biscotti preferiti",
+      material: "PLA",
+      image: "images/pic06.jpg"
+    },
+    {
+      title: "Cyberpunk Mecha Sci-fi Bonsai",
+      description: "Bonsai in stile cyberpunk con dettagli mecha e futuristici",
+      material: "PLA+",
+      image: "images/stampa2.jpg"
+    },
+    {
+      title: "Cyberpunk 2077 Ottiche Kiroshi",
+      description: "CHOOMS! Che siate in giro per una notte in città a Night City, o che stiate prendendo d'assalto la torre Arasaka, è meglio avere le migliori ottiche che si possano comprare, e niente batte Kiroshi.",
+      material: "PLA+",
+      image: "images/stampa3.jpg"
     }
+    
   ];
 
   // --- FILTRI ---
