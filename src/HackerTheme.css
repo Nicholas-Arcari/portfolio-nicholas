@@ -1,9 +1,7 @@
-/* src/HackerTheme.css */
+/* src/HackerTheme.css - Versione Pulita */
 
-/* --- RIMOSSO TUTTO IL TEMA SCURO --- */
-/* Il layout e i colori ora verranno gestiti 
-   direttamente dal file originale assets/css/main.css 
-   che hai già incluso nel tuo index.html */
+/* Nessuna regola per body, header o banner qui! 
+   Lasciamo fare tutto al file main.css originale. */
 
 /* --- STILE UNICO PER EFFETTO TERMINALE --- */
 .terminal-container {
@@ -16,11 +14,12 @@
     white-space: pre-wrap;
 }
 
+/* Cursore lampeggiante */
 .cursor {
     display: inline-block;
     width: 10px;
     height: 1em;
-    background-color: #444; /* Colore cursore abbinato al testo */
+    background-color: #444;
     vertical-align: middle;
     animation: blink 1s infinite;
 }
