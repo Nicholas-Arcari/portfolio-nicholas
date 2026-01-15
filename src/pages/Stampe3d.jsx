@@ -21,69 +21,69 @@ const Stampe3d = () => {
   // 1. LISTA PROGETTI ESEGUITI
   const executedProjects = [
     {
-      title: "Cookie cutter",
-      description: "Formine per biscotti personalizzate e a tema",
+      title: "Cookie Cutter Set",
+      description: "Set di formine per biscotti personalizzate.",
       material: "PLA Nero Opaco (Food Safe)",
       image: "images/stampa/" 
     },
     {
-      title: "Braccio Cyberpunk lame manitide",
-      description: "Modello dimensione reale 1:1, assemblato in più parti e dipinto",
+      title: "Mantis Blades (Cyberpunk 2077)",
+      description: "Replica in scala 1:1 delle iconiche lame retrattili. Assemblaggio multi-parte con finitura metallizzata e weathering.",
       material: "PLA Bianco + Primer e Acrilici",
       image: "images/stampa/stampa16.jpg"
     },
     {
-      title: "Action Figure Denji",
-      description: "Modello artistico di un personaggio iconico, post-prodotto e dipinto a mano",
+      title: "Action Figure: Denji (Chainsaw Man)",
+      description: "Statuetta dettagliata del protagonista di Chainsaw Man. Post-produzione intensiva per levigare i layer e pittura a mano.",
       material: "PLA Bianco + Primer e Acrilici",
       image: "images/stampa/stampa3.jpg"
     },
     {
-      title: "Action Figure Kakashi",
-      description: "Modello artistico di un personaggio iconico, post-prodotto e dipinto a mano",
+      title: "Action Figure: Kakashi Hatake",
+      description: "Diorama dinamico del ninja copia. Cura particolare nella pittura delle texture dei tessuti e dell'effetto Chidori.",
       material: "PLA Bianco + Primer e Acrilici",
       image: "images/stampa/"
     },
     {
-      title: "Action Figure Mimikyu",
-      description: "Modello artistico di un personaggio iconico, post-prodotto e dipinto a mano",
+      title: "Action Figure: Mimikyu",
+      description: "Modello 'life-size' del Pokémon fantasma. Finitura opaca per simulare l'effetto tessuto del costume.",
       material: "PLA Bianco + Primer e Acrilici",
       image: "images/stampa/"
     },
     {
-      title: "Case Custom per Raspberry Pi",
-      description: "Case ventilato con alloggiamento per SSD NVMe e schermo OLED integrato",
+      title: "Raspberry Pi Ultimate Case",
+      description: "Case custom progettato per massimizzare il flusso d'aria. Include alloggiamenti per SSD NVMe e display OLED di stato.",
       material: "PLA+ o ASA",
       image: "images/stampa/stampa11.jpg"
     },
     {
-      title: "Sponge Bed with Pillows",
-      description: "Letto in miniatura per spugna da cucina per lavare i piatti",
+      title: "Sponge Bed",
+      description: "Accessorio funzionale e ironico per la cucina: un letto in miniatura che permette alla spugna di asciugarsi correttamente.",
       material: "PLA+ o ASA",
       image: "images/stampa/stampa19.jpg"
     },
     {
-      title: "Action Figure Kuromi",
-      description: "Modello artistico di un personaggio iconico, post-prodotto e dipinto a mano",
+      title: "Action Figure: Kuromi",
+      description: "Personaggio stampato ad alta risoluzione. Colori acrilici vivaci e sigillante lucido per un look 'vinyl toy'.",
       material: "PLA",
       image: "images/stampa/stampa18.jpg"
     },
     {
-      title: "Aperol Spritz LED Sign",
-      description: "Lampada a LED a tema Aperol Spritz per illuminare le serate estive",
-      material: "PLA+",
+      title: "Aperol Spritz Neon Sign",
+      description: "Insegna luminosa a LED personalizzata. Design a strati per diffondere la luce arancione tipica del cocktail.",
+      material: "PLA+ Traslucido e Opaco",
       image: "images/stampa/stampa7.jpg"
     },
     {
-      title: "Hestia knife",
-      description: "coltello ispirato a Danmachi, con dettagli accurati e finiture realistiche",
+      title: "Hestia Knife (DanMachi)",
+      description: "Replica fedele del pugnale divino, con incisioni delle rune geroglifiche dipinte a mano.",
       material: "PLA",
       image: "images/stampa/stampa5.jpg"
     },
     {
-      title: "Herb planter with auto-watering system",
-      description: "Piccolo vaso per erbe aromatiche con sistema di auto-irrigazione integrato",
-      material: "PLA",
+      title: "Self-Watering Planter",
+      description: "Vaso per erbe aromatiche con serbatoio d'acqua integrato e sistema di capillarità per ridurre la frequenza di innaffiatura.",
+      material: "PLA (Watertight setting)",
       image: "images/stampa/stampa13.jpg"
     },
   ];
@@ -91,78 +91,77 @@ const Stampe3d = () => {
   // 2. LISTA PROGETTI DA ESEGUIRE
   const futureProjects = [
     {
-      title: "Cane robotico programmabile",
-      description: "Progetto complesso che integra stampa 3D e motori passo-passo controllati da Arduino. https://www.instructables.com/GoodBoy-3D-Printed-Arduino-Robot-Dog/",
+      title: "Robot Dog Open Source",
+      description: "Progetto avanzato di robotica: quadrupede stampato in 3D con 12 gradi di libertà, gestito da Arduino e servi ad alta coppia.",
       material: "PETG / ABS (per resistenza meccanica)",
       image: "images/stampa/stampa1.jpg"
     },
     {
-      title: "Emmi Metroid Dread",
-      description: "Robot ispirato a Metroid Dread, con articolazioni mobili e dettagli precisi programmabili via Arduino",
-      material: "PLA",
+      title: "E.M.M.I. (Metroid Dread)",
+      description: "Modello articolato complesso del robot inseguitore. Richiede tolleranze precise per le giunture posabili.",
+      material: "PLA / TPU (per giunti flessibili)",
       image: "images/stampa/stampa17.jpg"
     },
     {
-      title: "DreamOfProps for Trauma Team Helmet",
-      description: "Elmo futuristico ispirato a Trauma Team in Cyberpunk 2077",
-      material: "PLA",
+      title: "Trauma Team Helmet",
+      description: "Casco integrale ispirato ai medici tattici di Cyberpunk 2077. Progettato per essere indossabile con elettronica interna.",
+      material: "PLA (rinforzato internamente)",
       image: "images/stampa/stampa10.jpg"
     },
     {
-      title: "Daedric Armor split for smaller printers",
-      description: "Armatura Daedric da The Elder Scrolls V: Skyrim, progettata per essere stampata in più parti e indossata",
+      title: "Daedric Armor (Skyrim)",
+      description: "Armatura completa Daedrica. Un progetto a lungo termine diviso in decine di parti ottimizzate per stampanti FDM.",
       material: "PLA",
       image: "images/stampa/stampa2.jpg"
     },
     {
-      title: "Tea Dispenser (top-mounted)",
-      description: "Dispenser carino per bustine di tè",
+      title: "Tea Dispenser Verticale",
+      description: "Organizzatore a gravità per bustine di tè. Design compatto per ottimizzare lo spazio in dispensa.",
       material: "PLA",
       image: "images/stampa/stampa20.jpg"
     },
     {
-      title: "Iron Man MK6 MK 6 Suit",
-      description: "Armatura completa di iron man programmabile in Arduino",
-      material: "PLA",
+      title: "Iron Man MK6 Suit",
+      description: "Armatura completa in scala 1:1. Include alloggiamenti per servomotori per l'apertura automatica del casco e dei flap.",
+      material: "PLA+ (per resistenza agli urti)",
       image: "images/stampa/stampa4.jpg"
     },
     {
-      title: "Jack Daniel's coasters",
-      description: "Sottobicchiere a tema Jack Daniel's",
-      material: "PLA",
+      title: "Jack Daniel's Coasters",
+      description: "Set di sottobicchieri tematici con design in rilievo e cambio colore al layer.",
+      material: "PLA / TPU",
       image: "images/stampa/stampa6.jpg"
     },
     {
-      title: "'wearable' T60b Power Armor from Fallout 4",
-      description: "Armatura alta più di 2 metri indossabile per affrontare al meglio la zona contaminata",
-      material: "PLA+",
+      title: "T-60b Power Armor (Fallout 4)",
+      description: "Il progetto definitivo: armatura alta oltre 2 metri, indossabile, con esoscheletro di supporto interno.",
+      material: "PLA+ (kg stimati: 25+)",
       image: "images/stampa/stampa9.jpg"
     },
     {
-      title: "Iron Man Helmet, Articulated, Wearable",
-      description: "Maschera di Iron programmabile in Arduino",
-      material: "PLA",
+      title: "Iron Man Helmet (Motorized)",
+      description: "Casco stand-alone con faceplate motorizzata controllata da Arduino e sensori vocali/tattili.",
+      material: "PLA Silk (effetto metallico)",
       image: "images/stampa/stampa8.jpg"
     },
     {
-      title: "Tazzina da basket gioco",
-      description: "Canestro da basket con una clip regolabile che si adatta alla maggior parte delle tazze in modo da giocare a fare canestro nella tazza con i vostri cereali o biscotti preferiti",
+      title: "Mug Basketball Hoop",
+      description: "Gadget da ufficio: un mini canestro a clip adattabile a qualsiasi tazza per lanciare zollette o cereali.",
       material: "PLA",
       image: "images/stampa/stampa15.jpg"
     },
     {
-      title: "Cyberpunk Mecha Sci-fi Bonsai",
-      description: "Bonsai in stile cyberpunk con dettagli mecha e futuristici",
-      material: "PLA+",
+      title: "Cyberpunk Sci-Fi Bonsai",
+      description: "Fusione tra natura e tecnologia: un bonsai artificiale con elementi mecha, cavi e illuminazione LED integrata.",
+      material: "PLA Wood (tronco) & PLA Neon",
       image: "images/stampa/stampa12.jpg"
     },
     {
-      title: "Cyberpunk 2077 Ottiche Kiroshi",
+      title: "Kiroshi Optics Replica",
       description: "CHOOMS! Che siate in giro per una notte in città a Night City, o che stiate prendendo d'assalto la torre Arasaka, è meglio avere le migliori ottiche che si possano comprare, e niente batte Kiroshi.",
       material: "PLA+",
       image: "images/stampa/stampa14.jpg"
     }
-    
   ];
 
   // --- FILTRI ---
