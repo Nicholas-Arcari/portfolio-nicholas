@@ -7,6 +7,8 @@ import Cocktail from './pages/Cocktail';
 import Cocktail_classici from './pages/Cocktail_classici';
 import Stampe3d from './pages/Stampe3d';
 import Pizze from './pages/Pizze';
+import FreelanceDetails from './pages/FreelanceDetails';
+import UniversityDetails from './pages/UniversityDetails';
 import TemplateScripts from './components/TemplateScripts';
 import './HackerTheme.css';
 
@@ -22,6 +24,8 @@ function App() {
         <Route path="/cocktail" element={<Cocktail />} />
         <Route path="/cocktail-classici" element={<Cocktail_classici />} />
         <Route path="/stampe3d" element={<Stampe3d />} />
+        <Route path="/freelance-details" element={<FreelanceDetails />} />
+        <Route path="/university-details" element={<UniversityDetails />} />
       </Routes>
     </>
   );

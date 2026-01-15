@@ -43,7 +43,7 @@ const Home = () => {
                 <Link className="icon solid fa-home" to="/"><span>Home</span></Link>
               </li>
               
-              {/* Link Profilo */}
+              {/* Link Profilo con Scroll funzionante */}
               <li>
                 <a 
                   className="icon solid fa-user" 
@@ -54,7 +54,7 @@ const Home = () => {
                 </a>
               </li>
               
-              {/* Link Esperienza */}
+              {/* Link Esperienza con Scroll funzionante */}
               <li>
                 <a 
                   className="icon solid fa-briefcase" 
@@ -65,11 +65,11 @@ const Home = () => {
                 </a>
               </li>
               
-              {/* MENU A TENDINA PASSIONI */}
+              {/* MENU A TENDINA PASSIONI (Gestito da React) */}
               <li 
                 onMouseEnter={() => setIsDropdownOpen(true)}
                 onMouseLeave={() => setIsDropdownOpen(false)}
-                style={{ position: 'relative' }}
+                style={{ position: 'relative' }} // Necessario per posizionare il sottomenu
               >
                 <a 
                   className="icon solid fa-glass-cheers" 
@@ -173,7 +173,9 @@ const Home = () => {
               
               <article className="box post">
                 <header><h2><a href="#">Esperienze di <strong>Lavoro</strong></a></h2></header>
+                
                 <h3>Freelance Fullstack Web Developer (2025 - Oggi)</h3>
+                
                 <p>
                   Sviluppo di una piattaforma gestionale Fullstack per la <strong>digitalizzazione e l'automazione integrale dei processi aziendali</strong>, 
                   dal reparto amministrativo fino alla linea di produzione.
@@ -181,10 +183,24 @@ const Home = () => {
                   Il progetto ha previsto la migrazione da sistemi legacy ad un'architettura web containerizzata sicura, 
                   gestendo ordini, calcoli complessi e generando output diretti per i macchinari industriali.
                 </p>
+                
+                <p style={{ fontSize: '0.9em', color: '#666', borderLeft: '3px solid #ddd', paddingLeft: '10px' }}>
+                  <strong>Tech Stack:</strong> Backend (PHP, Python, Laravel 12+), Frontend (React, Vite), 
+                  Database (MySQL, PhpMyAdmin), DevOps (Docker, Kubernetes).
+                </p>
+
+                {/* BOTTONE VIEW MORE FREELANCE */}
+                <Link to="/freelance-details" className="button icon solid fa-arrow-circle-right" style={{ marginTop: '10px', marginBottom: '20px' }}>
+                  Vedi Dettagli Progetto
+                </Link>
+
                 <h3>Esperienze Precedenti</h3>
                 <ul>
-                  <li><strong>Guardia Giurata (G.P.G.), CoopService (2023-2024):</strong> Attività di presidio e coordinamento in contesti sensibili.</li>
-                  <li><strong>Magazziniere, GLS (2021-2022):</strong> Supporto logistica e gestione carichi.</li>
+                  <li><strong>Guardia Giurata (G.P.G.), CoopService, Parma (2023-2024):</strong> Gestione di situazioni ad alta responsabilità e collaborazione con personale sanitario
+e pubblico. Attività di presidio, coordinamento e controllo accessi in contesti sensibili.</li>
+                  <li><strong>Operaio stagionale, Rodolfi Mansueto, Castelguelfo (2023):</strong> Produzione di vari tipi di passate di pomodoro durante le sue differenti fasi: pulizia,
+cottura, accatastamento in bancali.</li>
+                  <li><strong>Magazziniere, GLS, Fidenza (2021-2022):</strong> Lavoro di squadra in attività di logistica, smistamento pacchi e coordinamento carichi.</li>
                 </ul>
               </article>
 
@@ -222,6 +238,12 @@ const Home = () => {
                     <article className="box excerpt">
                       <header><span className="date">2021 - 2025</span><h3><a href="#">Università di Parma</a></h3></header>
                       <p>Laurea Triennale in Scienze Informatiche.<br />Voto: <strong>90/110</strong>.</p>
+                      
+                      {/* BOTTONE VIEW MORE UNIVERSITA */}
+                      <Link to="/university-details" className="button icon solid fa-arrow-circle-right" style={{ marginTop: '10px' }}>
+                        Dettagli Accademici
+                      </Link>
+
                     </article>
                   </li>
                   <li>
@@ -295,11 +317,6 @@ const Home = () => {
             
             <div className="col-12 col-12-medium" style={{ textAlign: 'center' }}>
               <section>
-                {/*
-                <p style={{ fontSize: '1.2em', marginBottom: '2em' }}>
-                  Contattami per collaborazioni in ambito Sviluppo Web Fullstack o progetti di Cybersecurity.
-                </p>
-                */}
                 
                 {/* Contenitore contatti centrato */}
                 <div style={{ display: 'inline-block', textAlign: 'center' }}>
