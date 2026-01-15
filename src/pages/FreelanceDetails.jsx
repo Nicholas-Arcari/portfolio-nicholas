@@ -84,7 +84,7 @@ const FreelanceDetails = () => {
                   {/* KPI */}
                   <div className="row aln-center" style={{ margin: '2em 0', alignItems: 'flex-start' }}>
                     
-                    <div className="col-4 col-12-small">
+                    <div className="col-4 col-12-small" style={{ textAlign: 'left' }}>
                         <h3 style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.2em', lineHeight: '1' }}>-99%</h3>
                         <p style={{ margin: 0, lineHeight: '1.2' }}>Tempo Elaborazione<br />Commessa</p>
                     </div>
