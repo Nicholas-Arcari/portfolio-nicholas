@@ -194,13 +194,15 @@ const Home = () => {
                   Vedi Dettagli Progetto
                 </Link>
 
+                <hr />
+
                 <h3>Esperienze Precedenti</h3>
                 <ul>
-                  <li><strong>Guardia Giurata (G.P.G.), CoopService, Parma (2023-2024):</strong> Gestione di situazioni ad alta responsabilità e collaborazione con personale sanitario
+                  <li><strong>Guardia Giurata (G.P.G.), CoopService, Parma (2023-2024)</strong><br />Gestione di situazioni ad alta responsabilità e collaborazione con personale sanitario
 e pubblico. Attività di presidio, coordinamento e controllo accessi in contesti sensibili.</li>
-                  <li><strong>Operaio stagionale, Rodolfi Mansueto, Castelguelfo (2023):</strong> Produzione di vari tipi di passate di pomodoro durante le sue differenti fasi: pulizia,
+                  <li><strong>Operaio stagionale, Rodolfi Mansueto, Castelguelfo (2023)</strong><br />Produzione di vari tipi di passate di pomodoro durante le sue differenti fasi: pulizia,
 cottura, accatastamento in bancali.</li>
-                  <li><strong>Magazziniere, GLS, Fidenza (2021-2022):</strong> Lavoro di squadra in attività di logistica, smistamento pacchi e coordinamento carichi.</li>
+                  <li><strong>Magazziniere, GLS, Fidenza (2021-2022)</strong><br />Lavoro di squadra in attività di logistica, smistamento pacchi e coordinamento carichi.</li>
                 </ul>
               </article>
 
