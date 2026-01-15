@@ -54,8 +54,8 @@ const FreelanceDetails = () => {
                     backgroundColor: '#fff', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', borderRadius: '4px', 
                     padding: '10px 0', minWidth: '200px', zIndex: 1000, listStyle: 'none', margin: 0
                   }}>
-                    <li style={{ padding: '5px 20px', borderTop: 'none' }}><Link to="/ricette" style={{ display: 'block', color: '#444' }}>Ricette</Link></li>
-                    <li style={{ padding: '5px 20px', borderTop: '1px solid #eee' }}><Link to="/cocktail" style={{ display: 'block', color: '#444' }}>Cocktail</Link></li>
+                    <li style={{ padding: '5px 20px', borderTop: 'none' }}><Link to="/ricette" style={{ display: 'block', color: '#444' }}>Ricette di Mamma Niky</Link></li>
+                    <li style={{ padding: '5px 20px', borderTop: '1px solid #eee' }}><Link to="/cocktail" style={{ display: 'block', color: '#444' }}>I miei Cocktail</Link></li>
                     <li style={{ padding: '5px 20px', borderTop: '1px solid #eee' }}><Link to="/stampe3d" style={{ display: 'block', color: '#444' }}>Stampe 3D</Link></li>
                   </ul>
                 )}
@@ -81,20 +81,20 @@ const FreelanceDetails = () => {
                     <p>Piattaforma gestionale Fullstack per l'industria manifatturiera. Sostituisce un sistema legacy in VBA con un'architettura moderna, integrando AI e algoritmi di ottimizzazione.</p>
                   </header>
                   
-                  {/* KPI*/}
-                  <div className="row aln-center" style={{ margin: '2em 0', textAlign: 'center', alignItems: 'flex-start' }}>
+                  {/* KPI */}
+                  <div className="row aln-center" style={{ margin: '2em 0', alignItems: 'flex-start' }}>
                     
                     <div className="col-4 col-12-small">
                         <h3 style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.2em', lineHeight: '1' }}>-99%</h3>
                         <p style={{ margin: 0, lineHeight: '1.2' }}>Tempo Elaborazione<br />Commessa</p>
                     </div>
                     
-                    <div className="col-4 col-12-small">
+                    <div className="col-4 col-12-small" style={{ textAlign: 'center' }}>
                         <h3 style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.2em', lineHeight: '1' }}>AI</h3>
                         <p style={{ margin: 0, lineHeight: '1.2' }}>Lettura Automatica<br />Schede</p>
                     </div>
                     
-                    <div className="col-4 col-12-small">
+                    <div className="col-4 col-12-small" style={{ textAlign: 'right' }}>
                         <h3 style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.2em', lineHeight: '1' }}>4.0 & 5.0</h3>
                         <p style={{ margin: 0, lineHeight: '1.2' }}>Integrazione<br />Macchinari</p>
                     </div>
