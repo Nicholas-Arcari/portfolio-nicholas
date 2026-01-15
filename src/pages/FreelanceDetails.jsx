@@ -81,23 +81,27 @@ const FreelanceDetails = () => {
                     <p>Piattaforma gestionale Fullstack per l'industria manifatturiera. Sostituisce un sistema legacy in VBA con un'architettura moderna, integrando AI e algoritmi di ottimizzazione.</p>
                   </header>
                   
-                  {/* KPI */}
-                  <div className="row aln-center" style={{ margin: '2em 0', textAlign: 'center' }}>
+                  {/* KPI*/}
+                  <div className="row aln-center" style={{ margin: '2em 0', textAlign: 'center', alignItems: 'flex-start' }}>
+                    
                     <div className="col-4 col-12-small">
-                        <h3 style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0' }}>-99%</h3>
-                        <p>Tempo Elaborazione Commessa</p>
+                        <h3 style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.2em', lineHeight: '1' }}>-99%</h3>
+                        <p style={{ margin: 0, lineHeight: '1.2' }}>Tempo Elaborazione<br />Commessa</p>
                     </div>
+                    
                     <div className="col-4 col-12-small">
-                        <h3 style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0' }}>AI</h3>
-                        <p>Lettura Automatica Schede</p>
+                        <h3 style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.2em', lineHeight: '1' }}>AI</h3>
+                        <p style={{ margin: 0, lineHeight: '1.2' }}>Lettura Automatica<br />Schede</p>
                     </div>
+                    
                     <div className="col-4 col-12-small">
-                        <h3 style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0' }}>4.0 & 5.0</h3>
-                        <p>Integrazione Macchinari</p>
+                        <h3 style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.2em', lineHeight: '1' }}>4.0 & 5.0</h3>
+                        <p style={{ margin: 0, lineHeight: '1.2' }}>Integrazione<br />Macchinari</p>
                     </div>
+
                   </div>
 
-                  <hr />
+                  <hr /><br />
 
                   <h3>1. Reparto Produzione: Il Cuore Operativo</h3>
                   <p>L'applicativo rivoluziona l'inserimento dati e la generazione degli output produttivi:</p>
@@ -118,7 +122,7 @@ const FreelanceDetails = () => {
                   <h4>Industria 4.0 & 5.0</h4>
                   <p>Al termine della computazione, il sistema invia i dati (tramite CSV formattati ad hoc) direttamente ai <strong>macchinari industriali</strong>. L'ordine di invio è personalizzabile dall'utente per ottimizzare lo spazio logistico in magazzino e i tempi macchina.</p>
 
-                  <hr />
+                  <br /><hr /><br />
 
                   <h3>2. Reparto Commerciale: Velocità di Esecuzione</h3>
                   <p>L'applicativo funge da CRM avanzato. La creazione di schede tecniche, preventivi e fatture è stata completamente automatizzata.</p>
@@ -126,7 +130,7 @@ const FreelanceDetails = () => {
                     "Processi che richiedevano giorni di lavoro manuale ora vengono completati in pochi minuti, permettendo al reparto vendite di rispondere istantaneamente alle richieste dei clienti."
                   </blockquote>
 
-                  <hr />
+                  <br /><hr /><br />
 
                   <h3>3. Reparto Amministrativo & Logistica</h3>
                   <p>L'amministrazione ha il controllo totale sui processi:</p>
@@ -137,7 +141,7 @@ const FreelanceDetails = () => {
                     <li><strong>Comunicazione:</strong> Integrazione con ProtonMail per comunicazioni criptate.</li>
                   </ul>
 
-                  <hr />
+                  <br /><hr /><br />
 
                   <h3>Sicurezza Enterprise (Defense in Depth)</h3>
                   <p>L'infrastruttura è blindata su più livelli:</p>
