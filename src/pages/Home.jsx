@@ -194,7 +194,7 @@ const Home = () => {
                   Vedi Dettagli Progetto
                 </Link>
 
-                <hr />
+                <br /><hr /><br />
 
                 <h3>Esperienze Precedenti</h3>
                 <ul>
@@ -256,15 +256,49 @@ cottura, accatastamento in bancali.</li>
                   </li>
                 </ul>
               </section>
+              {/* Sezione Certificazioni Arricchita */}
               <section>
                 <ul className="divided">
                   <li>
                     <article className="box highlight">
                       <header><h3><a href="#">Certificazioni</a></h3></header>
-                      <ul>
-                        <li><strong>Cisco CCNA 200-301</strong> (in corso)</li>
-                        <li><strong>CompTIA Security+ SY0-701</strong> (in preparazione)</li>
-                      </ul>
+                      
+                      {/* Cisco CCNA */}
+                      <div style={{ marginBottom: '1.5em' }}>
+                        <h4 style={{ marginBottom: '0.5em', fontSize: '1.1em' }}>
+                          <i className="icon solid fa-network-wired" style={{ marginRight: '10px', color: '#00bceb' }}></i>
+                          Cisco CCNA 200-301
+                        </h4>
+                        <p style={{ fontSize: '0.9em', marginBottom: '0.5em' }}>
+                          Fondamenti di rete, accesso IP, connettività IP, servizi IP, sicurezza e automazione.
+                        </p>
+                        {/* Progress Bar */}
+                        <div style={{ backgroundColor: '#e0e0e0', borderRadius: '5px', height: '10px', width: '100%' }}>
+                          <div style={{ backgroundColor: '#4caf50', width: '75%', height: '100%', borderRadius: '5px' }}></div>
+                        </div>
+                        <span style={{ fontSize: '0.8em', color: '#666', display: 'block', marginTop: '5px' }}>
+                          Stato: In Corso (60%)
+                        </span>
+                      </div>
+
+                      {/* CompTIA Security+ */}
+                      <div>
+                        <h4 style={{ marginBottom: '0.5em', fontSize: '1.1em' }}>
+                          <i className="icon solid fa-shield-alt" style={{ marginRight: '10px', color: '#ff3d3d' }}></i>
+                          CompTIA Security+ SY0-701
+                        </h4>
+                        <p style={{ fontSize: '0.9em', marginBottom: '0.5em' }}>
+                          Sicurezza aziendale, gestione del rischio, crittografia e risposta agli incidenti.
+                        </p>
+                        {/* Progress Bar */}
+                        <div style={{ backgroundColor: '#e0e0e0', borderRadius: '5px', height: '10px', width: '100%' }}>
+                          <div style={{ backgroundColor: '#ff9800', width: '30%', height: '100%', borderRadius: '5px' }}></div>
+                        </div>
+                        <span style={{ fontSize: '0.8em', color: '#666', display: 'block', marginTop: '5px' }}>
+                          Stato: In Preparazione (0%)
+                        </span>
+                      </div>
+
                     </article>
                   </li>
                 </ul>

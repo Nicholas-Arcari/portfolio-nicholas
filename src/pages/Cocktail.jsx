@@ -158,7 +158,7 @@ const Cocktail = () => {
             <div className="col-12">
                <article className="box post">
                   <header><h2>I miei <strong>Cocktail</strong></h2></header>
-                  <a href="#" className="image featured"><img src="/images/pic06.jpg" alt="Cocktails" /></a>
+                  <a href="#" className="image featured"><img src="images/img3.jpg" alt="Cocktails" /></a>
                   
                   <p>Algoritmi liquidi compilati al momento per l'ottimizzazione delle prestazioni sociali.</p>
 

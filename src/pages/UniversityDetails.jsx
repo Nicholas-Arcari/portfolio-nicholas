@@ -208,7 +208,7 @@ const UniversityDetails = () => {
                   {/* BARRA DI RICERCA */}
                   <input
                     type="text"
-                    placeholder="Cerca un esame o un argomento (es. Reti, Java, Algoritmi)..."
+                    placeholder="Cerca un esame o un argomento (es. Reti, Algoritmi)..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     style={{ 
