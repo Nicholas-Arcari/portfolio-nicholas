@@ -270,11 +270,11 @@ cottura, accatastamento in bancali.</li>
                           Cisco CCNA 200-301
                         </h4>
                         <p style={{ fontSize: '0.9em', marginBottom: '0.5em' }}>
-                          Fondamenti di rete, accesso IP, connettività IP, servizi IP, sicurezza e automazione.
+                          Competenza convalidata nella configurazione, gestione e troubleshooting di infrastrutture di rete enterprise, con focus su automazione e programmabilità.
                         </p>
                         {/* Progress Bar */}
                         <div style={{ backgroundColor: '#e0e0e0', borderRadius: '5px', height: '10px', width: '100%' }}>
-                          <div style={{ backgroundColor: '#4caf50', width: '75%', height: '100%', borderRadius: '5px' }}></div>
+                          <div style={{ backgroundColor: '#4caf50', width: '60%', height: '100%', borderRadius: '5px' }}></div>
                         </div>
                         <span style={{ fontSize: '0.8em', color: '#666', display: 'block', marginTop: '5px' }}>
                           Stato: In Corso (60%)
@@ -288,11 +288,11 @@ cottura, accatastamento in bancali.</li>
                           CompTIA Security+ SY0-701
                         </h4>
                         <p style={{ fontSize: '0.9em', marginBottom: '0.5em' }}>
-                          Sicurezza aziendale, gestione del rischio, crittografia e risposta agli incidenti.
+                          Certificazione core per la sicurezza informatica operativa: valutazione delle minacce, gestione del rischio e implementazione di architetture sicure (Defense-in-Depth).
                         </p>
                         {/* Progress Bar */}
                         <div style={{ backgroundColor: '#e0e0e0', borderRadius: '5px', height: '10px', width: '100%' }}>
-                          <div style={{ backgroundColor: '#ff9800', width: '30%', height: '100%', borderRadius: '5px' }}></div>
+                          <div style={{ backgroundColor: '#ff9800', width: '05%', height: '100%', borderRadius: '5px' }}></div>
                         </div>
                         <span style={{ fontSize: '0.8em', color: '#666', display: 'block', marginTop: '5px' }}>
                           Stato: In Preparazione (0%)
