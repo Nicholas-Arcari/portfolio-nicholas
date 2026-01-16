@@ -1,12 +1,11 @@
 // src/pages/Home.jsx
-import React, { useState, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import TerminalText from '../components/TerminalText';
 
 const Home = () => {
+  // Stato per gestire l'apertura del menu a tendina
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const location = useLocation();
-  const navigate = useNavigate();
 
   const terminalLines = [
     "> ./init_profile.sh",
@@ -16,33 +15,11 @@ const Home = () => {
     "> Ready."
   ];
 
-  // Gestione Layout: forza la classe 'homepage' quando si monta questo componente
-  useEffect(() => {
-    document.body.classList.remove('no-sidebar');
-    document.body.classList.remove('right-sidebar');
-    document.body.classList.add('homepage');
-    return () => {
-      document.body.classList.remove('homepage');
-    };
-  }, []);
-
-  // Funzione avanzata per gestire scroll e navigazione
-  const handleScrollOrNavigate = (e, targetId) => {
-    e.preventDefault();
-    
-    // Se siamo già sulla home
-    if (location.pathname === '/') {
-      const element = document.getElementById(targetId);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth' });
-      } else if (targetId === 'top') {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }
-    } else {
-      // Se non siamo sulla home, naviga alla home e poi scrolla (richiede gestione extra, ma qui portiamo alla home)
-      navigate('/');
-      // Nota: Per scrollare dopo la navigazione servirebbe un useEffect con hash, 
-      // ma per ora questo garantisce che il link funzioni come "Home".
+  // Funzione per lo scroll fluido alle sezioni (Profilo, Esperienza)
+  const scrollToSection = (id) => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
@@ -53,11 +30,7 @@ const Home = () => {
       <section id="header">
         <div className="container">
           {/* Logo */}
-          <h1 id="logo">
-            <a href="/" onClick={(e) => handleScrollOrNavigate(e, 'top')} style={{ cursor: 'pointer' }}>
-              Nicholas Arcari
-            </a>
-          </h1>
+          <h1 id="logo"><Link to="/">Nicholas Arcari</Link></h1>
           
           {/* Effetto Terminale */}
           <br />
@@ -67,32 +40,30 @@ const Home = () => {
           <nav id="nav">
             <ul>
               <li className="current">
-                <a onClick={(e) => handleScrollOrNavigate(e, 'top')} style={{ cursor: 'pointer' }}>
-                  <span className="icon solid fa-home"> Home</span>
-                </a>
+                <Link className="icon solid fa-home" to="/"><span>Home</span></Link>
               </li>
 
-              {/* Link Chi Sono (Pagina Esterna) */}
+              {/* NUOVO LINK: Chi Sono / About */}
               <li>
                 <Link className="icon solid fa-user" to="/about"><span>Chi Sono</span></Link>
               </li>
               
-              {/* Link Profilo (Scroll) */}
+              {/* Link Profilo con Scroll funzionante (Home anchor) */}
               <li>
                 <a 
                   className="icon solid fa-id-card" 
-                  onClick={(e) => handleScrollOrNavigate(e, 'banner')} 
+                  onClick={(e) => { e.preventDefault(); scrollToSection('banner'); }} 
                   style={{ cursor: 'pointer' }}
                 >
                   <span>Profilo</span>
                 </a>
               </li>
               
-              {/* Link Esperienza (Scroll) */}
+              {/* Link Esperienza con Scroll funzionante (Home anchor) */}
               <li>
                 <a 
                   className="icon solid fa-briefcase" 
-                  onClick={(e) => handleScrollOrNavigate(e, 'main')} 
+                  onClick={(e) => { e.preventDefault(); scrollToSection('main'); }} 
                   style={{ cursor: 'pointer' }}
                 >
                   <span>Esperienza</span>
@@ -103,7 +74,7 @@ const Home = () => {
               <li 
                 onMouseEnter={() => setIsDropdownOpen(true)}
                 onMouseLeave={() => setIsDropdownOpen(false)}
-                style={{ position: 'relative' }}
+                style={{ position: 'relative' }} 
               >
                 <a 
                   className="icon solid fa-glass-cheers" 
