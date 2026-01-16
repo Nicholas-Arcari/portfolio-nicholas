@@ -42,11 +42,16 @@ const Home = () => {
               <li className="current">
                 <Link className="icon solid fa-home" to="/"><span>Home</span></Link>
               </li>
+
+              {/* NUOVO LINK: Chi Sono / About */}
+              <li>
+                <Link className="icon solid fa-user" to="/about"><span>Chi Sono</span></Link>
+              </li>
               
-              {/* Link Profilo con Scroll funzionante */}
+              {/* Link Profilo con Scroll funzionante (Home anchor) */}
               <li>
                 <a 
-                  className="icon solid fa-user" 
+                  className="icon solid fa-id-card" 
                   onClick={(e) => { e.preventDefault(); scrollToSection('banner'); }} 
                   style={{ cursor: 'pointer' }}
                 >
@@ -54,7 +59,7 @@ const Home = () => {
                 </a>
               </li>
               
-              {/* Link Esperienza con Scroll funzionante */}
+              {/* Link Esperienza con Scroll funzionante (Home anchor) */}
               <li>
                 <a 
                   className="icon solid fa-briefcase" 
@@ -65,11 +70,11 @@ const Home = () => {
                 </a>
               </li>
               
-              {/* MENU A TENDINA PASSIONI (Gestito da React) */}
+              {/* MENU A TENDINA PASSIONI */}
               <li 
                 onMouseEnter={() => setIsDropdownOpen(true)}
                 onMouseLeave={() => setIsDropdownOpen(false)}
-                style={{ position: 'relative' }} // Necessario per posizionare il sottomenu
+                style={{ position: 'relative' }} 
               >
                 <a 
                   className="icon solid fa-glass-cheers" 
@@ -86,7 +91,7 @@ const Home = () => {
                     top: '100%', 
                     left: '50%', 
                     transform: 'translateX(-50%)',
-                    backgroundColor: '#fff', // Sfondo bianco per renderlo leggibile
+                    backgroundColor: '#fff',
                     boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
                     borderRadius: '4px',
                     padding: '10px 0',
@@ -256,6 +261,7 @@ cottura, accatastamento in bancali.</li>
                   </li>
                 </ul>
               </section>
+
               {/* Sezione Certificazioni Arricchita */}
               <section>
                 <ul className="divided">
@@ -292,7 +298,7 @@ cottura, accatastamento in bancali.</li>
                         </p>
                         {/* Progress Bar */}
                         <div style={{ backgroundColor: '#e0e0e0', borderRadius: '5px', height: '10px', width: '100%' }}>
-                          <div style={{ backgroundColor: '#ff9800', width: '05%', height: '100%', borderRadius: '5px' }}></div>
+                          <div style={{ backgroundColor: '#ff9800', width: '02%', height: '100%', borderRadius: '5px' }}></div>
                         </div>
                         <span style={{ fontSize: '0.8em', color: '#666', display: 'block', marginTop: '5px' }}>
                           Stato: In Preparazione (0%)
@@ -303,6 +309,8 @@ cottura, accatastamento in bancali.</li>
                   </li>
                 </ul>
               </section>
+
+              {/* Sezione Non Solo Codice */}
               <section>
                 <ul className="divided">
                   <li>
@@ -318,6 +326,8 @@ cottura, accatastamento in bancali.</li>
                   </li>
                 </ul>
               </section>
+
+              {/* Sezione Soft Skills */}
               <section>
                 <ul className="divided">
                   <li>
@@ -328,98 +338,19 @@ cottura, accatastamento in bancali.</li>
                   </li>
                 </ul>
               </section>
-              {/*
-                <section>
-                <ul className="divided">
-                  <li>
-                    <article className="box highlight" style={{ textAlign: 'center' }}>
-                      <header><h3><a href="#">Curriculum Vitae</a></h3></header>
-                      <p>Scarica il documento completo.</p>
-                      <a href="assets/cv/cv_arcari_nicholas.pdf" className="button icon solid fa-download" download>Scarica CV (PDF)</a>
-                    </article>
-                  </li>
-                </ul>
-              </section>
-              */}
+
             </div>
 
           </div>
         </div>
       </section>
 
-      {/* --- FOOTER PROFESSIONALE --- */}
+      {/* --- FOOTER MINIMAL --- */}
       <section id="footer">
-        <div className="container">
-          <header>
-            <h2>Parliamo del prossimo progetto?</h2>
-          </header>
-          <div className="row aln-center"> 
-            
-            <div className="col-12 col-12-medium" style={{ textAlign: 'center' }}>
-              <section>
-                
-                <p style={{ marginBottom: '3em', color: '#666' }}>
-                  Sono disponibile per collaborazioni e lavori in ambito <strong>Cybersecurity</strong> e <strong>Sviluppo Fullstack</strong>.<br />
-                  Contattami per discutere di come posso portare valore alla tua azienda.
-                </p>
-                
-                {/* Contenitore contatti centrato */}
-                <div style={{ display: 'inline-block', textAlign: 'left' }}> {/* textAlign left per allineare le icone tra loro, ma il blocco è centrato */}
-                  <ul className="icons" style={{ listStyle: 'none', padding: 0 }}>
-                    
-                    {/* EMAIL (Priorità Alta) */}
-                    <li className="icon solid fa-envelope" style={{ marginBottom: '1.5em', display: 'flex', alignItems: 'center', fontSize: '1.2em' }}>
-                      <a href="mailto:arcari.nicholaso@gmail.com" style={{ marginLeft: '20px', fontWeight: 'bold', borderBottom: 'none' }}>
-                        arcari.nicholas0@gmail.com
-                      </a>
-                    </li>
-
-                    {/* TELEFONO */}
-                    <li className="icon solid fa-phone" style={{ marginBottom: '1.5em', display: 'flex', alignItems: 'center', fontSize: '1.2em' }}>
-                      <span style={{ marginLeft: '20px' }}>+39 351 714 0966</span>
-                    </li>
-
-                    {/* LOCALITÀ (Senza via specifica per privacy) */}
-                    <li className="icon solid fa-map-marker-alt" style={{ marginBottom: '1.5em', display: 'flex', alignItems: 'center', fontSize: '1.2em' }}>
-                      <span style={{ marginLeft: '20px' }}>
-                        Salsomaggiore Terme (PR), Italia
-                      </span>
-                    </li>
-
-                    {/* SOCIAL PROFESSIONALI */}
-                    <li className="icon brands fa-linkedin" style={{ marginBottom: '1.5em', display: 'flex', alignItems: 'center', fontSize: '1.2em' }}>
-                      {/* NOTA: Sostituisci # con il tuo link LinkedIn reale */}
-                      <a href="https://www.linkedin.com/in/tuo-profilo" target="_blank" rel="noreferrer" style={{ marginLeft: '20px' }}>
-                        LinkedIn / Nicholas Arcari
-                      </a>
-                    </li>
-
-                    <li className="icon brands fa-github" style={{ marginBottom: '1.5em', display: 'flex', alignItems: 'center', fontSize: '1.2em' }}>
-                      <a href="https://github.com/Nicholas-Arcari" target="_blank" rel="noreferrer" style={{ marginLeft: '20px' }}>
-                        github.com/Nicholas-Arcari
-                      </a>
-                    </li>
-
-                    {/* INSTAGRAM (Solo quello "ufficiale" per mostrare le passioni/stampe 3D) */}
-                    <li className="icon brands fa-instagram" style={{ display: 'flex', alignItems: 'center', fontSize: '1.2em' }}>
-                      <a href="https://www.instagram.com/nicholas.arcari/" target="_blank" rel="noreferrer" style={{ marginLeft: '20px' }}>
-                        @nicholas.arcari
-                      </a>
-                    </li>
-
-                  </ul>
-                </div>
-
-              </section>
-            </div>
-
-          </div>
-        </div>
-        
-        {/* Copyright */}
         <div id="copyright" className="container">
           <ul className="links">
-            <li>&copy; Nicholas Arcari. All rights reserved.</li><li>Design: HTML5 UP</li>
+            <li>&copy; {new Date().getFullYear()} Nicholas Arcari. All rights reserved.</li>
+            <li>Design: HTML5 UP</li>
           </ul>
         </div>
       </section>

@@ -10,6 +10,7 @@ import Pizze from './pages/Pizze';
 import FreelanceDetails from './pages/FreelanceDetails';
 import UniversityDetails from './pages/UniversityDetails';
 import TemplateScripts from './components/TemplateScripts';
+import About from './pages/About';
 import './HackerTheme.css';
 
 function App() {
@@ -26,6 +27,7 @@ function App() {
         <Route path="/stampe3d" element={<Stampe3d />} />
         <Route path="/freelance-details" element={<FreelanceDetails />} />
         <Route path="/university-details" element={<UniversityDetails />} />
+        <Route path="/about" element={<About />} />
       </Routes>
     </>
   );
