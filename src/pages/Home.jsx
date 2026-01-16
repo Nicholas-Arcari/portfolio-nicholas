@@ -308,10 +308,12 @@ cottura, accatastamento in bancali.</li>
                   <li>
                     <article className="box highlight">
                       <header><h3><Link to="/ricette">Non solo codice...</Link></h3></header>
-                      <p>Quando non sono al terminale, mi dedico alla cucina e alla mixology. Scopri le mie ricette e i miei cocktail.</p>
+                      <p>Quando non sono al terminale, mi dedico alla cucina, alla mixology e alla stampa 3D. Scopri le mie passioni.</p>
                       <Link to="/ricette" className="button icon solid fa-utensils">Vai alle Ricette</Link>
                       <br /><br />
                       <Link to="/cocktail" className="button icon solid fa-glass-martini">Vai ai Cocktail</Link>
+                      <br /><br />
+                      <Link to="/stampe3d" className="button icon solid fa-cube">Vai alle Stampe 3D</Link>
                     </article>
                   </li>
                 </ul>
@@ -326,7 +328,8 @@ cottura, accatastamento in bancali.</li>
                   </li>
                 </ul>
               </section>
-              <section>
+              {/*
+                <section>
                 <ul className="divided">
                   <li>
                     <article className="box highlight" style={{ textAlign: 'center' }}>
@@ -337,52 +340,73 @@ cottura, accatastamento in bancali.</li>
                   </li>
                 </ul>
               </section>
+              */}
             </div>
 
           </div>
         </div>
       </section>
 
-      {/* --- FOOTER AGGIORNATO (Senza Form) --- */}
+      {/* --- FOOTER PROFESSIONALE --- */}
       <section id="footer">
         <div className="container">
           <header>
-            <h2>Contatti</h2>
+            <h2>Parliamo del prossimo progetto?</h2>
           </header>
-          <div className="row aln-center"> {/* Centrato orizzontalmente */}
+          <div className="row aln-center"> 
             
             <div className="col-12 col-12-medium" style={{ textAlign: 'center' }}>
               <section>
                 
+                <p style={{ marginBottom: '3em', color: '#666' }}>
+                  Sono disponibile per collaborazioni e lavori in ambito <strong>Cybersecurity</strong> e <strong>Sviluppo Fullstack</strong>.<br />
+                  Contattami per discutere di come posso portare valore alla tua azienda.
+                </p>
+                
                 {/* Contenitore contatti centrato */}
-                <div style={{ display: 'inline-block', textAlign: 'center' }}>
+                <div style={{ display: 'inline-block', textAlign: 'left' }}> {/* textAlign left per allineare le icone tra loro, ma il blocco è centrato */}
                   <ul className="icons" style={{ listStyle: 'none', padding: 0 }}>
-                    <li className="icon solid fa-home" style={{ marginBottom: '1em', display: 'flex', alignItems: 'center' }}>
-                      <span style={{ marginLeft: '15px' }}>
-                        Via Scipione 45/A<br />
-                        43039, Salsomaggiore Terme (PR)<br />
-                        Italia
-                      </span>
-                    </li>
-                    <li className="icon solid fa-phone" style={{ marginBottom: '1em', display: 'flex', alignItems: 'center' }}>
-                      <span style={{ marginLeft: '15px' }}>+39 351 714 0966</span>
-                    </li>
-                    <li className="icon solid fa-envelope" style={{ marginBottom: '1em', display: 'flex', alignItems: 'center' }}>
-                      <a href="mailto:arcari.nicholaso@gmail.com" style={{ marginLeft: '15px' }}>arcari.nicholas0@gmail.com</a>
-                    </li>
-                    <li className="icon brands fa-instagram" style={{ marginBottom: '1em', display: 'flex', alignItems: 'center' }}>
-                      <a href="https://www.instagram.com/diokaneki_/" target="_blank" rel="noreferrer" style={{ marginLeft: '15px' }}>
-                        @diokaneki_
+                    
+                    {/* EMAIL (Priorità Alta) */}
+                    <li className="icon solid fa-envelope" style={{ marginBottom: '1.5em', display: 'flex', alignItems: 'center', fontSize: '1.2em' }}>
+                      <a href="mailto:arcari.nicholaso@gmail.com" style={{ marginLeft: '20px', fontWeight: 'bold', borderBottom: 'none' }}>
+                        arcari.nicholas0@gmail.com
                       </a>
                     </li>
-                    <li className="icon brands fa-instagram" style={{ display: 'flex', alignItems: 'center' }}>
-                      <a href="https://www.instagram.com/nicholas.arcari/" target="_blank" rel="noreferrer" style={{ marginLeft: '15px' }}>
+
+                    {/* TELEFONO */}
+                    <li className="icon solid fa-phone" style={{ marginBottom: '1.5em', display: 'flex', alignItems: 'center', fontSize: '1.2em' }}>
+                      <span style={{ marginLeft: '20px' }}>+39 351 714 0966</span>
+                    </li>
+
+                    {/* LOCALITÀ (Senza via specifica per privacy) */}
+                    <li className="icon solid fa-map-marker-alt" style={{ marginBottom: '1.5em', display: 'flex', alignItems: 'center', fontSize: '1.2em' }}>
+                      <span style={{ marginLeft: '20px' }}>
+                        Salsomaggiore Terme (PR), Italia
+                      </span>
+                    </li>
+
+                    {/* SOCIAL PROFESSIONALI */}
+                    <li className="icon brands fa-linkedin" style={{ marginBottom: '1.5em', display: 'flex', alignItems: 'center', fontSize: '1.2em' }}>
+                      {/* NOTA: Sostituisci # con il tuo link LinkedIn reale */}
+                      <a href="https://www.linkedin.com/in/tuo-profilo" target="_blank" rel="noreferrer" style={{ marginLeft: '20px' }}>
+                        LinkedIn / Nicholas Arcari
+                      </a>
+                    </li>
+
+                    <li className="icon brands fa-github" style={{ marginBottom: '1.5em', display: 'flex', alignItems: 'center', fontSize: '1.2em' }}>
+                      <a href="https://github.com/Nicholas-Arcari" target="_blank" rel="noreferrer" style={{ marginLeft: '20px' }}>
+                        github.com/Nicholas-Arcari
+                      </a>
+                    </li>
+
+                    {/* INSTAGRAM (Solo quello "ufficiale" per mostrare le passioni/stampe 3D) */}
+                    <li className="icon brands fa-instagram" style={{ display: 'flex', alignItems: 'center', fontSize: '1.2em' }}>
+                      <a href="https://www.instagram.com/nicholas.arcari/" target="_blank" rel="noreferrer" style={{ marginLeft: '20px' }}>
                         @nicholas.arcari
                       </a>
                     </li>
-                    <li className="icon brands fa-github" style={{ display: 'flex', alignItems: 'center' }}>
-                      <a href="https://github.com/Nicholas-Arcari" style={{ marginLeft: '15px' }}>github.com/Nicholas-Arcari</a>
-                    </li>
+
                   </ul>
                 </div>
 

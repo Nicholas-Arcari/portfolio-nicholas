@@ -10,9 +10,9 @@ const FreelanceDetails = () => {
 
   const terminalLines = [
     `> ./load_product.sh --${projectName.toLowerCase().replace(' ', '-')}`,
-    "> Initializing LLM Vision Module...",
-    "> Connecting to PLC Interface...",
-    "> Optimizing Sorting Algorithms...",
+    "> Analyzing Legacy Bottlenecks...",
+    "> Initializing Computer Vision...",
+    "> Optimizing Logistics Sorting...",
     "> Status: Production Ready."
   ];
 
@@ -54,8 +54,8 @@ const FreelanceDetails = () => {
                     backgroundColor: '#fff', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', borderRadius: '4px', 
                     padding: '10px 0', minWidth: '200px', zIndex: 1000, listStyle: 'none', margin: 0
                   }}>
-                    <li style={{ padding: '5px 20px', borderTop: 'none' }}><Link to="/ricette" style={{ display: 'block', color: '#444' }}>Ricette di Mamma Niky</Link></li>
-                    <li style={{ padding: '5px 20px', borderTop: '1px solid #eee' }}><Link to="/cocktail" style={{ display: 'block', color: '#444' }}>I miei Cocktail</Link></li>
+                    <li style={{ padding: '5px 20px', borderTop: 'none' }}><Link to="/ricette" style={{ display: 'block', color: '#444' }}>Ricette</Link></li>
+                    <li style={{ padding: '5px 20px', borderTop: '1px solid #eee' }}><Link to="/cocktail" style={{ display: 'block', color: '#444' }}>Cocktail</Link></li>
                     <li style={{ padding: '5px 20px', borderTop: '1px solid #eee' }}><Link to="/stampe3d" style={{ display: 'block', color: '#444' }}>Stampe 3D</Link></li>
                   </ul>
                 )}
@@ -78,78 +78,82 @@ const FreelanceDetails = () => {
                <article className="box post">
                   <header>
                     <h2>{projectName}: Enterprise ERP & Automation</h2>
-                    <p>Piattaforma gestionale Fullstack per l'industria manifatturiera. Sostituisce un sistema legacy in VBA con un'architettura moderna, integrando AI e algoritmi di ottimizzazione.</p>
+                    <p style={{ fontStyle: 'italic', color: '#666' }}>
+                      Piattaforma gestionale Fullstack per la digitalizzazione totale dei processi manifatturieri, dall'analisi tecnica AI al controllo macchine CNC.
+                    </p>
                   </header>
                   
-                  {/* KPI */}
+                  {/* KPI - LAYOUT SX - CENTRO - DX */}
                   <div className="row aln-center" style={{ margin: '2em 0', alignItems: 'flex-start' }}>
-                    
                     <div className="col-4 col-12-small" style={{ textAlign: 'left' }}>
                         <h3 style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.2em', lineHeight: '1' }}>-99%</h3>
                         <p style={{ margin: 0, lineHeight: '1.2' }}>Tempo Elaborazione<br />Commessa</p>
                     </div>
-                    
                     <div className="col-4 col-12-small" style={{ textAlign: 'center' }}>
                         <h3 style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.2em', lineHeight: '1' }}>AI</h3>
-                        <p style={{ margin: 0, lineHeight: '1.2' }}>Lettura Automatica<br />Schede</p>
+                        <p style={{ margin: 0, lineHeight: '1.2' }}>Lettura Automatica<br />Schede Tecniche</p>
                     </div>
-                    
                     <div className="col-4 col-12-small" style={{ textAlign: 'right' }}>
-                        <h3 style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.2em', lineHeight: '1' }}>4.0 & 5.0</h3>
-                        <p style={{ margin: 0, lineHeight: '1.2' }}>Integrazione<br />Macchinari</p>
+                        <h3 style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.2em', lineHeight: '1' }}>4.0</h3>
+                        <p style={{ margin: 0, lineHeight: '1.2' }}>Integrazione<br />Industriale</p>
                     </div>
-
                   </div>
 
-                  <hr /><br />
+                  <hr />
 
-                  <h3>1. Reparto Produzione: Il Cuore Operativo</h3>
-                  <p>L'applicativo rivoluziona l'inserimento dati e la generazione degli output produttivi:</p>
-                  
-                  <h4>Acquisizione Dati con LLM & Computer Vision</h4>
-                  <p>Il sistema elimina l'inserimento manuale (comunque disponibile). L'utente carica il PDF, DXF o DWG della scheda tecnica firmata dal cliente e l'applicativo:</p>
+                  {/* 1. IL PROBLEMA */}
+                  <h3>Il Problema: Limiti dei Sistemi Legacy</h3>
+                  <p>
+                    L'azienda operava con un sistema basato su fogli <strong>Excel e macro VBA datate</strong>, ormai instabili e non manutenibili.
+                    Questo approccio comportava rischi critici: errori umani nell'inserimento dati, tempi di calcolo di svariate ore per commesse complesse e l'impossibilità di scalare la produzione. Serviva una soluzione radicale per digitalizzare il flusso informativo.
+                  </p>
+
+                  <hr />
+
+                  {/* 2. IL MIO RUOLO */}
+                  <h3>Il Mio Ruolo: Fullstack Architect</h3>
+                  <p>
+                    Ho gestito l'intero ciclo di vita del software: dall'analisi dei requisiti con l'ufficio tecnico alla progettazione dell'architettura containerizzata, fino allo sviluppo del core AI in Python e del frontend in React. Ho curato personalmente il deployment in fabbrica e la formazione del personale.
+                  </p>
+
+                  <hr />
+
+                  {/* 3. LA SOLUZIONE DETTAGLIATA */}
+                  <h3>La Soluzione: Architettura e Funzionamento</h3>
+                  <p>Ho sviluppato una Web App modulare che copre tre aree aziendali nevralgiche:</p>
+
+                  <h4>A. Reparto Produzione: AI & Computer Vision</h4>
+                  <p>L'innovazione principale risiede nell'eliminazione del data entry manuale. Il sistema offre:</p>
                   <ul style={{ listStyleType: 'disc', paddingLeft: '20px' }}>
-                    <li><strong>Analizza l'immagine:</strong> Sfruttando algoritmi Python e LLM (Large Language Models).</li>
-                    <li><strong>Estrae le misure:</strong> Riconosce automaticamente le quote dei componenti.</li>
-                    <li><strong>Rileva Accessori:</strong> Identifica visivamente la presenza di accessori extra senza input umano.</li>
-                    <li><strong>Salva nel DB:</strong> Popola il database relazionale, pronto per la computazione.</li>
+                    <li><strong>Input Intelligente (OCR & LLM):</strong> L'utente può caricare direttamente i file PDF, DXF o DWG delle schede tecniche. Sfruttando <strong>Large Language Models</strong> e algoritmi Python proprietari, l'applicativo "legge" l'immagine, comprende le quote e rileva la presenza di accessori <em>senza che l'utente debba selezionarli manualmente</em>.</li>
+                    <li><strong>Engine di Calcolo Seriale:</strong> Una volta acquisiti i dati, un motore Python esegue la computazione. Non è stato necessario il parallelismo poiché l'ottimizzazione del codice seriale ha ridotto i tempi di elaborazione da diverse ore a <strong>meno di un minuto</strong>.</li>
+                    <li><strong>Industria 4.0 e 5.0:</strong> Generazione automatica di file macchina (TLF, DXF) e invio diretto ai macchinari industriali tramite protocolli standard. L'invio è ordinabile per ottimizzare la logistica di magazzino.</li>
                   </ul>
 
-                  <h4>Computazione Seriale & Output</h4>
-                  <p>Il motore di calcolo Python applica formule brevettate e regole logiche (If/Then) definite dall'utente. L'elaborazione, ottimizzata con librerie open-source, è passata da <strong>diverse ore a meno di un minuto</strong> per commesse complesse.</p>
-                  <p><strong>Output generati (ZIP):</strong> PDF tecnici, CSV per reportistica, file TLF e DXF per il taglio.</p>
-
-                  <h4>Industria 4.0 & 5.0</h4>
-                  <p>Al termine della computazione, il sistema invia i dati (tramite CSV formattati ad hoc) direttamente ai <strong>macchinari industriali</strong>. L'ordine di invio è personalizzabile dall'utente per ottimizzare lo spazio logistico in magazzino e i tempi macchina.</p>
-
-                  <br /><hr /><br />
-
-                  <h3>2. Reparto Commerciale: Velocità di Esecuzione</h3>
-                  <p>L'applicativo funge da CRM avanzato. La creazione di schede tecniche, preventivi e fatture è stata completamente automatizzata.</p>
-                  <blockquote>
-                    "Processi che richiedevano giorni di lavoro manuale ora vengono completati in pochi minuti, permettendo al reparto vendite di rispondere istantaneamente alle richieste dei clienti."
-                  </blockquote>
-
-                  <br /><hr /><br />
-
-                  <h3>3. Reparto Amministrativo & Logistica</h3>
-                  <p>L'amministrazione ha il controllo totale sui processi:</p>
+                  <h4>B. Reparto Commerciale: Automazione Documentale</h4>
+                  <p>Il sistema agisce come un gestionale evoluto:</p>
                   <ul style={{ listStyleType: 'disc', paddingLeft: '20px' }}>
-                    <li><strong>Gestione Processi:</strong> Personalizzazione dei flussi di lavoro tra i vari reparti.</li>
-                    <li><strong>Algoritmi di Sorting (Piano di Carico):</strong> Sono stati implementati algoritmi di ordinamento avanzati per calcolare automaticamente il piano di carico ottimale per il magazzino e per i bilici (camion), massimizzando lo spazio disponibile.</li>
-                    <li><strong>Monitoraggio:</strong> Controllo granulare dei log tramite <strong>Loki</strong> e dashboard <strong>Grafana</strong>.</li>
-                    <li><strong>Comunicazione:</strong> Integrazione con ProtonMail per comunicazioni criptate.</li>
+                    <li><strong>Creazione Schede Tecniche:</strong> Un processo che richiedeva giorni è ora istantaneo grazie agli script di automazione.</li>
+                    <li><strong>Preventivi e Fatture:</strong> Generazione rapida e tracciata di documenti fiscali e offerte commerciali.</li>
                   </ul>
 
-                  <br /><hr /><br />
-
-                  <h3>Sicurezza Enterprise (Defense in Depth)</h3>
-                  <p>L'infrastruttura è blindata su più livelli:</p>
+                  <h4>C. Reparto Amministrativo & Logistica Avanzata</h4>
+                  <p>L'utente amministratore ha il controllo totale sulla configurazione dei processi e sulla logistica:</p>
                   <ul style={{ listStyleType: 'disc', paddingLeft: '20px' }}>
-                    <li><strong>SIEM:</strong> Monitoraggio attivo delle minacce con <strong>Wazuh</strong> e <strong>Suricata</strong>.</li>
-                    <li><strong>Accesso:</strong> VPN aziendale, Firewall perimetrali e autenticazione Token (Sanctum).</li>
-                    <li><strong>GDPR:</strong> Tracking degli accessi e gestione utenti RBAC (Role-Based Access Control).</li>
+                    <li><strong>Algoritmi di Sorting (Piano di Carico):</strong> Sono stati implementati algoritmi di ordinamento specifici per calcolare automaticamente il piano di carico ottimale sia per il magazzino che per i bilici (camion), massimizzando l'efficienza spaziale.</li>
+                    <li><strong>Monitoraggio Enterprise:</strong> Controllo granulare dei log tramite <strong>Loki</strong> e dashboard <strong>Grafana</strong>.</li>
+                    <li><strong>Comunicazione Sicura:</strong> Integrazione nativa con <strong>ProtonMail</strong> per notifiche criptate.</li>
                   </ul>
+
+                  <hr />
+
+                  {/* 4. SICUREZZA */}
+                  <h3>Sicurezza e Infrastruttura</h3>
+                  <p>
+                    L'intera infrastruttura è protetta secondo standard enterprise:
+                    monitoraggio attivo delle intrusioni tramite SIEM (<strong>Wazuh</strong> e <strong>Suricata</strong>),
+                    accesso via VPN, firewall perimetrali e autenticazione applicativa robusta.
+                  </p>
 
                </article>
             </div>
@@ -163,14 +167,15 @@ const FreelanceDetails = () => {
                   <li>
                     <article className="box highlight">
                       <header><h3>Tech Stack</h3></header>
-                      <p>Architettura solida e scalabile.</p>
+                      <p>Tecnologie scelte per performance e stabilità.</p>
                       <ul className="check-list" style={{ listStyle: 'none', padding: 0 }}>
-                        <li>✅ <strong>Frontend:</strong> React, Vite</li>
-                        <li>✅ <strong>Backend:</strong> PHP (Laravel 12)</li>
-                        <li>✅ <strong>AI Engine:</strong> Python (LLM, OpenCV)</li>
-                        <li>✅ <strong>DB:</strong> MySQL</li>
-                        <li>✅ <strong>Infra:</strong> Docker, Kubernetes</li>
-                        <li>✅ <strong>Monitoring:</strong> Grafana, Loki, Wazuh</li>
+                        <li><strong>Frontend:</strong> React, Vite</li>
+                        <li><strong>Backend:</strong> PHP (Laravel 12)</li>
+                        <li><strong>AI Core:</strong> Python (LLM, OpenCV), Minizink</li>
+                        <li><strong>DB:</strong> MySQL, PhpMyAdmin</li>
+                        <li><strong>DevOps:</strong> Docker, Kubernetes</li>
+                        <li><strong>Security:</strong> Wazuh, Suricata</li>
+                        <li><strong>Monitoring:</strong> Grafana, Loki, ProtonMail</li>
                       </ul>
                     </article>
                   </li>
