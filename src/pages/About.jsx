@@ -37,7 +37,7 @@ const About = () => {
           <nav id="nav">
             <ul>
               <li><Link className="icon solid fa-home" to="/"><span>Home</span></Link></li>
-              
+              <li className="current"><Link className="icon solid fa-user" to="/about"><span>Chi Sono</span></Link></li>
               <li 
                 onMouseEnter={() => setIsDropdownOpen(true)}
                 onMouseLeave={() => setIsDropdownOpen(false)}
@@ -58,7 +58,6 @@ const About = () => {
               </li>
               
               {/* Voce Attiva */}
-              <li className="current"><Link className="icon solid fa-user" to="/about"><span>Chi Sono</span></Link></li>
               <li><a className="icon brands fa-github" href="https://github.com/Nicholas-Arcari" target="_blank" rel="noreferrer"><span>GitHub</span></a></li>
             </ul>
           </nav>
