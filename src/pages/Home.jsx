@@ -164,7 +164,7 @@ const Home = () => {
       {/* --- BANNER --- */}
       <section id="banner">
         <div className="container">
-          <p><strong>Neolaureato in Scienze Informatiche</strong><br />con forte interesse per la Cybersecurity e esperienza in laboratorio per vulnerability assessment, sicurezza web (OWASP Top 10) e hardening di sistemi Linux.</p>
+          <p><strong>Laureato in Scienze Informatiche</strong><br />con forte interesse per la Cybersecurity e esperienza in laboratorio per vulnerability assessment, sicurezza web (OWASP Top 10) e hardening di sistemi Linux.</p>
         </div>
       </section>
 
@@ -328,6 +328,7 @@ cottura, accatastamento in bancali.</li>
               </section>
 
               {/* Sezione Soft Skills */}
+              {/*
               <section>
                 <ul className="divided">
                   <li>
@@ -338,6 +339,7 @@ cottura, accatastamento in bancali.</li>
                   </li>
                 </ul>
               </section>
+              */}
 
             </div>
 

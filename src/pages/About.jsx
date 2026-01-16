@@ -9,7 +9,7 @@ const About = () => {
   const terminalLines = [
     "> ./whoami",
     "> Nicholas Arcari",
-    "> Status: Online",
+    "> Status: Accensione fuoco della giovinezza...",
     "> Loading Bio..."
   ];
 
@@ -96,12 +96,14 @@ const About = () => {
                   
                   <div style={{ fontSize: '1.1em', lineHeight: '1.8', color: '#555', marginBottom: '2em' }}>
                     <p>
-                      Ciao, sono <strong>Nicholas Arcari</strong>. <br />
-                      La mia passione per la tecnologia nasce dalla curiosità di capire come funzionano le cose "sotto il cofano". Questo mi ha portato a laurearmi in Scienze Informatiche e a specializzarmi in due mondi complementari: lo <strong>Sviluppo Fullstack</strong> e la <strong>Cybersecurity</strong>.
+                     Ciao, sono <strong>Nicholas Arcari</strong>. <br />
+                     Ho scoperto che il mio cervello processa il codice e il cibo esattamente allo stesso modo. Per me, non c'è una reale differenza tra il silicio e la farina: entrambi richiedono struttura, pazienza e una cura quasi maniacale per i dettagli.
                     </p>
                     <p>
-                      Il mio approccio unisce il rigore analitico necessario per blindare un'infrastruttura con la creatività richiesta per costruire interfacce utente intuitive.
-                      Nel tempo libero, porto la mia mentalità da "maker" nel mondo fisico attraverso la stampa 3D e la sperimentazione culinaria.
+                     C'è una poesia tecnica nel costruire le cose da zero. <strong>Preparare il mio cyberlab</strong>, tirare su macchine virtuali e configurare reti sicure mi dà la stessa soddisfazione viscerale di quando affondo le mani nell'impasto, sentendo la maglia glutinica prendere forma sotto le dita. Sono due tipi di architettura, ma l'anima è la stessa.
+                    </p>
+                    <p>
+                     E poi c'è il monitoraggio. Passerei ore a fissare i log di un <strong>SIEM</strong> scorrere a video in cerca di anomalie, con la stessa identica trepidazione con cui mi incollo al vetro del forno, guardando una lievitazione complessa prendere vita, aspettando che la crosta diventi perfetta.
                     </p>
                   </div>
 
