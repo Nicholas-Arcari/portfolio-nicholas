@@ -54,8 +54,8 @@ const FreelanceDetails = () => {
                     backgroundColor: '#fff', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', borderRadius: '4px', 
                     padding: '10px 0', minWidth: '200px', zIndex: 1000, listStyle: 'none', margin: 0
                   }}>
-                    <li style={{ padding: '5px 20px', borderTop: 'none' }}><Link to="/ricette" style={{ display: 'block', color: '#444' }}>Ricette</Link></li>
-                    <li style={{ padding: '5px 20px', borderTop: '1px solid #eee' }}><Link to="/cocktail" style={{ display: 'block', color: '#444' }}>Cocktail</Link></li>
+                    <li style={{ padding: '5px 20px', borderTop: 'none' }}><Link to="/ricette" style={{ display: 'block', color: '#444' }}>Ricette di Mamma Niki</Link></li>
+                    <li style={{ padding: '5px 20px', borderTop: '1px solid #eee' }}><Link to="/cocktail" style={{ display: 'block', color: '#444' }}>I miei Cocktail</Link></li>
                     <li style={{ padding: '5px 20px', borderTop: '1px solid #eee' }}><Link to="/stampe3d" style={{ display: 'block', color: '#444' }}>Stampe 3D</Link></li>
                   </ul>
                 )}
@@ -89,12 +89,12 @@ const FreelanceDetails = () => {
                         <h3 style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.2em', lineHeight: '1' }}>-99%</h3>
                         <p style={{ margin: 0, lineHeight: '1.2' }}>Tempo Elaborazione<br />Commessa</p>
                     </div>
-                    <div className="col-4 col-12-small" style={{ textAlign: 'center' }}>
+                    <div className="col-4 col-12-small" style={{ textAlign: 'left' }}>
                         <h3 style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.2em', lineHeight: '1' }}>AI</h3>
                         <p style={{ margin: 0, lineHeight: '1.2' }}>Lettura Automatica<br />Schede Tecniche</p>
                     </div>
-                    <div className="col-4 col-12-small" style={{ textAlign: 'right' }}>
-                        <h3 style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.2em', lineHeight: '1' }}>4.0</h3>
+                    <div className="col-4 col-12-small" style={{ textAlign: 'left' }}>
+                        <h3 style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.2em', lineHeight: '1' }}>4.0 & 5.0</h3>
                         <p style={{ margin: 0, lineHeight: '1.2' }}>Integrazione<br />Industriale</p>
                     </div>
                   </div>
@@ -113,7 +113,7 @@ const FreelanceDetails = () => {
                   {/* 2. IL MIO RUOLO */}
                   <h3>Il Mio Ruolo: Fullstack Architect</h3>
                   <p>
-                    Ho gestito l'intero ciclo di vita del software: dall'analisi dei requisiti con l'ufficio tecnico alla progettazione dell'architettura containerizzata, fino allo sviluppo del core AI in Python e del frontend in React. Ho curato personalmente il deployment in fabbrica e la formazione del personale.
+                    Ho gestito l'intero ciclo di vita del software: dall'analisi dei requisiti con l'ufficio tecnico alla progettazione dell'architettura containerizzata, fino allo sviluppo del core AI in Python e del frontend in React. Ho curato personalmente il deployment in fabbrica (dallo sviluppo alla produzione) e la formazione del personale.
                   </p>
 
                   <hr />
@@ -125,7 +125,7 @@ const FreelanceDetails = () => {
                   <h4>A. Reparto Produzione: AI & Computer Vision</h4>
                   <p>L'innovazione principale risiede nell'eliminazione del data entry manuale. Il sistema offre:</p>
                   <ul style={{ listStyleType: 'disc', paddingLeft: '20px' }}>
-                    <li><strong>Input Intelligente (OCR & LLM):</strong> L'utente può caricare direttamente i file PDF, DXF o DWG delle schede tecniche. Sfruttando <strong>Large Language Models</strong> e algoritmi Python proprietari, l'applicativo "legge" l'immagine, comprende le quote e rileva la presenza di accessori <em>senza che l'utente debba selezionarli manualmente</em>.</li>
+                    <li><strong>Input Intelligente (OCR & LLM):</strong> L'utente può caricare direttamente i file PDF, DXF o DWG delle schede tecniche. Sfruttando <strong>Large Language Models</strong> e algoritmi Python proprietari, l'applicativo "legge" l'immagine, comprende le quote e rileva la presenza di accessori senza che l'utente debba selezionarli manualmente.</li>
                     <li><strong>Engine di Calcolo Seriale:</strong> Una volta acquisiti i dati, un motore Python esegue la computazione. Non è stato necessario il parallelismo poiché l'ottimizzazione del codice seriale ha ridotto i tempi di elaborazione da diverse ore a <strong>meno di un minuto</strong>.</li>
                     <li><strong>Industria 4.0 e 5.0:</strong> Generazione automatica di file macchina (TLF, DXF) e invio diretto ai macchinari industriali tramite protocolli standard. L'invio è ordinabile per ottimizzare la logistica di magazzino.</li>
                   </ul>
@@ -133,14 +133,14 @@ const FreelanceDetails = () => {
                   <h4>B. Reparto Commerciale: Automazione Documentale</h4>
                   <p>Il sistema agisce come un gestionale evoluto:</p>
                   <ul style={{ listStyleType: 'disc', paddingLeft: '20px' }}>
-                    <li><strong>Creazione Schede Tecniche:</strong> Un processo che richiedeva giorni è ora istantaneo grazie agli script di automazione.</li>
+                    <li><strong>Creazione Schede Tecniche:</strong> Un processo che richiedeva giorni è ora pressoché istantaneo grazie agli script di automazione.</li>
                     <li><strong>Preventivi e Fatture:</strong> Generazione rapida e tracciata di documenti fiscali e offerte commerciali.</li>
                   </ul>
 
                   <h4>C. Reparto Amministrativo & Logistica Avanzata</h4>
                   <p>L'utente amministratore ha il controllo totale sulla configurazione dei processi e sulla logistica:</p>
                   <ul style={{ listStyleType: 'disc', paddingLeft: '20px' }}>
-                    <li><strong>Algoritmi di Sorting (Piano di Carico):</strong> Sono stati implementati algoritmi di ordinamento specifici per calcolare automaticamente il piano di carico ottimale sia per il magazzino che per i bilici (camion), massimizzando l'efficienza spaziale.</li>
+                    <li><strong>Algoritmi di Sorting (Piano di Carico):</strong> Sono stati implementati algoritmi di ordinamento specifici, inoltre, è stata sfruttata la programmazione a vincoli per calcolare l'incastro matematicamente perfetto dei colli su bilici e magazzino, massimizzando la saturazione volumetrica.</li>
                     <li><strong>Monitoraggio Enterprise:</strong> Controllo granulare dei log tramite <strong>Loki</strong> e dashboard <strong>Grafana</strong>.</li>
                     <li><strong>Comunicazione Sicura:</strong> Integrazione nativa con <strong>ProtonMail</strong> per notifiche criptate.</li>
                   </ul>
