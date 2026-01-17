@@ -294,8 +294,8 @@ const Stampe3d = () => {
                 <p>La stampa 3D unisce la mia passione per il software con la soddisfazione di creare oggetti tangibili. Qui raccolgo i miei progetti, divisi tra quelli già realizzati e le idee in cantiere.</p>
                 
                 <p style={{ marginTop: '1.5em', fontStyle: 'italic', borderLeft: '4px solid #d52349', paddingLeft: '15px', color: '#555' }}>
-                  🚀 <strong>Collaborazioni:</strong> Sono disponibile per collaborazioni e servizi di stampa 3D su richiesta. 
-                  Se hai un progetto in mente o un file da stampare, <Link to="/about">contattami</Link> per discuterne insieme!
+                  <strong>Collaborazioni:</strong> Sono disponibile per collaborazioni e servizi di stampa 3D su richiesta. 
+                  Se hai un progetto in mente o un file da stampare, contattami per discuterne insieme!
                 </p>
              </article>
 
@@ -337,10 +337,8 @@ const Stampe3d = () => {
                                     </span>
                                 </header>
                                 <p>{project.description}</p>
-                                <div style={{ fontSize: '0.9em', color: '#555', borderTop: '1px solid #eee', paddingTop: '10px' }}>
-                                    <p style={{ marginBottom: '0.5em' }}><strong>Materiale:</strong> {project.material}</p>
-                                    
-                                    {/* Modifica: Link Testuale Semplice */}
+                                <br />
+                                {/* Modifica: Link Testuale Semplice */}
                                     {project.link && (
                                       <p style={{ margin: 0, wordBreak: 'break-all' }}>
                                           <strong>Link: </strong> 
@@ -349,6 +347,8 @@ const Stampe3d = () => {
                                           </a>
                                       </p>
                                     )}
+                                <div style={{ fontSize: '0.9em', color: '#555', borderTop: '1px solid #eee', paddingTop: '10px' }}>
+                                    <p style={{ marginBottom: '0.5em' }}><strong>Materiale:</strong> {project.material}</p>
                                 </div>
                             </article>
                         </div>
