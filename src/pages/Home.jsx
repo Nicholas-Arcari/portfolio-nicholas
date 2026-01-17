@@ -16,12 +16,14 @@ const Home = () => {
   ];
 
   // Funzione per lo scroll fluido alle sezioni (Profilo, Esperienza)
+  /*
   const scrollToSection = (id) => {
     const element = document.getElementById(id);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
     }
   };
+  */
 
   return (
     <div id="page-wrapper">
@@ -49,6 +51,7 @@ const Home = () => {
               </li>
               
               {/* Link Profilo con Scroll funzionante (Home anchor) */}
+              {/*
               <li>
                 <a 
                   className="icon solid fa-id-card" 
@@ -58,8 +61,10 @@ const Home = () => {
                   <span>Profilo</span>
                 </a>
               </li>
+              */}
               
               {/* Link Esperienza con Scroll funzionante (Home anchor) */}
+              {/*
               <li>
                 <a 
                   className="icon solid fa-briefcase" 
@@ -69,7 +74,8 @@ const Home = () => {
                   <span>Esperienza</span>
                 </a>
               </li>
-              
+              */}
+
               {/* MENU A TENDINA PASSIONI */}
               <li 
                 onMouseEnter={() => setIsDropdownOpen(true)}

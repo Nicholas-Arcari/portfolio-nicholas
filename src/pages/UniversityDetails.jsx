@@ -170,6 +170,7 @@ const UniversityDetails = () => {
           <nav id="nav">
             <ul>
               <li><Link className="icon solid fa-home" to="/"><span>Home</span></Link></li>
+              <li><Link className="icon solid fa-user" to="/about"><span>Chi Sono</span></Link></li>
               <li 
                 onMouseEnter={() => setIsDropdownOpen(true)}
                 onMouseLeave={() => setIsDropdownOpen(false)}
