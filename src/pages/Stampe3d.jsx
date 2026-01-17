@@ -345,10 +345,9 @@ const Stampe3d = () => {
                                             {project.link}
                                           </a>
                                       </p>
-                                <p style={{ marginBottom: '0.5em' }}><strong>Materiale:</strong> {project.material}</p>
                                     )}
                                 <div style={{ fontSize: '0.9em', color: '#555', borderTop: '1px solid #eee', paddingTop: '10px' }}>
-                                <p></p>
+                                    <p style={{ marginBottom: '0.5em' }}><strong>Materiale:</strong> {project.material}</p>
                                 </div>
                             </article>
                         </div>
