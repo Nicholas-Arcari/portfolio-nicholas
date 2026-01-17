@@ -96,13 +96,13 @@ const About = () => {
                   <div style={{ fontSize: '1.1em', lineHeight: '1.8', color: '#555', marginBottom: '2em' }}>
                     <p>
                      Ciao, sono <strong>Nicholas Arcari</strong>. <br />
-                     Ho scoperto che il mio cervello processa il codice e il cibo esattamente allo stesso modo. Per me, non c'è una reale differenza tra il silicio e la farina: entrambi richiedono struttura, pazienza e una cura quasi maniacale per i dettagli.
+                     Nel mio modo di vedere il mondo, righe di codice e cibo non sono affatto agli antipodi. A ben pensarci, tra il silicio e la cucina non esiste una differenza così grande: entrambi richiedono struttura, pazienza e una cura quasi maniacale per i dettagli.
                     </p>
                     <p>
-                     C'è una poesia tecnica nel costruire le cose da zero. <strong>Preparare il mio cyberlab</strong>, tirare su macchine virtuali e configurare reti sicure mi dà la stessa soddisfazione viscerale di quando affondo le mani nell'impasto, sentendo la maglia glutinica prendere forma sotto le dita. Sono due tipi di architettura, ma l'anima è la stessa.
+                    C'è una poesia silenziosa, quasi romantica, nel costruire qualcosa partendo da zero. Allestire laboratori di sicurezza informatica, orchestrare macchine virtuali e configurare reti sicure mi regala la stessa soddisfazione viscerale di quando affondo le mani nell'impasto, sentendo il profumo, la maglia glutinica prendere forma sotto le dita... Sono due forme di architettura diverse, è vero, ma condividono la stessa anima.
                     </p>
                     <p>
-                     E poi c'è il monitoraggio. Passerei ore a fissare i log di un <strong>SIEM</strong> scorrere a video in cerca di anomalie, con la stessa identica trepidazione con cui mi incollo al vetro del forno, guardando una lievitazione complessa prendere vita, aspettando che la crosta diventi perfetta.
+                     E poi c'è l'attesa vigile, il monitoraggio. Potrei passare ore a seguire lo scorrere dei log di un SIEM, cercando l'anomalia nascosta, con la stessa concentrazione febbrile con cui osservo una lievitazione complessa dietro il vetro del forno. In entrambi i casi si tratta di leggere segnali sottili, interpretare comportamenti, aspettare il momento esatto in cui tutto raggiunge il suo equilibrio perfetto.
                     </p>
                   </div>
 

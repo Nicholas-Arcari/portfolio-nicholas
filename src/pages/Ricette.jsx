@@ -197,13 +197,13 @@ const Ricette = () => {
         </div>
       </section>
 
-      {/* --- FOOTER --- */}
+      {/* FOOTER MINIMAL */}
       <section id="footer">
         <div id="copyright" className="container">
-           <ul className="links">
-               <li>&copy; Nicholas Arcari.</li>
-               <li><Link to="/">Torna alla Home</Link></li>
-           </ul>
+          <ul className="links">
+            <li>&copy; {new Date().getFullYear()} Nicholas Arcari. All rights reserved.</li>
+            <li>Design: HTML5 UP</li>
+          </ul>
         </div>
       </section>
     </div>
