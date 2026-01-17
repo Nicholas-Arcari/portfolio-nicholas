@@ -337,7 +337,6 @@ const Stampe3d = () => {
                                     </span>
                                 </header>
                                 <p>{project.description}</p>
-                                <br />
                                 {/* Modifica: Link Testuale Semplice */}
                                     {project.link && (
                                       <p style={{ margin: 0, wordBreak: 'break-all' }}>
@@ -346,9 +345,9 @@ const Stampe3d = () => {
                                             {project.link}
                                           </a>
                                       </p>
+                                <p style={{ marginBottom: '0.5em' }}><strong>Materiale:</strong> {project.material}</p>
                                     )}
                                 <div style={{ fontSize: '0.9em', color: '#555', borderTop: '1px solid #eee', paddingTop: '10px' }}>
-                                    <p style={{ marginBottom: '0.5em' }}><strong>Materiale:</strong> {project.material}</p>
                                 </div>
                             </article>
                         </div>
