@@ -22,69 +22,91 @@ const Stampe3d = () => {
   const executedProjects = [
     {
       title: "Cookie Cutter Set",
-      description: "Set di formine per biscotti personalizzate.",
+      description: "Set di formine per biscotti personalizzate, progettate in CAD e stampate per uso alimentare.",
       material: "PLA Nero Opaco (Food Safe)",
-      image: "images/stampa/" 
+      image: "images/stampa/",
+      topic: "Cucina",
+      link: "https://www.thingiverse.com" 
     },
     {
       title: "Mantis Blades (Cyberpunk 2077)",
       description: "Replica in scala 1:1 delle iconiche lame retrattili. Assemblaggio multi-parte con finitura metallizzata e weathering.",
       material: "PLA Bianco + Primer e Acrilici",
-      image: "images/stampa/stampa16.jpg"
+      image: "images/stampa/stampa16.jpg",
+      topic: "Cosplay",
+      link: "https://www.thingiverse.com/thing:4658066"
     },
     {
       title: "Action Figure: Denji (Chainsaw Man)",
       description: "Statuetta dettagliata del protagonista di Chainsaw Man. Post-produzione intensiva per levigare i layer e pittura a mano.",
       material: "PLA Bianco + Primer e Acrilici",
-      image: "images/stampa/stampa3.jpg"
+      image: "images/stampa/stampa3.jpg",
+      topic: "Action Figure",
+      link: "https://www.myminifactory.com"
     },
     {
       title: "Action Figure: Kakashi Hatake",
       description: "Diorama dinamico del ninja copia. Cura particolare nella pittura delle texture dei tessuti e dell'effetto Chidori.",
       material: "PLA Bianco + Primer e Acrilici",
-      image: "images/stampa/"
+      image: "images/stampa/",
+      topic: "Action Figure",
+      link: "https://www.cults3d.com"
     },
     {
       title: "Action Figure: Mimikyu",
       description: "Modello 'life-size' del Pokémon fantasma. Finitura opaca per simulare l'effetto tessuto del costume.",
       material: "PLA Bianco + Primer e Acrilici",
-      image: "images/stampa/"
+      image: "images/stampa/",
+      topic: "Action Figure",
+      link: "https://www.thingiverse.com"
     },
     {
       title: "Raspberry Pi Ultimate Case",
       description: "Case custom progettato per massimizzare il flusso d'aria. Include alloggiamenti per SSD NVMe e display OLED di stato.",
       material: "PLA+ o ASA",
-      image: "images/stampa/stampa11.jpg"
+      image: "images/stampa/stampa11.jpg",
+      topic: "Tech",
+      link: "https://www.printables.com"
     },
     {
       title: "Sponge Bed",
       description: "Accessorio funzionale e ironico per la cucina: un letto in miniatura che permette alla spugna di asciugarsi correttamente.",
       material: "PLA+ o ASA",
-      image: "images/stampa/stampa19.jpg"
+      image: "images/stampa/stampa19.jpg",
+      topic: "Cucina",
+      link: "https://www.thingiverse.com/thing:2933483"
     },
     {
       title: "Action Figure: Kuromi",
-      description: "Personaggio stampato ad alta risoluzione. Colori acrilici vivaci e sigillante lucido per un look 'vinyl toy'.",
+      description: "Personaggio Sanrio stampato ad alta risoluzione. Colori acrilici vivaci e sigillante lucido per un look 'vinyl toy'.",
       material: "PLA",
-      image: "images/stampa/stampa18.jpg"
+      image: "images/stampa/stampa18.jpg",
+      topic: "Action Figure",
+      link: "https://www.cults3d.com"
     },
     {
       title: "Aperol Spritz Neon Sign",
       description: "Insegna luminosa a LED personalizzata. Design a strati per diffondere la luce arancione tipica del cocktail.",
       material: "PLA+ Traslucido e Opaco",
-      image: "images/stampa/stampa7.jpg"
+      image: "images/stampa/stampa7.jpg",
+      topic: "Arredamento",
+      link: "https://www.printables.com"
     },
     {
       title: "Hestia Knife (DanMachi)",
       description: "Replica fedele del pugnale divino, con incisioni delle rune geroglifiche dipinte a mano.",
       material: "PLA",
-      image: "images/stampa/stampa5.jpg"
+      image: "images/stampa/stampa5.jpg",
+      topic: "Cosplay",
+      link: "https://www.thingiverse.com"
     },
     {
       title: "Self-Watering Planter",
       description: "Vaso per erbe aromatiche con serbatoio d'acqua integrato e sistema di capillarità per ridurre la frequenza di innaffiatura.",
       material: "PLA (Watertight setting)",
-      image: "images/stampa/stampa13.jpg"
+      image: "images/stampa/stampa13.jpg",
+      topic: "Giardinaggio",
+      link: "https://www.thingiverse.com"
     },
   ];
 
@@ -94,83 +116,109 @@ const Stampe3d = () => {
       title: "Robot Dog Open Source",
       description: "Progetto avanzato di robotica: quadrupede stampato in 3D con 12 gradi di libertà, gestito da Arduino e servi ad alta coppia.",
       material: "PETG / ABS (per resistenza meccanica)",
-      image: "images/stampa/stampa1.jpg"
+      image: "images/stampa/stampa1.jpg",
+      topic: "Robotica",
+      link: "https://www.instructables.com/GoodBoy-3D-Printed-Arduino-Robot-Dog/"
     },
     {
       title: "E.M.M.I. (Metroid Dread)",
       description: "Modello articolato complesso del robot inseguitore. Richiede tolleranze precise per le giunture posabili.",
       material: "PLA / TPU (per giunti flessibili)",
-      image: "images/stampa/stampa17.jpg"
+      image: "images/stampa/stampa17.jpg",
+      topic: "Action Figure",
+      link: "https://www.cults3d.com"
     },
     {
       title: "Trauma Team Helmet",
       description: "Casco integrale ispirato ai medici tattici di Cyberpunk 2077. Progettato per essere indossabile con elettronica interna.",
       material: "PLA (rinforzato internamente)",
-      image: "images/stampa/stampa10.jpg"
+      image: "images/stampa/stampa10.jpg",
+      topic: "Cosplay",
+      link: "https://www.thingiverse.com"
     },
     {
       title: "Daedric Armor (Skyrim)",
-      description: "Armatura completa Daedrica. Un progetto a lungo termine diviso in decine di parti ottimizzate per stampanti FDM.",
+      description: "Armatura completa Daedrica.",
       material: "PLA",
-      image: "images/stampa/stampa2.jpg"
+      image: "images/stampa/stampa2.jpg",
+      topic: "Cosplay",
+      link: "https://www.thingiverse.com"
     },
     {
       title: "Tea Dispenser Verticale",
       description: "Organizzatore a gravità per bustine di tè. Design compatto per ottimizzare lo spazio in dispensa.",
       material: "PLA",
-      image: "images/stampa/stampa20.jpg"
+      image: "images/stampa/stampa20.jpg",
+      topic: "Cucina",
+      link: "https://www.printables.com"
     },
     {
       title: "Iron Man MK6 Suit",
       description: "Armatura completa in scala 1:1. Include alloggiamenti per servomotori per l'apertura automatica del casco e dei flap.",
       material: "PLA+ (per resistenza agli urti)",
-      image: "images/stampa/stampa4.jpg"
+      image: "images/stampa/stampa4.jpg",
+      topic: "Cosplay",
+      link: "https://www.thingiverse.com"
     },
     {
       title: "Jack Daniel's Coasters",
       description: "Set di sottobicchieri tematici con design in rilievo e cambio colore al layer.",
       material: "PLA / TPU",
-      image: "images/stampa/stampa6.jpg"
+      image: "images/stampa/stampa6.jpg",
+      topic: "Arredamento",
+      link: "https://www.thingiverse.com"
     },
     {
       title: "T-60b Power Armor (Fallout 4)",
       description: "Il progetto definitivo: armatura alta oltre 2 metri, indossabile, con esoscheletro di supporto interno.",
       material: "PLA+ (kg stimati: 25+)",
-      image: "images/stampa/stampa9.jpg"
+      image: "images/stampa/stampa9.jpg",
+      topic: "Cosplay",
+      link: "https://www.cults3d.com"
     },
     {
       title: "Iron Man Helmet (Motorized)",
       description: "Casco stand-alone con faceplate motorizzata controllata da Arduino e sensori vocali/tattili.",
       material: "PLA Silk (effetto metallico)",
-      image: "images/stampa/stampa8.jpg"
+      image: "images/stampa/stampa8.jpg",
+      topic: "Cosplay",
+      link: "https://www.thingiverse.com"
     },
     {
       title: "Mug Basketball Hoop",
       description: "Gadget da ufficio: un mini canestro a clip adattabile a qualsiasi tazza per lanciare zollette o cereali.",
       material: "PLA",
-      image: "images/stampa/stampa15.jpg"
+      image: "images/stampa/stampa15.jpg",
+      topic: "Svago",
+      link: "https://www.printables.com"
     },
     {
       title: "Cyberpunk Sci-Fi Bonsai",
       description: "Fusione tra natura e tecnologia: un bonsai artificiale con elementi mecha, cavi e illuminazione LED integrata.",
       material: "PLA Wood (tronco) & PLA Neon",
-      image: "images/stampa/stampa12.jpg"
+      image: "images/stampa/stampa12.jpg",
+      topic: "Arredamento",
+      link: "https://www.thingiverse.com"
     },
     {
       title: "Kiroshi Optics Replica",
       description: "CHOOMS! Che siate in giro per una notte in città a Night City, o che stiate prendendo d'assalto la torre Arasaka, è meglio avere le migliori ottiche che si possano comprare, e niente batte Kiroshi.",
-      material: "PLA+",
-      image: "images/stampa/stampa14.jpg"
+      material: "PLA+ e Resina (per le lenti)",
+      image: "images/stampa/stampa14.jpg",
+      topic: "Cosplay",
+      link: "https://www.thingiverse.com"
     }
   ];
 
-  // --- FILTRI ---
+  // --- FILTRI (Nome OR Argomento) ---
   const filteredExecuted = executedProjects.filter(project => 
-    project.title.toLowerCase().includes(searchTermExecuted.toLowerCase())
+    project.title.toLowerCase().includes(searchTermExecuted.toLowerCase()) || 
+    project.topic.toLowerCase().includes(searchTermExecuted.toLowerCase())
   );
 
   const filteredFuture = futureProjects.filter(project => 
-    project.title.toLowerCase().includes(searchTermFuture.toLowerCase())
+    project.title.toLowerCase().includes(searchTermFuture.toLowerCase()) ||
+    project.topic.toLowerCase().includes(searchTermFuture.toLowerCase())
   );
 
   // Gestione layout
@@ -244,6 +292,12 @@ const Stampe3d = () => {
              <article className="box post">
                 <header><h2>Dal Digitale al Fisico</h2></header>
                 <p>La stampa 3D unisce la mia passione per il software con la soddisfazione di creare oggetti tangibili. Qui raccolgo i miei progetti, divisi tra quelli già realizzati e le idee in cantiere.</p>
+                
+                {/* Modifica: Riga Collaborazione */}
+                <p style={{ marginTop: '1.5em', fontStyle: 'italic', borderLeft: '4px solid #d52349', paddingLeft: '15px', color: '#555' }}>
+                  🚀 <strong>Collaborazioni:</strong> Sono disponibile per collaborazioni e servizi di stampa 3D su richiesta. 
+                  Se hai un progetto in mente o un file da stampare, <Link to="/about">contattami</Link> per discuterne insieme!
+                </p>
              </article>
 
              {/* --- SEZIONE 1: PROGETTI ESEGUITI --- */}
@@ -256,7 +310,7 @@ const Stampe3d = () => {
                 <div style={{ marginBottom: '30px', textAlign: 'center' }}>
                   <input
                     type="text"
-                    placeholder="Cerca progetto eseguito..."
+                    placeholder="Cerca per nome o argomento..."
                     value={searchTermExecuted}
                     onChange={(e) => setSearchTermExecuted(e.target.value)}
                     style={{ 
@@ -279,11 +333,22 @@ const Stampe3d = () => {
                                 </a>
                                 <header>
                                     <h3>{project.title}</h3>
+                                    {/* Modifica: Badge Argomento */}
+                                    <span style={{ display: 'inline-block', backgroundColor: '#eee', color: '#444', padding: '2px 10px', borderRadius: '15px', fontSize: '0.8em', marginBottom: '10px' }}>
+                                      {project.topic}
+                                    </span>
                                 </header>
                                 <p>{project.description}</p>
-                                <p style={{ fontSize: '0.9em', color: '#555', borderTop: '1px solid #eee', paddingTop: '10px' }}>
-                                    <strong>Materiale:</strong> {project.material}
-                                </p>
+                                <div style={{ fontSize: '0.9em', color: '#555', borderTop: '1px solid #eee', paddingTop: '10px' }}>
+                                    <p style={{ marginBottom: '0.5em' }}><strong>Materiale:</strong> {project.material}</p>
+                                    
+                                    {/* Modifica: Link ai file */}
+                                    {project.link && (
+                                      <a href={project.link} target="_blank" rel="noreferrer" className="button small icon solid fa-download">
+                                        Vedi Sorgente
+                                      </a>
+                                    )}
+                                </div>
                             </article>
                         </div>
                       ))
@@ -306,7 +371,7 @@ const Stampe3d = () => {
                 <div style={{ marginBottom: '30px', textAlign: 'center' }}>
                   <input
                     type="text"
-                    placeholder="Cerca progetto futuro..."
+                    placeholder="Cerca per nome o argomento..."
                     value={searchTermFuture}
                     onChange={(e) => setSearchTermFuture(e.target.value)}
                     style={{ 
@@ -329,11 +394,22 @@ const Stampe3d = () => {
                                 </a>
                                 <header>
                                     <h3>{project.title}</h3>
+                                    {/* Modifica: Badge Argomento */}
+                                    <span style={{ display: 'inline-block', backgroundColor: '#eee', color: '#444', padding: '2px 10px', borderRadius: '15px', fontSize: '0.8em', marginBottom: '10px' }}>
+                                      {project.topic}
+                                    </span>
                                 </header>
                                 <p>{project.description}</p>
-                                <p style={{ fontSize: '0.9em', color: '#555', borderTop: '1px solid #eee', paddingTop: '10px' }}>
-                                    <strong>Materiale Previsto:</strong> {project.material}
-                                </p>
+                                <div style={{ fontSize: '0.9em', color: '#555', borderTop: '1px solid #eee', paddingTop: '10px' }}>
+                                    <p style={{ marginBottom: '0.5em' }}><strong>Materiale Previsto:</strong> {project.material}</p>
+                                    
+                                    {/* Modifica: Link ai file */}
+                                    {project.link && (
+                                      <a href={project.link} target="_blank" rel="noreferrer" className="button small icon solid fa-download">
+                                        Vedi Sorgente
+                                      </a>
+                                    )}
+                                </div>
                             </article>
                         </div>
                       ))
