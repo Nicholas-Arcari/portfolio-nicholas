@@ -138,7 +138,7 @@ const Stampe3d = () => {
     },
     {
       title: "Daedric Armor (Skyrim)",
-      description: "Armatura completa Daedrica.",
+      description: "Armatura completa Daedrica. Un progetto a lungo termine diviso in decine di parti ottimizzate per stampanti FDM.",
       material: "PLA",
       image: "images/stampa/stampa2.jpg",
       topic: "Cosplay",
@@ -210,7 +210,7 @@ const Stampe3d = () => {
     }
   ];
 
-  // --- FILTRI (Nome OR Argomento) ---
+  // --- FILTRI ---
   const filteredExecuted = executedProjects.filter(project => 
     project.title.toLowerCase().includes(searchTermExecuted.toLowerCase()) || 
     project.topic.toLowerCase().includes(searchTermExecuted.toLowerCase())
@@ -293,7 +293,6 @@ const Stampe3d = () => {
                 <header><h2>Dal Digitale al Fisico</h2></header>
                 <p>La stampa 3D unisce la mia passione per il software con la soddisfazione di creare oggetti tangibili. Qui raccolgo i miei progetti, divisi tra quelli già realizzati e le idee in cantiere.</p>
                 
-                {/* Modifica: Riga Collaborazione */}
                 <p style={{ marginTop: '1.5em', fontStyle: 'italic', borderLeft: '4px solid #d52349', paddingLeft: '15px', color: '#555' }}>
                   🚀 <strong>Collaborazioni:</strong> Sono disponibile per collaborazioni e servizi di stampa 3D su richiesta. 
                   Se hai un progetto in mente o un file da stampare, <Link to="/about">contattami</Link> per discuterne insieme!
@@ -333,7 +332,6 @@ const Stampe3d = () => {
                                 </a>
                                 <header>
                                     <h3>{project.title}</h3>
-                                    {/* Modifica: Badge Argomento */}
                                     <span style={{ display: 'inline-block', backgroundColor: '#eee', color: '#444', padding: '2px 10px', borderRadius: '15px', fontSize: '0.8em', marginBottom: '10px' }}>
                                       {project.topic}
                                     </span>
@@ -342,11 +340,14 @@ const Stampe3d = () => {
                                 <div style={{ fontSize: '0.9em', color: '#555', borderTop: '1px solid #eee', paddingTop: '10px' }}>
                                     <p style={{ marginBottom: '0.5em' }}><strong>Materiale:</strong> {project.material}</p>
                                     
-                                    {/* Modifica: Link ai file */}
+                                    {/* Modifica: Link Testuale Semplice */}
                                     {project.link && (
-                                      <a href={project.link} target="_blank" rel="noreferrer" className="button small icon solid fa-download">
-                                        Vedi Sorgente
-                                      </a>
+                                      <p style={{ margin: 0, wordBreak: 'break-all' }}>
+                                          <strong>Link: </strong> 
+                                          <a href={project.link} target="_blank" rel="noreferrer" style={{ color: '#d52349' }}>
+                                            {project.link}
+                                          </a>
+                                      </p>
                                     )}
                                 </div>
                             </article>
@@ -394,7 +395,6 @@ const Stampe3d = () => {
                                 </a>
                                 <header>
                                     <h3>{project.title}</h3>
-                                    {/* Modifica: Badge Argomento */}
                                     <span style={{ display: 'inline-block', backgroundColor: '#eee', color: '#444', padding: '2px 10px', borderRadius: '15px', fontSize: '0.8em', marginBottom: '10px' }}>
                                       {project.topic}
                                     </span>
@@ -403,11 +403,14 @@ const Stampe3d = () => {
                                 <div style={{ fontSize: '0.9em', color: '#555', borderTop: '1px solid #eee', paddingTop: '10px' }}>
                                     <p style={{ marginBottom: '0.5em' }}><strong>Materiale Previsto:</strong> {project.material}</p>
                                     
-                                    {/* Modifica: Link ai file */}
+                                    {/* Modifica: Link Testuale Semplice */}
                                     {project.link && (
-                                      <a href={project.link} target="_blank" rel="noreferrer" className="button small icon solid fa-download">
-                                        Vedi Sorgente
-                                      </a>
+                                      <p style={{ margin: 0, wordBreak: 'break-all' }}>
+                                          <strong>Link: </strong> 
+                                          <a href={project.link} target="_blank" rel="noreferrer" style={{ color: '#d52349' }}>
+                                            {project.link}
+                                          </a>
+                                      </p>
                                     )}
                                 </div>
                             </article>
@@ -423,7 +426,7 @@ const Stampe3d = () => {
         </div>
       </section>
 
-      {/* FOOTER MINIMAL */}
+      {/* --- FOOTER --- */}
       <section id="footer">
         <div id="copyright" className="container">
           <ul className="links">
