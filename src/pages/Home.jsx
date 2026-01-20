@@ -7,6 +7,10 @@ const Home = () => {
   // Stato per gestire l'apertura del menu a tendina
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
+  // --- NUOVI STATI PER LE SEZIONI ESPANDIBILI ---
+  const [showWork, setShowWork] = useState(false); // Default: nascosto
+  const [showCyber, setShowCyber] = useState(false); // Default: nascosto
+
   const terminalLines = [
     "> ./init_profile.sh",
     "> Loading Nicholas Arcari...",
@@ -182,64 +186,146 @@ const Home = () => {
             {/* Content */}
             <div id="content" className="col-8 col-12-medium">
               
+              {/* --- ARTICOLO 1: ESPERIENZE DI LAVORO (ESPANDIBILE) --- */}
               <article className="box post">
-                <header><h2><a href="#">Esperienze di <strong>Lavoro</strong></a></h2></header>
+                <header>
+                    <h2><a href="#">Esperienze di <strong>Lavoro</strong></a></h2>
+                    {/* Bottone Toggle Lavoro */}
+                    <div style={{ textAlign: 'center', marginTop: '15px' }}>
+                        <button 
+                            className="button alt small" 
+                            onClick={() => setShowWork(!showWork)}
+                        >
+                            {showWork ? 'Nascondi Esperienze' : 'Mostra Esperienze'}
+                            <i className={`icon solid ${showWork ? 'fa-chevron-up' : 'fa-chevron-down'}`} style={{ marginLeft: '10px' }}></i>
+                        </button>
+                    </div>
+                </header>
                 
-                <h3>Freelance Fullstack Web Developer (2025 - Oggi)</h3>
-                
-                <p>
-                  Sviluppo di una piattaforma gestionale Fullstack per la <strong>digitalizzazione e l'automazione integrale dei processi aziendali</strong>, 
-                  dal reparto amministrativo fino alla linea di produzione.
-                  <br />
-                  Il progetto ha previsto la migrazione da sistemi legacy ad un'architettura web containerizzata sicura, 
-                  gestendo ordini, calcoli complessi e generando output diretti per i macchinari industriali.
-                </p>
-                
-                <p style={{ fontSize: '0.9em', color: '#666', borderLeft: '3px solid #ddd', paddingLeft: '10px' }}>
-                  <strong>Tech Stack:</strong> Backend (PHP, Python, Laravel 12+), Frontend (React, Vite), 
-                  Database (MySQL, PhpMyAdmin), DevOps (Docker, Kubernetes).
-                </p>
+                {/* Contenuto Condizionale Lavoro */}
+                {showWork && (
+                    <div className="work-content-wrapper fade-in">
+                        <h3>Freelance Fullstack Web Developer (2025 - Oggi)</h3>
+                        
+                        <p>
+                        Sviluppo di una piattaforma gestionale Fullstack per la <strong>digitalizzazione e l'automazione integrale dei processi aziendali</strong>, 
+                        dal reparto amministrativo fino alla linea di produzione.
+                        <br />
+                        Il progetto ha previsto la migrazione da sistemi legacy ad un'architettura web containerizzata sicura, 
+                        gestendo ordini, calcoli complessi e generando output diretti per i macchinari industriali.
+                        </p>
+                        
+                        <p style={{ fontSize: '0.9em', color: '#666', borderLeft: '3px solid #ddd', paddingLeft: '10px' }}>
+                        <strong>Tech Stack:</strong> Backend (PHP, Python, Laravel 12+), Frontend (React, Vite), 
+                        Database (MySQL, PhpMyAdmin), DevOps (Docker, Kubernetes).
+                        </p>
 
-                {/* BOTTONE VIEW MORE FREELANCE */}
-                <Link to="/freelance-details" className="button icon solid fa-arrow-circle-right" style={{ marginTop: '10px', marginBottom: '20px' }}>
-                  Vedi Dettagli Progetto
-                </Link>
+                        {/* BOTTONE VIEW MORE FREELANCE */}
+                        <Link to="/freelance-details" className="button icon solid fa-arrow-circle-right" style={{ marginTop: '10px', marginBottom: '20px' }}>
+                        Vedi Dettagli Progetto
+                        </Link>
 
-                <br /><hr /><br />
+                        <br /><hr /><br />
 
-                <h3>Esperienze Precedenti</h3>
-                <ul>
-                  <li><strong>Guardia Giurata (G.P.G.), CoopService, Parma (2023-2024)</strong><br />Gestione di situazioni ad alta responsabilità e collaborazione con personale sanitario
-e pubblico. Attività di presidio, coordinamento e controllo accessi in contesti sensibili.</li>
-                  <li><strong>Operaio stagionale, Rodolfi Mansueto, Castelguelfo (2023)</strong><br />Produzione di vari tipi di passate di pomodoro durante le sue differenti fasi: pulizia,
-cottura, accatastamento in bancali.</li>
-                  <li><strong>Magazziniere, GLS, Fidenza (2021-2022)</strong><br />Lavoro di squadra in attività di logistica, smistamento pacchi e coordinamento carichi.</li>
-                </ul>
+                        <h3>Esperienze Precedenti</h3>
+                        <ul>
+                        <li><strong>Guardia Giurata (G.P.G.), CoopService, Parma (2023-2024)</strong><br />Gestione di situazioni ad alta responsabilità e collaborazione con personale sanitario
+        e pubblico. Attività di presidio, coordinamento e controllo accessi in contesti sensibili.</li>
+                        <li><strong>Operaio stagionale, Rodolfi Mansueto, Castelguelfo (2023)</strong><br />Produzione di vari tipi di passate di pomodoro durante le sue differenti fasi: pulizia,
+        cottura, accatastamento in bancali.</li>
+                        <li><strong>Magazziniere, GLS, Fidenza (2021-2022)</strong><br />Lavoro di squadra in attività di logistica, smistamento pacchi e coordinamento carichi.</li>
+                        </ul>
+                    </div>
+                )}
               </article>
 
+              {/* --- ARTICOLO 2: PROGETTI CYBERSECURITY (ESPANDIBILE) --- */}
               <article className="box post">
-                <header><h2><a href="#">Progetti di <strong>Cybersecurity</strong></a></h2></header>
-                <a href="https://github.com/Nicholas-Arcari" className="image featured"><img src="images/img1.jpg" alt="Cybersecurity Lab" /></a>
-                <p>Una selezione dei principali progetti pratici presenti nel mio portfolio GitHub, focalizzati su hardening, analisi di rete e offensive security.</p>
-                <hr />
-                <h3>Cybersecurity Labs</h3>
-                <p>Laboratorio completo diviso in 10 moduli, dalla <strong>Recon</strong> alla <strong>Defense</strong>. Include tool custom per Social Engineering, simulazioni di Web Attacks, configurazione di Honeypots e Post-Exploitation.<br /><strong>Stack:</strong> <span className="tech-stack">Python, Bash, Docker, Linux Security</span></p>
-                <a href="https://github.com/Nicholas-Arcari/cybersecurity-labs" className="button icon brands fa-github" target="_blank" rel="noopener noreferrer">Vedi Repo</a>
-                <br /><br />
-                <hr />
-                <h3>RaspberryPi Home Lab</h3>
-                <p>Configurazione e hardening di un'infrastruttura di rete domestica sicura. Implementazione di <strong>VPN</strong> (WireGuard), blocco pubblicità (Pi-hole), <strong>NAS</strong> sicuro e un <strong>Honeypot</strong> di rete per rilevare intrusioni.<br /><strong>Stack:</strong> <span className="tech-stack">Linux (Raspbian), Docker, OpenVPN/WireGuard, Pi-hole</span></p>
-                <a href="https://github.com/Nicholas-Arcari/RaspberryPi" className="button icon brands fa-github" target="_blank" rel="noopener noreferrer">Vedi Repo</a>
-                <br /><br />
-                <hr />
-                <h3>Tor Networking Guide</h3>
-                <p>Guida e script per la navigazione anonima e la configurazione di servizi nascosti. Analisi del routing <strong>Onion</strong> e best practices per la privacy digitale.<br /><strong>Stack:</strong> <span className="tech-stack">Tor Browser, Proxychains, Network Privacy</span></p>
-                <a href="https://github.com/Nicholas-Arcari/tor-networking-guide" className="button icon brands fa-github" target="_blank" rel="noopener noreferrer">Vedi Repo</a>
-                <br /><br />
-                <hr />
-                <h3>Flipper Zero</h3>
-                <p>Esplorazione e auditing di protocolli radio e sistemi di controllo accessi. Analisi segnali <strong>Sub-GHz</strong>, clonazione tag <strong>NFC/RFID</strong> e automazione badUSB.<br /><strong>Stack:</strong> <span className="tech-stack">Flipper Zero, GPIO, Radio Protocols, Hardware Hacking</span></p>
-                <a href="https://github.com/Nicholas-Arcari/FlipperZero-guide" className="button icon brands fa-github" target="_blank" rel="noopener noreferrer">Vedi Repo</a>
+                <header>
+                    <h2><a href="#">Progetti di <strong>Cybersecurity</strong></a></h2>
+                    {/* Bottone Toggle Cyber */}
+                    <div style={{ textAlign: 'center', marginTop: '15px' }}>
+                        <button 
+                            className="button alt small" 
+                            onClick={() => setShowCyber(!showCyber)}
+                        >
+                            {showCyber ? 'Nascondi Progetti' : 'Mostra Progetti'}
+                            <i className={`icon solid ${showCyber ? 'fa-chevron-up' : 'fa-chevron-down'}`} style={{ marginLeft: '10px' }}></i>
+                        </button>
+                    </div>
+                </header>
+
+                {/* Contenuto Condizionale Cyber */}
+                {showCyber && (
+                    <div className="cyber-content-wrapper fade-in">
+                        <a href="https://github.com/Nicholas-Arcari" className="image featured"><img src="images/img1.jpg" alt="Cybersecurity Lab" /></a>
+                        <p>Una selezione dei principali progetti pratici presenti nel mio portfolio GitHub, focalizzati su hardening, analisi di rete e offensive security.</p>
+                        <hr />
+                        {/* --- CYBERSECURITY LABS --- */}
+                        <h3>Cybersecurity Labs</h3>
+                        <p>
+                          Repository centrale strutturata seguendo il flusso logico della <strong>Cyber Kill Chain</strong> e di un Penetration Test reale. Il laboratorio è diviso in 10 moduli che coprono l'intero spettro delle operazioni:
+                          <br /><br />
+                          <strong>Red Team (Offensive):</strong> Dalla ricognizione (OSINT) e Vulnerability Assessment fino all'exploitation avanzata (Web, System & Wireless), Social Engineering e Post-Exploitation (Pivoting/Persistence).
+                          <br />
+                          <strong>Blue Team (Defensive):</strong> Difesa attiva con <strong>Wazuh</strong> (SIEM), Hardening di sistemi, configurazione Honeypots e Digital Forensics con <strong>Wireshark</strong>.
+                          <br />
+                          <strong>Cloud & Modern:</strong> Sicurezza per Docker, Kubernetes e ambienti Cloud (AWS/Azure).
+                          <br /><br />
+                          <strong>Stack:</strong> <span className="tech-stack">Python, Bash, Kali Linux, Docker, Wazuh, Burp Suite, ...</span>
+                        </p>
+                        <a href="https://github.com/Nicholas-Arcari/cybersecurity-labs" className="button icon brands fa-github" target="_blank" rel="noopener noreferrer">Vedi Repo</a>
+                        <br /><br />
+                        <hr />
+                        {/* --- RASPBERRY PI --- */}
+                        <h3>Raspberry Pi 5 Secure Server</h3>
+                        <p>
+                          Server multifunzione basato su <strong>OpenMediaVault</strong> e <strong>Docker</strong> con boot da NVMe. Architettura segmentata (DMZ/Mgmt) che integra uno stack di sicurezza Enterprise:
+                          <br /><br />
+                          <strong>Defense & Monitoring:</strong> SIEM <strong>Wazuh</strong> per la rilevazione minacce, <strong>Arkime</strong> per Full Packet Capture e integrazione VirusTotal.
+                          <br />
+                          <strong>Deception:</strong> Honeypots (Cowrie, Dionaea) isolati per analizzare attacchi SSH/Malware.
+                          <br />
+                          <strong>Network:</strong> VPN WireGuard, Pi-hole e Reverse Proxy.
+                          <br /><br />
+                          <strong>Stack:</strong> <span className="tech-stack">OMV, Docker, Portainer, Wazuh, Arkime, WireGuard, ...</span>
+                        </p>
+                        <a href="https://github.com/Nicholas-Arcari/RaspberryPi" className="button icon brands fa-github" target="_blank" rel="noopener noreferrer">Vedi Repo</a>
+                        <br /><br />
+                        <hr />
+                        {/* --- TOR NETWORKING GUIDE --- */}
+                        <h3>Tor Networking Guide 🧅</h3>
+                        <p>
+                          Documentazione tecnica completa sull'utilizzo avanzato della rete Tor in ambiente Linux. Il progetto copre l'intero stack di anonimizzazione:
+                          <br /><br />
+                          <strong>Architecture & Routing:</strong> Analisi del funzionamento dei nodi (Guard, Middle, Exit), configurazione del file <code>torrc</code> e gestione dei circuiti.
+                          <br />
+                          <strong>Censorship Evasion:</strong> Implementazione di <strong>Bridge Obfs4</strong> per offuscare il traffico e aggirare DPI (Deep Packet Inspection) o blocchi ISP.
+                          <br />
+                          <strong>Automation & Scripting:</strong> Script Bash per la rotazione automatica dell'IP (<code>SIGNAL NEWNYM</code>), gestione del ControlPort 9051 e tunneling via <strong>Proxychains</strong>.
+                          <br />
+                          <strong>Privacy & Security:</strong> Mitigazione del fingerprinting, gestione DNS Leaks e considerazioni legali sull'uso in Italia.
+                          <br /><br />
+                          <strong>Stack:</strong> <span className="tech-stack">Tor Service, Bash, Proxychains, Obfs4, Kali Linux</span>
+                        </p>
+                        <a href="https://github.com/Nicholas-Arcari/tor-networking-guide" className="button icon brands fa-github" target="_blank" rel="noopener noreferrer">Vedi Repo</a>
+                        <br /><br />
+                        <hr />
+                        {/* --- FLIPPER ZERO UPDATED --- */}
+                        <h3>Flipper Zero Guide: Hardware Hacking</h3>
+                        <p>
+                          Guida approfondita al modding e all'espansione del Flipper Zero. Il repository esplora le capacità native e custom del dispositivo, andando oltre l'uso base:
+                          <br /><br />
+                          <strong>Custom Firmware & GPIO:</strong> Guida al flashing di <strong>RogueMaster</strong> (e fork successivi) per sbloccare frequenze e funzionalità. Integrazione hardware via GPIO per debug e sensoristica.
+                          <br />
+                          <strong>WiFi & RF Expansion:</strong> Configurazione di schede <strong>ESP32/ESP8266</strong> per eseguire <strong>WiFi Marauder</strong> (sniffing, deauth) e moduli NRF24 per mousejacking.
+                          <br />
+                          <strong>Access Control:</strong> Analisi segnali Sub-GHz, clonazione keyfob (NFC/RFID/iButton) e simulazione BadUSB.
+                          <br /><br />
+                          <strong>Stack:</strong> <span className="tech-stack">Flipper Zero, GPIO, ESP32, RogueMaster FW, BadUSB</span>
+                        </p>
+                        <a href="https://github.com/Nicholas-Arcari/FlipperZero-guide" className="button icon brands fa-github" target="_blank" rel="noopener noreferrer">Vedi Repo</a></div>
+                )}
               </article>
             </div>
 

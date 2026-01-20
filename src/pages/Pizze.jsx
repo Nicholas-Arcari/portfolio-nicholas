@@ -9,7 +9,7 @@ const Pizze = () => {
 
   const terminalLines = [
     "> ./load_module.sh --pizza-oven",
-    "> Preheating to 450°C...",
+    "> Preheating to 400°C...",
     "> Status: Dough Rising...",
     "> Ready."
   ];

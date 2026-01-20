@@ -10,7 +10,7 @@ const Cocktail = () => {
   const terminalLines = [
     "> ./load_module.sh --bar",
     "> Loading Cocktail library...",
-    "> Status: Mixology Mode Activated.",
+    "> Status: Campari Addicted.",
     "> Ready."
   ];
 

@@ -76,7 +76,8 @@ const About = () => {
                 
                 {/* COLONNA SINISTRA: FOTO */}
                 <div className="col-5 col-12-medium">
-                  <span className="image fit">
+                  {/* MODIFICA QUI: Applicato borderRadius anche al contenitore (span) per curvare la cornice */}
+                  <span className="image fit" style={{ borderRadius: '15px' }}>
                     <img 
                       src="images/test.jpg" 
                       alt="Nicholas Arcari" 
@@ -95,14 +96,17 @@ const About = () => {
                   
                   <div style={{ fontSize: '1.1em', lineHeight: '1.8', color: '#555', marginBottom: '2em' }}>
                     <p>
-                     Ciao, sono <strong>Nicholas Arcari</strong>. <br />
-                     Nel mio modo di vedere il mondo, righe di codice e cibo non sono affatto agli antipodi. A ben pensarci, tra il silicio e la cucina non esiste una differenza così grande: entrambi richiedono struttura, pazienza e una cura quasi maniacale per i dettagli.
+                      Ciao, sono <strong>Nicholas Arcari</strong>. <br />
+                      Nel mio modo di vedere il mondo, righe di codice e cibo non sono affatto agli antipodi. A ben pensarci, tra il silicio e la cucina non esiste una differenza così grande: entrambi richiedono struttura, pazienza e una cura quasi maniacale per i dettagli.
                     </p>
                     <p>
-                    C'è una poesia silenziosa, quasi romantica, nel costruire qualcosa partendo da zero. Allestire laboratori di sicurezza informatica, orchestrare macchine virtuali e configurare reti sicure mi regala la stessa soddisfazione viscerale di quando affondo le mani nell'impasto, sentendo il profumo, la maglia glutinica prendere forma sotto le dita... Sono due forme di architettura diverse, è vero, ma condividono la stessa anima.
+                     C'è una poesia silenziosa, quasi romantica, nel costruire qualcosa partendo da zero. Allestire laboratori di sicurezza informatica, orchestrare macchine virtuali e configurare reti sicure mi regala la stessa soddisfazione viscerale di quando affondo le mani nell'impasto, sentendo il profumo, la maglia glutinica prendere forma sotto le dita... Sono due forme di architettura diverse, è vero, ma condividono la stessa anima.
                     </p>
                     <p>
-                     E poi c'è l'attesa vigile, il monitoraggio. Potrei passare ore a seguire lo scorrere dei log di un SIEM, cercando l'anomalia nascosta, con la stessa concentrazione febbrile con cui osservo una lievitazione complessa dietro il vetro del forno. In entrambi i casi si tratta di leggere segnali sottili, interpretare comportamenti, aspettare il momento esatto in cui tutto raggiunge il suo equilibrio perfetto.
+                      E poi c'è l'attesa vigile, il monitoraggio. Potrei passare ore a seguire lo scorrere dei log di un SIEM, cercando l'anomalia nascosta, con la stessa concentrazione febbrile con cui osservo una lievitazione complessa dietro il vetro del forno. In entrambi i casi si tratta di leggere segnali sottili, interpretare comportamenti, aspettare il momento esatto in cui tutto raggiunge il suo equilibrio perfetto.
+                    </p>
+                    <p>
+                      PS: se non metti le patate precedentemente lessate dentro la pasta al pesto non penso possiamo diventare amici.
                     </p>
                   </div>
 
@@ -127,12 +131,17 @@ const About = () => {
 
                     <li style={{ marginBottom: '10px', display: 'flex', alignItems: 'center' }}>
                       <i className="icon brands fa-linkedin" style={{ width: '30px', color: '#0077b5', fontSize: '1.2em' }}></i>
-                      <a href="https://www.linkedin.com/in/tuo-profilo" target="_blank" rel="noreferrer">LinkedIn</a>
+                      <a href="https://www.linkedin.com/in/nicholas-arcari-6245893a7/" target="_blank" rel="noreferrer">LinkedIn</a>
                     </li>
 
                     <li style={{ marginBottom: '10px', display: 'flex', alignItems: 'center' }}>
                       <i className="icon brands fa-github" style={{ width: '30px', color: '#333', fontSize: '1.2em' }}></i>
                       <a href="https://github.com/Nicholas-Arcari" target="_blank" rel="noreferrer">GitHub</a>
+                    </li>
+
+                    <li style={{ marginBottom: '10px', display: 'flex', alignItems: 'center' }}>
+                      <i className="icon solid fa-terminal" style={{ width: '30px', color: '#C02026', fontSize: '1.2em' }}></i>
+                      <a href="https://tryhackme.com/p/arcari.nicholas0" target="_blank" rel="noreferrer">TryHackMe</a>
                     </li>
 
                   </ul>
