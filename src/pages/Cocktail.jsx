@@ -17,11 +17,12 @@ const Cocktail = () => {
   // GESTIONE LAYOUT
   useEffect(() => {
     document.body.classList.remove('homepage');
-    document.body.classList.add('no-sidebar'); 
+    document.body.classList.remove('no-sidebar');
+    document.body.classList.add('right-sidebar'); 
     window.scrollTo(0, 0);
     
     return () => {
-      document.body.classList.remove('no-sidebar');
+      document.body.classList.remove('right-sidebar');
       document.body.classList.add('homepage');
     };
   }, []);
@@ -125,51 +126,19 @@ const Cocktail = () => {
       <section id="main">
         <div className="container">
           
-          {/* PRIMA RIGA: Intro + Sidebar */}
+          {/* UNICA RIGA PER GESTIRE LAYOUT SIDEBAR */}
           <div className="row">
             
-            {/* 1. INTRO (Colonna Sinistra) */}
-            <div className="col-8 col-12-medium">
+            {/* 1. CONTENT */}
+            <div id="content" className="col-8 col-12-medium">
+               
+               {/* INTRO */}
                <article className="box post">
                   <header><h2>Mixology & Tech</h2></header>
                   <p>La precisione nel dosare gli ingredienti è importante quanto quella nel scrivere codice. Ecco le mie creazioni per il relax post-deploy.</p>
                </article>
-            </div>
 
-            {/* 2. SIDEBAR (Colonna Destra) */}
-            <div id="sidebar" className="col-4 col-12-medium">
-              
-              <section>
-                <ul className="divided">
-                  <li>
-                    <article className="box highlight">
-                      <header><h3><Link to="/cocktail-classici">Torna alle origini</Link></h3></header>
-                      <p>Preferisci i sapori tradizionali? Ho raccolto qui i grandi classici IBA e le ricette senza tempo.</p>
-                      <Link to="/cocktail-classici" className="button icon solid fa-glass-martini-alt">I Grandi Classici</Link>
-                    </article>
-                  </li>
-                </ul>
-              </section>
-
-            {/* Box Navigazione */}
-              <section>
-                <ul className="divided">
-                  <li>
-                    <article className="box highlight">
-                      <header><h3><Link to="/">Torna alla Home</Link></h3></header>
-                      <p>Vuoi vedere le mie esperienze lavorative o le mie passioni?</p>
-                      <Link to="/" className="button icon solid fa-home">Home</Link>
-                    </article>
-                  </li>
-                </ul>
-              </section>
-
-            </div>
-          </div>
-
-          {/* SECONDA RIGA: Lista Cocktail Tech */}
-          <div className="row">
-            <div className="col-12">
+               {/* LISTA COCKTAIL */}
                <article className="box post">
                   <header><h2>I miei <strong>Cocktail</strong></h2></header>
                   <a href="#" className="image featured"><img src="images/img3.jpg" alt="Cocktails" /></a>
@@ -209,8 +178,37 @@ const Cocktail = () => {
                       Nessun cocktail trovato con questo nome. Controlla il codice sorgente!
                     </p>
                   )}
-
                </article>
+            </div>
+
+            {/* 2. SIDEBAR  */}
+            <div id="sidebar" className="col-4 col-12-medium">
+              
+              <section>
+                <ul className="divided">
+                  <li>
+                    <article className="box highlight">
+                      <header><h3><Link to="/cocktail-classici">Torna alle origini</Link></h3></header>
+                      <p>Preferisci i sapori tradizionali? Ho raccolto qui i grandi classici IBA e le ricette senza tempo.</p>
+                      <Link to="/cocktail-classici" className="button icon solid fa-glass-martini-alt">I Grandi Classici</Link>
+                    </article>
+                  </li>
+                </ul>
+              </section>
+
+              {/* Box Navigazione */}
+              <section>
+                <ul className="divided">
+                  <li>
+                    <article className="box highlight">
+                      <header><h3><Link to="/">Torna alla Home</Link></h3></header>
+                      <p>Vuoi vedere le mie esperienze lavorative o le mie passioni?</p>
+                      <Link to="/" className="button icon solid fa-home">Home</Link>
+                    </article>
+                  </li>
+                </ul>
+              </section>
+
             </div>
           </div>
 
