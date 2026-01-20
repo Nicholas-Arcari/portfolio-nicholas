@@ -294,7 +294,7 @@ const Stampe3d = () => {
                 <p>La stampa 3D unisce la mia passione per il software con la soddisfazione di creare oggetti tangibili. Qui raccolgo i miei progetti, divisi tra quelli già realizzati e le idee in cantiere.</p>
                 
                 <p style={{ marginTop: '1.5em', fontStyle: 'italic', borderLeft: '4px solid #d52349', paddingLeft: '15px', color: '#555' }}>
-                  <strong>Collaborazioni:</strong> Sono disponibile per collaborazioni e servizi di stampa 3D su richiesta. 
+                  🚀 <strong>Collaborazioni:</strong> Sono disponibile per collaborazioni e servizi di stampa 3D su richiesta. 
                   Se hai un progetto in mente o un file da stampare, contattami per discuterne insieme!
                 </p>
              </article>
@@ -337,16 +337,24 @@ const Stampe3d = () => {
                                     </span>
                                 </header>
                                 <p>{project.description}</p>
-                                {/* Modifica: Link Testuale Semplice */}
+                                
+                                {/* Modifica: Link PRIMA, Materiale DOPO */}
+                                <div style={{ fontSize: '0.9em', color: '#555', borderTop: '1px solid #eee', paddingTop: '10px' }}>
+                                    
+                                    {/* LINK */}
                                     {project.link && (
-                                      <p style={{ margin: 0, wordBreak: 'break-all' }}>
+                                      <p style={{ margin: 0, marginBottom: '5px', wordBreak: 'break-all' }}>
                                           <strong>Link: </strong> 
                                           <a href={project.link} target="_blank" rel="noreferrer" style={{ color: '#d52349' }}>
                                             {project.link}
                                           </a>
                                       </p>
                                     )}
-                                <div style={{ fontSize: '0.9em', color: '#555', borderTop: '1px solid #eee', paddingTop: '10px' }}>
+
+                                    {/* SPAZIO */}
+                                    <br />
+
+                                    {/* MATERIALE */}
                                     <p style={{ marginBottom: '0.5em' }}><strong>Materiale:</strong> {project.material}</p>
                                 </div>
                             </article>
@@ -399,18 +407,25 @@ const Stampe3d = () => {
                                     </span>
                                 </header>
                                 <p>{project.description}</p>
+                                
+                                {/* Modifica: Link PRIMA, Materiale DOPO */}
                                 <div style={{ fontSize: '0.9em', color: '#555', borderTop: '1px solid #eee', paddingTop: '10px' }}>
-                                    <p style={{ marginBottom: '0.5em' }}><strong>Materiale Previsto:</strong> {project.material}</p>
                                     
-                                    {/* Modifica: Link Testuale Semplice */}
+                                    {/* LINK */}
                                     {project.link && (
-                                      <p style={{ margin: 0, wordBreak: 'break-all' }}>
+                                      <p style={{ margin: 0, marginBottom: '5px', wordBreak: 'break-all' }}>
                                           <strong>Link: </strong> 
                                           <a href={project.link} target="_blank" rel="noreferrer" style={{ color: '#d52349' }}>
                                             {project.link}
                                           </a>
                                       </p>
                                     )}
+
+                                    {/* SPAZIO */}
+                                    <br />
+
+                                    {/* MATERIALE */}
+                                    <p style={{ marginBottom: '0.5em' }}><strong>Materiale Previsto:</strong> {project.material}</p>
                                 </div>
                             </article>
                         </div>

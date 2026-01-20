@@ -19,16 +19,6 @@ const Home = () => {
     "> Ready."
   ];
 
-  // Funzione per lo scroll fluido alle sezioni (Profilo, Esperienza)
-  /*
-  const scrollToSection = (id) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-  */
-
   return (
     <div id="page-wrapper">
       
@@ -54,32 +44,6 @@ const Home = () => {
                 <Link className="icon solid fa-user" to="/about"><span>Chi Sono</span></Link>
               </li>
               
-              {/* Link Profilo con Scroll funzionante (Home anchor) */}
-              {/*
-              <li>
-                <a 
-                  className="icon solid fa-id-card" 
-                  onClick={(e) => { e.preventDefault(); scrollToSection('banner'); }} 
-                  style={{ cursor: 'pointer' }}
-                >
-                  <span>Profilo</span>
-                </a>
-              </li>
-              */}
-              
-              {/* Link Esperienza con Scroll funzionante (Home anchor) */}
-              {/*
-              <li>
-                <a 
-                  className="icon solid fa-briefcase" 
-                  onClick={(e) => { e.preventDefault(); scrollToSection('main'); }} 
-                  style={{ cursor: 'pointer' }}
-                >
-                  <span>Esperienza</span>
-                </a>
-              </li>
-              */}
-
               {/* MENU A TENDINA PASSIONI */}
               <li 
                 onMouseEnter={() => setIsDropdownOpen(true)}
@@ -191,7 +155,7 @@ const Home = () => {
                 <header>
                     <h2><a href="#">Esperienze di <strong>Lavoro</strong></a></h2>
                     {/* Bottone Toggle Lavoro */}
-                    <div style={{ textAlign: 'center', marginTop: '15px' }}>
+                    <div style={{ textAlign: 'left', marginTop: '15px', marginBottom: '20px' }}>
                         <button 
                             className="button alt small" 
                             onClick={() => setShowWork(!showWork)}
@@ -205,6 +169,7 @@ const Home = () => {
                 {/* Contenuto Condizionale Lavoro */}
                 {showWork && (
                     <div className="work-content-wrapper fade-in">
+                      <br /><br />
                         <h3>Freelance Fullstack Web Developer (2025 - Oggi)</h3>
                         
                         <p>
@@ -244,7 +209,7 @@ const Home = () => {
                 <header>
                     <h2><a href="#">Progetti di <strong>Cybersecurity</strong></a></h2>
                     {/* Bottone Toggle Cyber */}
-                    <div style={{ textAlign: 'center', marginTop: '15px' }}>
+                    <div style={{ textAlign: 'left', marginTop: '15px', marginBottom: '20px' }}>
                         <button 
                             className="button alt small" 
                             onClick={() => setShowCyber(!showCyber)}
@@ -258,10 +223,11 @@ const Home = () => {
                 {/* Contenuto Condizionale Cyber */}
                 {showCyber && (
                     <div className="cyber-content-wrapper fade-in">
+                      <br /><br />
                         <a href="https://github.com/Nicholas-Arcari" className="image featured"><img src="images/img1.jpg" alt="Cybersecurity Lab" /></a>
                         <p>Una selezione dei principali progetti pratici presenti nel mio portfolio GitHub, focalizzati su hardening, analisi di rete e offensive security.</p>
                         <hr />
-                        {/* --- CYBERSECURITY LABS --- */}
+                        
                         <h3>Cybersecurity Labs</h3>
                         <p>
                           Repository centrale strutturata seguendo il flusso logico della <strong>Cyber Kill Chain</strong> e di un Penetration Test reale. Il laboratorio è diviso in 10 moduli che coprono l'intero spettro delle operazioni:
@@ -272,13 +238,14 @@ const Home = () => {
                           <br />
                           <strong>Cloud & Modern:</strong> Sicurezza per Docker, Kubernetes e ambienti Cloud (AWS/Azure).
                           <br /><br />
-                          <strong>Stack:</strong> <span className="tech-stack">Python, Bash, Kali Linux, Docker, Wazuh, Burp Suite, ...</span>
+                          <strong>Stack:</strong> <span className="tech-stack">Python, Bash, Kali Linux, Docker, Wazuh, Burp Suite</span>
                         </p>
                         <a href="https://github.com/Nicholas-Arcari/cybersecurity-labs" className="button icon brands fa-github" target="_blank" rel="noopener noreferrer">Vedi Repo</a>
+                        
                         <br /><br />
                         <hr />
-                        {/* --- RASPBERRY PI --- */}
-                        <h3>Raspberry Pi 5 Secure Server</h3>
+                        
+                        <h3>Raspberry Pi Home Lab</h3>
                         <p>
                           Server multifunzione basato su <strong>OpenMediaVault</strong> e <strong>Docker</strong> con boot da NVMe. Architettura segmentata (DMZ/Mgmt) che integra uno stack di sicurezza Enterprise:
                           <br /><br />
@@ -288,13 +255,14 @@ const Home = () => {
                           <br />
                           <strong>Network:</strong> VPN WireGuard, Pi-hole e Reverse Proxy.
                           <br /><br />
-                          <strong>Stack:</strong> <span className="tech-stack">OMV, Docker, Portainer, Wazuh, Arkime, WireGuard, ...</span>
+                          <strong>Stack:</strong> <span className="tech-stack">OMV, Docker, Portainer, Wazuh, Arkime, WireGuard</span>
                         </p>
                         <a href="https://github.com/Nicholas-Arcari/RaspberryPi" className="button icon brands fa-github" target="_blank" rel="noopener noreferrer">Vedi Repo</a>
+                        
                         <br /><br />
                         <hr />
-                        {/* --- TOR NETWORKING GUIDE --- */}
-                        <h3>Tor Networking Guide 🧅</h3>
+                        
+                        <h3>Tor Networking Guide</h3>
                         <p>
                           Documentazione tecnica completa sull'utilizzo avanzato della rete Tor in ambiente Linux. Il progetto copre l'intero stack di anonimizzazione:
                           <br /><br />
@@ -309,10 +277,11 @@ const Home = () => {
                           <strong>Stack:</strong> <span className="tech-stack">Tor Service, Bash, Proxychains, Obfs4, Kali Linux</span>
                         </p>
                         <a href="https://github.com/Nicholas-Arcari/tor-networking-guide" className="button icon brands fa-github" target="_blank" rel="noopener noreferrer">Vedi Repo</a>
+                        
                         <br /><br />
                         <hr />
-                        {/* --- FLIPPER ZERO UPDATED --- */}
-                        <h3>Flipper Zero Guide: Hardware Hacking</h3>
+                        
+                        <h3>Flipper Zero Guide</h3>
                         <p>
                           Guida approfondita al modding e all'espansione del Flipper Zero. Il repository esplora le capacità native e custom del dispositivo, andando oltre l'uso base:
                           <br /><br />
@@ -324,7 +293,8 @@ const Home = () => {
                           <br /><br />
                           <strong>Stack:</strong> <span className="tech-stack">Flipper Zero, GPIO, ESP32, RogueMaster FW, BadUSB</span>
                         </p>
-                        <a href="https://github.com/Nicholas-Arcari/FlipperZero-guide" className="button icon brands fa-github" target="_blank" rel="noopener noreferrer">Vedi Repo</a></div>
+                        <a href="https://github.com/Nicholas-Arcari/FlipperZero-guide" className="button icon brands fa-github" target="_blank" rel="noopener noreferrer">Vedi Repo</a>
+                    </div>
                 )}
               </article>
             </div>
@@ -418,20 +388,6 @@ const Home = () => {
                   </li>
                 </ul>
               </section>
-
-              {/* Sezione Soft Skills */}
-              {/*
-              <section>
-                <ul className="divided">
-                  <li>
-                    <article className="box highlight">
-                      <header><h3><a href="#">Soft Skills</a></h3></header>
-                      <p>- Improvvisazione e flessibilità mentale.<br />- Gestione efficace dello stress che si riassume come "immunità all'ansia".<br />- Problem solving autonomo.</p>
-                    </article>
-                  </li>
-                </ul>
-              </section>
-              */}
 
             </div>
 
