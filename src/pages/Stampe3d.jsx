@@ -338,8 +338,8 @@ const Stampe3d = () => {
                                 </header>
                                 <p>{project.description}</p>
                                 
-                                {/* Modifica: Link PRIMA, Materiale DOPO */}
-                                <div style={{ fontSize: '0.9em', color: '#555', borderTop: '1px solid #eee', paddingTop: '10px' }}>
+                                {/* Modifica: Rimosso borderTop, aggiunto HR finale */}
+                                <div style={{ fontSize: '0.9em', color: '#555', paddingTop: '10px' }}>
                                     
                                     {/* LINK */}
                                     {project.link && (
@@ -351,11 +351,11 @@ const Stampe3d = () => {
                                       </p>
                                     )}
 
-                                    {/* SPAZIO */}
-                                    <br />
-
                                     {/* MATERIALE */}
                                     <p style={{ marginBottom: '0.5em' }}><strong>Materiale:</strong> {project.material}</p>
+                                    
+                                    {/* BARRA ORIZZONTALE ALLA FINE */}
+                                    <hr style={{ marginTop: '10px', marginBottom: '0' }} />
                                 </div>
                             </article>
                         </div>
@@ -408,8 +408,8 @@ const Stampe3d = () => {
                                 </header>
                                 <p>{project.description}</p>
                                 
-                                {/* Modifica: Link PRIMA, Materiale DOPO */}
-                                <div style={{ fontSize: '0.9em', color: '#555', borderTop: '1px solid #eee', paddingTop: '10px' }}>
+                                {/* Modifica: Rimosso borderTop, aggiunto HR finale */}
+                                <div style={{ fontSize: '0.9em', color: '#555', paddingTop: '10px' }}>
                                     
                                     {/* LINK */}
                                     {project.link && (
@@ -421,11 +421,11 @@ const Stampe3d = () => {
                                       </p>
                                     )}
 
-                                    {/* SPAZIO */}
-                                    <br />
-
                                     {/* MATERIALE */}
                                     <p style={{ marginBottom: '0.5em' }}><strong>Materiale Previsto:</strong> {project.material}</p>
+                                    
+                                    {/* BARRA ORIZZONTALE ALLA FINE */}
+                                    <hr style={{ marginTop: '10px', marginBottom: '0' }} />
                                 </div>
                             </article>
                         </div>
