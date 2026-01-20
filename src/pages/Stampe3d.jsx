@@ -8,6 +8,9 @@ const Stampe3d = () => {
   const [searchTermExecuted, setSearchTermExecuted] = useState(""); // Ricerca progetti eseguiti
   const [searchTermFuture, setSearchTermFuture] = useState("");     // Ricerca progetti futuri
 
+  const [showExecuted, setShowExecuted] = useState(false); // Default: nascosto
+  const [showFuture, setShowFuture] = useState(false);     // Default: nascosto
+
   const terminalLines = [
     "> ./load_module.sh --3d-print",
     "> Heating bed to 60°C...",
@@ -26,7 +29,7 @@ const Stampe3d = () => {
       material: "PLA Nero Opaco (Food Safe)",
       image: "images/stampa/",
       topic: "Cucina",
-      link: "" 
+      link: "https://www.thingiverse.com" 
     },
     {
       title: "Mantis Blades (Cyberpunk 2077)",
@@ -299,141 +302,175 @@ const Stampe3d = () => {
                 </p>
              </article>
 
-             {/* --- SEZIONE 1: PROGETTI ESEGUITI --- */}
+             {/* --- SEZIONE 1: PROGETTI ESEGUITI (ESPANDIBILE) --- */}
              <section>
                 <header style={{ marginBottom: '2em', textAlign: 'center' }}>
                     <h2 style={{ fontSize: '2.5em', borderBottom: '2px solid #ddd', paddingBottom: '10px' }}>Progetti Eseguiti</h2>
+                    
+                    {/* BOTTONE TOGGLE ESEGUITI */}
+                    <div style={{ marginTop: '15px' }}>
+                        <button 
+                            className="button alt small" 
+                            onClick={() => setShowExecuted(!showExecuted)}
+                        >
+                            {showExecuted ? 'Nascondi Progetti' : 'Mostra Progetti'}
+                            <i className={`icon solid ${showExecuted ? 'fa-chevron-up' : 'fa-chevron-down'}`} style={{ marginLeft: '10px' }}></i>
+                        </button>
+                    </div>
                 </header>
                 
-                {/* SEARCH BAR ESEGUITI */}
-                <div style={{ marginBottom: '30px', textAlign: 'center' }}>
-                  <input
-                    type="text"
-                    placeholder="Cerca per nome o argomento..."
-                    value={searchTermExecuted}
-                    onChange={(e) => setSearchTermExecuted(e.target.value)}
-                    style={{ 
-                      width: '60%', 
-                      padding: '10px', 
-                      borderRadius: '5px', 
-                      border: '1px solid #ccc',
-                      fontSize: '1em'
-                    }}
-                  />
-                </div>
-
-                <div className="row">
-                    {filteredExecuted.length > 0 ? (
-                      filteredExecuted.map((project, index) => (
-                        <div key={index} className="col-6 col-12-medium">
-                            <article className="box feature">
-                                <a href="#" className="image featured">
-                                    <img src={project.image} alt={project.title} style={{ objectFit: 'cover', height: '300px' }} />
-                                </a>
-                                <header>
-                                    <h3>{project.title}</h3>
-                                    <span style={{ display: 'inline-block', backgroundColor: '#eee', color: '#444', padding: '2px 10px', borderRadius: '15px', fontSize: '0.8em', marginBottom: '10px' }}>
-                                      {project.topic}
-                                    </span>
-                                </header>
-                                <p>{project.description}</p>
-                                
-                                {/* Modifica: Rimosso borderTop, aggiunto HR finale */}
-                                <div style={{ fontSize: '0.9em', color: '#555', paddingTop: '10px' }}>
-                                    
-                                    {/* LINK */}
-                                    {project.link && (
-                                      <p style={{ margin: 0, marginBottom: '5px', wordBreak: 'break-all' }}>
-                                          <strong>Link: </strong> 
-                                          <a href={project.link} target="_blank" rel="noreferrer" style={{ color: '#d52349' }}>
-                                            {project.link}
-                                          </a>
-                                      </p>
-                                    )}
-
-                                    {/* MATERIALE */}
-                                    <p style={{ marginBottom: '0.5em' }}><strong>Materiale:</strong> {project.material}</p>
-                                    
-                                    {/* BARRA ORIZZONTALE ALLA FINE */}
-                                    <hr style={{ marginTop: '10px', marginBottom: '0' }} />
-                                </div>
-                            </article>
+                {/* CONTENUTO CONDIZIONALE ESEGUITI */}
+                {showExecuted && (
+                    <div className="fade-in">
+                        {/* SEARCH BAR ESEGUITI */}
+                        <div style={{ marginBottom: '30px', textAlign: 'center' }}>
+                        <input
+                            type="text"
+                            placeholder="Cerca per nome o argomento..."
+                            value={searchTermExecuted}
+                            onChange={(e) => setSearchTermExecuted(e.target.value)}
+                            style={{ 
+                            width: '60%', 
+                            padding: '10px', 
+                            borderRadius: '5px', 
+                            border: '1px solid #ccc',
+                            fontSize: '1em'
+                            }}
+                        />
                         </div>
-                      ))
-                    ) : (
-                      <p style={{ width: '100%', textAlign: 'center' }}>Nessun progetto trovato.</p>
-                    )}
-                </div>
+
+                        <div className="row">
+                            {filteredExecuted.length > 0 ? (
+                            filteredExecuted.map((project, index) => (
+                                <div key={index} className="col-6 col-12-medium">
+                                    <article className="box feature">
+                                        <a href="#" className="image featured">
+                                            <img src={project.image} alt={project.title} style={{ objectFit: 'cover', height: '300px' }} />
+                                        </a>
+                                        <header>
+                                            <h3>{project.title}</h3>
+                                            <span style={{ display: 'inline-block', backgroundColor: '#eee', color: '#444', padding: '2px 10px', borderRadius: '15px', fontSize: '0.8em', marginBottom: '10px' }}>
+                                            {project.topic}
+                                            </span>
+                                        </header>
+                                        <p>{project.description}</p>
+                                        
+                                        <div style={{ fontSize: '0.9em', color: '#555', paddingTop: '10px' }}>
+                                            
+                                            {/* LINK */}
+                                            {project.link && (
+                                            <p style={{ margin: 0, marginBottom: '5px', wordBreak: 'break-all' }}>
+                                                <strong>Link: </strong> 
+                                                <a href={project.link} target="_blank" rel="noreferrer" style={{ color: '#d52349' }}>
+                                                    {project.link}
+                                                </a>
+                                            </p>
+                                            )}
+
+                                            {/* SPAZIO */}
+                                            <br />
+
+                                            {/* MATERIALE */}
+                                            <p style={{ marginBottom: '0.5em' }}><strong>Materiale:</strong> {project.material}</p>
+                                            
+                                            {/* BARRA ORIZZONTALE ALLA FINE */}
+                                            <hr style={{ marginTop: '10px', marginBottom: '0' }} />
+                                        </div>
+                                    </article>
+                                </div>
+                            ))
+                            ) : (
+                            <p style={{ width: '100%', textAlign: 'center' }}>Nessun progetto trovato.</p>
+                            )}
+                        </div>
+                    </div>
+                )}
              </section>
 
              <hr style={{ margin: '4em 0' }} />
 
-             {/* --- SEZIONE 2: PROGETTI DA ESEGUIRE --- */}
+             {/* --- SEZIONE 2: PROGETTI DA ESEGUIRE (ESPANDIBILE) --- */}
              <section>
                 <header style={{ marginBottom: '2em', textAlign: 'center' }}>
                     <h2 style={{ fontSize: '2.5em', borderBottom: '2px solid #ddd', paddingBottom: '10px' }}>Progetti da Eseguire</h2>
-                    <p>Work in Progress, rendering e idee pronte per lo slicing.</p>
+                    
+                    {/* BOTTONE TOGGLE FUTURI */}
+                    <div style={{ marginTop: '15px' }}>
+                        <button 
+                            className="button alt small" 
+                            onClick={() => setShowFuture(!showFuture)}
+                        >
+                            {showFuture ? 'Nascondi Progetti' : 'Mostra Progetti'}
+                            <i className={`icon solid ${showFuture ? 'fa-chevron-up' : 'fa-chevron-down'}`} style={{ marginLeft: '10px' }}></i>
+                        </button>
+                    </div>
                 </header>
 
-                {/* SEARCH BAR FUTURI */}
-                <div style={{ marginBottom: '30px', textAlign: 'center' }}>
-                  <input
-                    type="text"
-                    placeholder="Cerca per nome o argomento..."
-                    value={searchTermFuture}
-                    onChange={(e) => setSearchTermFuture(e.target.value)}
-                    style={{ 
-                      width: '60%', 
-                      padding: '10px', 
-                      borderRadius: '5px', 
-                      border: '1px solid #ccc',
-                      fontSize: '1em'
-                    }}
-                  />
-                </div>
-
-                <div className="row">
-                    {filteredFuture.length > 0 ? (
-                      filteredFuture.map((project, index) => (
-                        <div key={index} className="col-6 col-12-medium">
-                            <article className="box feature" style={{ opacity: 0.9 }}>
-                                <a href="#" className="image featured">
-                                    <img src={project.image} alt={project.title} style={{ objectFit: 'cover', height: '300px', filter: 'grayscale(30%)' }} />
-                                </a>
-                                <header>
-                                    <h3>{project.title}</h3>
-                                    <span style={{ display: 'inline-block', backgroundColor: '#eee', color: '#444', padding: '2px 10px', borderRadius: '15px', fontSize: '0.8em', marginBottom: '10px' }}>
-                                      {project.topic}
-                                    </span>
-                                </header>
-                                <p>{project.description}</p>
-                                
-                                {/* Modifica: Rimosso borderTop, aggiunto HR finale */}
-                                <div style={{ fontSize: '0.9em', color: '#555', paddingTop: '10px' }}>
-                                    
-                                    {/* LINK */}
-                                    {project.link && (
-                                      <p style={{ margin: 0, marginBottom: '5px', wordBreak: 'break-all' }}>
-                                          <strong>Link: </strong> 
-                                          <a href={project.link} target="_blank" rel="noreferrer" style={{ color: '#d52349' }}>
-                                            {project.link}
-                                          </a>
-                                      </p>
-                                    )}
-
-                                    {/* MATERIALE */}
-                                    <p style={{ marginBottom: '0.5em' }}><strong>Materiale Previsto:</strong> {project.material}</p>
-                                    
-                                    {/* BARRA ORIZZONTALE ALLA FINE */}
-                                    <hr style={{ marginTop: '10px', marginBottom: '0' }} />
-                                </div>
-                            </article>
+                {/* CONTENUTO CONDIZIONALE FUTURI */}
+                {showFuture && (
+                    <div className="fade-in">
+                        {/* SEARCH BAR FUTURI */}
+                        <div style={{ marginBottom: '30px', textAlign: 'center' }}>
+                        <input
+                            type="text"
+                            placeholder="Cerca per nome o argomento..."
+                            value={searchTermFuture}
+                            onChange={(e) => setSearchTermFuture(e.target.value)}
+                            style={{ 
+                            width: '60%', 
+                            padding: '10px', 
+                            borderRadius: '5px', 
+                            border: '1px solid #ccc',
+                            fontSize: '1em'
+                            }}
+                        />
                         </div>
-                      ))
-                    ) : (
-                      <p style={{ width: '100%', textAlign: 'center' }}>Nessun progetto trovato.</p>
-                    )}
-                </div>
+
+                        <div className="row">
+                            {filteredFuture.length > 0 ? (
+                            filteredFuture.map((project, index) => (
+                                <div key={index} className="col-6 col-12-medium">
+                                    <article className="box feature" style={{ opacity: 0.9 }}>
+                                        <a href="#" className="image featured">
+                                            <img src={project.image} alt={project.title} style={{ objectFit: 'cover', height: '300px', filter: 'grayscale(30%)' }} />
+                                        </a>
+                                        <header>
+                                            <h3>{project.title}</h3>
+                                            <span style={{ display: 'inline-block', backgroundColor: '#eee', color: '#444', padding: '2px 10px', borderRadius: '15px', fontSize: '0.8em', marginBottom: '10px' }}>
+                                            {project.topic}
+                                            </span>
+                                        </header>
+                                        <p>{project.description}</p>
+                                        
+                                        <div style={{ fontSize: '0.9em', color: '#555', paddingTop: '10px' }}>
+                                            
+                                            {/* LINK */}
+                                            {project.link && (
+                                            <p style={{ margin: 0, marginBottom: '5px', wordBreak: 'break-all' }}>
+                                                <strong>Link: </strong> 
+                                                <a href={project.link} target="_blank" rel="noreferrer" style={{ color: '#d52349' }}>
+                                                    {project.link}
+                                                </a>
+                                            </p>
+                                            )}
+
+                                            <br />
+
+                                            {/* MATERIALE */}
+                                            <p style={{ marginBottom: '0.5em' }}><strong>Materiale:</strong> {project.material}</p>
+                                            
+                                            {/* BARRA ORIZZONTALE ALLA FINE */}
+                                            <hr style={{ marginTop: '10px', marginBottom: '0' }} />
+                                        </div>
+                                    </article>
+                                </div>
+                            ))
+                            ) : (
+                            <p style={{ width: '100%', textAlign: 'center' }}>Nessun progetto trovato.</p>
+                            )}
+                        </div>
+                    </div>
+                )}
              </section>
 
           </div>
