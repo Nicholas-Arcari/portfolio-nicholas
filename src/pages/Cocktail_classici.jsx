@@ -309,6 +309,18 @@ const Cocktail_classici = () => {
                   </li>
                 </ul>
               </section>
+
+              <section>
+                <ul className="divided">
+                  <li>
+                    <article className="box highlight">
+                      <header><h3><Link to="/">Torna alla Home</Link></h3></header>
+                      <p>Vuoi vedere le mie esperienze lavorative o le mie passioni?</p>
+                      <Link to="/" className="button icon solid fa-home">Home</Link>
+                    </article>
+                  </li>
+                </ul>
+              </section>
             </div>
 
           </div>
