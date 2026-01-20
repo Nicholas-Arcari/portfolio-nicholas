@@ -26,7 +26,7 @@ const Stampe3d = () => {
       material: "PLA Nero Opaco (Food Safe)",
       image: "images/stampa/",
       topic: "Cucina",
-      link: "https://www.thingiverse.com" 
+      link: "" 
     },
     {
       title: "Mantis Blades (Cyberpunk 2077)",
@@ -34,15 +34,15 @@ const Stampe3d = () => {
       material: "PLA Bianco + Primer e Acrilici",
       image: "images/stampa/stampa16.jpg",
       topic: "Cosplay",
-      link: "https://www.thingiverse.com/thing:4658066"
+      link: "https://makerworld.com/it/models/655884-cyberpunk-mantis-blades-model#profileId-582890"
     },
     {
       title: "Action Figure: Denji (Chainsaw Man)",
-      description: "Statuetta dettagliata del protagonista di Chainsaw Man. Post-produzione intensiva per levigare i layer e pittura a mano.",
+      description: "Statuetta dettagliata del protagonista di Chainsaw Man.",
       material: "PLA Bianco + Primer e Acrilici",
       image: "images/stampa/stampa3.jpg",
       topic: "Action Figure",
-      link: "https://www.myminifactory.com"
+      link: "https://www.thingiverse.com/thing:6256385"
     },
     {
       title: "Action Figure: Kakashi Hatake",
@@ -50,7 +50,7 @@ const Stampe3d = () => {
       material: "PLA Bianco + Primer e Acrilici",
       image: "images/stampa/",
       topic: "Action Figure",
-      link: "https://www.cults3d.com"
+      link: "https://www.thingiverse.com/thing:927511"
     },
     {
       title: "Action Figure: Mimikyu",
@@ -58,7 +58,7 @@ const Stampe3d = () => {
       material: "PLA Bianco + Primer e Acrilici",
       image: "images/stampa/",
       topic: "Action Figure",
-      link: "https://www.thingiverse.com"
+      link: "https://www.thingiverse.com/thing:1940448"
     },
     {
       title: "Raspberry Pi Ultimate Case",
@@ -66,7 +66,7 @@ const Stampe3d = () => {
       material: "PLA+ o ASA",
       image: "images/stampa/stampa11.jpg",
       topic: "Tech",
-      link: "https://www.printables.com"
+      link: "https://makerworld.com/it/models/179232-raspberry-pi-4b"
     },
     {
       title: "Sponge Bed",
@@ -74,15 +74,15 @@ const Stampe3d = () => {
       material: "PLA+ o ASA",
       image: "images/stampa/stampa19.jpg",
       topic: "Cucina",
-      link: "https://www.thingiverse.com/thing:2933483"
+      link: "https://www.thingiverse.com/thing:2687499"
     },
     {
       title: "Action Figure: Kuromi",
-      description: "Personaggio Sanrio stampato ad alta risoluzione. Colori acrilici vivaci e sigillante lucido per un look 'vinyl toy'.",
+      description: "Personaggio Kuromi stampato ad alta risoluzione. Colori acrilici vivaci e sigillante lucido per un look 'vinyl toy'.",
       material: "PLA",
       image: "images/stampa/stampa18.jpg",
       topic: "Action Figure",
-      link: "https://www.cults3d.com"
+      link: "https://www.thingiverse.com/thing:6006836"
     },
     {
       title: "Aperol Spritz Neon Sign",
@@ -90,15 +90,15 @@ const Stampe3d = () => {
       material: "PLA+ Traslucido e Opaco",
       image: "images/stampa/stampa7.jpg",
       topic: "Arredamento",
-      link: "https://www.printables.com"
+      link: "https://www.thingiverse.com/thing:6657606"
     },
     {
       title: "Hestia Knife (DanMachi)",
-      description: "Replica fedele del pugnale divino, con incisioni delle rune geroglifiche dipinte a mano.",
+      description: "Replica fedele del pugnale divino, con incisioni delle rune geroglifiche.",
       material: "PLA",
       image: "images/stampa/stampa5.jpg",
       topic: "Cosplay",
-      link: "https://www.thingiverse.com"
+      link: "https://www.thingiverse.com/thing:5185347"
     },
     {
       title: "Self-Watering Planter",
@@ -106,7 +106,7 @@ const Stampe3d = () => {
       material: "PLA (Watertight setting)",
       image: "images/stampa/stampa13.jpg",
       topic: "Giardinaggio",
-      link: "https://www.thingiverse.com"
+      link: "https://makerworld.com/it/models/112701-self-watering-herb-planter-for-the-kitchen?from=search#profileId-120974"
     },
   ];
 
@@ -118,7 +118,7 @@ const Stampe3d = () => {
       material: "PETG / ABS (per resistenza meccanica)",
       image: "images/stampa/stampa1.jpg",
       topic: "Robotica",
-      link: "https://www.instructables.com/GoodBoy-3D-Printed-Arduino-Robot-Dog/"
+      link: "https://makerworld.com/it/models/1426836-arduino-robot-dog#profileId-1483116"
     },
     {
       title: "E.M.M.I. (Metroid Dread)",
@@ -126,7 +126,7 @@ const Stampe3d = () => {
       material: "PLA / TPU (per giunti flessibili)",
       image: "images/stampa/stampa17.jpg",
       topic: "Action Figure",
-      link: "https://www.cults3d.com"
+      link: "https://www.thingiverse.com/thing:5254236"
     },
     {
       title: "Trauma Team Helmet",
@@ -134,15 +134,15 @@ const Stampe3d = () => {
       material: "PLA (rinforzato internamente)",
       image: "images/stampa/stampa10.jpg",
       topic: "Cosplay",
-      link: "https://www.thingiverse.com"
+      link: "https://www.thingiverse.com/thing:4897526"
     },
     {
       title: "Daedric Armor (Skyrim)",
-      description: "Armatura completa Daedrica. Un progetto a lungo termine diviso in decine di parti ottimizzate per stampanti FDM.",
+      description: "Armatura completa Daedrica.",
       material: "PLA",
       image: "images/stampa/stampa2.jpg",
       topic: "Cosplay",
-      link: "https://www.thingiverse.com"
+      link: "https://www.thingiverse.com/thing:3581525"
     },
     {
       title: "Tea Dispenser Verticale",
@@ -150,7 +150,7 @@ const Stampe3d = () => {
       material: "PLA",
       image: "images/stampa/stampa20.jpg",
       topic: "Cucina",
-      link: "https://www.printables.com"
+      link: "https://www.thingiverse.com/thing:4763805"
     },
     {
       title: "Iron Man MK6 Suit",
@@ -158,7 +158,7 @@ const Stampe3d = () => {
       material: "PLA+ (per resistenza agli urti)",
       image: "images/stampa/stampa4.jpg",
       topic: "Cosplay",
-      link: "https://www.thingiverse.com"
+      link: "https://www.thingiverse.com/thing:1779274"
     },
     {
       title: "Jack Daniel's Coasters",
@@ -166,7 +166,7 @@ const Stampe3d = () => {
       material: "PLA / TPU",
       image: "images/stampa/stampa6.jpg",
       topic: "Arredamento",
-      link: "https://www.thingiverse.com"
+      link: "https://www.thingiverse.com/thing:2395261"
     },
     {
       title: "T-60b Power Armor (Fallout 4)",
@@ -174,7 +174,7 @@ const Stampe3d = () => {
       material: "PLA+ (kg stimati: 25+)",
       image: "images/stampa/stampa9.jpg",
       topic: "Cosplay",
-      link: "https://www.cults3d.com"
+      link: "https://www.thingiverse.com/thing:1133207"
     },
     {
       title: "Iron Man Helmet (Motorized)",
@@ -182,7 +182,7 @@ const Stampe3d = () => {
       material: "PLA Silk (effetto metallico)",
       image: "images/stampa/stampa8.jpg",
       topic: "Cosplay",
-      link: "https://www.thingiverse.com"
+      link: "https://www.thingiverse.com/thing:4629346"
     },
     {
       title: "Mug Basketball Hoop",
@@ -190,7 +190,7 @@ const Stampe3d = () => {
       material: "PLA",
       image: "images/stampa/stampa15.jpg",
       topic: "Svago",
-      link: "https://www.printables.com"
+      link: "https://makerworld.com/it/models/1218000-basket-mug-funny-game#profileId-1234266"
     },
     {
       title: "Cyberpunk Sci-Fi Bonsai",
@@ -198,7 +198,7 @@ const Stampe3d = () => {
       material: "PLA Wood (tronco) & PLA Neon",
       image: "images/stampa/stampa12.jpg",
       topic: "Arredamento",
-      link: "https://www.thingiverse.com"
+      link: "https://makerworld.com/it/models/1530931-cyberpunk-mecha-sci-fi-bonsai"
     },
     {
       title: "Kiroshi Optics Replica",
@@ -206,7 +206,7 @@ const Stampe3d = () => {
       material: "PLA+ e Resina (per le lenti)",
       image: "images/stampa/stampa14.jpg",
       topic: "Cosplay",
-      link: "https://www.thingiverse.com"
+      link: "https://makerworld.com/it/models/1595160-cyberpunk-2077-kiroshi-optics#profileId-1680368"
     }
   ];
 
