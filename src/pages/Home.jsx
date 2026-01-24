@@ -112,21 +112,21 @@ const Home = () => {
           <div className="row aln-center">
             <div className="col-4 col-6-medium col-12-small">
               <section>
-                <a href="#" className="image featured"><img src="images/pic01.jpg" alt="Cybersecurity" /></a>
+                <a href="#" className="image featured"><img src="images/img5.jpg" alt="Cybersecurity" /></a>
                 <header><h3>Cybersecurity</h3></header>
                 <p>Vulnerability assessment, <br />Sicurezza web (OWASP Top 10), <br />Hardening Linux, <br />Network Analysis (Nmap, Burp Suite, Wazuh).</p>
               </section>
             </div>
             <div className="col-4 col-6-medium col-12-small">
               <section>
-                <a href="#" className="image featured"><img src="images/pic02.jpg" alt="Web Development" /></a>
+                <a href="#" className="image featured"><img src="images/img6.jpg" alt="Web Development" /></a>
                 <header><h3>Fullstack Web Dev</h3></header>
                 <p>Backend: PHP, Python, Laravel 12+ <br />Frontend: React, Vite, HTML/CSS <br />Database: MySQL, PostgreSQL</p>
               </section>
             </div>
             <div className="col-4 col-6-medium col-12-small">
               <section>
-                <a href="#" className="image featured"><img src="images/pic03.jpg" alt="DevOps" /></a>
+                <a href="#" className="image featured"><img src="images/img7.jpg" alt="DevOps" /></a>
                 <header><h3>DevOps & Systems</h3></header>
                 <p>Docker, Kubernetes, <br />Git/GitHub, <br />Bash Scripting, Linux (Ubuntu, Kali), <br />Gestione servizi e networking TCP/IP.</p>
               </section>
