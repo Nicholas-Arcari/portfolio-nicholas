@@ -144,6 +144,11 @@ const About = () => {
                       <a href="https://tryhackme.com/p/arcari.nicholas0" target="_blank" rel="noreferrer">TryHackMe</a>
                     </li>
 
+                    <li style={{ marginBottom: '10px', display: 'flex', alignItems: 'center' }}>
+                      <i className="icon solid fa-bug" style={{ width: '30px', color: '#333', fontSize: '1.2em' }}></i>
+                      <a href="https://hackerone.com/arcari" target="_blank" rel="noreferrer">HackerOne</a>
+                    </li>
+
                   </ul>
 
                 </div>
