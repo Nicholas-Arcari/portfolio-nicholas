@@ -11,7 +11,7 @@ const Ricette = () => {
     "> ./load_module.sh --recipes",
     "> Loading Recipes database...",
     "> Status: Kitchen Mode Activated.",
-    "> Ready."
+    "> Ready chef."
   ];
 
   // Gestione layout (Sidebar Destra)

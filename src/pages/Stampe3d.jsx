@@ -111,6 +111,14 @@ const Stampe3d = () => {
       topic: "Giardinaggio",
       link: "https://makerworld.com/it/models/112701-self-watering-herb-planter-for-the-kitchen?from=search#profileId-120974"
     },
+    {
+      title: "Spadone daedrico",
+      description: "Spadone daedrico di 180 cm ispirato al mondo di Skyrim. Finitura lucida e dettagliate incisioni per il design.",
+      material: "PLA",
+      image: "images/stampa/stampa21.jpg",
+      topic: "Cosplay",
+      link: "https://www.printables.com/model/370085-daedric-greatsword-skyrim-for-small-printing"
+    },
   ];
 
   // 2. LISTA PROGETTI DA ESEGUIRE
