@@ -24,7 +24,11 @@ const TemplateScripts = () => {
       $('#titleBar').remove();
       $('#navPanel').remove();
       $body.removeClass('navPanel-visible');
-      
+
+      // Rimuoviamo i vecchi handler dal body per evitare accumulo
+      $body.off('.navPanel');
+      $(document).off('.navPanel');
+
       // Sblocchiamo lo scroll se era rimasto bloccato
       $('html, body').css('overflow', '');
 
@@ -44,16 +48,18 @@ const TemplateScripts = () => {
       }
 
       // --- 3. MOBILE: NavPanel ---
-      // Creiamo il pulsante Hamburger
+      // Creiamo il pulsante Hamburger (senza href="#navPanel" per evitare
+      // conflitti con HashRouter che interpreterebbe il cambio di hash
+      // come una navigazione di route)
       $('<div id="titleBar">' +
-        '<a href="#navPanel" class="toggle"></a>' +
+        '<a class="toggle"></a>' +
         '</div>'
       ).appendTo($body);
 
       // Creiamo il Pannello Laterale clonando i link del menu originale
       $('<div id="navPanel">' +
         '<nav>' +
-        $nav.navList() + 
+        $nav.navList() +
         '</nav>' +
         '</div>'
       )
@@ -69,29 +75,33 @@ const TemplateScripts = () => {
           visibleClass: 'navPanel-visible'
         });
 
-      // --- 4. GESTIONE CLICK (Il trucco per farli funzionare) ---
-      // Rimuoviamo vecchi eventi per evitare doppi click
-      $(document).off('click', '#navPanel a');
-      
-      // Aggiungiamo un listener su TUTTI i link del menu mobile
-      $(document).on('click', '#navPanel a', function(e) {
+      // --- 4. TOGGLE HAMBURGER ---
+      // Gestiamo il click direttamente invece di affidarci al plugin panel()
+      // che usa href="#navPanel" (incompatibile con HashRouter)
+      $('#titleBar .toggle').on('click.navPanel', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        $body.toggleClass('navPanel-visible');
+      });
+
+      // --- 5. GESTIONE CLICK LINK NEL MENU MOBILE ---
+      $(document).on('click.navPanel', '#navPanel a', function(e) {
         const href = $(this).attr('href');
 
         // Se è un link interno (non inizia con http, non è vuoto, non è solo #)
         if (href && href !== '#' && !href.startsWith('http') && !href.startsWith('mailto')) {
-          e.preventDefault(); // Ferma il browser (che ricaricherebbe la pagina)
+          e.preventDefault();
           e.stopPropagation();
 
           // 1. Chiudi graficamente il menu
           $body.removeClass('navPanel-visible');
 
           // 2. Pulisci l'indirizzo (rimuovi il # se presente all'inizio)
-          // Esempio: se href="#/ricette" diventa "/ricette"
           let path = href;
           if (path.startsWith('#')) {
              path = path.substring(1);
           }
-          
+
           // 3. Naviga usando React
           navigate(path);
         }
@@ -107,9 +117,10 @@ const TemplateScripts = () => {
       clearTimeout(timer);
       const $ = window.jQuery;
       if($) {
-          // Nota: Non rimuoviamo titleBar qui per evitare "flash" visivi durante la navigazione,
-          // la pulizia avverrà all'inizio del prossimo ciclo (punto 1).
           $('body').removeClass('navPanel-visible');
+          // Rimuoviamo gli handler namespaced per evitare accumulo
+          $('body').off('.navPanel');
+          $(document).off('.navPanel');
       }
     };
 
