@@ -66,6 +66,7 @@ body.dark-mode .image-placeholder {
     font-size: 0.8em;
     color: #999;
     margin: 0.3em 0 0 0;
+    text-align: center;
 }
 .footer-license a {
     color: #999;
