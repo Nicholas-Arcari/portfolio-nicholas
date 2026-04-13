@@ -128,6 +128,17 @@ body.dark-mode .image-placeholder {
 }
 
 /* ===== DARK MODE ===== */
+/* Override template borders globally */
+body.dark-mode .box,
+body.dark-mode section,
+body.dark-mode article,
+body.dark-mode #main,
+body.dark-mode #features,
+body.dark-mode #footer,
+body.dark-mode #copyright {
+    border-color: transparent !important;
+    box-shadow: none !important;
+}
 body.dark-mode {
     background: #111111 !important;
     color: #efefef !important;
@@ -157,7 +168,7 @@ body.dark-mode #nav ul li a:hover span {
 /* Features */
 body.dark-mode #features {
     background: #111111;
-    border-top-color: #2a2a2a;
+    border-top-color: transparent;
 }
 body.dark-mode #features h2,
 body.dark-mode #features h3,
@@ -195,19 +206,20 @@ body.dark-mode a {
 
 /* Boxes */
 body.dark-mode .box {
-    border-color: #2a2a2a;
+    border-color: transparent;
+    box-shadow: none !important;
 }
 body.dark-mode .box.post {
-    background: #1a1a1a;
+    background: #111111;
 }
 body.dark-mode .box.highlight {
-    background: #1a1a1a;
+    background: #111111;
 }
 body.dark-mode .box.feature {
-    background: #1a1a1a;
+    background: #111111;
 }
 body.dark-mode .box.excerpt {
-    background: #1a1a1a;
+    background: #111111;
 }
 
 /* Buttons */
@@ -251,16 +263,16 @@ body.dark-mode hr {
 
 /* Dividers */
 body.dark-mode .divided li {
-    border-top-color: #2a2a2a;
+    border-top-color: transparent;
 }
 
 /* Footer */
 body.dark-mode #footer {
-    background: #0a0a0a;
-    border-top-color: #2a2a2a;
+    background: #111111;
+    border-top-color: transparent;
 }
 body.dark-mode #copyright {
-    border-top-color: #2a2a2a;
+    border-top-color: transparent;
 }
 body.dark-mode #copyright .links li,
 body.dark-mode .footer-privacy,
@@ -271,7 +283,7 @@ body.dark-mode .footer-license a {
 
 /* Sidebar */
 body.dark-mode #sidebar section {
-    border-color: #2a2a2a;
+    border-color: transparent;
 }
 
 /* Settings buttons in dark mode */
