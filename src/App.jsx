@@ -1,6 +1,8 @@
 // src/App.jsx
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
+import { ThemeProvider } from './contexts/ThemeContext';
+import { LanguageProvider } from './contexts/LanguageContext';
 import Home from './pages/Home';
 import Ricette from './pages/Ricette';
 import Cocktail from './pages/Cocktail';
@@ -10,26 +12,37 @@ import Pizze from './pages/Pizze';
 import FreelanceDetails from './pages/FreelanceDetails';
 import UniversityDetails from './pages/UniversityDetails';
 import TemplateScripts from './components/TemplateScripts';
+import SettingsBar from './components/SettingsBar';
+import PageTransition from './components/PageTransition';
 import About from './pages/About';
+import NotFound from './pages/NotFound';
+import CyberServices from './pages/CyberServices';
 import './HackerTheme.css';
 
 function App() {
   return (
-    <>
-      <TemplateScripts />
-      
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/ricette" element={<Ricette />} />
-        <Route path="/pizze" element={<Pizze />} />
-        <Route path="/cocktail" element={<Cocktail />} />
-        <Route path="/cocktail-classici" element={<Cocktail_classici />} />
-        <Route path="/stampe3d" element={<Stampe3d />} />
-        <Route path="/freelance-details" element={<FreelanceDetails />} />
-        <Route path="/university-details" element={<UniversityDetails />} />
-        <Route path="/about" element={<About />} />
-      </Routes>
-    </>
+    <ThemeProvider>
+      <LanguageProvider>
+        <TemplateScripts />
+        <SettingsBar />
+
+        <PageTransition>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/ricette" element={<Ricette />} />
+            <Route path="/pizze" element={<Pizze />} />
+            <Route path="/cocktail" element={<Cocktail />} />
+            <Route path="/cocktail-classici" element={<Cocktail_classici />} />
+            <Route path="/stampe3d" element={<Stampe3d />} />
+            <Route path="/freelance-details" element={<FreelanceDetails />} />
+            <Route path="/university-details" element={<UniversityDetails />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/cyber-services" element={<CyberServices />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </PageTransition>
+      </LanguageProvider>
+    </ThemeProvider>
   );
 }
 
