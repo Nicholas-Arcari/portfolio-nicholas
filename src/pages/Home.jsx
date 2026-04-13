@@ -12,6 +12,7 @@ const Home = () => {
   // --- NUOVI STATI PER LE SEZIONI ESPANDIBILI ---
   const [showWork, setShowWork] = useState(false); // Default: nascosto
   const [showCyber, setShowCyber] = useState(false); // Default: nascosto
+  const [showServices, setShowServices] = useState(false); // Default: nascosto
 
   const { t } = useLanguage();
 
@@ -347,11 +348,28 @@ const Home = () => {
                         </p>
                         <a href="https://github.com/Nicholas-Arcari/soc-toolkit" className="button icon brands fa-github" target="_blank" rel="noopener noreferrer">{t('home.cyber.viewRepo')}</a>
 
-                        <br /><br />
-                        <hr />
+                    </div>
+                )}
+              </article>
 
-                        {/* CTA SERVIZI CYBER */}
-                        <div style={{ textAlign: 'center', padding: '2em 1em', backgroundColor: '#f9f9f9', borderRadius: '8px', marginTop: '1em' }}>
+              {/* --- ARTICOLO 3: SERVIZI CYBERSECURITY (ESPANDIBILE) --- */}
+              <article className="box post">
+                <header>
+                    <h2><a href="#">{t('home.services.title')} <strong>{t('home.services.titleBold')}</strong></a></h2>
+                    <div style={{ textAlign: 'left', marginTop: '15px', marginBottom: '20px' }}>
+                        <button
+                            className="button alt small"
+                            onClick={() => setShowServices(!showServices)}
+                        >
+                            {showServices ? t('home.services.hide') : t('home.services.show')}
+                            <i className={`icon solid ${showServices ? 'fa-chevron-up' : 'fa-chevron-down'}`} style={{ marginLeft: '10px' }}></i>
+                        </button>
+                    </div>
+                </header>
+
+                {showServices && (
+                    <div className="fade-in">
+                        <div style={{ textAlign: 'center', padding: '2em 1em', backgroundColor: '#f9f9f9', borderRadius: '8px' }}>
                           <i className="icon solid fa-shield-alt" style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.5em', display: 'block' }}></i>
                           <h3>{t('cyberServices.ctaTitle')}</h3>
                           <p style={{ color: '#666' }}>{t('cyberServices.ctaDesc')}</p>

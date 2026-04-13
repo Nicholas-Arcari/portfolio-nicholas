@@ -161,6 +161,12 @@ export const translations = {
         },
         viewRepo: 'Vedi Repo',
       },
+      services: {
+        title: 'Servizi di',
+        titleBold: 'Cybersecurity',
+        show: 'Mostra Servizi',
+        hide: 'Nascondi Servizi',
+      },
       sidebar: {
         uniDate: '2021 - 2025',
         uniTitle: 'Universit\u00e0 di Parma',
@@ -1049,6 +1055,12 @@ export const translations = {
           integrations: 'VirusTotal, AbuseIPDB, Shodan, URLScan.io, AlienVault OTX.',
         },
         viewRepo: 'View Repo',
+      },
+      services: {
+        title: 'Cyber',
+        titleBold: 'Services',
+        show: 'Show Services',
+        hide: 'Hide Services',
       },
       sidebar: {
         uniDate: '2021 - 2025',
