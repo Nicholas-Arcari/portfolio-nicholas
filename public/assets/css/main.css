@@ -1961,15 +1961,15 @@ input, select, textarea {
 				text-decoration: none;
 				text-transform: uppercase;
 				font-weight: 400;
-				color: #777;
+				color: #444;
 				outline: 0;
 				display: block;
 			}
 
 				#nav > ul > li > a:before {
 					display: inline-block;
-					background: #878787;
-					color: #e4e4e4;
+					background: #555;
+					color: #fff;
 					width: 2.25em;
 					font-size: 0.8em;
 					height: 2.25em;
