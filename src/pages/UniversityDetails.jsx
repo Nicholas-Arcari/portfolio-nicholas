@@ -134,10 +134,10 @@ const UniversityDetails = () => {
                     <article className="box highlight">
                       <header><h3>{t('university.sidebarTitle')}</h3></header>
                       <p>
-                        <strong>{t('university.sidebarUni')}</strong> {t('university.sidebarAteneol')}<br />
-                        <strong>{t('university.sidebarCourse')}</strong> {t('university.sidebarCorsol')}<br />
-                        <strong>{t('university.sidebarPeriod')}</strong> {t('university.sidebarPeriodol')}<br />
-                        <strong>{t('university.sidebarGrade')}</strong> {t('university.sidebarVotol')}
+                        <strong>{t('university.sidebarAteneol')}</strong> {t('university.sidebarUni')}<br />
+                        <strong>{t('university.sidebarCorsol')}</strong> {t('university.sidebarCourse')}<br />
+                        <strong>{t('university.sidebarPeriodol')}</strong> {t('university.sidebarPeriod')}<br />
+                        <strong>{t('university.sidebarVotol')}</strong> {t('university.sidebarGrade')}
                       </p>
                     </article>
                   </li>
