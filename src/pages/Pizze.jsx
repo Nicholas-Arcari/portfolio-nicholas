@@ -2,17 +2,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import TerminalText from '../components/TerminalText';
+import { useLanguage } from '../contexts/LanguageContext';
+import Footer from '../components/Footer';
 
 const Pizze = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState(""); // Stato ricerca
-
-  const terminalLines = [
-    "> ./load_module.sh --pizza-oven",
-    "> Preheating to 400°C...",
-    "> Status: Dough Rising...",
-    "> Ready."
-  ];
+  const { t } = useLanguage();
 
   // Layout Right Sidebar
   useEffect(() => {
@@ -20,7 +16,7 @@ const Pizze = () => {
     document.body.classList.remove('no-sidebar');
     document.body.classList.add('right-sidebar');
     window.scrollTo(0, 0);
-    
+
     return () => {
       document.body.classList.remove('right-sidebar');
       document.body.classList.add('homepage');
@@ -28,91 +24,46 @@ const Pizze = () => {
   }, []);
 
   // --- DATABASE PIZZE ---
-  const pizzasData = [
-    {
-      name: "Margherita 2.0 (Stable Release)",
-      description: "La regina delle pizze, ottimizzata e priva di bug.",
-      topping: "Pomodoro San Marzano DOP, Mozzarella Fior di Latte, Basilico fresco, Olio EVO.",
-      dough: "Diretto lungo, 24h TA."
-    },
-    {
-      name: "Diavola (Firewall Breach)",
-      description: "Piccante al punto giusto, penetra ogni difesa.",
-      topping: "Pomodoro, Mozzarella, Salame piccante napoletano, 'Nduja di Spilinga.",
-      dough: "Biga 100%, 48h frigo."
-    },
-    {
-      name: "Quattro Formaggi \"Full Stack\"",
-      description: "Un'architettura a quattro livelli di pura cremosità.",
-      topping: "Gorgonzola dolce (Backend), Taleggio, Mozzarella (Frontend), Scaglie di Grana (UI).",
-      dough: "Poolish ad alta idratazione."
-    },
-    {
-      name: "Ortolana \"Root Access\"",
-      description: "Accesso privilegiato alle migliori verdure di stagione (vegan friendly).",
-      topping: "Crema di zucchine, Melanzane a funghetto, Peperoni arrostiti, Pomodori confit.",
-      dough: "Integrale al 30% (Legacy grain)."
-    },
-    {
-      name: "Napoli \"Salted Hash\"",
-      description: "Crittografia saporita con un pizzico di sapidità aggiunta.",
-      topping: "Pomodoro, Acciughe di Cetara, Capperi di Pantelleria, Origano, Olive nere.",
-      dough: "Classico Napoletano STG."
-    },
-    {
-      name: "Marinara \"Open Source\"",
-      description: "Pochi ingredienti, codice pulito, trasparente e accessibile a tutti.",
-      topping: "Pomodoro San Marzano, Aglio rosso, Origano di montagna, Olio EVO abbondante.",
-      dough: "Diretto veloce (per un deploy rapido)."
-    },
-    {
-      name: "Salsiccia e Friarielli \"Backend Heavy\"",
-      description: "Una pizza robusta che regge carichi di lavoro pesanti.",
-      topping: "Provola affumicata, Salsiccia a punta di coltello, Friarielli ripassati aglio e olio.",
-      dough: "Autolisi lunga per massimizzare la struttura."
-    }
-  ];
-
-  // Filtra le pizze
+  const pizzasData = t('pizze.pizzas');
   const filteredPizzas = pizzasData.filter(pizza =>
     pizza.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
     <div id="page-wrapper">
-      
+
       {/* HEADER */}
       <section id="header">
         <div className="container">
           <h1 id="logo"><Link to="/">Nicholas Arcari</Link></h1>
           <br />
-          <TerminalText lines={terminalLines} />
-          
+          <TerminalText lines={t('pizze.terminal')} />
+
           <nav id="nav">
             <ul>
-              <li><Link className="icon solid fa-home" to="/"><span>Home</span></Link></li>
-              <li><Link className="icon solid fa-user" to="/about"><span>Chi Sono</span></Link></li>
-              
-              <li 
+              <li><Link className="icon solid fa-home" to="/"><span>{t('nav.home')}</span></Link></li>
+              <li><Link className="icon solid fa-user" to="/about"><span>{t('nav.about')}</span></Link></li>
+
+              <li
                 onMouseEnter={() => setIsDropdownOpen(true)}
                 onMouseLeave={() => setIsDropdownOpen(false)}
-                style={{ position: 'relative' }} 
+                style={{ position: 'relative' }}
               >
-                <a className="icon solid fa-glass-cheers" style={{ cursor: 'pointer' }}><span>Passioni</span></a>
+                <a className="icon solid fa-glass-cheers" style={{ cursor: 'pointer' }}><span>{t('nav.passions')}</span></a>
                 {isDropdownOpen && (
-                  <ul style={{ 
-                    display: 'block', position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', 
-                    backgroundColor: '#fff', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', borderRadius: '4px', 
+                  <ul style={{
+                    display: 'block', position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)',
+                    backgroundColor: '#fff', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', borderRadius: '4px',
                     padding: '10px 0', minWidth: '200px', zIndex: 1000, listStyle: 'none', margin: 0
                   }}>
                     <li style={{ padding: '5px 20px', borderTop: 'none' }}>
-                      <Link to="/ricette" style={{ display: 'block', color: '#444', textDecoration: 'none' }}>Ricette di Mamma Niky</Link>
+                      <Link to="/ricette" style={{ display: 'block', color: '#444', textDecoration: 'none' }}>{t('nav.recipes')}</Link>
                     </li>
                     <li style={{ padding: '5px 20px', borderTop: '1px solid #eee' }}>
-                      <Link to="/cocktail" style={{ display: 'block', color: '#444', textDecoration: 'none' }}>I miei Cocktail</Link>
+                      <Link to="/cocktail" style={{ display: 'block', color: '#444', textDecoration: 'none' }}>{t('nav.cocktails')}</Link>
                     </li>
                     <li style={{ padding: '5px 20px', borderTop: '1px solid #eee' }}>
-                      <Link to="/stampe3d" style={{ display: 'block', color: '#444', textDecoration: 'none' }}>Stampe 3D</Link>
+                      <Link to="/stampe3d" style={{ display: 'block', color: '#444', textDecoration: 'none' }}>{t('nav.prints3d')}</Link>
                     </li>
                   </ul>
                 )}
@@ -127,30 +78,35 @@ const Pizze = () => {
       <section id="main">
         <div className="container">
           <div className="row">
-            
+
             {/* CONTENT */}
             <div id="content" className="col-8 col-12-medium">
                 <article className="box post">
-                  <header><h2>Le mie Pizze</h2></header>
-                  <p>72 ore di lievitazione, idratazione al 70% e ingredienti selezionati. Un deploy di sapori in produzione.</p>
-                  
+                  <header><h2>{t('pizze.title')}</h2></header>
+                  <p>{t('pizze.subtitle')}</p>
+
                   {/* BARRA DI RICERCA */}
                   <input
                     type="text"
-                    placeholder="Cerca una pizza..."
+                    placeholder={t('pizze.search')}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    style={{ 
-                      width: '100%', 
-                      padding: '15px', 
-                      borderRadius: '5px', 
+                    style={{
+                      width: '100%',
+                      padding: '15px',
+                      borderRadius: '5px',
                       border: '1px solid #ccc',
                       backgroundColor: '#f9f9f9',
                       fontSize: '1.1em',
-                      marginBottom: '30px',
+                      marginBottom: '10px',
                       marginTop: '10px'
                     }}
                   />
+                  {searchTerm && (
+                    <p className="search-results-count">
+                      {filteredPizzas.length} {filteredPizzas.length === 1 ? t('settings.resultFound') : t('settings.resultsFound')}
+                    </p>
+                  )}
 
                   {/* LISTA FILTRATA */}
                   {filteredPizzas.length > 0 ? (
@@ -160,14 +116,14 @@ const Pizze = () => {
                         <h3>{pizza.name}</h3>
                         <p>
                           {pizza.description}<br />
-                          <strong>Topping:</strong> {pizza.topping}<br />
-                          <strong>Impasto:</strong> {pizza.dough}
+                          <strong>{t('pizze.topping')}</strong> {pizza.topping}<br />
+                          <strong>{t('pizze.dough')}</strong> {pizza.dough}
                         </p>
                       </React.Fragment>
                     ))
                   ) : (
                     <p style={{textAlign: 'center', padding: '20px', fontStyle: 'italic'}}>
-                      Nessuna pizza trovata. Forse è ancora in fase di lievitazione?
+                      {t('pizze.noResults')}
                     </p>
                   )}
 
@@ -180,9 +136,9 @@ const Pizze = () => {
                 <ul className="divided">
                   <li>
                     <article className="box highlight">
-                      <header><h3><Link to="/ricette">Torna alla cucina</Link></h3></header>
-                      <p>Preferisci qualcosa di dolce o un primo piatto? Torna alle ricette di Mamma Niky.</p>
-                      <Link to="/ricette" className="button icon solid fa-utensils">Tutte le Ricette</Link>
+                      <header><h3><Link to="/ricette">{t('pizze.sidebarRecipes')}</Link></h3></header>
+                      <p>{t('pizze.sidebarRecipesDesc')}</p>
+                      <Link to="/ricette" className="button icon solid fa-utensils">{t('pizze.sidebarRecipesBtn')}</Link>
                     </article>
                   </li>
                 </ul>
@@ -193,9 +149,9 @@ const Pizze = () => {
                 <ul className="divided">
                   <li>
                     <article className="box highlight">
-                      <header><h3><Link to="/">Torna alla Home</Link></h3></header>
-                      <p>Vuoi vedere le mie esperienze lavorative o le mie passioni?</p>
-                      <Link to="/" className="button icon solid fa-home">Home</Link>
+                      <header><h3><Link to="/">{t('pizze.sidebarHome')}</Link></h3></header>
+                      <p>{t('pizze.sidebarHomeDesc')}</p>
+                      <Link to="/" className="button icon solid fa-home">{t('nav.home')}</Link>
                     </article>
                   </li>
                 </ul>
@@ -207,15 +163,7 @@ const Pizze = () => {
         </div>
       </section>
 
-      {/* FOOTER MINIMAL */}
-      <section id="footer">
-        <div id="copyright" className="container">
-          <ul className="links">
-            <li>&copy; {new Date().getFullYear()} Nicholas Arcari. All rights reserved.</li>
-            <li>Design: HTML5 UP</li>
-          </ul>
-        </div>
-      </section>
+      <Footer />
     </div>
   );
 };
