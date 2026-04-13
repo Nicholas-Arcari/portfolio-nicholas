@@ -1,0 +1,1767 @@
+export const translations = {
+  // ============================================================
+  //  ITALIANO
+  // ============================================================
+  it: {
+    // --- NAV ---
+    nav: {
+      home: 'Home',
+      about: 'Chi Sono',
+      passions: 'Passioni',
+      recipes: 'Ricette di Mamma Niky',
+      cocktails: 'I miei Cocktail',
+      prints3d: 'Stampe 3D',
+      github: 'GitHub',
+    },
+
+    // --- FOOTER ---
+    footer: {
+      copyright: 'Nicholas Arcari. Tutti i diritti riservati.',
+      design: 'Design: HTML5 UP',
+      privacy: 'Questo sito non raccoglie dati personali e non utilizza cookie di profilazione.',
+      license: 'Licenza template:',
+    },
+
+    // --- SETTINGS ---
+    settings: {
+      darkMode: 'Tema scuro',
+      lightMode: 'Tema chiaro',
+      langIt: 'Italiano',
+      langEn: 'English',
+      resultsFound: 'risultati trovati',
+      resultFound: 'risultato trovato',
+    },
+
+    // --- 404 ---
+    notFound: {
+      title: 'Pagina Non Trovata',
+      text: 'La pagina che stai cercando non esiste o \u00e8 stata spostata.',
+      back: 'Torna alla Home',
+    },
+
+    // --- CYBER SERVICES ---
+    cyberServices: {
+      heading: 'Coming Soon',
+      text: 'Sto preparando una suite di servizi di cybersecurity personalizzati. Penetration testing, security audit, hardening e molto altro.',
+      contact: 'Vuoi saperne di pi\u00f9? Contattami direttamente.',
+      back: 'Torna alla Home',
+      ctaTitle: 'Servizi Cyber',
+      ctaDesc: 'Penetration testing, security audit, hardening — servizi su misura. Pagina in costruzione.',
+      ctaBtn: 'Scopri di pi\u00f9',
+    },
+
+    // --- HOME ---
+    home: {
+      terminal: [
+        '> ./init_profile.sh',
+        '> Caricamento Nicholas Arcari...',
+        '> Laureato in Scienze Informatiche & Cybersecurity Enthusiast',
+        '> Moduli: [WebDev, Network_Sec, DevOps]',
+        '> Pronto.',
+      ],
+      features: {
+        title: 'Competenze',
+        titleBold: 'Tecniche',
+        cyber: {
+          title: 'Cybersecurity',
+          text: 'Vulnerability assessment, \nSicurezza web (OWASP Top 10), \nHardening Linux, \nNetwork Analysis (Nmap, Burp Suite, Wazuh).',
+        },
+        fullstack: {
+          title: 'Fullstack Web Dev',
+          text: 'Backend: PHP, Python, Laravel 12+ \nFrontend: React, Vite, HTML/CSS \nDatabase: MySQL, PostgreSQL',
+        },
+        devops: {
+          title: 'DevOps & Systems',
+          text: 'Docker, Kubernetes, \nGit/GitHub, \nBash Scripting, Linux (Ubuntu, Kali), \nGestione servizi e networking TCP/IP.',
+        },
+      },
+      banner: 'Laureato in Scienze Informatiche',
+      bannerText: 'con forte interesse per la Cybersecurity e esperienza in laboratorio per vulnerability assessment, sicurezza web (OWASP Top 10) e hardening di sistemi Linux.',
+      cta: {
+        title: 'Disponibile per Opportunit\u00e0',
+        text: 'Attualmente alla ricerca di posizioni come Junior Cybersecurity Analyst. Se il mio profilo vi interessa, contattatemi.',
+        email: 'Scrivimi',
+        linkedin: 'LinkedIn',
+      },
+      work: {
+        title: 'Esperienze di',
+        titleBold: 'Lavoro',
+        show: 'Mostra Esperienze',
+        hide: 'Nascondi Esperienze',
+        freelanceTitle: 'Freelance Fullstack Architect & Developer (2025 - Oggi)',
+        freelanceDesc: 'Progettazione e sviluppo di un sistema di gestione della produzione industriale (MGP) basato su architettura a 14 microservizi Docker. Il sistema copre l\'intero ciclo produttivo: dalla creazione dell\'ordine alla generazione automatica di output (PDF, DXF, TLF, CSV), dall\'ottimizzazione del piano di carico fino alla comunicazione diretta con i macchinari via OPC-UA.',
+        freelanceMigration: 'Il progetto \u00e8 nato dalla sostituzione di un sistema legacy basato su fogli Excel e macro VBA, evolvendosi rapidamente da un\'applicazione a 3 componenti a un\'architettura a 14 container con engine di calcolo config-driven, solver a vincoli (MiniZinc + OR-Tools), assistente AI integrato (Ollama) e monitoring real-time (Grafana + Loki).',
+        freelanceTech: 'Backend (PHP 8.2, Laravel 12, Sanctum), Frontend (React 19, TypeScript, Vite, Tailwind), Python (FastAPI, Flask, networkx, MiniZinc, OR-Tools, Ollama), Database (MySQL 8.4), DevOps (Docker, k3s, Nginx, Grafana, Loki).',
+        viewDetails: 'Vedi Dettagli Progetto',
+        previousTitle: 'Esperienze Precedenti',
+        previous: [
+          { role: 'Guardia Giurata (G.P.G.), CoopService, Parma (2023-2024)', desc: 'Gestione di situazioni ad alta responsabilit\u00e0 e collaborazione con personale sanitario e pubblico. Attivit\u00e0 di presidio, coordinamento e controllo accessi in contesti sensibili.' },
+          { role: 'Operaio stagionale, Rodolfi Mansueto, Castelguelfo (2023)', desc: 'Produzione di vari tipi di passate di pomodoro durante le sue differenti fasi: pulizia, cottura, accatastamento in bancali.' },
+          { role: 'Magazziniere, GLS, Fidenza (2021-2022)', desc: 'Lavoro di squadra in attivit\u00e0 di logistica, smistamento pacchi e coordinamento carichi.' },
+        ],
+      },
+      cyber: {
+        title: 'Progetti di',
+        titleBold: 'Cybersecurity',
+        show: 'Mostra Progetti',
+        hide: 'Nascondi Progetti',
+        intro: 'Una selezione dei principali progetti pratici presenti nel mio portfolio GitHub, focalizzati su hardening, analisi di rete, offensive security e detection engineering.',
+        labs: {
+          title: 'Cybersecurity Labs',
+          desc: 'Ambiente di training full-stack con 10 moduli progressivi \u2014 dalla ricognizione OSINT e vulnerability scanning fino a web exploitation, privilege escalation, post-exploitation e digital forensics. Ogni modulo segue la metodologia Kill Chain ed \u00e8 mappato sul framework MITRE ATT&CK. 54 finding documentati: 13 Critical, 20 High, 10 Medium su superfici di attacco web, system e cloud.',
+          red: 'Dalla ricognizione (OSINT) e Vulnerability Assessment fino all\'exploitation avanzata (Web, System & Wireless), Social Engineering e Post-Exploitation (Pivoting/Persistence).',
+          blue: 'Difesa attiva con Wazuh (SIEM), Hardening di sistemi, configurazione Honeypots e Digital Forensics con Wireshark.',
+          cloud: 'Sicurezza per Docker, Kubernetes e ambienti Cloud (AWS/Azure).',
+        },
+        rpi: {
+          title: 'Security Home Lab',
+          desc: 'Infrastruttura di sicurezza reale costruita su Raspberry Pi 5 (8GB RAM, NVMe SSD). Stack SOC completo: Wazuh SIEM per raccolta log e alerting, honeypot Cowrie SSH/Telnet per intrusion detection, VPN WireGuard per accesso remoto sicuro e Pi-hole per filtraggio DNS. Rete protetta con segmentazione VLAN, regole firewall UFW e Fail2ban. Servizi containerizzati con Docker e gestiti tramite Portainer. Funge anche da NAS sicuro via OpenMediaVault.',
+          defense: 'SIEM Wazuh per la rilevazione minacce e alerting in tempo reale.',
+          deception: 'Honeypot Cowrie SSH/Telnet isolato per analisi intrusioni.',
+          network: 'VPN WireGuard, Pi-hole, segmentazione VLAN, UFW e Fail2ban.',
+        },
+        tor: {
+          title: 'Tor Network Analysis',
+          desc: 'Deep-dive tecnico sulla rete Tor \u2014 meccaniche del protocollo onion routing, crittografia dei circuiti (AES-128-CTR, ntor handshake), infrastruttura delle directory authority e configurazione bridge/relay. Documenta attacchi e difese noti (traffic correlation, browser fingerprinting, DNS leak), best practice di OPSEC e considerazioni legali/etiche. Include 5 laboratori pratici e oltre 210 check di validazione automatizzati.',
+          arch: 'Analisi del protocollo onion routing, crittografia dei circuiti (AES-128-CTR, ntor handshake) e infrastruttura directory authority.',
+          censorship: 'Implementazione di Bridge Obfs4 per offuscare il traffico e aggirare DPI (Deep Packet Inspection) o blocchi ISP.',
+          automation: 'Script Bash per la rotazione automatica dell\'IP, gestione del ControlPort e tunneling via Proxychains. 210+ check di validazione.',
+          privacy: 'Mitigazione del fingerprinting, gestione DNS Leaks, traffic correlation e considerazioni legali sull\'uso in Italia.',
+        },
+        flipper: {
+          title: 'Hardware Security Research',
+          desc: 'Ricerca sulla sicurezza e auditing di sistemi di controllo accessi fisici con Flipper Zero e firmware Rogue Master. Copre cattura e replay di segnali Sub-GHz, clonazione e valutazione sicurezza tag NFC/RFID, analisi protocolli infrarossi e sviluppo payload BadUSB per penetration testing autorizzato.',
+          firmware: 'Guida al flashing di RogueMaster per sbloccare frequenze e funzionalit\u00e0. Integrazione hardware via GPIO e fondamenti di hardware hacking.',
+          wifi: 'Configurazione di schede ESP32/ESP8266 per WiFi Marauder (sniffing, deauth) e moduli NRF24 per mousejacking.',
+          access: 'Cattura e replay segnali Sub-GHz, clonazione tag NFC/RFID/iButton, analisi protocolli IR e payload BadUSB.',
+        },
+        ctf: {
+          title: 'CTF Writeups',
+          desc: 'Raccolta di writeup e walkthrough di Capture The Flag \u2014 web exploitation, privilege escalation, forensics, crittografia e reverse engineering. Ogni writeup documenta la metodologia completa: ricognizione, identificazione vulnerabilit\u00e0, exploitation e lezioni apprese.',
+          categories: 'Web Exploitation, Privilege Escalation, Forensics, Crittografia, Reverse Engineering, Miscellaneous.',
+          tools: '12 script di automazione per attivit\u00e0 ricorrenti in CTF.',
+        },
+        detection: {
+          title: 'Detection Engineering',
+          desc: 'Libreria di regole di detection personalizzate in 4 formati principali: Sigma (SIEM-agnostic), Yara (malware detection), Suricata (network IDS) e Wazuh (HIDS/SIEM). Regole organizzate per tattica MITRE ATT&CK \u2014 da credential access e lateral movement fino a exfiltration e C2 detection. Include guide di setup, mappatura test Atomic Red Team, dashboard Kibana/Grafana e validazione CI/CD. Heatmap di copertura ATT&CK Navigator.',
+          formats: 'Sigma (SIEM-agnostic), Yara (malware), Suricata (network IDS), Wazuh (HIDS/SIEM).',
+          testing: 'Mappatura Atomic Red Team, dashboard Kibana/Grafana e validazione CI/CD.',
+        },
+        soc: {
+          title: 'SOC Toolkit',
+          desc: 'Toolkit modulare per analisti SOC con backend REST API (Python/FastAPI) e frontend React. Tre moduli integrati: Phishing Analyzer (analisi header email, scansione URL/allegati, verdetto automatizzato), Log Analyzer (brute force SSH, web log, eventi Windows con geolocalizzazione e alerting), IOC Extractor (estrazione indicatori da PDF, email e testo grezzo). Si integra con VirusTotal, AbuseIPDB, Shodan, URLScan.io e AlienVault OTX. Export in JSON, CSV e report PDF.',
+          modules: 'Phishing Analyzer, Log Analyzer, IOC Extractor.',
+          integrations: 'VirusTotal, AbuseIPDB, Shodan, URLScan.io, AlienVault OTX.',
+        },
+        viewRepo: 'Vedi Repo',
+      },
+      sidebar: {
+        uniDate: '2021 - 2025',
+        uniTitle: 'Universit\u00e0 di Parma',
+        uniDesc: 'Laurea Triennale in Scienze Informatiche.',
+        uniGrade: 'Voto:',
+        uniDetails: 'Dettagli Accademici',
+        hsDate: '2016 - 2021',
+        hsTitle: 'IISS Berenini',
+        hsDesc: 'Maturit\u00e0 scientifica opzione scienze applicate.',
+        hsGrade: 'Voto:',
+        certs: 'Certificazioni',
+        ccnaDesc: 'Competenza convalidata nella configurazione, gestione e troubleshooting di infrastrutture di rete enterprise, con focus su automazione e programmabilit\u00e0.',
+        ccnaStatus: 'Stato: In Corso (60%)',
+        secplusDesc: 'Certificazione core per la sicurezza informatica operativa: valutazione delle minacce, gestione del rischio e implementazione di architetture sicure (Defense-in-Depth).',
+        secplusStatus: 'Stato: In Preparazione (0%)',
+        notOnlyCode: 'Non solo codice...',
+        notOnlyCodeDesc: 'Quando non sono al terminale, mi dedico alla cucina, alla mixology e alla stampa 3D. Scopri le mie passioni.',
+        goRecipes: 'Vai alle Ricette',
+        goCocktails: 'Vai ai Cocktail',
+        goPrints: 'Vai alle Stampe 3D',
+      },
+    },
+
+    // --- ABOUT ---
+    about: {
+      terminal: [
+        '> ./whoami',
+        '> Nicholas Arcari',
+        '> Status: Accensione fuoco della giovinezza...',
+        '> Caricamento Bio...',
+      ],
+      title: 'About Me',
+      bio: [
+        'Ciao, sono Nicholas Arcari.',
+        'Nel mio modo di vedere il mondo, righe di codice e cibo non sono affatto agli antipodi. A ben pensarci, tra il silicio e la cucina non esiste una differenza cos\u00ec grande: entrambi richiedono struttura, pazienza e una cura quasi maniacale per i dettagli.',
+        'C\'\u00e8 una poesia silenziosa, quasi romantica, nel costruire qualcosa partendo da zero. Allestire laboratori di sicurezza informatica, orchestrare macchine virtuali e configurare reti sicure mi regala la stessa soddisfazione viscerale di quando affondo le mani nell\'impasto, sentendo il profumo, la maglia glutinica prendere forma sotto le dita... Sono due forme di architettura diverse, \u00e8 vero, ma condividono la stessa anima.',
+        'E poi c\'\u00e8 l\'attesa vigile, il monitoraggio. Potrei passare ore a seguire lo scorrere dei log di un SIEM, cercando l\'anomalia nascosta, con la stessa concentrazione febbrile con cui osservo una lievitazione complessa dietro il vetro del forno. In entrambi i casi si tratta di leggere segnali sottili, interpretare comportamenti, aspettare il momento esatto in cui tutto raggiunge il suo equilibrio perfetto.',
+        'PS: se non metti le patate precedentemente lessate dentro la pasta al pesto non penso possiamo diventare amici.',
+      ],
+      contacts: 'Contatti',
+      location: 'Salsomaggiore Terme (PR), Italia',
+    },
+
+    // --- RICETTE ---
+    ricette: {
+      terminal: [
+        '> ./load_module.sh --recipes',
+        '> Caricamento database ricette...',
+        '> Status: Modalit\u00e0 cucina attivata.',
+        '> Pronto chef.',
+      ],
+      introTitle: 'Il codice del gusto',
+      introDesc: 'Quando chiudo il terminale, la cucina diventa il mio nuovo laboratorio. Qui raccolgo i miei esperimenti culinari preferiti.',
+      title: 'Ricette di',
+      titleBold: 'Mamma Niky',
+      subtitle: 'Algoritmi culinari tramandati, debuggati e pronti per il deploy in tavola.',
+      search: 'Cerca una ricetta...',
+      ingredients: 'Ingredienti:',
+      preparation: 'Procedimento:',
+      noResults: 'Nessuna ricetta trovata. Forse \u00e8 ancora in fase di compilazione?',
+      recipes: [
+        { name: 'Torta di Mele "Legacy Code"', description: 'Una ricetta scritta decenni fa che nessuno osa refattorizzare perch\u00e9 funziona perfettamente cos\u00ec.', ingredients: '3 mele golden (Core Data), 200g farina (Base Class), 150g zucchero (Syntactic Sugar), 2 uova.', preparation: 'Compilare gli ingredienti in una ciotola, gestire le eccezioni (grumi) ed eseguire il render in forno a 180\u00b0C per 40 minuti.' },
+        { name: 'Lasagne al Forno "OSI Model (Layer 7)"', description: 'Sette strati di puro gusto, con incapsulamento perfetto dei pacchetti di sapore.', ingredients: 'Sfoglia all\'uovo (Physical Layer), Rag\u00f9 bolognese (Network), Besciamella (Transport), Parmigiano (Application).', preparation: 'Stacking dei layer in sequenza. Hardening della crosta in forno fino a doratura completa (Firewall attivo).' },
+        { name: 'Tiramis\u00f9 "Java(Script)"', description: 'Il boost di caffeina necessario per le nottate di coding. Pura energia asincrona.', ingredients: 'Mascarpone (Framework pesante), Savoiardi (Dependencies), Caff\u00e8 espresso forte (Runtime), Cacao amaro (UI).', preparation: 'Architettura Serverless (nessuna cottura richiesta). Deploy istantaneo in frigo.' },
+        { name: 'Spaghetti alla Carbonara "Spaghetti Code"', description: 'Un groviglio delizioso dove le dipendenze sono strette, ma il risultato \u00e8 perfetto.', ingredients: 'Spaghetti, Guanciale croccante (Hardware acceleration), Tuorli d\'uovo, Pecorino Romano, Pepe nero.', preparation: 'Attenzione alla "Race Condition": l\'uovo va unito a fuoco spento per evitare il crash (frittata). Mantecare in loop fino a cremosit\u00e0.' },
+        { name: 'Polpette al Sugo "Microservices"', description: 'Piccoli moduli di gusto indipendenti, altamente scalabili e facili da consumare.', ingredients: 'Macinato misto, Pane raffermo, Prezzemolo, Aglio, Sugo di pomodoro (Message Broker).', preparation: 'Istanziare molteplici polpette e farle girare nel container (padella) con il sugo a fuoco lento.' },
+      ],
+      sidebarPizza: 'Voglia di Pizza?',
+      sidebarPizzaDesc: 'Lievitazione lenta, alta idratazione e ingredienti di prima scelta. Scopri le mie pizze fatte in casa.',
+      sidebarPizzaBtn: 'Le mie Pizze',
+      sidebarHome: 'Torna alla Home',
+      sidebarHomeDesc: 'Vuoi vedere le mie esperienze lavorative o le mie passioni?',
+    },
+
+    // --- PIZZE ---
+    pizze: {
+      terminal: [
+        '> ./load_module.sh --pizza-oven',
+        '> Preriscaldamento a 400\u00b0C...',
+        '> Status: Impasto in lievitazione...',
+        '> Pronto.',
+      ],
+      title: 'Le mie Pizze',
+      subtitle: '72 ore di lievitazione, idratazione al 70% e ingredienti selezionati. Un deploy di sapori in produzione.',
+      search: 'Cerca una pizza...',
+      topping: 'Topping:',
+      dough: 'Impasto:',
+      noResults: 'Nessuna pizza trovata. Forse \u00e8 ancora in fase di lievitazione?',
+      pizzas: [
+        { name: 'Margherita 2.0 (Stable Release)', description: 'La regina delle pizze, ottimizzata e priva di bug.', topping: 'Pomodoro San Marzano DOP, Mozzarella Fior di Latte, Basilico fresco, Olio EVO.', dough: 'Diretto lungo, 24h TA.' },
+        { name: 'Diavola (Firewall Breach)', description: 'Piccante al punto giusto, penetra ogni difesa.', topping: 'Pomodoro, Mozzarella, Salame piccante napoletano, \'Nduja di Spilinga.', dough: 'Biga 100%, 48h frigo.' },
+        { name: 'Quattro Formaggi "Full Stack"', description: 'Un\'architettura a quattro livelli di pura cremosit\u00e0.', topping: 'Gorgonzola dolce (Backend), Taleggio, Mozzarella (Frontend), Scaglie di Grana (UI).', dough: 'Poolish ad alta idratazione.' },
+        { name: 'Ortolana "Root Access"', description: 'Accesso privilegiato alle migliori verdure di stagione (vegan friendly).', topping: 'Crema di zucchine, Melanzane a funghetto, Peperoni arrostiti, Pomodori confit.', dough: 'Integrale al 30% (Legacy grain).' },
+        { name: 'Napoli "Salted Hash"', description: 'Crittografia saporita con un pizzico di sapidit\u00e0 aggiunta.', topping: 'Pomodoro, Acciughe di Cetara, Capperi di Pantelleria, Origano, Olive nere.', dough: 'Classico Napoletano STG.' },
+        { name: 'Marinara "Open Source"', description: 'Pochi ingredienti, codice pulito, trasparente e accessibile a tutti.', topping: 'Pomodoro San Marzano, Aglio rosso, Origano di montagna, Olio EVO abbondante.', dough: 'Diretto veloce (per un deploy rapido).' },
+        { name: 'Salsiccia e Friarielli "Backend Heavy"', description: 'Una pizza robusta che regge carichi di lavoro pesanti.', topping: 'Provola affumicata, Salsiccia a punta di coltello, Friarielli ripassati aglio e olio.', dough: 'Autolisi lunga per massimizzare la struttura.' },
+      ],
+      sidebarRecipes: 'Torna alla cucina',
+      sidebarRecipesDesc: 'Preferisci qualcosa di dolce o un primo piatto? Torna alle ricette di Mamma Niky.',
+      sidebarRecipesBtn: 'Tutte le Ricette',
+      sidebarHome: 'Torna alla Home',
+      sidebarHomeDesc: 'Vuoi vedere le mie esperienze lavorative o le mie passioni?',
+    },
+
+    // --- COCKTAIL TECH ---
+    cocktail: {
+      terminal: [
+        '> ./load_module.sh --bar',
+        '> Caricamento libreria Cocktail...',
+        '> Status: Campari Addicted.',
+        '> Pronto.',
+      ],
+      introTitle: 'Mixology & Tech',
+      introDesc: 'La precisione nel dosare gli ingredienti \u00e8 importante quanto quella nel scrivere codice. Ecco le mie creazioni per il relax post-deploy.',
+      title: 'I miei',
+      titleBold: 'Cocktail',
+      subtitle: 'Algoritmi liquidi compilati al momento per l\'ottimizzazione delle prestazioni sociali.',
+      search: 'Cerca un cocktail tech...',
+      ingredients: 'Ingredienti:',
+      preparation: 'Procedimento:',
+      noResults: 'Nessun cocktail trovato con questo nome. Controlla il codice sorgente!',
+      cocktails: [
+        { name: 'Gin(t) Commit -m "Refreshing"', description: 'La versione stabile per chiudere la giornata lavorativa senza conflitti di merge.', ingredients: '50ml Gin (Libreria base), 150ml Tonica (Dependencies), Lime (Patch correttiva).', preparation: 'Eseguire il push del gin su ghiaccio, iniettare la tonica delicatamente per non rompere la build (carbonazione).' },
+        { name: 'Dark Mode', description: 'Il tema preferito dagli sviluppatori. Riduce l\'affaticamento visivo e aumenta la latenza cardiaca.', ingredients: '50ml Vodka, 30ml Liquore al caff\u00e8 (Kahl\u00faa), 1 tazzina di espresso (Java Runtime).', preparation: 'Shakerare energicamente per compilare la schiuma perfetta in cima allo stack.' },
+        { name: 'Firewall', description: 'Un layer di sicurezza piccante che blocca le intrusioni della noia.', ingredients: '50ml Tequila, 25ml Lime, 15ml Agave, Jalape\u00f1o (Packet Filter).', preparation: 'Configurare il bordo del bicchiere con sale e peperoncino. Servire ghiacciato per mitigare l\'attacco DDoS al palato.' },
+        { name: 'Blue Screen of Death', description: 'Un errore di sistema fatale, ma tropicale. Riavviare l\'utente dopo la consumazione.', ingredients: '50ml Vodka, 20ml Blue Cura\u00e7ao (System Error), Limonata.', preparation: 'Versare tutto nel bicchiere. Se lo schermo diventa blu, avete bevuto troppo.' },
+        { name: 'Legacy Code', description: 'Una ricetta deprecata dal 1800, ma che gira ancora perfettamente su tutti i sistemi.', ingredients: '45ml Bourbon (Codice spaghetti), Zolletta di zucchero (Hardcoded value), Angostura.', preparation: 'Diluire lentamente come un refactoring doloroso ma necessario.' },
+        { name: 'Kernel Panic', description: 'Quando il sistema va in crash perch\u00e9 hai caricato troppi moduli (alcolici) insieme.', ingredients: 'Vodka, Rum, Gin, Tequila, Cointreau (Tutte le librerie possibili), Coca-Cola.', preparation: 'Mescolare tutto. Attenzione: alto rischio di shutdown improvviso del sistema nervoso.' },
+      ],
+      sidebarClassics: 'Torna alle origini',
+      sidebarClassicsDesc: 'Preferisci i sapori tradizionali? Ho raccolto qui i grandi classici IBA e le ricette senza tempo.',
+      sidebarClassicsBtn: 'I Grandi Classici',
+      sidebarHome: 'Torna alla Home',
+      sidebarHomeDesc: 'Vuoi vedere le mie esperienze lavorative o le mie passioni?',
+    },
+
+    // --- COCKTAIL CLASSICI ---
+    cocktailClassici: {
+      terminal: [
+        '> ./load_module.sh --iba-classics',
+        '> Caricamento archivi storici...',
+        '> Status: Modalit\u00e0 vintage attivata.',
+        '> Pronto.',
+      ],
+      title: 'I Grandi Classici',
+      subtitle: 'Un viaggio nella storia della miscelazione, dalle origini ai giorni nostri.',
+      search: 'Cerca un cocktail (es. Negroni, Spritz)...',
+      ingredientsLabel: 'Ingredienti',
+      preparationLabel: 'Preparazione',
+      historyLabel: 'Storia',
+      noResults: 'Nessun cocktail trovato con questo nome. Prova a cercare qualcos\'altro!',
+      sidebarTech: 'Torna al futuro',
+      sidebarTechDesc: 'Ti mancano i miei esperimenti tech? Torna alla pagina principale dei cocktail.',
+      sidebarTechBtn: 'I miei Cocktail Tech',
+      sidebarHome: 'Torna alla Home',
+      sidebarHomeDesc: 'Vuoi vedere le mie esperienze lavorative o le mie passioni?',
+      cocktails: [
+        {
+          name: 'Americano',
+          ingredients: 'Soda, Bitter, Vermouth Rosso, Arancia, Limone.',
+          preparation: 'Raffreddare il bicchiere con del ghiaccio. Togliere il ghiaccio in eccesso o l\'acqua, inserire 35 ml di Vermouth e 35 ml di Bitter. Aggiungere la soda q.b. (dai 30ml ai 60ml in base al gusto) e mescolare delicatamente. Aggiungere ghiaccio fresco, mescolare e per finire guarnire con una fetta di arancia nel cocktail e una scorza di limone strizzata sul bordo.',
+          history: 'Si chiama "Americano" in onore all\'America che era abituata a bere drink "on the rocks", quindi con ghiaccio. Noi in Italia, nei primi del Novecento, eravamo soliti bere il vermouth freddo in coppettine senza ghiaccio. Era un periodo in cui si cercava di aggiungere una parte pi\u00f9 amara, un po\' pi\u00f9 bitter al nostro vermouth e da l\u00ec un po\' di soda (utilizzata sia in Europa che in America) per rendere il cocktail pi\u00f9 frizzante.',
+        },
+        {
+          name: 'Bloody Mary',
+          ingredients: 'Vodka, Succo di Pomodoro, Sedano, Tabasco, Salsa Worcester, Pepe, Sale, Limone Fresco.',
+          preparation: 'Freddare il bicchiere. In uno shaker (o meglio, usando la tecnica del "rolling") inserire ghiaccio e 45ml di Vodka. Tagliare a met\u00e0 un limone, spremere 5-10ml e unirlo a 125ml di succo di pomodoro. Aggiungere un pizzico di sale, pepe, qualche goccia di Tabasco e Worcester. Miscelare per ossigenare il drink senza shakerare troppo violentemente. Versare nel bicchiere con ghiaccio nuovo e decorare con sedano e scorza di limone.',
+          history: 'Questo drink nasce in Francia intorno agli anni \'20/\'30 da un barman che lavorava all\'Harry\'s New York Bar di Parigi, Ferdinand "Pete" Petiot. Inizialmente cre\u00f2 una miscela semplice di vodka e pomodoro. Un manager di un hotel di New York lo assaggi\u00f2, gli piacque e convinse Petiot a trasferirsi al Saint Regis Hotel di New York. Per adattarsi ai palati americani, pi\u00f9 amanti dei sapori speziati, aggiunse salse e condimenti creando il Bloody Mary odierno. Il sedano fu aggiunto negli anni \'60: nasce come pinzimonio, ma durante un cocktail party una cliente lo intinse nel bicchiere, creando la tradizione.',
+        },
+        {
+          name: 'Bombardino',
+          ingredients: 'Zabov (Liquore all\'uovo), Panna montata, Cacao.',
+          preparation: 'Scaldare lo Zabov (senza farlo bollire), versarlo in un bicchiere resistente al calore e guarnire con abbondante panna montata e una spolverata di cacao.',
+          history: 'Drink nato negli anni \'50/\'60, periodo d\'oro dei cocktail vintage sulle piste da sci. Si narra sia stato creato da un giovane barman genovese rifugiatosi in montagna.',
+        },
+        {
+          name: 'Corpse Reviver #2',
+          ingredients: 'Lillet Blanc, Gin, Cointreau, Succo di limone, Assenzio (qualche goccia).',
+          preparation: 'Raffreddare la coppetta. Nello shaker versare 25ml di Gin, 25ml di Cointreau, 25ml di Lillet Blanc e 25ml di succo di limone fresco. Aggiungere un cucchiaino di assenzio (o sciacquare il bicchiere con esso). Shakerare con ghiaccio e filtrare nella coppetta. Guarnire con scorza di limone.',
+          history: 'Il nome significa "risveglia cadaveri", inteso come rimedio per i postumi della sbornia. Un ingrediente chiave \u00e8 l\'assenzio (la "fata verde"), liquore a base di artemisia nato in Svizzera nel 1700 (Pierre Ordinaire) o forse creato dalla "nonna Henriod" come rimedio casalingo.',
+        },
+        {
+          name: 'Cosmopolitan',
+          ingredients: 'Vodka (45ml), Cointreau (30ml), Succo di Lime fresco (15ml), Succo di Mirtillo rosso americano (50ml), Scorza d\'arancia.',
+          preparation: 'Raffreddare la coppetta. Nello shaker con ghiaccio unire Vodka, Cointreau, succo di mirtillo e lime. Shakerare energicamente. Filtrare nel bicchiere (senza ghiaccio). Prendere una scorza d\'arancia e spremerne gli oli essenziali sopra il drink per profumarlo.',
+          history: 'Le origini sono vaghe. Una versione "Cosmopolitan" appare nel 1927 (Harry MacElhone), ma la versione moderna simile all\'attuale risale al 1934 o agli anni \'80. Una nota regola non scritta dice di mettere "tanto Cranberry quanto basta a far dire \'Uhh che bello, \u00e8 rosa!\'".',
+        },
+        {
+          name: 'Daiquiri',
+          ingredients: 'Rum Bianco (es. Havana 3), Succo di Lime fresco, Zucchero bianco semolato (o sciroppo).',
+          preparation: 'Versione Classica: Nel cobbler sciogliere 2 cucchiaini di zucchero in 25ml di lime fresco. Aggiungere 45ml di Rum e ghiaccio. Shakerare e filtrare in coppetta. Hemingway Special: Shakerare 45ml Rum, 25ml Pompelmo rosa, 10ml Lime, 10ml Maraschino e 10ml sciroppo. Filtrare e guarnire con scorza di pompelmo.',
+          history: 'Cuba, inizio \'900. Due ingegneri minerari (Pagliuchi e Cox) vollero brindare ma avevano solo Rum, Lime e Zucchero. Unirono il tutto e, scartando il nome "Rum Sour", lo battezzarono come la spiaggia vicina: Daiquiri. Un\'altra leggenda cita i marines della nave Maine affondata. Famosa la variante di Hemingway ("Papa Doble"): doppia dose di rum, niente zucchero, aggiunta di pompelmo e maraschino.',
+        },
+        {
+          name: 'Martini Dry',
+          ingredients: 'Gin (60ml), Vermouth Dry (q.b.), Oliva o Scorza di limone.',
+          preparation: 'Raffreddare il mixing glass. Versare Gin e Vermouth sul ghiaccio e mescolare (stir) delicatamente per raffreddare e diluire. Filtrare nella coppetta Martini ghiacciata. Decorare con oliva o scorza di limone. Nota: La variante Vesper (James Bond) richiede Gin, Vodka e Lillet Blanc, ed \u00e8 agitata (shaken), non mescolata.',
+          history: 'Forse nato al Knickerbocker Hotel di NY da un barman di nome Martinez (o servito a Rockefeller). In Italia \u00e8 meno popolare che all\'estero. \u00c8 un drink secchissimo e ad alto tenore alcolico. Le prime versioni (fine 1800) erano molto diverse, con Orange Bitter e parti uguali di Gin e Vermouth.',
+        },
+        {
+          name: 'French 75',
+          ingredients: 'Gin (30ml), Succo di limone (20ml), Zucchero liquido (10ml), Champagne o Spumante (a colmare).',
+          preparation: 'Shakerare Gin, limone e zucchero con ghiaccio. Filtrare in una fl\u00fbte (o coppetta) e colmare delicatamente con lo spumante. Guarnire con scorza di limone.',
+          history: 'Anni \'20, Harry\'s New York Bar di Parigi. Il nome \u00e8 un omaggio al cannone francese da 75mm utilizzato nella Prima Guerra Mondiale, per via della "botta" che il drink dava.',
+        },
+        {
+          name: 'Hugo',
+          ingredients: 'Prosecco, Sciroppo ai fiori di Sambuco, Soda o acqua frizzante, Menta fresca, Lime.',
+          preparation: 'Tecnica "Build" (direttamente nel bicchiere). In un calice con ghiaccio versare il Prosecco, 30ml di sciroppo di sambuco e uno splash di soda. Aggiungere foglie di menta, mescolare delicatamente e decorare con un ciuffo di menta e una fetta di lime.',
+          history: 'Origini alpine (Trentino Alto Adige), creato da Roland Gruber intorno al 2005. Voleva un\'alternativa pi\u00f9 fresca e dolce al classico Spritz veneziano. Inizialmente usava sciroppo di melissa, poi sostituito dal pi\u00f9 reperibile sambuco.',
+        },
+        {
+          name: 'Long Island Iced Tea',
+          ingredients: 'Vodka, Rum, Gin, Tequila, Cointreau, Succo di Limone, Zucchero di Canna Liquido, Coca Cola.',
+          preparation: 'Utilizzare un bicchiere alto (Highball) e raffreddarlo con ghiaccio. In uno shaker inserire: 15ml di Vodka, 15ml di Rum, 15ml di Gin, 15ml di Tequila, 15ml di Cointreau, 25ml di succo di limone e 10ml di sciroppo di zucchero. Shakerare e filtrare nel bicchiere con ghiaccio nuovo. Aggiungere un top (pochissima) Coca Cola per dare il colore del t\u00e8 e guarnire con limone.',
+          history: 'Si narra sia nato durante il proibizionismo (anni \'20/\'30) per mascherare l\'alcol come t\u00e8 freddo, mescolando tutto ci\u00f2 che si aveva a disposizione (limone, zucchero, cola) per ingannare i controlli della polizia. La ricetta \u00e8 stata codificata ufficialmente negli anni \'60 da Robert "Rosebud" Butt, diventando poi un classico mondiale.',
+        },
+        {
+          name: 'Manhattan',
+          ingredients: 'Rye Whiskey (o Bourbon), Vermouth Rosso, Angostura, Amarene sciroppate, Scorza d\'arancia.',
+          preparation: 'In un mixing glass versare 50 ml di Rye Whiskey, 25 ml di vermouth rosso e 2-4 gocce di Angostura. Mescolare (stir) con ghiaccio e filtrare nella coppetta gi\u00e0 fredda. Guarnire con un\'amarena sciroppata e spruzzare gli oli essenziali di una scorza d\'arancia.',
+          history: 'Nasce in America. Si dice sia stato creato durante un party elettorale per Samuel J. Tilden, governatore di NY in corsa per la Casa Bianca. Al party era presente anche Jennie Jerome, madre di Winston Churchill, a cui talvolta viene attribuita la paternit\u00e0 del drink, anche se le date storiche sono dibattute.',
+        },
+        {
+          name: 'Margarita',
+          ingredients: 'Tequila, Lime, Cointreau (o Triple Sec), Sale.',
+          preparation: 'Bagnare il bordo del bicchiere con lime e passarlo nel sale (crusta). Nello shaker con ghiaccio versare 45ml di Tequila, 15ml di succo di Lime fresco e 15ml di Cointreau. Shakerare e filtrare nel bicchiere bordato di sale.',
+          history: 'Uno dei cocktail after-dinner pi\u00f9 amati. La storia sfuma nella leggenda, collocandosi tra gli anni \'30 e \'40 in Messico o al confine USA. Richiama il modo tradizionale di bere tequila (sale e limone), ma in una forma pi\u00f9 raffinata e miscelata.',
+        },
+        {
+          name: 'Mojito',
+          ingredients: 'Rum Cubano, Menta, Zucchero di Canna Bianco, Acqua di Seltz (o frizzante), Lime, Angostura (opzionale).',
+          preparation: 'In un bicchiere alto (Tumbler) mettere 25ml di succo di lime e 4-5g di zucchero di canna bianco. Mescolare bene per sciogliere lo zucchero. Aggiungere la menta (senza pestarla troppo) e uno splash di soda. Aggiungere 45ml di Rum e riempire il bicchiere di ghiaccio (meglio se tritato grossolanamente). Mescolare dal basso verso l\'alto. Colmare con ghiaccio e soda. Decorare con ciuffo di menta e gocce di Angostura.',
+          history: 'Origini cubane (La Bodeguita del Medio, L\'Avana), reso celebre da Hemingway negli anni \'50. Deriva probabilmente dal "Draque", bevanda del pirata Francis Drake (1500) a base di aguardiente, lime e menta. Il nome unisce "mojo" (salsa/incantesimo) e "mojadito" (umido).',
+        },
+        {
+          name: 'Moscow Mule',
+          ingredients: 'Vodka, Ginger Beer, Angostura, Lime, Zenzero, Menta.',
+          preparation: 'Nella tazza di rame (o bicchiere alto) colma di ghiaccio versare 45ml di Vodka e il succo di mezzo lime. Colmare con Ginger Beer e aggiungere qualche goccia di Angostura. Guarnire con menta fresca e fettina di lime.',
+          history: 'Nato negli anni \'40 in America dall\'incontro di due imprenditori in difficolt\u00e0: uno produceva Vodka (Smirnoff, poco amata all\'epoca), l\'altro Ginger Beer. La moglie di uno dei due produceva tazze di rame. Unendo i tre elementi invenduti crearono un successo mondiale. Il nome deriva dalla Vodka (Russia/Mosca) e dal "calcio" (mule) che l\'alcol dava.',
+        },
+        {
+          name: 'Negroni',
+          ingredients: 'Gin, Vermouth Rosso, Bitter Campari, Arancia.',
+          preparation: 'Costruito direttamente nel bicchiere (Build) con ghiaccio. Versare in parti uguali: 30ml Gin, 30ml Bitter Campari, 30ml Vermouth Rosso. Mescolare delicatamente e guarnire con fetta d\'arancia.',
+          history: 'Firenze, 1919, Bar Casoni. Il conte Camillo Negroni chiese al barman Fosco Scarselli di "rinforzare" il suo solito Americano, sostituendo la soda con il Gin, per ricordare i suoi viaggi a Londra. Nacque cos\u00ec uno dei cocktail italiani pi\u00f9 famosi al mondo.',
+        },
+        {
+          name: 'Negroni Sbagliato',
+          ingredients: 'Spumante Brut (o Prosecco), Vermouth Rosso, Bitter Campari, Arancia.',
+          preparation: 'Tecnica Build nel bicchiere con ghiaccio. 30ml Bitter Campari, 30ml Vermouth Rosso e completare con Spumante. Mescolare delicatamente (per non perdere le bollicine) e decorare con arancia.',
+          history: 'Milano, Bar Basso, anni \'70. Il barman Mirko Stocchetto, per errore o per fretta, prese la bottiglia di Spumante invece di quella del Gin mentre preparava un Negroni. Il risultato piacque subito e divenne un classico.',
+        },
+        {
+          name: 'Old Fashioned',
+          ingredients: 'Bourbon (o Rye Whiskey), Angostura, Zolletta di zucchero (o sciroppo), Acqua (splash), Scorza d\'arancia.',
+          preparation: 'Mettere la zolletta nel bicchiere, imbibirla con 2-3 gocce di Angostura e un goccio d\'acqua (o soda). Pestare fino a scioglierla. Aggiungere ghiaccio e 45ml di Bourbon. Mescolare a lungo per diluire e raffreddare. Guarnire con scorza d\'arancia spremuta sopra.',
+          history: 'Definito come il "Whiskey Cocktail" originale gi\u00e0 nel 1862 da Jerry Thomas. Rappresenta la definizione arcaica di cocktail: spiriti, zucchero, acqua e bitters. \u00c8 costantemente uno dei drink pi\u00f9 venduti al mondo.',
+        },
+        {
+          name: 'Pi\u00f1a Colada',
+          ingredients: 'Rum Bianco, Succo d\'Ananas, Latte di Cocco (o crema di cocco), Ghiaccio.',
+          preparation: 'Nel frullatore (blender) mettere: 45ml Rum Bianco, 120ml Succo d\'Ananas, 10-20ml Latte di cocco e ghiaccio tritato. Frullare fino ad ottenere una consistenza cremosa (frozen). Decorare con fetta d\'ananas e foglia.',
+          history: 'Il drink ufficiale di Porto Rico. Significa "ananas pressato". Nato nel Caribe, \u00e8 il re dei cocktail tropicali (Tiki).',
+        },
+        {
+          name: 'Ramos Gin Fizz',
+          ingredients: 'London Dry Gin, Sciroppo di zucchero, Albume, Panna fresca, Succo di Limone, Succo di Lime, Acqua di Fiori d\'Arancio, Soda.',
+          preparation: 'Shakerare (Dry Shake senza ghiaccio) 45ml Gin, 25ml sciroppo, 30ml panna, 15ml limone, 10ml lime, albume e 3 gocce acqua fiori d\'arancio. Aggiungere ghiaccio e shakerare energicamente per molto tempo (almeno 2-3 minuti). Filtrare in un bicchiere alto (senza ghiaccio) e completare lentamente con soda per far alzare la schiuma oltre il bordo.',
+          history: 'New Orleans, 1888, Henry Charles Ramos. Famoso per la sua lunghissima shakerata necessaria per montare panna e albume. Nel suo locale c\'erano gli "shaker boys", ragazzi assunti solo per shakerare i drink a turno per 10-15 minuti.',
+        },
+        {
+          name: 'Sex on the Beach',
+          ingredients: 'Vodka, Liquore alla Pesca (Peach Schnapps), Succo d\'Arancia, Succo di Cranberry (Mirtillo rosso).',
+          preparation: 'Nello shaker con ghiaccio: 40ml Vodka, 20ml Liquore alla pesca, 40ml Succo d\'arancia, 40ml Succo di Cranberry. Shakerare e filtrare in un bicchiere alto (Highball) con ghiaccio fresco.',
+          history: 'Florida, 1987. Creato per promuovere il liquore alla pesca durante lo Spring Break. Il nome fu scelto combinando i due motivi principali per cui i turisti andavano in Florida: "Sex" e "Beach". Inizialmente chiamato "Peach on the Beach".',
+        },
+        {
+          name: 'Spritz',
+          ingredients: 'Aperol (o Campari/Select), Prosecco, Soda (o acqua frizzante), Arancia.',
+          preparation: 'In un calice colmo di ghiaccio versare: 3 parti di Prosecco (70ml), 2 parti di Aperol (50ml), 1 parte di Soda (splash). Mescolare delicatamente e guarnire con fetta d\'arancia.',
+          history: 'Nasce nel Triveneto durante la dominazione austriaca. I soldati asburgici trovavano i vini veneti troppo forti e li allungavano (spritzen = spruzzare) con acqua gassata. Negli anni \'20/\'30 si aggiunse il bitter (Aperol, Select) creando la versione attuale.',
+        },
+        {
+          name: 'Vesper',
+          ingredients: 'Gin, Vodka, Lillet Blanc (o Cocchi Americano), Scorza di limone.',
+          preparation: 'Nello shaker con ghiaccio: 45ml Gin, 15ml Vodka, 10ml Lillet Blanc. Shakerare (non mescolare!) energicamente e filtrare in coppetta. Guarnire con una lunga scorza di limone.',
+          history: 'Inventato da Ian Fleming nel romanzo di 007 "Casino Royale" (1953). James Bond lo ordina e lo dedica a Vesper Lynd, la prima Bond Girl di cui si innamora. La frase celebre \u00e8 "Shaken, not stirred".',
+        },
+        {
+          name: 'Vie en Rose',
+          ingredients: 'Assenzio, Albume, Sciroppo di zucchero, Acqua di rose, Succo di limone.',
+          preparation: 'Nello shaker: 35ml Assenzio, 15ml sciroppo (aromatizzato con 2 gocce di acqua di rose), 25ml limone e albume. Dry shake (senza ghiaccio), poi shakerare con ghiaccio. Filtrare in coppetta. Profumare con oli essenziali di arancia.',
+          history: 'Un omaggio all\'eleganza francese e all\'uso dell\'assenzio, unito alla delicatezza della rosa.',
+        },
+        {
+          name: 'Whiskey Sour',
+          ingredients: 'Bourbon Whiskey, Succo di Limone, Sciroppo di zucchero, Albume (opzionale), Angostura, Scorza d\'arancia.',
+          preparation: 'Shakerare (Dry Shake se si usa albume) 45ml Bourbon, 25ml limone fresco, 15ml sciroppo, albume e 2 gocce di Angostura. Aggiungere ghiaccio e shakerare di nuovo. Filtrare in bicchiere basso (con o senza ghiaccio). Guarnire con scorza d\'arancia o ciliegina.',
+          history: 'Uno dei pilastri della miscelazione (categoria Sour: base alcolica + parte citrica + parte dolce). Perfetto sia come aperitivo che come dopocena.',
+        },
+        {
+          name: 'White Russian',
+          ingredients: 'Vodka, Liquore al Caff\u00e8 (Kahl\u00faa), Panna fresca (o latte).',
+          preparation: 'Nel bicchiere basso con ghiaccio versare 50ml Vodka e 20ml Liquore al caff\u00e8. Mescolare. A parte, shakerare leggermente la panna per addensarla (senza montarla a neve) e versarla delicatamente sopra il drink (float) creando due strati distinti.',
+          history: 'Variante del Black Russian nata a Bruxelles a fine anni \'40 per l\'ambasciatrice USA Pearl Mesta. Reso immortale dal film "Il Grande Lebowski" (1998), dove \u00e8 il drink preferito del Drugo (The Dude).',
+        },
+        {
+          name: 'Zombie',
+          ingredients: 'Rum Cubano, Rum Giamaicano, Cognac (o Rum Overproof), Assenzio, Succo d\'Ananas, Succo d\'Arancia, Sciroppo Passion Fruit, Sciroppo Cannella, Angostura, Lime, Granatina.',
+          preparation: 'Nello shaker con ghiaccio: 15ml Rum chiaro, 15ml Rum scuro, 15ml Cognac/Overproof, 25ml Arancia, 25ml Passion Fruit, 15ml Cannella, 25ml Ananas, 15ml Lime, gocce di Angostura e Assenzio. Shakerare (o usare tecnica "Throwing"). Versare in bicchiere alto o Tiki Mug colmo di ghiaccio. Guarnire con menta, frutta e zolletta di zucchero imbevuta di assenzio e fiammeggiata.',
+          history: 'Il re dei Tiki cocktail, creato da Donn Beach (Don the Beachcomber) negli anni \'30. Si chiama cos\u00ec perch\u00e9 era talmente forte (pieno di rum diversi) che rendeva il cliente uno "zombie". Spesso nei bar ne venivano serviti massimo due a persona.',
+        },
+      ],
+    },
+
+    // --- STAMPE 3D ---
+    stampe3d: {
+      terminal: [
+        '> ./load_module.sh --3d-print',
+        '> Riscaldamento piatto a 60\u00b0C...',
+        '> Parsing G-code...',
+        '> Status: Estrusione Layer 1...',
+        '> Pronto.',
+      ],
+      introTitle: 'Dal Digitale al Fisico',
+      introDesc: 'La stampa 3D unisce la mia passione per il software con la soddisfazione di creare oggetti tangibili. Qui raccolgo i miei progetti, divisi tra quelli gi\u00e0 realizzati e le idee in cantiere.',
+      collabNote: 'Sono disponibile per collaborazioni e servizi di stampa 3D su richiesta. Se hai un progetto in mente o un file da stampare, contattami per discuterne insieme!',
+      collabLabel: 'Collaborazioni:',
+      executedTitle: 'Progetti Eseguiti',
+      futureTitle: 'Progetti da Eseguire',
+      show: 'Mostra Progetti',
+      hide: 'Nascondi Progetti',
+      searchPlaceholder: 'Cerca per nome o argomento...',
+      material: 'Materiale:',
+      link: 'Link:',
+      noResults: 'Nessun progetto trovato.',
+      executed: [
+        {
+          title: "Cookie Cutter Set",
+          description: "Set di formine per biscotti personalizzate, progettate in CAD e stampate per uso alimentare.",
+          material: "PLA Nero Opaco (Food Safe)",
+          image: "",
+          topic: "Cucina",
+          link: "https://www.thingiverse.com"
+        },
+        {
+          title: "Mantis Blades (Cyberpunk 2077)",
+          description: "Replica in scala 1:1 delle iconiche lame retrattili. Assemblaggio multi-parte con finitura metallizzata e weathering.",
+          material: "PLA Bianco + Primer e Acrilici",
+          image: "images/stampa/stampa16.jpg",
+          topic: "Cosplay",
+          link: "https://makerworld.com/it/models/655884-cyberpunk-mantis-blades-model#profileId-582890"
+        },
+        {
+          title: "Action Figure: Denji (Chainsaw Man)",
+          description: "Statuetta dettagliata del protagonista di Chainsaw Man.",
+          material: "PLA Bianco + Primer e Acrilici",
+          image: "images/stampa/stampa3.jpg",
+          topic: "Action Figure",
+          link: "https://www.thingiverse.com/thing:6256385"
+        },
+        {
+          title: "Action Figure: Kakashi Hatake",
+          description: "Diorama dinamico del ninja copia. Cura particolare nella pittura delle texture dei tessuti e dell'effetto Chidori.",
+          material: "PLA Bianco + Primer e Acrilici",
+          image: "",
+          topic: "Action Figure",
+          link: "https://www.thingiverse.com/thing:927511"
+        },
+        {
+          title: "Action Figure: Mimikyu",
+          description: "Modello 'life-size' del Pokemon fantasma. Finitura opaca per simulare l'effetto tessuto del costume.",
+          material: "PLA Bianco + Primer e Acrilici",
+          image: "",
+          topic: "Action Figure",
+          link: "https://www.thingiverse.com/thing:1940448"
+        },
+        {
+          title: "Raspberry Pi Ultimate Case",
+          description: "Case custom progettato per massimizzare il flusso d'aria. Include alloggiamenti per SSD NVMe e display OLED di stato.",
+          material: "PLA+ o ASA",
+          image: "images/stampa/stampa11.jpg",
+          topic: "Tech",
+          link: "https://makerworld.com/it/models/179232-raspberry-pi-4b"
+        },
+        {
+          title: "Sponge Bed",
+          description: "Accessorio funzionale e ironico per la cucina: un letto in miniatura che permette alla spugna di asciugarsi correttamente.",
+          material: "PLA+ o ASA",
+          image: "images/stampa/stampa19.jpg",
+          topic: "Cucina",
+          link: "https://www.thingiverse.com/thing:2687499"
+        },
+        {
+          title: "Action Figure: Kuromi",
+          description: "Personaggio Kuromi stampato ad alta risoluzione. Colori acrilici vivaci e sigillante lucido per un look 'vinyl toy'.",
+          material: "PLA",
+          image: "images/stampa/stampa18.jpg",
+          topic: "Action Figure",
+          link: "https://www.thingiverse.com/thing:6006836"
+        },
+        {
+          title: "Aperol Spritz Neon Sign",
+          description: "Insegna luminosa a LED personalizzata. Design a strati per diffondere la luce arancione tipica del cocktail.",
+          material: "PLA+ Traslucido e Opaco",
+          image: "images/stampa/stampa7.jpg",
+          topic: "Arredamento",
+          link: "https://www.thingiverse.com/thing:6657606"
+        },
+        {
+          title: "Hestia Knife (DanMachi)",
+          description: "Replica fedele del pugnale divino, con incisioni delle rune geroglifiche.",
+          material: "PLA",
+          image: "images/stampa/stampa5.jpg",
+          topic: "Cosplay",
+          link: "https://www.thingiverse.com/thing:5185347"
+        },
+        {
+          title: "Self-Watering Planter",
+          description: "Vaso per erbe aromatiche con serbatoio d'acqua integrato e sistema di capillarit\u00e0 per ridurre la frequenza di innaffiatura.",
+          material: "PLA (Watertight setting)",
+          image: "images/stampa/stampa13.jpg",
+          topic: "Giardinaggio",
+          link: "https://makerworld.com/it/models/112701-self-watering-herb-planter-for-the-kitchen?from=search#profileId-120974"
+        },
+        {
+          title: "Spadone daedrico",
+          description: "Spadone daedrico di 180 cm ispirato al mondo di Skyrim. Finitura lucida e dettagliate incisioni per il design.",
+          material: "PLA",
+          image: "images/stampa/stampa21.jpg",
+          topic: "Cosplay",
+          link: "https://www.printables.com/model/370085-daedric-greatsword-skyrim-for-small-printing"
+        },
+      ],
+      future: [
+        {
+          title: "Robot Dog Open Source",
+          description: "Progetto avanzato di robotica: quadrupede stampato in 3D con 12 gradi di libert\u00e0, gestito da Arduino e servi ad alta coppia.",
+          material: "PETG / ABS (per resistenza meccanica)",
+          image: "images/stampa/stampa1.jpg",
+          topic: "Robotica",
+          link: "https://makerworld.com/it/models/1426836-arduino-robot-dog#profileId-1483116"
+        },
+        {
+          title: "E.M.M.I. (Metroid Dread)",
+          description: "Modello articolato complesso del robot inseguitore. Richiede tolleranze precise per le giunture posabili.",
+          material: "PLA / TPU (per giunti flessibili)",
+          image: "images/stampa/stampa17.jpg",
+          topic: "Action Figure",
+          link: "https://www.thingiverse.com/thing:5254236"
+        },
+        {
+          title: "Trauma Team Helmet",
+          description: "Casco integrale ispirato ai medici tattici di Cyberpunk 2077. Progettato per essere indossabile con elettronica interna.",
+          material: "PLA (rinforzato internamente)",
+          image: "images/stampa/stampa10.jpg",
+          topic: "Cosplay",
+          link: "https://www.thingiverse.com/thing:4897526"
+        },
+        {
+          title: "Daedric Armor (Skyrim)",
+          description: "Armatura completa Daedrica.",
+          material: "PLA",
+          image: "images/stampa/stampa2.jpg",
+          topic: "Cosplay",
+          link: "https://www.thingiverse.com/thing:3581525"
+        },
+        {
+          title: "Tea Dispenser Verticale",
+          description: "Organizzatore a gravit\u00e0 per bustine di t\u00e8. Design compatto per ottimizzare lo spazio in dispensa.",
+          material: "PLA",
+          image: "images/stampa/stampa20.jpg",
+          topic: "Cucina",
+          link: "https://www.thingiverse.com/thing:4763805"
+        },
+        {
+          title: "Iron Man MK6 Suit",
+          description: "Armatura completa in scala 1:1. Include alloggiamenti per servomotori per l'apertura automatica del casco e dei flap.",
+          material: "PLA+ (per resistenza agli urti)",
+          image: "images/stampa/stampa4.jpg",
+          topic: "Cosplay",
+          link: "https://www.thingiverse.com/thing:1779274"
+        },
+        {
+          title: "Jack Daniel's Coasters",
+          description: "Set di sottobicchieri tematici con design in rilievo e cambio colore al layer.",
+          material: "PLA / TPU",
+          image: "images/stampa/stampa6.jpg",
+          topic: "Arredamento",
+          link: "https://www.thingiverse.com/thing:2395261"
+        },
+        {
+          title: "T-60b Power Armor (Fallout 4)",
+          description: "Il progetto definitivo: armatura alta oltre 2 metri, indossabile, con esoscheletro di supporto interno.",
+          material: "PLA+ (kg stimati: 25+)",
+          image: "images/stampa/stampa9.jpg",
+          topic: "Cosplay",
+          link: "https://www.thingiverse.com/thing:1133207"
+        },
+        {
+          title: "Iron Man Helmet (Motorized)",
+          description: "Casco stand-alone con faceplate motorizzata controllata da Arduino e sensori vocali/tattili.",
+          material: "PLA Silk (effetto metallico)",
+          image: "images/stampa/stampa8.jpg",
+          topic: "Cosplay",
+          link: "https://www.thingiverse.com/thing:4629346"
+        },
+        {
+          title: "Mug Basketball Hoop",
+          description: "Gadget da ufficio: un mini canestro a clip adattabile a qualsiasi tazza per lanciare zollette o cereali.",
+          material: "PLA",
+          image: "images/stampa/stampa15.jpg",
+          topic: "Svago",
+          link: "https://makerworld.com/it/models/1218000-basket-mug-funny-game#profileId-1234266"
+        },
+        {
+          title: "Cyberpunk Sci-Fi Bonsai",
+          description: "Fusione tra natura e tecnologia: un bonsai artificiale con elementi mecha, cavi e illuminazione LED integrata.",
+          material: "PLA Wood (tronco) & PLA Neon",
+          image: "images/stampa/stampa12.jpg",
+          topic: "Arredamento",
+          link: "https://makerworld.com/it/models/1530931-cyberpunk-mecha-sci-fi-bonsai"
+        },
+        {
+          title: "Kiroshi Optics Replica",
+          description: "CHOOMS! Che siate in giro per una notte in citt\u00e0 a Night City, o che stiate prendendo d'assalto la torre Arasaka, \u00e8 meglio avere le migliori ottiche che si possano comprare, e niente batte Kiroshi.",
+          material: "PLA+ e Resina (per le lenti)",
+          image: "images/stampa/stampa14.jpg",
+          topic: "Cosplay",
+          link: "https://makerworld.com/it/models/1595160-cyberpunk-2077-kiroshi-optics#profileId-1680368"
+        },
+      ],
+    },
+
+    // --- FREELANCE ---
+    freelance: {
+      terminal: [
+        '> ./deploy_mgp.sh --microservices',
+        '> Avvio 14 container Docker...',
+        '> Init: Backend, Computation, Solver, OPC-UA, AI...',
+        '> Monitoring: Grafana + Loki online.',
+        '> Status: Sistema produzione attivo.',
+      ],
+      title: 'Sistema di Gestione Produzione (MGP)',
+      subtitle: 'Architettura a 14 microservizi Docker per la gestione end-to-end del ciclo produttivo industriale: ordini, computazione config-driven, ottimizzazione piano di carico, integrazione macchinari OPC-UA e assistente AI.',
+      kpi: { time: 'Tempo Elaborazione\nCommessa', ai: 'Assistente AI\n& LLM Integrato', industry: 'Integrazione\nOPC-UA & Industry 4.0' },
+      problemTitle: 'Il Problema: Limiti dei Sistemi Legacy',
+      problemDesc: 'L\'azienda operava con un sistema frammentato basato su fogli Excel, macro VBA e script PowerShell interconnessi, ormai instabili e non manutenibili. Questo approccio comportava rischi critici: errori umani nell\'inserimento dati, tempi di calcolo di svariate ore per commesse complesse, impossibilit\u00e0 di scalare la produzione e assenza di integrazione diretta con i macchinari.',
+      roleTitle: 'Il Mio Ruolo: Fullstack Architect',
+      roleDesc: 'Ho gestito l\'intero ciclo di vita del software: dall\'analisi dei requisiti con l\'ufficio tecnico alla progettazione dell\'architettura a microservizi (14 container Docker), dallo sviluppo dei servizi Python (computation engine, solver, OPC-UA, AI) e del frontend React/TypeScript al deployment con k3s e monitoring con Grafana + Loki. Ho curato la formazione del personale e l\'integrazione in fabbrica.',
+      solutionTitle: 'La Soluzione: Architettura a Microservizi',
+      solutionIntro: 'Ho progettato e sviluppato un sistema modulare composto da 14 microservizi Docker che coprono l\'intero ciclo produttivo:',
+      prodTitle: 'A. Reparto Produzione: Computation Engine & Output',
+      prodIntro: 'Il cuore del sistema \u00e8 un engine di calcolo config-driven che trasforma i parametri dell\'ordine in output per la produzione:',
+      prodItems: [
+        'Engine di Calcolo Config-Driven: Le formule di calcolo sono definite nel modello (non hardcoded). Il grafo di dipendenze tra calcoli \u00e8 gestito con networkx, riducendo i tempi di elaborazione da ore a meno di un minuto.',
+        'Generazione Output Multi-Formato: Il sistema genera automaticamente PDF (documenti di produzione), DXF (disegni tecnici per taglio laser/CNC), TLF (file per macchine taglio legno) e CSV (dati tabulari).',
+        'Integrazione OPC-UA: Comunicazione diretta con i PLC dei macchinari industriali tramite protocollo OPC-UA (Industry 4.0/5.0).',
+        'Viewer Specializzati: DXF viewer con rendering 2D/3D (Three.js), TLF viewer/editor interattivo, visualizzatore semantico SCAD con risoluzione variabili e confronto duale.',
+      ],
+      commTitle: 'B. Assistente AI & Automazione Documentale',
+      commIntro: 'Il sistema integra un assistente AI e automazione avanzata per i documenti:',
+      commItems: [
+        'AI Assistant (Ollama): Assistente intelligente multi-agent integrato nel sistema per supporto operativo, basato su LLM locali tramite Ollama.',
+        'PDF Service: Generazione automatizzata di documenti di produzione, schede tecniche e report tramite servizio Python dedicato (Flask + ReportLab).',
+        'Real-Time: Notifiche in tempo reale via WebSocket (Laravel Reverb) per il completamento delle computazioni.',
+      ],
+      adminTitle: 'C. Ottimizzazione & Monitoring',
+      adminIntro: 'Ottimizzazione logistica avanzata e monitoring enterprise dell\'intera infrastruttura:',
+      adminItems: [
+        'Solver Piano di Carico: Ottimizzazione della disposizione dei prodotti sui bilici con MiniZinc + Google OR-Tools. 4 modalit\u00e0: minimizzazione bilici, massimizzazione riempimento, minimizzazione peso, custom. Genera visualizzazioni e report PDF.',
+        'Monitoring Real-Time: Stack completo Grafana + Loki + Promtail per aggregazione log e dashboard di monitoraggio.',
+        'Gestione Utenti & Permessi: Sistema RBAC (Admin/User/Developer) con autenticazione Sanctum e Spatie Permission.',
+      ],
+      securityTitle: 'Sicurezza e Infrastruttura',
+      securityDesc: 'L\'intera infrastruttura \u00e8 protetta secondo standard enterprise: monitoraggio attivo delle intrusioni tramite SIEM (Wazuh e Suricata), reverse proxy Nginx, accesso via VPN, autenticazione robusta con Laravel Sanctum e security scanning integrato (SonarQube, Trivy, Snyk). Deployment in produzione su k3s (Kubernetes).',
+      sidebarTechTitle: 'Tech Stack (14 Servizi)',
+      sidebarTechDesc: 'Architettura a microservizi con tecnologie scelte per performance, modularit\u00e0 e scalabilit\u00e0.',
+      sidebarHome: 'Torna alla Home',
+      sidebarHomeDesc: 'Vuoi vedere gli altri progetti o il mio percorso accademico?',
+    },
+
+    // --- UNIVERSITY ---
+    university: {
+      terminal: [
+        '> ./load_module.sh --education',
+        '> fetching_transcript.py...',
+        '> Analisi crediti ECTS...',
+        '> Status: Laurea conseguita (90/110).',
+        '> Pronto.',
+      ],
+      title: 'Percorso Accademico',
+      subtitle: 'Universit\u00e0 di Parma - Laurea Triennale in Scienze Informatiche (L-31).',
+      search: 'Cerca un esame o un argomento (es. Reti, Algoritmi)...',
+      noResults: 'Nessun corso trovato.',
+      sidebarTitle: 'Riepilogo',
+      sidebarUni: 'Universit\u00e0 di Parma',
+      sidebarCourse: 'Scienze Informatiche (L-31)',
+      sidebarPeriod: '2021 - 2025',
+      sidebarGrade: '90/110',
+      sidebarAteneol: 'Ateneo:',
+      sidebarCorsol: 'Corso:',
+      sidebarPeriodol: 'Periodo:',
+      sidebarVotol: 'Voto Finale:',
+      sidebarHome: 'Torna alla Home',
+      sidebarHomeDesc: 'Vuoi vedere le mie esperienze lavorative o le mie passioni?',
+      courses: [
+        {
+          name: 'Fondamenti di Programmazione A & B',
+          year: 'Anno 1',
+          description: 'Introduzione al pensiero computazionale e alla programmazione imperativa tramite C++ e Java. Gestione della memoria (puntatori), allocazione dinamica, strutture dati fondamentali e primi concetti di Object Oriented Programming.',
+        },
+        {
+          name: 'Architettura degli Elaboratori',
+          year: 'Anno 1',
+          description: "Studio dell'architettura di Von Neumann, logica booleana e circuiti digitali. Gestione della pipeline del processore e gerarchie di memoria.",
+        },
+        {
+          name: 'Algoritmi e Strutture Dati',
+          year: 'Anno 1',
+          description: 'Analisi della complessit\u00e0 computazionale (O-grande). Studio e implementazione di strutture dati avanzate (alberi, grafi, hash table) e algoritmi di ordinamento e ricerca.',
+        },
+        {
+          name: 'Analisi Matematica',
+          year: 'Anno 1',
+          description: "Studio delle funzioni reali di variabile reale: limiti, calcolo differenziale e calcolo integrale. Analisi di successioni e serie numeriche per le basi matematiche dell'informatica.",
+        },
+        {
+          name: 'Algebra e Geometria',
+          year: 'Anno 1',
+          description: 'Algebra lineare: spazi vettoriali, matrici, determinanti e sistemi lineari. Geometria analitica nello spazio e applicazioni delle trasformazioni lineari.',
+        },
+        {
+          name: 'Fisica',
+          year: 'Anno 1',
+          description: 'Principi fondamentali della meccanica classica, termodinamica ed elettromagnetismo. Applicazione del metodo scientifico e risoluzione di problemi fisici.',
+        },
+        {
+          name: 'Inglese B1',
+          year: 'Anno 1',
+          description: 'Consolidamento delle competenze linguistiche con focus sulla terminologia tecnica e scientifica in ambito informatico.',
+        },
+        {
+          name: 'Sistemi Operativi',
+          year: 'Anno 2',
+          description: 'Architettura dei moderni OS (Linux/Unix/Windows). Gestione dei processi, scheduling, thread e concorrenza (semafori, monitor), gestione della memoria virtuale e file system. Programmazione di sistema in C.',
+        },
+        {
+          name: 'Basi di Dati',
+          year: 'Anno 2',
+          description: 'Progettazione di database relazionali (Modello E-R, normalizzazione). Linguaggio SQL (DDL, DML) e algebra relazionale. Transazioni, concorrenza e indici nei DBMS.',
+        },
+        {
+          name: 'Metodologie di Programmazione',
+          year: 'Anno 2',
+          description: 'Programmazione Orientata agli Oggetti avanzata in C++. Studio dei Design Patterns (GoF), principi SOLID, testing unitario e gestione delle eccezioni.',
+        },
+        {
+          name: "Fondamenti dell'Informatica",
+          year: 'Anno 2',
+          description: 'Teoria della computabilit\u00e0 e linguaggi formali. Automi a stati finiti, grammatiche libere dal contesto e Macchine di Turing.',
+        },
+        {
+          name: 'Calcolo Numerico',
+          year: 'Anno 2',
+          description: 'Metodi per la risoluzione numerica di problemi matematici continui. Analisi degli errori, approssimazione di funzioni e risoluzione di sistemi lineari al calcolatore (MATLAB/Python).',
+        },
+        {
+          name: 'Elementi di Probabilit\u00e0',
+          year: 'Anno 2',
+          description: "Calcolo delle probabilit\u00e0, variabili aleatorie discrete e continue, teoremi limite e introduzione alla statistica inferenziale per l'analisi dei dati.",
+        },
+        {
+          name: 'Sistemi Informativi',
+          year: 'Anno 2',
+          description: 'Modellazione dei processi aziendali e ciclo di vita del software. Analisi dei requisiti e progettazione tramite linguaggio UML.',
+        },
+        {
+          name: 'Programmazione di Sistemi Mobili',
+          year: 'Anno 2',
+          description: 'Sviluppo di applicazioni native per dispositivi mobili (Android e Apple). Studio del ciclo di vita delle activity, gestione dei sensori, persistenza dati locale e design interfacce utente responsive.',
+        },
+        {
+          name: 'Microservizi e Infrastrutture IT',
+          year: 'Anno 2',
+          description: 'Progettazione di architetture distribuite a microservizi. Containerizzazione con Docker, orchestrazione tramite Kubernetes e pattern di comunicazione (REST, gRPC, Message Brokers).',
+        },
+        {
+          name: 'Laboratorio di Algoritmi',
+          year: 'Anno 2',
+          description: 'Applicazione pratica delle tecniche algoritmiche. Risoluzione di problemi complessi tramite programmazione competitiva e ottimizzazione del codice.',
+        },
+        {
+          name: 'Scrittura in LaTeX',
+          year: 'Anno 2',
+          description: 'Composizione tipografica di documenti scientifici e tecnici. Gestione di bibliografie, formule matematiche complesse e strutturazione della tesi.',
+        },
+        {
+          name: 'Reti di Calcolatori',
+          year: 'Anno 3',
+          description: "Analisi dello stack protocollare TCP/IP e modello ISO/OSI. Routing, protocolli di trasporto (TCP/UDP), livello applicazione (HTTP, DNS) e fondamenti di network security. Tutto questo affiancato da attivit\u00e0 di laboratorio pratico con Wireshark e simulazioni di rete.",
+        },
+        {
+          name: 'Ingegneria del Software',
+          year: 'Anno 3',
+          description: 'Gestione di progetti software complessi. Metodologie agili (Scrum), version control, CI/CD, metriche di qualit\u00e0 e manutenzione del software attraverso design patterns.',
+        },
+        {
+          name: 'Intelligenza Artificiale',
+          year: 'Anno 3',
+          description: 'Agenti intelligenti, algoritmi di ricerca (A*), logica del primo ordine e introduzione al Machine Learning e alle Reti Neurali.',
+        },
+        {
+          name: 'Programmazione Parallela e HPC',
+          year: 'Anno 3',
+          description: 'Sviluppo di applicazioni ad alte prestazioni. Calcolo parallelo su architetture multi-core (OpenMP), sistemi distribuiti (MPI) e programmazione su GPU (CUDA).',
+        },
+        {
+          name: "Sistemi Informativi e Gestione d'Impresa",
+          year: 'Anno 3',
+          description: "Integrazione dei sistemi IT nei processi di business. ERP, CRM, Business Intelligence e gestione dell'innovazione digitale nelle aziende.",
+        },
+      ],
+    },
+  },
+
+  // ============================================================
+  //  ENGLISH
+  // ============================================================
+  en: {
+    // --- NAV ---
+    nav: {
+      home: 'Home',
+      about: 'About Me',
+      passions: 'Passions',
+      recipes: 'Mamma Niky\'s Recipes',
+      cocktails: 'My Cocktails',
+      prints3d: '3D Prints',
+      github: 'GitHub',
+    },
+
+    // --- FOOTER ---
+    footer: {
+      copyright: 'Nicholas Arcari. All rights reserved.',
+      design: 'Design: HTML5 UP',
+      privacy: 'This website does not collect personal data and does not use profiling cookies.',
+      license: 'Template license:',
+    },
+
+    // --- SETTINGS ---
+    settings: {
+      darkMode: 'Dark theme',
+      lightMode: 'Light theme',
+      langIt: 'Italiano',
+      langEn: 'English',
+      resultsFound: 'results found',
+      resultFound: 'result found',
+    },
+
+    // --- 404 ---
+    notFound: {
+      title: 'Page Not Found',
+      text: 'The page you are looking for does not exist or has been moved.',
+      back: 'Back to Home',
+    },
+
+    // --- CYBER SERVICES ---
+    cyberServices: {
+      heading: 'Coming Soon',
+      text: 'I\'m building a suite of custom cybersecurity services. Penetration testing, security audits, hardening and more.',
+      contact: 'Want to know more? Get in touch directly.',
+      back: 'Back to Home',
+      ctaTitle: 'Cyber Services',
+      ctaDesc: 'Penetration testing, security audits, hardening — tailored services. Page under construction.',
+      ctaBtn: 'Learn more',
+    },
+
+    // --- HOME ---
+    home: {
+      terminal: [
+        '> ./init_profile.sh',
+        '> Loading Nicholas Arcari...',
+        '> Computer Science Graduate & Cybersecurity Enthusiast',
+        '> Modules: [WebDev, Network_Sec, DevOps]',
+        '> Ready.',
+      ],
+      features: {
+        title: 'Technical',
+        titleBold: 'Skills',
+        cyber: {
+          title: 'Cybersecurity',
+          text: 'Vulnerability assessment, \nWeb Security (OWASP Top 10), \nLinux Hardening, \nNetwork Analysis (Nmap, Burp Suite, Wazuh).',
+        },
+        fullstack: {
+          title: 'Fullstack Web Dev',
+          text: 'Backend: PHP, Python, Laravel 12+ \nFrontend: React, Vite, HTML/CSS \nDatabase: MySQL, PostgreSQL',
+        },
+        devops: {
+          title: 'DevOps & Systems',
+          text: 'Docker, Kubernetes, \nGit/GitHub, \nBash Scripting, Linux (Ubuntu, Kali), \nService management and TCP/IP networking.',
+        },
+      },
+      banner: 'Computer Science Graduate',
+      bannerText: 'with a strong interest in Cybersecurity and hands-on experience in vulnerability assessment, web security (OWASP Top 10) and Linux system hardening.',
+      cta: {
+        title: 'Available for Opportunities',
+        text: 'Currently seeking Junior Cybersecurity Analyst positions. If my profile interests you, get in touch.',
+        email: 'Email Me',
+        linkedin: 'LinkedIn',
+      },
+      work: {
+        title: 'Work',
+        titleBold: 'Experience',
+        show: 'Show Experience',
+        hide: 'Hide Experience',
+        freelanceTitle: 'Freelance Fullstack Architect & Developer (2025 - Present)',
+        freelanceDesc: 'Design and development of an industrial production management system (MGP) based on a 14-microservice Docker architecture. The system covers the entire production cycle: from order creation to automatic output generation (PDF, DXF, TLF, CSV), from load planning optimization to direct machine communication via OPC-UA.',
+        freelanceMigration: 'The project was born from replacing a legacy system built on Excel spreadsheets and VBA macros, quickly evolving from a 3-component application to a 14-container architecture with a config-driven computation engine, constraint solver (MiniZinc + OR-Tools), integrated AI assistant (Ollama), and real-time monitoring (Grafana + Loki).',
+        freelanceTech: 'Backend (PHP 8.2, Laravel 12, Sanctum), Frontend (React 19, TypeScript, Vite, Tailwind), Python (FastAPI, Flask, networkx, MiniZinc, OR-Tools, Ollama), Database (MySQL 8.4), DevOps (Docker, k3s, Nginx, Grafana, Loki).',
+        viewDetails: 'View Project Details',
+        previousTitle: 'Previous Experience',
+        previous: [
+          { role: 'Security Guard (G.P.G.), CoopService, Parma (2023-2024)', desc: 'Handling high-responsibility situations and collaborating with healthcare staff and the public. Surveillance, coordination and access control in sensitive environments.' },
+          { role: 'Seasonal Worker, Rodolfi Mansueto, Castelguelfo (2023)', desc: 'Production of various types of tomato passata during its different phases: cleaning, cooking, palletizing.' },
+          { role: 'Warehouse Worker, GLS, Fidenza (2021-2022)', desc: 'Teamwork in logistics, parcel sorting and load coordination.' },
+        ],
+      },
+      cyber: {
+        title: 'Cybersecurity',
+        titleBold: 'Projects',
+        show: 'Show Projects',
+        hide: 'Hide Projects',
+        intro: 'A selection of key hands-on projects from my GitHub portfolio, focused on hardening, network analysis, offensive security and detection engineering.',
+        labs: {
+          title: 'Cybersecurity Labs',
+          desc: 'Full-stack cybersecurity training environment with 10 progressive modules \u2014 from OSINT reconnaissance and vulnerability scanning to web exploitation, privilege escalation, post-exploitation, and digital forensics. Each module follows the Kill Chain methodology and is mapped to the MITRE ATT&CK framework. 54 findings documented: 13 Critical, 20 High, 10 Medium severity across web, system, and cloud attack surfaces.',
+          red: 'From reconnaissance (OSINT) and Vulnerability Assessment to advanced exploitation (Web, System & Wireless), Social Engineering and Post-Exploitation (Pivoting/Persistence).',
+          blue: 'Active defense with Wazuh (SIEM), System Hardening, Honeypot configuration and Digital Forensics with Wireshark.',
+          cloud: 'Security for Docker, Kubernetes and Cloud environments (AWS/Azure).',
+        },
+        rpi: {
+          title: 'Security Home Lab',
+          desc: 'Real-world home security infrastructure built on a Raspberry Pi 5 (8GB RAM, NVMe SSD). Full SOC-style stack: Wazuh SIEM for log collection and threat alerting, Cowrie SSH/Telnet honeypot for intrusion detection, WireGuard VPN for secure remote access, and Pi-hole for DNS-level filtering. Network hardened with VLAN segmentation, UFW firewall rules, and Fail2ban. All services containerized with Docker and managed through Portainer. Also serves as a secure NAS via OpenMediaVault.',
+          defense: 'Wazuh SIEM for real-time threat detection and alerting.',
+          deception: 'Isolated Cowrie SSH/Telnet honeypot for intrusion analysis.',
+          network: 'WireGuard VPN, Pi-hole, VLAN segmentation, UFW and Fail2ban.',
+        },
+        tor: {
+          title: 'Tor Network Analysis',
+          desc: 'Comprehensive technical deep-dive into the Tor network \u2014 covering onion routing protocol mechanics, circuit cryptography (AES-128-CTR, ntor handshake), directory authority infrastructure, and bridge/relay configuration. Documents known attacks and defenses (traffic correlation, browser fingerprinting, DNS leaks), operational security best practices, and legal/ethical considerations. Includes 5 hands-on labs and 210+ automated validation checks.',
+          arch: 'Analysis of the onion routing protocol, circuit cryptography (AES-128-CTR, ntor handshake) and directory authority infrastructure.',
+          censorship: 'Implementation of Obfs4 Bridges to obfuscate traffic and bypass DPI (Deep Packet Inspection) or ISP blocks.',
+          automation: 'Bash scripts for automatic IP rotation, ControlPort management and tunneling via Proxychains. 210+ validation checks.',
+          privacy: 'Fingerprinting mitigation, DNS leak management, traffic correlation and legal considerations for use in Italy.',
+        },
+        flipper: {
+          title: 'Hardware Security Research',
+          desc: 'Security research and auditing of physical access control systems using Flipper Zero with Rogue Master firmware. Covers Sub-GHz radio signal capture and replay, NFC/RFID tag cloning and security assessment, infrared protocol analysis, and BadUSB payload development for authorized penetration testing.',
+          firmware: 'Guide to flashing RogueMaster to unlock frequencies and features. Hardware integration via GPIO and hardware hacking fundamentals.',
+          wifi: 'Configuration of ESP32/ESP8266 boards to run WiFi Marauder (sniffing, deauth) and NRF24 modules for mousejacking.',
+          access: 'Sub-GHz signal capture and replay, NFC/RFID/iButton tag cloning, IR protocol analysis and BadUSB payloads.',
+        },
+        ctf: {
+          title: 'CTF Writeups',
+          desc: 'Collection of Capture The Flag writeups and walkthroughs \u2014 covering web exploitation, privilege escalation, forensics, cryptography, and reverse engineering challenges. Each writeup documents the full methodology: reconnaissance, vulnerability identification, exploitation, and lessons learned.',
+          categories: 'Web Exploitation, Privilege Escalation, Forensics, Cryptography, Reverse Engineering, Miscellaneous.',
+          tools: '12 automation scripts for recurring CTF tasks.',
+        },
+        detection: {
+          title: 'Detection Engineering',
+          desc: 'Library of custom detection rules across 4 major formats: Sigma (SIEM-agnostic), Yara (malware detection), Suricata (network IDS), and Wazuh (HIDS/SIEM). Rules organized by MITRE ATT&CK tactic \u2014 from credential access and lateral movement to exfiltration and C2 detection. Includes lab setup guides, Atomic Red Team test mappings, Kibana/Grafana dashboards, and CI/CD rule validation. Full ATT&CK Navigator coverage heatmaps.',
+          formats: 'Sigma (SIEM-agnostic), Yara (malware), Suricata (network IDS), Wazuh (HIDS/SIEM).',
+          testing: 'Atomic Red Team test mappings, Kibana/Grafana dashboards and CI/CD validation.',
+        },
+        soc: {
+          title: 'SOC Toolkit',
+          desc: 'Modular SOC analyst toolkit with REST API backend (Python/FastAPI) and React frontend. Three integrated modules: Phishing Analyzer (email header analysis, URL/attachment scanning, automated verdict), Log Analyzer (SSH brute force, web logs, Windows events with geolocation and alerting), and IOC Extractor (extracts indicators from PDFs, emails, and raw text). Integrates with VirusTotal, AbuseIPDB, Shodan, URLScan.io, and AlienVault OTX. Exports to JSON, CSV, and PDF reports.',
+          modules: 'Phishing Analyzer, Log Analyzer, IOC Extractor.',
+          integrations: 'VirusTotal, AbuseIPDB, Shodan, URLScan.io, AlienVault OTX.',
+        },
+        viewRepo: 'View Repo',
+      },
+      sidebar: {
+        uniDate: '2021 - 2025',
+        uniTitle: 'University of Parma',
+        uniDesc: 'Bachelor\'s Degree in Computer Science.',
+        uniGrade: 'Grade:',
+        uniDetails: 'Academic Details',
+        hsDate: '2016 - 2021',
+        hsTitle: 'IISS Berenini',
+        hsDesc: 'Scientific diploma, applied sciences track.',
+        hsGrade: 'Grade:',
+        certs: 'Certifications',
+        ccnaDesc: 'Validated competence in configuring, managing and troubleshooting enterprise network infrastructures, with a focus on automation and programmability.',
+        ccnaStatus: 'Status: In Progress (60%)',
+        secplusDesc: 'Core certification for operational cybersecurity: threat assessment, risk management and implementation of secure architectures (Defense-in-Depth).',
+        secplusStatus: 'Status: Preparing (0%)',
+        notOnlyCode: 'Not just code...',
+        notOnlyCodeDesc: 'When I\'m not at the terminal, I enjoy cooking, mixology and 3D printing. Discover my passions.',
+        goRecipes: 'Go to Recipes',
+        goCocktails: 'Go to Cocktails',
+        goPrints: 'Go to 3D Prints',
+      },
+    },
+
+    // --- ABOUT ---
+    about: {
+      terminal: [
+        '> ./whoami',
+        '> Nicholas Arcari',
+        '> Status: Igniting the fire of youth...',
+        '> Loading Bio...',
+      ],
+      title: 'About Me',
+      bio: [
+        'Hi, I\'m Nicholas Arcari.',
+        'In my view, lines of code and cooking are not opposites at all. When you think about it, there isn\'t such a big difference between silicon and the kitchen: both require structure, patience and an almost obsessive attention to detail.',
+        'There\'s a quiet, almost romantic poetry in building something from scratch. Setting up cybersecurity labs, orchestrating virtual machines and configuring secure networks gives me the same visceral satisfaction as when I plunge my hands into dough, feeling the gluten network take shape under my fingers... They\'re two different forms of architecture, but they share the same soul.',
+        'And then there\'s the watchful waiting, the monitoring. I could spend hours following the flow of a SIEM\'s logs, searching for the hidden anomaly, with the same feverish concentration I use to watch a complex proofing through the oven glass. In both cases it\'s about reading subtle signals, interpreting behaviour, waiting for the exact moment when everything reaches its perfect balance.',
+        'PS: if you don\'t put previously boiled potatoes in your pesto pasta, I don\'t think we can be friends.',
+      ],
+      contacts: 'Contacts',
+      location: 'Salsomaggiore Terme (PR), Italy',
+    },
+
+    // --- RICETTE ---
+    ricette: {
+      terminal: [
+        '> ./load_module.sh --recipes',
+        '> Loading Recipes database...',
+        '> Status: Kitchen Mode Activated.',
+        '> Ready chef.',
+      ],
+      introTitle: 'The code of taste',
+      introDesc: 'When I close the terminal, the kitchen becomes my new lab. Here I collect my favourite culinary experiments.',
+      title: 'Recipes by',
+      titleBold: 'Mamma Niky',
+      subtitle: 'Culinary algorithms handed down, debugged and ready for deployment at the table.',
+      search: 'Search a recipe...',
+      ingredients: 'Ingredients:',
+      preparation: 'Method:',
+      noResults: 'No recipe found. Perhaps it\'s still compiling?',
+      recipes: [
+        { name: 'Apple Cake "Legacy Code"', description: 'A recipe written decades ago that no one dares to refactor because it works perfectly as is.', ingredients: '3 golden apples (Core Data), 200g flour (Base Class), 150g sugar (Syntactic Sugar), 2 eggs.', preparation: 'Compile the ingredients in a bowl, handle exceptions (lumps) and render in the oven at 180\u00b0C for 40 minutes.' },
+        { name: 'Baked Lasagne "OSI Model (Layer 7)"', description: 'Seven layers of pure flavour, with perfect encapsulation of taste packets.', ingredients: 'Egg pasta sheets (Physical Layer), Bolognese rag\u00f9 (Network), B\u00e9chamel (Transport), Parmesan (Application).', preparation: 'Stack the layers in sequence. Harden the crust in the oven until golden brown (Firewall active).' },
+        { name: 'Tiramis\u00f9 "Java(Script)"', description: 'The caffeine boost needed for coding all-nighters. Pure asynchronous energy.', ingredients: 'Mascarpone (Heavy Framework), Ladyfingers (Dependencies), Strong espresso (Runtime), Bitter cocoa (UI).', preparation: 'Serverless architecture (no cooking required). Instant deploy in the fridge.' },
+        { name: 'Spaghetti Carbonara "Spaghetti Code"', description: 'A delicious tangle where dependencies are tight, but the result is flawless.', ingredients: 'Spaghetti, Crispy guanciale (Hardware acceleration), Egg yolks, Pecorino Romano, Black pepper.', preparation: 'Watch out for the "Race Condition": add eggs off the heat to avoid the crash (scrambled eggs). Stir in a loop until creamy.' },
+        { name: 'Meatballs in Sauce "Microservices"', description: 'Small, independent flavour modules, highly scalable and easy to consume.', ingredients: 'Mixed mince, Stale bread, Parsley, Garlic, Tomato sauce (Message Broker).', preparation: 'Instantiate multiple meatballs and let them run in the container (pan) with the sauce on low heat.' },
+      ],
+      sidebarPizza: 'Craving Pizza?',
+      sidebarPizzaDesc: 'Slow rise, high hydration and top-quality ingredients. Discover my homemade pizzas.',
+      sidebarPizzaBtn: 'My Pizzas',
+      sidebarHome: 'Back to Home',
+      sidebarHomeDesc: 'Want to see my work experience or my passions?',
+    },
+
+    // --- PIZZE ---
+    pizze: {
+      terminal: [
+        '> ./load_module.sh --pizza-oven',
+        '> Preheating to 400\u00b0C...',
+        '> Status: Dough Rising...',
+        '> Ready.',
+      ],
+      title: 'My Pizzas',
+      subtitle: '72 hours of proofing, 70% hydration and selected ingredients. A flavour deployment to production.',
+      search: 'Search a pizza...',
+      topping: 'Topping:',
+      dough: 'Dough:',
+      noResults: 'No pizza found. Perhaps it\'s still proofing?',
+      pizzas: [
+        { name: 'Margherita 2.0 (Stable Release)', description: 'The queen of pizzas, optimized and bug-free.', topping: 'San Marzano DOP tomatoes, Fior di Latte mozzarella, Fresh basil, EVO oil.', dough: 'Long direct method, 24h RT.' },
+        { name: 'Diavola (Firewall Breach)', description: 'Spicy just right, it penetrates every defense.', topping: 'Tomato, Mozzarella, Neapolitan spicy salami, \'Nduja di Spilinga.', dough: '100% Biga, 48h fridge.' },
+        { name: 'Quattro Formaggi "Full Stack"', description: 'A four-layer architecture of pure creaminess.', topping: 'Sweet Gorgonzola (Backend), Taleggio, Mozzarella (Frontend), Grana flakes (UI).', dough: 'High-hydration Poolish.' },
+        { name: 'Ortolana "Root Access"', description: 'Privileged access to the best seasonal vegetables (vegan friendly).', topping: 'Courgette cream, Fried aubergine, Roasted peppers, Confit tomatoes.', dough: '30% Wholemeal (Legacy grain).' },
+        { name: 'Napoli "Salted Hash"', description: 'Savoury cryptography with a pinch of added saltiness.', topping: 'Tomato, Cetara anchovies, Pantelleria capers, Oregano, Black olives.', dough: 'Classic Neapolitan STG.' },
+        { name: 'Marinara "Open Source"', description: 'Few ingredients, clean code, transparent and accessible to all.', topping: 'San Marzano tomato, Red garlic, Mountain oregano, Generous EVO oil.', dough: 'Quick direct method (for a fast deploy).' },
+        { name: 'Sausage & Friarielli "Backend Heavy"', description: 'A robust pizza that handles heavy workloads.', topping: 'Smoked provola, Sausage cut with a knife, Friarielli saut\u00e9ed with garlic and oil.', dough: 'Long autolyse to maximise structure.' },
+      ],
+      sidebarRecipes: 'Back to the kitchen',
+      sidebarRecipesDesc: 'Prefer something sweet or a first course? Go back to Mamma Niky\'s recipes.',
+      sidebarRecipesBtn: 'All Recipes',
+      sidebarHome: 'Back to Home',
+      sidebarHomeDesc: 'Want to see my work experience or my passions?',
+    },
+
+    // --- COCKTAIL TECH ---
+    cocktail: {
+      terminal: [
+        '> ./load_module.sh --bar',
+        '> Loading Cocktail library...',
+        '> Status: Campari Addicted.',
+        '> Ready.',
+      ],
+      introTitle: 'Mixology & Tech',
+      introDesc: 'Precision in dosing ingredients is as important as precision in writing code. Here are my creations for post-deploy relaxation.',
+      title: 'My',
+      titleBold: 'Cocktails',
+      subtitle: 'Liquid algorithms compiled on the spot for social performance optimization.',
+      search: 'Search a tech cocktail...',
+      ingredients: 'Ingredients:',
+      preparation: 'Method:',
+      noResults: 'No cocktail found with that name. Check the source code!',
+      cocktails: [
+        { name: 'Gin(t) Commit -m "Refreshing"', description: 'The stable release for closing the workday without merge conflicts.', ingredients: '50ml Gin (Base library), 150ml Tonic (Dependencies), Lime (Hotfix).', preparation: 'Push the gin onto ice, inject the tonic gently so you don\'t break the build (carbonation).' },
+        { name: 'Dark Mode', description: 'Developers\' favourite theme. Reduces eye strain and increases cardiac latency.', ingredients: '50ml Vodka, 30ml Coffee liqueur (Kahl\u00faa), 1 shot of espresso (Java Runtime).', preparation: 'Shake vigorously to compile the perfect foam on top of the stack.' },
+        { name: 'Firewall', description: 'A spicy security layer that blocks boredom intrusions.', ingredients: '50ml Tequila, 25ml Lime, 15ml Agave, Jalape\u00f1o (Packet Filter).', preparation: 'Configure the glass rim with salt and chili. Serve chilled to mitigate the DDoS attack on the palate.' },
+        { name: 'Blue Screen of Death', description: 'A fatal system error, but tropical. Restart the user after consumption.', ingredients: '50ml Vodka, 20ml Blue Cura\u00e7ao (System Error), Lemonade.', preparation: 'Pour everything in the glass. If the screen turns blue, you\'ve had too much.' },
+        { name: 'Legacy Code', description: 'A recipe deprecated since the 1800s, but still running perfectly on all systems.', ingredients: '45ml Bourbon (Spaghetti code), Sugar cube (Hardcoded value), Angostura.', preparation: 'Dilute slowly like a painful but necessary refactoring.' },
+        { name: 'Kernel Panic', description: 'When the system crashes because you loaded too many (alcoholic) modules at once.', ingredients: 'Vodka, Rum, Gin, Tequila, Cointreau (All possible libraries), Coca-Cola.', preparation: 'Mix everything. Warning: high risk of sudden nervous system shutdown.' },
+      ],
+      sidebarClassics: 'Back to the origins',
+      sidebarClassicsDesc: 'Prefer traditional flavours? I\'ve collected the great IBA classics and timeless recipes here.',
+      sidebarClassicsBtn: 'The Great Classics',
+      sidebarHome: 'Back to Home',
+      sidebarHomeDesc: 'Want to see my work experience or my passions?',
+    },
+
+    // --- COCKTAIL CLASSICI ---
+    cocktailClassici: {
+      terminal: [
+        '> ./load_module.sh --iba-classics',
+        '> Loading historical archives...',
+        '> Status: Vintage Mode Activated.',
+        '> Ready.',
+      ],
+      title: 'The Great Classics',
+      subtitle: 'A journey through the history of mixology, from the origins to the present day.',
+      search: 'Search a cocktail (e.g. Negroni, Spritz)...',
+      ingredientsLabel: 'Ingredients',
+      preparationLabel: 'Method',
+      historyLabel: 'History',
+      noResults: 'No cocktail found with that name. Try searching for something else!',
+      sidebarTech: 'Back to the future',
+      sidebarTechDesc: 'Missing my tech experiments? Go back to the main cocktails page.',
+      sidebarTechBtn: 'My Tech Cocktails',
+      sidebarHome: 'Back to Home',
+      sidebarHomeDesc: 'Want to see my work experience or my passions?',
+      cocktails: [
+        {
+          name: 'Americano',
+          ingredients: 'Soda, Bitter, Sweet Vermouth, Orange, Lemon.',
+          preparation: 'Chill the glass with ice. Discard excess ice or water, then pour in 35ml of Sweet Vermouth and 35ml of Bitter. Add soda to taste (30\u201360ml depending on preference) and stir gently. Add fresh ice, stir again, and garnish with an orange slice in the drink and a squeezed lemon twist on the rim.',
+          history: 'It is called "Americano" in honor of Americans, who were accustomed to drinking "on the rocks" \u2014 that is, with ice. In early 20th-century Italy, vermouth was typically served cold in small coupes without ice. During that era, bartenders began adding a bitter component to vermouth, along with soda (common in both Europe and America) to give the drink a pleasant fizz.',
+        },
+        {
+          name: 'Bloody Mary',
+          ingredients: 'Vodka, Tomato Juice, Celery, Tabasco, Worcestershire Sauce, Pepper, Salt, Fresh Lemon.',
+          preparation: 'Chill the glass. In a shaker (or better yet, using the "rolling" technique), combine ice and 45ml of Vodka. Cut a lemon in half, squeeze 5\u201310ml of juice, and add it to 125ml of tomato juice. Season with a pinch of salt, pepper, a few dashes of Tabasco and Worcestershire. Mix to aerate without shaking too aggressively. Pour into the glass over fresh ice and garnish with celery and a lemon twist.',
+          history: 'This drink was born in France around the 1920s\u201330s, created by Ferdinand "Pete" Petiot, a bartender at Harry\'s New York Bar in Paris. He initially made a simple mix of vodka and tomato juice. A New York hotel manager tasted it, loved it, and convinced Petiot to move to the Saint Regis Hotel in New York. To suit American palates \u2014 which favored bolder, spicier flavors \u2014 he added sauces and seasonings, creating the modern Bloody Mary. The celery was added in the 1960s: originally served as a crudit\u00e9, a guest at a cocktail party dipped it into her glass, starting the tradition.',
+        },
+        {
+          name: 'Bombardino',
+          ingredients: 'Zabov (Egg Liqueur), Whipped Cream, Cocoa Powder.',
+          preparation: 'Heat the Zabov (without boiling it), pour it into a heat-resistant glass, and top with generous whipped cream and a dusting of cocoa powder.',
+          history: 'A drink born in the 1950s\u201360s, the golden age of vintage cocktails on the ski slopes. Legend has it that it was created by a young Genoese bartender who had retreated to the mountains.',
+        },
+        {
+          name: 'Corpse Reviver #2',
+          ingredients: 'Lillet Blanc, Gin, Cointreau, Lemon Juice, Absinthe (a few drops).',
+          preparation: 'Chill a coupe glass. In a shaker, pour 25ml of Gin, 25ml of Cointreau, 25ml of Lillet Blanc, and 25ml of fresh lemon juice. Add a barspoon of absinthe (or rinse the glass with it). Shake with ice and strain into the coupe. Garnish with a lemon twist.',
+          history: 'The name means "corpse reviver," intended as a hangover cure. A key ingredient is absinthe (the "green fairy"), a wormwood-based spirit that originated in Switzerland in the 1700s (attributed to Pierre Ordinaire, or possibly created by "Grandma Henriod" as a home remedy).',
+        },
+        {
+          name: 'Cosmopolitan',
+          ingredients: 'Vodka (45ml), Cointreau (30ml), Fresh Lime Juice (15ml), Cranberry Juice (50ml), Orange Zest.',
+          preparation: 'Chill a coupe glass. In a shaker with ice, combine Vodka, Cointreau, cranberry juice, and lime juice. Shake vigorously. Strain into the glass (no ice). Take an orange peel and express its essential oils over the drink to perfume it.',
+          history: 'The origins are hazy. A "Cosmopolitan" version appears as early as 1927 (Harry MacElhone), but the modern recipe as we know it dates to either 1934 or the 1980s. A well-known unwritten rule says to add "just enough cranberry to make people say \'Ooh, how pretty \u2014 it\'s pink!\'".',
+        },
+        {
+          name: 'Daiquiri',
+          ingredients: 'White Rum (e.g. Havana 3), Fresh Lime Juice, White Granulated Sugar (or syrup).',
+          preparation: 'Classic version: In a cobbler shaker, dissolve 2 teaspoons of sugar in 25ml of fresh lime juice. Add 45ml of Rum and ice. Shake and strain into a coupe. Hemingway Special: Shake 45ml Rum, 25ml Pink Grapefruit juice, 10ml Lime, 10ml Maraschino, and 10ml syrup. Strain and garnish with grapefruit zest.',
+          history: 'Cuba, early 1900s. Two mining engineers (Pagliuchi and Cox) wanted to toast but only had Rum, Lime, and Sugar. They combined them all and, rejecting the name "Rum Sour," named it after the nearby beach: Daiquiri. Another legend credits marines from the sunken USS Maine. The famous Hemingway variant ("Papa Doble") calls for a double dose of rum, no sugar, and the addition of grapefruit and maraschino.',
+        },
+        {
+          name: 'Martini Dry',
+          ingredients: 'Gin (60ml), Dry Vermouth (to taste), Olive or Lemon Twist.',
+          preparation: 'Chill a mixing glass. Pour Gin and Vermouth over ice and stir gently to chill and dilute. Strain into a frozen Martini coupe. Garnish with an olive or lemon twist. Note: The Vesper variant (James Bond) calls for Gin, Vodka, and Lillet Blanc, and is shaken, not stirred.',
+          history: 'Possibly born at the Knickerbocker Hotel in New York, made by a bartender named Martinez (or served to Rockefeller). It is less popular in Italy than abroad. It is an extremely dry, high-proof drink. The earliest versions (late 1800s) were quite different, featuring Orange Bitters and equal parts Gin and Vermouth.',
+        },
+        {
+          name: 'French 75',
+          ingredients: 'Gin (30ml), Lemon Juice (20ml), Simple Syrup (10ml), Champagne or Sparkling Wine (to top).',
+          preparation: 'Shake Gin, lemon juice, and syrup with ice. Strain into a flute (or coupe) and gently top with sparkling wine. Garnish with a lemon twist.',
+          history: '1920s, Harry\'s New York Bar in Paris. The name pays tribute to the French 75mm field gun used in World War I, a nod to the powerful "kick" the drink delivers.',
+        },
+        {
+          name: 'Hugo',
+          ingredients: 'Prosecco, Elderflower Syrup, Soda or Sparkling Water, Fresh Mint, Lime.',
+          preparation: '"Build" technique (assembled directly in the glass). In a wine glass with ice, pour in the Prosecco, 30ml of elderflower syrup, and a splash of soda. Add mint leaves, stir gently, and garnish with a sprig of mint and a lime wedge.',
+          history: 'Of Alpine origin (Trentino-South Tyrol), created by Roland Gruber around 2005. He wanted a fresher, sweeter alternative to the classic Venetian Spritz. It originally used lemon balm syrup, later replaced by the more widely available elderflower.',
+        },
+        {
+          name: 'Long Island Iced Tea',
+          ingredients: 'Vodka, Rum, Gin, Tequila, Cointreau, Lemon Juice, Cane Sugar Syrup, Coca-Cola.',
+          preparation: 'Use a tall glass (Highball) and chill it with ice. In a shaker, combine 15ml Vodka, 15ml Rum, 15ml Gin, 15ml Tequila, 15ml Cointreau, 25ml lemon juice, and 10ml sugar syrup. Shake and strain into the glass over fresh ice. Add just a splash of Coca-Cola for the iced-tea color and garnish with lemon.',
+          history: 'Legend has it that this drink was born during Prohibition (1920s\u201330s) to disguise alcohol as iced tea, mixing whatever was on hand (lemon, sugar, cola) to fool police inspections. The recipe was officially codified in the 1960s by Robert "Rosebud" Butt and went on to become a worldwide classic.',
+        },
+        {
+          name: 'Manhattan',
+          ingredients: 'Rye Whiskey (or Bourbon), Sweet Vermouth, Angostura Bitters, Brandied Cherries, Orange Zest.',
+          preparation: 'In a mixing glass, pour 50ml of Rye Whiskey, 25ml of sweet vermouth, and 2\u20134 dashes of Angostura Bitters. Stir with ice and strain into a pre-chilled coupe. Garnish with a brandied cherry and express the oils from an orange peel over the drink.',
+          history: 'Born in America. It is said to have been created at an election party for Samuel J. Tilden, Governor of New York and presidential candidate. Also present at the party was Jennie Jerome, Winston Churchill\'s mother, to whom the drink is sometimes attributed, though the historical dates are debated.',
+        },
+        {
+          name: 'Margarita',
+          ingredients: 'Tequila, Lime, Cointreau (or Triple Sec), Salt.',
+          preparation: 'Moisten the rim of the glass with lime and dip it in salt (crusta). In a shaker with ice, pour 45ml of Tequila, 15ml of fresh lime juice, and 15ml of Cointreau. Shake and strain into the salt-rimmed glass.',
+          history: 'One of the most beloved after-dinner cocktails. Its history fades into legend, placed somewhere between the 1930s and 1940s in Mexico or along the US border. It echoes the traditional way of drinking tequila (with salt and lime), but in a more refined, blended form.',
+        },
+        {
+          name: 'Mojito',
+          ingredients: 'Cuban Rum, Mint, White Cane Sugar, Seltzer (or Sparkling Water), Lime, Angostura Bitters (optional).',
+          preparation: 'In a tall glass (Tumbler), add 25ml of lime juice and 4\u20135g of white cane sugar. Stir well to dissolve the sugar. Add the mint (without crushing it too hard) and a splash of soda. Pour in 45ml of Rum and fill the glass with ice (coarsely crushed is best). Stir from the bottom up. Top with more ice and soda. Garnish with a mint sprig and a few drops of Angostura.',
+          history: 'Of Cuban origin (La Bodeguita del Medio, Havana), made famous by Hemingway in the 1950s. It likely descends from the "Draque," a drink attributed to the pirate Francis Drake (1500s) made with aguardiente, lime, and mint. The name combines "mojo" (sauce/charm) and "mojadito" (moist).',
+        },
+        {
+          name: 'Moscow Mule',
+          ingredients: 'Vodka, Ginger Beer, Angostura Bitters, Lime, Ginger, Mint.',
+          preparation: 'In a copper mug (or tall glass) filled with ice, pour 45ml of Vodka and the juice of half a lime. Top with Ginger Beer and add a few dashes of Angostura. Garnish with fresh mint and a lime wedge.',
+          history: 'Born in 1940s America from the meeting of two struggling entrepreneurs: one produced Vodka (Smirnoff, largely unloved at the time), the other Ginger Beer. One of their wives made copper mugs. By combining their three unsold products, they created a worldwide hit. The name comes from the Vodka (Russia/Moscow) and the "kick" (mule) the drink delivers.',
+        },
+        {
+          name: 'Negroni',
+          ingredients: 'Gin, Sweet Vermouth, Campari Bitter, Orange.',
+          preparation: 'Built directly in the glass (Build method) with ice. Pour equal parts: 30ml Gin, 30ml Campari Bitter, 30ml Sweet Vermouth. Stir gently and garnish with an orange slice.',
+          history: 'Florence, 1919, Bar Casoni. Count Camillo Negroni asked bartender Fosco Scarselli to "strengthen" his usual Americano by replacing the soda with Gin, reminiscent of his travels to London. And so one of the most famous Italian cocktails in the world was born.',
+        },
+        {
+          name: 'Negroni Sbagliato',
+          ingredients: 'Brut Sparkling Wine (or Prosecco), Sweet Vermouth, Campari Bitter, Orange.',
+          preparation: 'Build technique in the glass with ice. Pour 30ml Campari Bitter and 30ml Sweet Vermouth, then top with Sparkling Wine. Stir gently (to preserve the bubbles) and garnish with orange.',
+          history: 'Milan, Bar Basso, 1970s. Bartender Mirko Stocchetto, either by mistake or in haste, grabbed a bottle of Sparkling Wine instead of Gin while making a Negroni. The result was an instant hit and became a classic in its own right.',
+        },
+        {
+          name: 'Old Fashioned',
+          ingredients: 'Bourbon (or Rye Whiskey), Angostura Bitters, Sugar Cube (or syrup), Water (splash), Orange Zest.',
+          preparation: 'Place the sugar cube in the glass, saturate it with 2\u20133 dashes of Angostura and a splash of water (or soda). Muddle until dissolved. Add ice and 45ml of Bourbon. Stir at length to dilute and chill. Garnish with an orange peel expressed over the drink.',
+          history: 'Defined as the original "Whiskey Cocktail" as early as 1862 by Jerry Thomas. It embodies the earliest definition of a cocktail: spirits, sugar, water, and bitters. It consistently ranks among the best-selling drinks in the world.',
+        },
+        {
+          name: 'Pi\u00f1a Colada',
+          ingredients: 'White Rum, Pineapple Juice, Coconut Milk (or Coconut Cream), Ice.',
+          preparation: 'In a blender, combine 45ml White Rum, 120ml Pineapple Juice, 10\u201320ml Coconut Milk, and crushed ice. Blend until smooth and creamy (frozen). Garnish with a pineapple wedge and leaf.',
+          history: 'The official drink of Puerto Rico. The name means "strained pineapple." Born in the Caribbean, it is the king of tropical (Tiki) cocktails.',
+        },
+        {
+          name: 'Ramos Gin Fizz',
+          ingredients: 'London Dry Gin, Simple Syrup, Egg White, Fresh Cream, Lemon Juice, Lime Juice, Orange Flower Water, Soda.',
+          preparation: 'Dry shake (without ice) 45ml Gin, 25ml syrup, 30ml cream, 15ml lemon juice, 10ml lime juice, egg white, and 3 drops of orange flower water. Add ice and shake vigorously for a long time (at least 2\u20133 minutes). Strain into a tall glass (no ice) and slowly top with soda to raise the foam above the rim.',
+          history: 'New Orleans, 1888, Henry Charles Ramos. Famous for the marathon shaking required to emulsify cream and egg white. His establishment employed "shaker boys" \u2014 young men hired solely to shake drinks in relays for 10\u201315 minutes at a time.',
+        },
+        {
+          name: 'Sex on the Beach',
+          ingredients: 'Vodka, Peach Liqueur (Peach Schnapps), Orange Juice, Cranberry Juice.',
+          preparation: 'In a shaker with ice: 40ml Vodka, 20ml Peach Liqueur, 40ml Orange Juice, 40ml Cranberry Juice. Shake and strain into a tall glass (Highball) with fresh ice.',
+          history: 'Florida, 1987. Created to promote peach liqueur during Spring Break. The name was chosen by combining the two main reasons tourists flocked to Florida: "Sex" and "Beach." It was originally called "Peach on the Beach."',
+        },
+        {
+          name: 'Spritz',
+          ingredients: 'Aperol (or Campari/Select), Prosecco, Soda (or Sparkling Water), Orange.',
+          preparation: 'In a wine glass filled with ice, pour 3 parts Prosecco (70ml), 2 parts Aperol (50ml), and 1 part Soda (splash). Stir gently and garnish with an orange slice.',
+          history: 'Born in the Triveneto region during Austrian rule. Habsburg soldiers found Venetian wines too strong and diluted them (spritzen = to spray/splash) with sparkling water. In the 1920s\u201330s, bitter liqueurs (Aperol, Select) were added, creating the version we know today.',
+        },
+        {
+          name: 'Vesper',
+          ingredients: 'Gin, Vodka, Lillet Blanc (or Cocchi Americano), Lemon Twist.',
+          preparation: 'In a shaker with ice: 45ml Gin, 15ml Vodka, 10ml Lillet Blanc. Shake (do not stir!) vigorously and strain into a coupe. Garnish with a long lemon twist.',
+          history: 'Invented by Ian Fleming in the 007 novel "Casino Royale" (1953). James Bond orders it and names it after Vesper Lynd, the first Bond Girl he falls in love with. The famous line: "Shaken, not stirred."',
+        },
+        {
+          name: 'Vie en Rose',
+          ingredients: 'Absinthe, Egg White, Simple Syrup, Rose Water, Lemon Juice.',
+          preparation: 'In a shaker: 35ml Absinthe, 15ml syrup (flavored with 2 drops of rose water), 25ml lemon juice, and egg white. Dry shake (without ice), then shake with ice. Strain into a coupe. Finish by expressing orange peel oils over the surface.',
+          history: 'A tribute to French elegance and the use of absinthe, paired with the delicacy of rose.',
+        },
+        {
+          name: 'Whiskey Sour',
+          ingredients: 'Bourbon Whiskey, Lemon Juice, Simple Syrup, Egg White (optional), Angostura Bitters, Orange Zest.',
+          preparation: 'Dry shake (if using egg white) 45ml Bourbon, 25ml fresh lemon juice, 15ml syrup, egg white, and 2 dashes of Angostura. Add ice and shake again. Strain into a rocks glass (with or without ice). Garnish with orange zest or a cherry.',
+          history: 'One of the pillars of mixology (Sour category: spirit base + citrus + sweetener). Equally suited as an aperitif or an after-dinner drink.',
+        },
+        {
+          name: 'White Russian',
+          ingredients: 'Vodka, Coffee Liqueur (Kahl\u00faa), Fresh Cream (or Milk).',
+          preparation: 'In a rocks glass with ice, pour 50ml Vodka and 20ml Coffee Liqueur. Stir. Separately, lightly shake the cream to thicken it (without whipping to stiff peaks) and gently float it on top of the drink, creating two distinct layers.',
+          history: 'A variant of the Black Russian, born in Brussels in the late 1940s for US Ambassador Pearl Mesta. Made immortal by the film "The Big Lebowski" (1998), where it is the drink of choice for The Dude.',
+        },
+        {
+          name: 'Zombie',
+          ingredients: 'Cuban Rum, Jamaican Rum, Cognac (or Overproof Rum), Absinthe, Pineapple Juice, Orange Juice, Passion Fruit Syrup, Cinnamon Syrup, Angostura Bitters, Lime, Grenadine.',
+          preparation: 'In a shaker with ice: 15ml Light Rum, 15ml Dark Rum, 15ml Cognac/Overproof, 25ml Orange Juice, 25ml Passion Fruit Syrup, 15ml Cinnamon Syrup, 25ml Pineapple Juice, 15ml Lime Juice, dashes of Angostura and Absinthe. Shake (or use the "Throwing" technique). Pour into a tall glass or Tiki Mug filled with ice. Garnish with mint, fruit, and a sugar cube soaked in absinthe and set aflame.',
+          history: 'The king of Tiki cocktails, created by Donn Beach (Don the Beachcomber) in the 1930s. It got its name because it was so strong (packed with different rums) that it turned the drinker into a "zombie." Many bars limited customers to no more than two per visit.',
+        },
+      ],
+    },
+
+    // --- STAMPE 3D ---
+    stampe3d: {
+      terminal: [
+        '> ./load_module.sh --3d-print',
+        '> Heating bed to 60\u00b0C...',
+        '> Parsing G-code...',
+        '> Status: Extruding Layer 1...',
+        '> Ready.',
+      ],
+      introTitle: 'From Digital to Physical',
+      introDesc: '3D printing combines my passion for software with the satisfaction of creating tangible objects. Here I collect my projects, divided between completed ones and ideas in the pipeline.',
+      collabNote: 'I\'m available for collaborations and 3D printing services on request. If you have a project in mind or a file to print, contact me to discuss it!',
+      collabLabel: 'Collaborations:',
+      executedTitle: 'Completed Projects',
+      futureTitle: 'Upcoming Projects',
+      show: 'Show Projects',
+      hide: 'Hide Projects',
+      searchPlaceholder: 'Search by name or topic...',
+      material: 'Material:',
+      link: 'Link:',
+      noResults: 'No project found.',
+      executed: [
+        {
+          title: "Cookie Cutter Set",
+          description: "Set of custom cookie cutters, designed in CAD and printed for food-safe use.",
+          material: "Matte Black PLA (Food Safe)",
+          image: "",
+          topic: "Kitchen",
+          link: "https://www.thingiverse.com"
+        },
+        {
+          title: "Mantis Blades (Cyberpunk 2077)",
+          description: "Full-scale 1:1 replica of the iconic retractable blades. Multi-part assembly with metallic finish and weathering.",
+          material: "White PLA + Primer and Acrylics",
+          image: "images/stampa/stampa16.jpg",
+          topic: "Cosplay",
+          link: "https://makerworld.com/it/models/655884-cyberpunk-mantis-blades-model#profileId-582890"
+        },
+        {
+          title: "Action Figure: Denji (Chainsaw Man)",
+          description: "Highly detailed statuette of the Chainsaw Man protagonist.",
+          material: "White PLA + Primer and Acrylics",
+          image: "images/stampa/stampa3.jpg",
+          topic: "Action Figure",
+          link: "https://www.thingiverse.com/thing:6256385"
+        },
+        {
+          title: "Action Figure: Kakashi Hatake",
+          description: "Dynamic diorama of the Copy Ninja. Special attention paid to painting fabric textures and the Chidori effect.",
+          material: "White PLA + Primer and Acrylics",
+          image: "",
+          topic: "Action Figure",
+          link: "https://www.thingiverse.com/thing:927511"
+        },
+        {
+          title: "Action Figure: Mimikyu",
+          description: "Life-size model of the ghost Pok\u00e9mon. Matte finish to simulate the fabric look of the costume.",
+          material: "White PLA + Primer and Acrylics",
+          image: "",
+          topic: "Action Figure",
+          link: "https://www.thingiverse.com/thing:1940448"
+        },
+        {
+          title: "Raspberry Pi Ultimate Case",
+          description: "Custom case designed to maximize airflow. Includes mounts for an NVMe SSD and a status OLED display.",
+          material: "PLA+ or ASA",
+          image: "images/stampa/stampa11.jpg",
+          topic: "Tech",
+          link: "https://makerworld.com/it/models/179232-raspberry-pi-4b"
+        },
+        {
+          title: "Sponge Bed",
+          description: "A fun and functional kitchen accessory: a miniature bed that lets the sponge dry properly.",
+          material: "PLA+ or ASA",
+          image: "images/stampa/stampa19.jpg",
+          topic: "Kitchen",
+          link: "https://www.thingiverse.com/thing:2687499"
+        },
+        {
+          title: "Action Figure: Kuromi",
+          description: "High-resolution Kuromi character print. Vibrant acrylic colors and gloss sealant for a vinyl toy look.",
+          material: "PLA",
+          image: "images/stampa/stampa18.jpg",
+          topic: "Action Figure",
+          link: "https://www.thingiverse.com/thing:6006836"
+        },
+        {
+          title: "Aperol Spritz Neon Sign",
+          description: "Custom LED light sign. Layered design to diffuse the signature orange glow of the cocktail.",
+          material: "Translucent and Opaque PLA+",
+          image: "images/stampa/stampa7.jpg",
+          topic: "Home Decor",
+          link: "https://www.thingiverse.com/thing:6657606"
+        },
+        {
+          title: "Hestia Knife (DanMachi)",
+          description: "Faithful replica of the divine dagger, featuring hieroglyphic rune engravings.",
+          material: "PLA",
+          image: "images/stampa/stampa5.jpg",
+          topic: "Cosplay",
+          link: "https://www.thingiverse.com/thing:5185347"
+        },
+        {
+          title: "Self-Watering Planter",
+          description: "Herb planter with a built-in water reservoir and capillary system to reduce watering frequency.",
+          material: "PLA (Watertight setting)",
+          image: "images/stampa/stampa13.jpg",
+          topic: "Gardening",
+          link: "https://makerworld.com/it/models/112701-self-watering-herb-planter-for-the-kitchen?from=search#profileId-120974"
+        },
+        {
+          title: "Spadone daedrico",
+          description: "180 cm Daedric greatsword inspired by the world of Skyrim. Glossy finish and detailed engravings throughout the design.",
+          material: "PLA",
+          image: "images/stampa/stampa21.jpg",
+          topic: "Cosplay",
+          link: "https://www.printables.com/model/370085-daedric-greatsword-skyrim-for-small-printing"
+        },
+      ],
+      future: [
+        {
+          title: "Robot Dog Open Source",
+          description: "Advanced robotics project: a 3D-printed quadruped with 12 degrees of freedom, powered by Arduino and high-torque servos.",
+          material: "PETG / ABS (for mechanical strength)",
+          image: "images/stampa/stampa1.jpg",
+          topic: "Robotics",
+          link: "https://makerworld.com/it/models/1426836-arduino-robot-dog#profileId-1483116"
+        },
+        {
+          title: "E.M.M.I. (Metroid Dread)",
+          description: "Complex articulated model of the hunter robot. Requires precise tolerances for posable joints.",
+          material: "PLA / TPU (for flexible joints)",
+          image: "images/stampa/stampa17.jpg",
+          topic: "Action Figure",
+          link: "https://www.thingiverse.com/thing:5254236"
+        },
+        {
+          title: "Trauma Team Helmet",
+          description: "Full-face helmet inspired by the tactical medics of Cyberpunk 2077. Designed to be wearable with internal electronics.",
+          material: "PLA (internally reinforced)",
+          image: "images/stampa/stampa10.jpg",
+          topic: "Cosplay",
+          link: "https://www.thingiverse.com/thing:4897526"
+        },
+        {
+          title: "Daedric Armor (Skyrim)",
+          description: "Full Daedric armor set.",
+          material: "PLA",
+          image: "images/stampa/stampa2.jpg",
+          topic: "Cosplay",
+          link: "https://www.thingiverse.com/thing:3581525"
+        },
+        {
+          title: "Tea Dispenser Verticale",
+          description: "Gravity-fed tea bag organizer. Compact design to optimize pantry space.",
+          material: "PLA",
+          image: "images/stampa/stampa20.jpg",
+          topic: "Kitchen",
+          link: "https://www.thingiverse.com/thing:4763805"
+        },
+        {
+          title: "Iron Man MK6 Suit",
+          description: "Full-scale 1:1 armor. Includes servo motor housings for automatic helmet and flap opening.",
+          material: "PLA+ (for impact resistance)",
+          image: "images/stampa/stampa4.jpg",
+          topic: "Cosplay",
+          link: "https://www.thingiverse.com/thing:1779274"
+        },
+        {
+          title: "Jack Daniel's Coasters",
+          description: "Themed coaster set with embossed design and layer-based color change.",
+          material: "PLA / TPU",
+          image: "images/stampa/stampa6.jpg",
+          topic: "Home Decor",
+          link: "https://www.thingiverse.com/thing:2395261"
+        },
+        {
+          title: "T-60b Power Armor (Fallout 4)",
+          description: "The ultimate project: a wearable armor standing over 2 meters tall, with an internal support exoskeleton.",
+          material: "PLA+ (estimated weight: 25+ kg)",
+          image: "images/stampa/stampa9.jpg",
+          topic: "Cosplay",
+          link: "https://www.thingiverse.com/thing:1133207"
+        },
+        {
+          title: "Iron Man Helmet (Motorized)",
+          description: "Standalone helmet with a motorized faceplate controlled by Arduino and voice/touch sensors.",
+          material: "Silk PLA (metallic effect)",
+          image: "images/stampa/stampa8.jpg",
+          topic: "Cosplay",
+          link: "https://www.thingiverse.com/thing:4629346"
+        },
+        {
+          title: "Mug Basketball Hoop",
+          description: "Office gadget: a clip-on mini basketball hoop that fits any mug for tossing sugar cubes or cereal.",
+          material: "PLA",
+          image: "images/stampa/stampa15.jpg",
+          topic: "Fun",
+          link: "https://makerworld.com/it/models/1218000-basket-mug-funny-game#profileId-1234266"
+        },
+        {
+          title: "Cyberpunk Sci-Fi Bonsai",
+          description: "A fusion of nature and technology: an artificial bonsai with mecha elements, cables, and integrated LED lighting.",
+          material: "PLA Wood (trunk) & PLA Neon",
+          image: "images/stampa/stampa12.jpg",
+          topic: "Home Decor",
+          link: "https://makerworld.com/it/models/1530931-cyberpunk-mecha-sci-fi-bonsai"
+        },
+        {
+          title: "Kiroshi Optics Replica",
+          description: "CHOOMS! Whether you're out for a night on the town in Night City or storming Arasaka Tower, you'd better have the best optics eddies can buy \u2014 and nothing beats Kiroshi.",
+          material: "PLA+ and Resin (for the lenses)",
+          image: "images/stampa/stampa14.jpg",
+          topic: "Cosplay",
+          link: "https://makerworld.com/it/models/1595160-cyberpunk-2077-kiroshi-optics#profileId-1680368"
+        },
+      ],
+    },
+
+    // --- FREELANCE ---
+    freelance: {
+      terminal: [
+        '> ./deploy_mgp.sh --microservices',
+        '> Starting 14 Docker containers...',
+        '> Init: Backend, Computation, Solver, OPC-UA, AI...',
+        '> Monitoring: Grafana + Loki online.',
+        '> Status: Production system active.',
+      ],
+      title: 'Production Management System (MGP)',
+      subtitle: '14-microservice Docker architecture for end-to-end industrial production cycle management: orders, config-driven computation, load planning optimization, OPC-UA machine integration and AI assistant.',
+      kpi: { time: 'Order Processing\nTime', ai: 'AI Assistant\n& Integrated LLM', industry: 'OPC-UA Integration\n& Industry 4.0' },
+      problemTitle: 'The Problem: Legacy System Limitations',
+      problemDesc: 'The company operated with a fragmented system built on Excel spreadsheets, VBA macros, and interconnected PowerShell scripts, now unstable and unmaintainable. This approach carried critical risks: human errors in data entry, calculation times of several hours for complex orders, inability to scale production, and no direct integration with industrial machinery.',
+      roleTitle: 'My Role: Fullstack Architect',
+      roleDesc: 'I managed the entire software lifecycle: from requirements analysis with the technical office to the design of the microservice architecture (14 Docker containers), from developing the Python services (computation engine, solver, OPC-UA, AI) and the React/TypeScript frontend to deployment with k3s and monitoring with Grafana + Loki. I handled staff training and factory integration.',
+      solutionTitle: 'The Solution: Microservice Architecture',
+      solutionIntro: 'I designed and built a modular system composed of 14 Docker microservices covering the entire production cycle:',
+      prodTitle: 'A. Production Department: Computation Engine & Output',
+      prodIntro: 'The system\'s core is a config-driven computation engine that transforms order parameters into production outputs:',
+      prodItems: [
+        'Config-Driven Computation Engine: Calculation formulas are defined in the model (not hardcoded). The dependency graph between calculations is managed with networkx, reducing processing times from hours to under a minute.',
+        'Multi-Format Output Generation: The system automatically generates PDFs (production documents), DXF (technical drawings for laser/CNC cutting), TLF (wood cutting machine files) and CSV (tabular data).',
+        'OPC-UA Integration: Direct communication with industrial machinery PLCs via OPC-UA protocol (Industry 4.0/5.0).',
+        'Specialized Viewers: DXF viewer with 2D/3D rendering (Three.js), interactive TLF viewer/editor, semantic SCAD viewer with variable resolution and dual comparison.',
+      ],
+      commTitle: 'B. AI Assistant & Document Automation',
+      commIntro: 'The system integrates an AI assistant and advanced document automation:',
+      commItems: [
+        'AI Assistant (Ollama): Multi-agent intelligent assistant integrated into the system for operational support, powered by local LLMs via Ollama.',
+        'PDF Service: Automated generation of production documents, technical sheets and reports through a dedicated Python service (Flask + ReportLab).',
+        'Real-Time: Live notifications via WebSocket (Laravel Reverb) for computation completion.',
+      ],
+      adminTitle: 'C. Optimization & Monitoring',
+      adminIntro: 'Advanced logistics optimization and enterprise monitoring of the entire infrastructure:',
+      adminItems: [
+        'Load Planning Solver: Optimization of product placement on trucks using MiniZinc + Google OR-Tools. 4 modes: minimize trucks, maximize fill, minimize weight, custom. Generates visualizations and PDF reports.',
+        'Real-Time Monitoring: Complete Grafana + Loki + Promtail stack for log aggregation and monitoring dashboards.',
+        'User Management & Permissions: RBAC system (Admin/User/Developer) with Sanctum authentication and Spatie Permission.',
+      ],
+      securityTitle: 'Security and Infrastructure',
+      securityDesc: 'The entire infrastructure is protected to enterprise standards: active intrusion monitoring via SIEM (Wazuh and Suricata), Nginx reverse proxy, VPN access, robust authentication with Laravel Sanctum, and integrated security scanning (SonarQube, Trivy, Snyk). Production deployment on k3s (Kubernetes).',
+      sidebarTechTitle: 'Tech Stack (14 Services)',
+      sidebarTechDesc: 'Microservice architecture with technologies chosen for performance, modularity and scalability.',
+      sidebarHome: 'Back to Home',
+      sidebarHomeDesc: 'Want to see other projects or my academic background?',
+    },
+
+    // --- UNIVERSITY ---
+    university: {
+      terminal: [
+        '> ./load_module.sh --education',
+        '> fetching_transcript.py...',
+        '> Analyzing ECTS credits...',
+        '> Status: Degree Awarded (90/110).',
+        '> Ready.',
+      ],
+      title: 'Academic Path',
+      subtitle: 'University of Parma - Bachelor\'s Degree in Computer Science (L-31).',
+      search: 'Search an exam or topic (e.g. Networks, Algorithms)...',
+      noResults: 'No course found.',
+      sidebarTitle: 'Summary',
+      sidebarUni: 'University of Parma',
+      sidebarCourse: 'Computer Science (L-31)',
+      sidebarPeriod: '2021 - 2025',
+      sidebarGrade: '90/110',
+      sidebarAteneol: 'University:',
+      sidebarCorsol: 'Degree:',
+      sidebarPeriodol: 'Period:',
+      sidebarVotol: 'Final Grade:',
+      sidebarHome: 'Back to Home',
+      sidebarHomeDesc: 'Want to see my work experience or my passions?',
+      courses: [
+        {
+          name: 'Fundamentals of Programming A & B',
+          year: 'Year 1',
+          description: 'Introduction to computational thinking and imperative programming with C++ and Java. Memory management (pointers), dynamic allocation, fundamental data structures, and core Object Oriented Programming concepts.',
+        },
+        {
+          name: 'Computer Architecture',
+          year: 'Year 1',
+          description: 'Study of the Von Neumann architecture, Boolean logic, and digital circuits. Processor pipeline management and memory hierarchy.',
+        },
+        {
+          name: 'Algorithms and Data Structures',
+          year: 'Year 1',
+          description: 'Computational complexity analysis (Big-O notation). Study and implementation of advanced data structures (trees, graphs, hash tables) along with sorting and searching algorithms.',
+        },
+        {
+          name: 'Calculus',
+          year: 'Year 1',
+          description: 'Study of real-valued functions of a real variable: limits, differential calculus, and integral calculus. Analysis of sequences and numerical series as mathematical foundations for computer science.',
+        },
+        {
+          name: 'Linear Algebra and Geometry',
+          year: 'Year 1',
+          description: 'Linear algebra: vector spaces, matrices, determinants, and linear systems. Analytic geometry in space and applications of linear transformations.',
+        },
+        {
+          name: 'Physics',
+          year: 'Year 1',
+          description: 'Fundamental principles of classical mechanics, thermodynamics, and electromagnetism. Application of the scientific method and physics problem-solving.',
+        },
+        {
+          name: 'English B1',
+          year: 'Year 1',
+          description: 'Strengthening language skills with a focus on technical and scientific terminology in computing.',
+        },
+        {
+          name: 'Operating Systems',
+          year: 'Year 2',
+          description: 'Architecture of modern operating systems (Linux/Unix/Windows). Process management, scheduling, threads and concurrency (semaphores, monitors), virtual memory management, and file systems. System programming in C.',
+        },
+        {
+          name: 'Databases',
+          year: 'Year 2',
+          description: 'Relational database design (E-R Model, normalization). SQL (DDL, DML) and relational algebra. Transactions, concurrency control, and indexing in DBMS.',
+        },
+        {
+          name: 'Programming Methodologies',
+          year: 'Year 2',
+          description: 'Advanced Object-Oriented Programming in C++. Study of Design Patterns (GoF), SOLID principles, unit testing, and exception handling.',
+        },
+        {
+          name: 'Foundations of Computer Science',
+          year: 'Year 2',
+          description: 'Computability theory and formal languages. Finite state automata, context-free grammars, and Turing Machines.',
+        },
+        {
+          name: 'Numerical Computing',
+          year: 'Year 2',
+          description: 'Methods for the numerical solution of continuous mathematical problems. Error analysis, function approximation, and solving linear systems on a computer (MATLAB/Python).',
+        },
+        {
+          name: 'Probability Theory',
+          year: 'Year 2',
+          description: 'Probability calculus, discrete and continuous random variables, limit theorems, and an introduction to inferential statistics for data analysis.',
+        },
+        {
+          name: 'Information Systems',
+          year: 'Year 2',
+          description: 'Business process modeling and the software lifecycle. Requirements analysis and design using UML.',
+        },
+        {
+          name: 'Mobile Systems Programming',
+          year: 'Year 2',
+          description: 'Native application development for mobile devices (Android and Apple). Activity lifecycle, sensor management, local data persistence, and responsive UI design.',
+        },
+        {
+          name: 'Microservices and IT Infrastructure',
+          year: 'Year 2',
+          description: 'Designing distributed microservice architectures. Containerization with Docker, orchestration with Kubernetes, and communication patterns (REST, gRPC, Message Brokers).',
+        },
+        {
+          name: 'Algorithms Lab',
+          year: 'Year 2',
+          description: 'Hands-on application of algorithmic techniques. Solving complex problems through competitive programming and code optimization.',
+        },
+        {
+          name: 'LaTeX Writing',
+          year: 'Year 2',
+          description: 'Typesetting scientific and technical documents. Managing bibliographies, complex mathematical formulas, and thesis structure.',
+        },
+        {
+          name: 'Computer Networks',
+          year: 'Year 3',
+          description: 'Analysis of the TCP/IP protocol stack and ISO/OSI model. Routing, transport protocols (TCP/UDP), application layer (HTTP, DNS), and network security fundamentals. Complemented by hands-on lab work with Wireshark and network simulations.',
+        },
+        {
+          name: 'Software Engineering',
+          year: 'Year 3',
+          description: 'Managing complex software projects. Agile methodologies (Scrum), version control, CI/CD, quality metrics, and software maintenance through design patterns.',
+        },
+        {
+          name: 'Artificial Intelligence',
+          year: 'Year 3',
+          description: 'Intelligent agents, search algorithms (A*), first-order logic, and an introduction to Machine Learning and Neural Networks.',
+        },
+        {
+          name: 'Parallel Programming and HPC',
+          year: 'Year 3',
+          description: 'High-performance application development. Parallel computing on multi-core architectures (OpenMP), distributed systems (MPI), and GPU programming (CUDA).',
+        },
+        {
+          name: 'Information Systems and Business Management',
+          year: 'Year 3',
+          description: 'Integrating IT systems into business processes. ERP, CRM, Business Intelligence, and managing digital innovation in organizations.',
+        },
+      ],
+    },
+  },
+};
