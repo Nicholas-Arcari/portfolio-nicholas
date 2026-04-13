@@ -142,7 +142,7 @@ const Home = () => {
       <section id="cta" style={{ padding: '2em 0', textAlign: 'center' }}>
         <div className="container">
           <h3 style={{ marginBottom: '0.5em' }}>{t('home.cta.title')}</h3>
-          <p style={{ marginBottom: '1.2em' }}>{t('home.cta.text')}</p>
+          <p style={{ marginBottom: '1.2em', textAlign: 'center' }}>{t('home.cta.text')}</p>
           <div>
             <a href="mailto:arcari.nicholas0@gmail.com" className="button icon solid fa-envelope" style={{ marginRight: '10px' }}>
               {t('home.cta.email')}
