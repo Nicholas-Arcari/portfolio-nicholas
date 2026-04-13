@@ -1,12 +1,44 @@
-/* src/HackerTheme.css - PULITO */
+/* src/HackerTheme.css */
 
-/* Nessuna regola globale qui! Lasciamo fare tutto a main.css */
+/* ===== PAGE TRANSITION ===== */
+.page-transition {
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.35s ease, transform 0.35s ease;
+}
+.page-transition.page-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
 
-/* Solo l'effetto terminale */
+/* ===== IMAGE PLACEHOLDER ===== */
+.image-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 300px;
+    background: #f0f0f0;
+    color: #bbb;
+    font-size: 3em;
+    border-radius: 4px;
+}
+body.dark-mode .image-placeholder {
+    background: #1e2a45;
+    color: #555;
+}
+
+/* ===== SEARCH RESULTS COUNT ===== */
+.search-results-count {
+    font-size: 0.85em;
+    color: #999;
+    margin-top: 8px;
+}
+
+/* ===== TERMINAL EFFECT ===== */
 .terminal-container {
     font-family: 'Courier New', Courier, monospace;
     font-weight: bold;
-    color: #444; /* Grigio scuro, perfetto su sfondo chiaro */
+    color: #444;
     min-height: 4em;
     line-height: 1.5em;
     margin-top: 1em;
@@ -26,4 +58,259 @@
     0% { opacity: 0; }
     50% { opacity: 1; }
     100% { opacity: 0; }
+}
+
+/* ===== FOOTER LEGAL ===== */
+.footer-privacy,
+.footer-license {
+    font-size: 0.8em;
+    color: #999;
+    margin: 0.3em 0 0 0;
+}
+.footer-license a {
+    color: #999;
+    text-decoration: underline;
+}
+
+/* ===== SETTINGS BAR ===== */
+.settings-bar {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 99999;
+}
+
+.settings-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 2px solid #ddd;
+    background: rgba(255, 255, 255, 0.95);
+    color: #444;
+    font-size: 1.1em;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    transition: all 0.2s ease;
+    padding: 0;
+    line-height: 1;
+}
+
+.settings-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+}
+
+.settings-btn .lang-label {
+    font-weight: 700;
+    font-size: 0.85em;
+    letter-spacing: 1px;
+    font-family: inherit;
+}
+
+.settings-btn .icon {
+    margin: 0;
+    padding: 0;
+}
+
+/* ===== DARK MODE ===== */
+body.dark-mode {
+    background: #1a1a2e !important;
+    color: #e0e0e0 !important;
+}
+
+body.dark-mode #page-wrapper {
+    background: #1a1a2e;
+}
+
+/* Header */
+body.dark-mode #header {
+    background: #16213e;
+}
+body.dark-mode #header h1 a,
+body.dark-mode #header .terminal-container {
+    color: #e0e0e0;
+}
+
+/* Nav */
+body.dark-mode #nav ul li a span {
+    color: #ccc;
+}
+body.dark-mode #nav ul li a:hover span {
+    color: #fff;
+}
+
+/* Features */
+body.dark-mode #features {
+    background: #1a1a2e;
+    border-top-color: #333;
+}
+body.dark-mode #features h2,
+body.dark-mode #features h3,
+body.dark-mode #features header h3 {
+    color: #e0e0e0;
+}
+body.dark-mode #features p {
+    color: #bbb;
+}
+
+/* Banner */
+body.dark-mode #banner {
+    background: #0f3460;
+}
+
+/* Main */
+body.dark-mode #main {
+    background: #1a1a2e;
+}
+
+/* Content */
+body.dark-mode h1, body.dark-mode h2, body.dark-mode h3,
+body.dark-mode h4, body.dark-mode h5, body.dark-mode h6 {
+    color: #e0e0e0;
+}
+body.dark-mode h2 strong {
+    color: #ff6b81;
+}
+body.dark-mode p, body.dark-mode li, body.dark-mode span {
+    color: #ccc;
+}
+body.dark-mode a {
+    color: #ff6b81;
+}
+
+/* Boxes */
+body.dark-mode .box {
+    border-color: #333;
+}
+body.dark-mode .box.post {
+    background: #16213e;
+}
+body.dark-mode .box.highlight {
+    background: #16213e;
+}
+body.dark-mode .box.feature {
+    background: #16213e;
+}
+body.dark-mode .box.excerpt {
+    background: #16213e;
+}
+
+/* Buttons */
+body.dark-mode .button {
+    background: #e94560;
+    color: #fff !important;
+    border-color: #e94560;
+}
+body.dark-mode .button:hover {
+    background: #ff6b81;
+    border-color: #ff6b81;
+}
+body.dark-mode .button.alt {
+    background: transparent;
+    border-color: #555;
+    color: #ccc !important;
+}
+body.dark-mode .button.alt:hover {
+    border-color: #ff6b81;
+    color: #ff6b81 !important;
+}
+
+/* Inputs */
+body.dark-mode input[type="text"],
+body.dark-mode input[type="email"],
+body.dark-mode input[type="search"],
+body.dark-mode textarea,
+body.dark-mode select {
+    background: #0f3460 !important;
+    color: #e0e0e0 !important;
+    border-color: #333 !important;
+}
+body.dark-mode input::placeholder {
+    color: #888 !important;
+}
+
+/* HR */
+body.dark-mode hr {
+    border-top-color: #333;
+}
+
+/* Dividers */
+body.dark-mode .divided li {
+    border-top-color: #333;
+}
+
+/* Footer */
+body.dark-mode #footer {
+    background: #0f0f23;
+    border-top-color: #333;
+}
+body.dark-mode #copyright {
+    border-top-color: #333;
+}
+body.dark-mode #copyright .links li,
+body.dark-mode .footer-privacy,
+body.dark-mode .footer-license,
+body.dark-mode .footer-license a {
+    color: #777;
+}
+
+/* Sidebar */
+body.dark-mode #sidebar section {
+    border-color: #333;
+}
+
+/* Settings buttons in dark mode */
+body.dark-mode .settings-btn {
+    background: rgba(22, 33, 62, 0.95);
+    border-color: #444;
+    color: #e0e0e0;
+}
+
+/* Dropdown menu */
+body.dark-mode #nav ul li ul {
+    background-color: #16213e !important;
+}
+body.dark-mode #nav ul li ul li a {
+    color: #ccc !important;
+}
+
+/* NavPanel (mobile) */
+body.dark-mode #navPanel {
+    background: #0f0f23;
+    border-right-color: #333;
+}
+body.dark-mode #titleBar {
+    background: #16213e;
+}
+body.dark-mode #titleBar .toggle:before {
+    background: rgba(30, 40, 70, 0.9);
+    color: #ccc;
+}
+
+/* Image overlays */
+body.dark-mode .image.featured img {
+    opacity: 0.85;
+}
+
+/* Progress bars in dark mode */
+body.dark-mode .cursor {
+    background-color: #e0e0e0;
+}
+
+/* Scrollbar dark */
+body.dark-mode ::-webkit-scrollbar {
+    width: 8px;
+}
+body.dark-mode ::-webkit-scrollbar-track {
+    background: #1a1a2e;
+}
+body.dark-mode ::-webkit-scrollbar-thumb {
+    background: #444;
+    border-radius: 4px;
 }
