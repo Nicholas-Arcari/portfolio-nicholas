@@ -80,43 +80,51 @@ body.dark-mode .image-placeholder {
     right: 20px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
     z-index: 99999;
 }
 
 .settings-btn {
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
     border: 2px solid #ddd;
     background: rgba(255, 255, 255, 0.95);
     color: #444;
-    font-size: 1.1em;
     cursor: pointer;
     display: flex;
     align-items: center;
-    justify-content: center;
     box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     transition: all 0.2s ease;
-    padding: 0;
     line-height: 1;
 }
 
 .settings-btn:hover {
-    transform: scale(1.1);
     box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    border-color: #bbb;
+}
+
+.settings-pill {
+    border-radius: 999px;
+    padding: 8px 14px;
+    gap: 7px;
+    font-size: 0.82em;
+    font-family: inherit;
+    white-space: nowrap;
 }
 
 .settings-btn .lang-label {
     font-weight: 700;
-    font-size: 0.85em;
+    font-size: 1em;
     letter-spacing: 1px;
-    font-family: inherit;
+}
+
+.settings-btn .pill-label {
+    font-weight: 500;
+    font-size: 1em;
 }
 
 .settings-btn .icon {
     margin: 0;
     padding: 0;
+    font-size: 1em;
 }
 
 /* ===== DARK MODE ===== */
@@ -271,6 +279,9 @@ body.dark-mode .settings-btn {
     background: rgba(26, 26, 26, 0.95);
     border-color: #3a3a3a;
     color: #efefef;
+}
+body.dark-mode .settings-btn:hover {
+    border-color: #555;
 }
 
 /* Dropdown menu */
