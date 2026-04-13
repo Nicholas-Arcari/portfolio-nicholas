@@ -41,6 +41,12 @@ export const translations = {
 
     // --- CYBER SERVICES ---
     cyberServices: {
+      terminal: [
+        '> ./load_module.sh --cyber-services',
+        '> Inizializzazione suite di sicurezza...',
+        '> Moduli: [PenTest, Audit, Hardening]',
+        '> Pagina in costruzione...',
+      ],
       heading: 'Coming Soon',
       text: 'Sto preparando una suite di servizi di cybersecurity personalizzati. Penetration testing, security audit, hardening e molto altro.',
       contact: 'Vuoi saperne di pi\u00f9? Contattami direttamente.',
@@ -924,6 +930,12 @@ export const translations = {
 
     // --- CYBER SERVICES ---
     cyberServices: {
+      terminal: [
+        '> ./load_module.sh --cyber-services',
+        '> Initializing security suite...',
+        '> Modules: [PenTest, Audit, Hardening]',
+        '> Page under construction...',
+      ],
       heading: 'Coming Soon',
       text: 'I\'m building a suite of custom cybersecurity services. Penetration testing, security audits, hardening and more.',
       contact: 'Want to know more? Get in touch directly.',
