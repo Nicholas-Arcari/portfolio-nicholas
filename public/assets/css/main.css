@@ -2206,7 +2206,7 @@ input, select, textarea {
 		overflow: hidden;
 		border-top: solid 2px #e5e5e5;
 		background: #f0f0f0;
-		padding: 6em 0 8em 0;
+		padding: 2em 0 2.5em 0;
 	}
 
 		#footer form input[type="text"],
@@ -2234,8 +2234,8 @@ input, select, textarea {
 	#copyright {
 		border-top: solid 2px #e5e5e5;
 		text-align: center;
-		margin-top: 6em;
-		padding-top: 4em;
+		margin-top: 0;
+		padding-top: 1.5em;
 	}
 
 /* XLarge */
@@ -2319,7 +2319,7 @@ input, select, textarea {
 		/* Footer */
 
 			#footer {
-				padding: 4em 0;
+				padding: 2em 0;
 			}
 
 		/* Copyright */
