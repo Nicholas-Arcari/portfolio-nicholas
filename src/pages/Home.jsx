@@ -344,9 +344,12 @@ const Home = () => {
                           <br />
                           <strong>Integrations:</strong> {t('home.cyber.soc.integrations')}
                           <br /><br />
-                          <strong>Stack:</strong> <span className="tech-stack">Python, FastAPI, React, Vite, Docker, VirusTotal API, SQLite</span>
+                          <strong>Stack:</strong> <span className="tech-stack">Python, FastAPI, React, Vite, Docker, nginx, SQLite, Postgres</span>
                         </p>
                         <a href="https://github.com/Nicholas-Arcari/soc-toolkit" className="button icon brands fa-github" target="_blank" rel="noopener noreferrer">{t('home.cyber.viewRepo')}</a>
+                        {' '}
+                        <a href="https://github.com/Nicholas-Arcari/soc-toolkit/releases" className="button alt icon solid fa-download" target="_blank" rel="noopener noreferrer">{t('home.cyber.download')}</a>
+                        <p style={{ fontSize: '0.85em', color: '#888', marginTop: '0.8em' }}>{t('home.cyber.soc.license')}</p>
 
                     </div>
                 )}
@@ -386,6 +389,18 @@ const Home = () => {
             <div id="sidebar" className="col-4 col-12-medium">
               <section>
                 <ul className="divided">
+                  <li>
+                    <article className="box excerpt">
+                      <header><span className="date">{t('home.sidebar.mscDate')}</span><h3><a href="#">{t('home.sidebar.mscTitle')}</a></h3></header>
+                      <p>{t('home.sidebar.mscDesc')}</p>
+
+                      {/* BOTTONE VIEW MORE - MAGISTRALE (WIP) */}
+                      <Link to="/master-details" className="button icon solid fa-arrow-circle-right" style={{ marginTop: '10px' }}>
+                        {t('home.sidebar.uniDetails')}
+                      </Link>
+
+                    </article>
+                  </li>
                   <li>
                     <article className="box excerpt">
                       <header><span className="date">{t('home.sidebar.uniDate')}</span><h3><a href="#">{t('home.sidebar.uniTitle')}</a></h3></header>
@@ -433,7 +448,7 @@ const Home = () => {
                       </div>
 
                       {/* CompTIA Security+ */}
-                      <div>
+                      <div style={{ marginBottom: '1.5em' }}>
                         <h4 style={{ marginBottom: '0.5em', fontSize: '1.1em' }}>
                           <i className="icon solid fa-shield-alt" style={{ marginRight: '10px', color: '#ff3d3d' }}></i>
                           CompTIA Security+ SY0-701
@@ -447,6 +462,24 @@ const Home = () => {
                         </div>
                         <span style={{ fontSize: '0.8em', color: '#666', display: 'block', marginTop: '5px' }}>
                           {t('home.sidebar.secplusStatus')}
+                        </span>
+                      </div>
+
+                      {/* IELTS English B2 */}
+                      <div>
+                        <h4 style={{ marginBottom: '0.5em', fontSize: '1.1em' }}>
+                          <i className="icon solid fa-language" style={{ marginRight: '10px', color: '#005a9e' }}></i>
+                          IELTS English B2
+                        </h4>
+                        <p style={{ fontSize: '0.9em', marginBottom: '0.5em' }}>
+                          {t('home.sidebar.ieltsDesc')}
+                        </p>
+                        {/* Progress Bar */}
+                        <div style={{ backgroundColor: '#e0e0e0', borderRadius: '5px', height: '10px', width: '100%' }}>
+                          <div style={{ backgroundColor: '#4caf50', width: '90%', height: '100%', borderRadius: '5px' }}></div>
+                        </div>
+                        <span style={{ fontSize: '0.8em', color: '#666', display: 'block', marginTop: '5px' }}>
+                          {t('home.sidebar.ieltsStatus')}
                         </span>
                       </div>
 

@@ -11,6 +11,7 @@ import Stampe3d from './pages/Stampe3d';
 import Pizze from './pages/Pizze';
 import FreelanceDetails from './pages/FreelanceDetails';
 import UniversityDetails from './pages/UniversityDetails';
+import MasterDetails from './pages/MasterDetails';
 import TemplateScripts from './components/TemplateScripts';
 import SettingsBar from './components/SettingsBar';
 import PageTransition from './components/PageTransition';
@@ -36,6 +37,7 @@ function App() {
             <Route path="/stampe3d" element={<Stampe3d />} />
             <Route path="/freelance-details" element={<FreelanceDetails />} />
             <Route path="/university-details" element={<UniversityDetails />} />
+            <Route path="/master-details" element={<MasterDetails />} />
             <Route path="/about" element={<About />} />
             <Route path="/cyber-services" element={<CyberServices />} />
             <Route path="*" element={<NotFound />} />

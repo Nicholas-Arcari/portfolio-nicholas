@@ -33,6 +33,11 @@ export const translations = {
     },
 
     // --- 404 ---
+    masterDetails: {
+      title: 'Work in Progress',
+      text: 'Questa pagina è in costruzione. Presto qui troverai i dettagli della Laurea Magistrale in Sicurezza Informatica.',
+      back: 'Torna alla Home',
+    },
     notFound: {
       title: 'Pagina Non Trovata',
       text: 'La pagina che stai cercando non esiste o \u00e8 stata spostata.',
@@ -175,6 +180,9 @@ export const translations = {
         uniDesc: 'Laurea Triennale in Scienze Informatiche.',
         uniGrade: 'Voto:',
         uniDetails: 'Dettagli Accademici',
+        mscDate: '2026 - ?',
+        mscTitle: 'Università di Roma',
+        mscDesc: 'Laurea Magistrale in Sicurezza Informatica.',
         hsDate: '2016 - 2021',
         hsTitle: 'IISS Berenini',
         hsDesc: 'Maturit\u00e0 scientifica opzione scienze applicate.',
@@ -184,6 +192,8 @@ export const translations = {
         ccnaStatus: 'Stato: In Corso (60%)',
         secplusDesc: 'Certificazione core per la sicurezza informatica operativa: valutazione delle minacce, gestione del rischio e implementazione di architetture sicure (Defense-in-Depth).',
         secplusStatus: 'Stato: In Preparazione (0%)',
+        ieltsDesc: 'Certificazione internazionale di lingua inglese (livello B2 del QCER): comprensione orale e scritta, produzione scritta e parlato per contesti accademici e professionali.',
+        ieltsStatus: 'Stato: In Corso (90%)',
         notOnlyCode: 'Non solo codice...',
         notOnlyCodeDesc: 'Quando non sono al terminale, mi dedico alla cucina, alla mixology e alla stampa 3D. Scopri le mie passioni.',
         goRecipes: 'Vai alle Ricette',
@@ -941,6 +951,11 @@ export const translations = {
     },
 
     // --- 404 ---
+    masterDetails: {
+      title: 'Work in Progress',
+      text: 'This page is under construction. Soon you\'ll find here the details of the Master\'s Degree in Cybersecurity.',
+      back: 'Back to Home',
+    },
     notFound: {
       title: 'Page Not Found',
       text: 'The page you are looking for does not exist or has been moved.',
@@ -1083,6 +1098,9 @@ export const translations = {
         uniDesc: 'Bachelor\'s Degree in Computer Science.',
         uniGrade: 'Grade:',
         uniDetails: 'Academic Details',
+        mscDate: '2026 - ?',
+        mscTitle: 'University of Rome',
+        mscDesc: 'Master\'s Degree in Cybersecurity.',
         hsDate: '2016 - 2021',
         hsTitle: 'IISS Berenini',
         hsDesc: 'Scientific diploma, applied sciences track.',
@@ -1092,6 +1110,8 @@ export const translations = {
         ccnaStatus: 'Status: In Progress (60%)',
         secplusDesc: 'Core certification for operational cybersecurity: threat assessment, risk management and implementation of secure architectures (Defense-in-Depth).',
         secplusStatus: 'Status: Preparing (0%)',
+        ieltsDesc: 'International English language certification (CEFR B2 level): listening, reading, writing and speaking for academic and professional contexts.',
+        ieltsStatus: 'Status: In Progress (90%)',
         notOnlyCode: 'Not just code...',
         notOnlyCodeDesc: 'When I\'m not at the terminal, I enjoy cooking, mixology and 3D printing. Discover my passions.',
         goRecipes: 'Go to Recipes',
