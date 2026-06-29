@@ -139,9 +139,14 @@ const FreelanceDetails = () => {
 
                   <hr />
 
-                  {/* 4. SICUREZZA */}
+                  {/* 4. CYBERSECURITY */}
                   <h3>{t('freelance.securityTitle')}</h3>
                   <p>{t('freelance.securityDesc')}</p>
+                  <ul style={{ listStyleType: 'disc', paddingLeft: '20px' }}>
+                    {t('freelance.securityItems').map((item, i) => (
+                      <li key={i}>{item}</li>
+                    ))}
+                  </ul>
 
                </article>
             </div>
@@ -168,7 +173,8 @@ const FreelanceDetails = () => {
                         <li><strong>Real-Time:</strong> Laravel Reverb (WebSocket)</li>
                         <li><strong>Infra:</strong> Docker (14 container), k3s, Nginx</li>
                         <li><strong>Monitoring:</strong> Grafana, Loki, Promtail</li>
-                        <li><strong>Security:</strong> Wazuh, Suricata, SonarQube, Trivy</li>
+                        <li><strong>Licensing:</strong> Servizio dedicato, JWT firmati, feature-gating</li>
+                        <li><strong>Security:</strong> Wazuh, Suricata, SonarQube, Trivy, Snyk</li>
                       </ul>
                     </article>
                   </li>
