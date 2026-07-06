@@ -59,14 +59,59 @@ const CyberServices = () => {
 
       <section id="main">
         <div className="container">
-          <article className="box post" style={{ textAlign: 'center', padding: '6em 2em' }}>
+          <article className="box post" style={{ padding: '4em 2em' }}>
 
-            <i className="icon solid fa-tools" style={{ fontSize: '4em', color: '#d52349', marginBottom: '0.5em', display: 'block' }}></i>
+            <div style={{ textAlign: 'center' }}>
+              <i className="icon solid fa-shield-alt" style={{ fontSize: '4em', color: '#d52349', marginBottom: '0.3em', display: 'block' }}></i>
+              <h2 style={{ fontSize: '3em', marginBottom: '0.3em' }}>{t('cyberServices.heading')}</h2>
+              <p style={{ fontSize: '1.2em', color: '#666', maxWidth: '640px', margin: '0 auto 2em' }}>
+                {t('cyberServices.text')}
+              </p>
+            </div>
 
-            <h2 style={{ fontSize: '3em', marginBottom: '0.3em' }}>{t('cyberServices.heading')}</h2>
-            <p style={{ fontSize: '1.2em', color: '#666', maxWidth: '600px', margin: '0 auto 2em' }}>
-              {t('cyberServices.text')}
-            </p>
+            {/* Cosa include */}
+            <h3 style={{ marginBottom: '0.6em' }}>{t('cyberServices.productTitle')}</h3>
+            <ul style={{ marginBottom: '2em' }}>
+              {t('cyberServices.features').map((f, i) => (
+                <li key={i} style={{ marginBottom: '0.3em' }}>{f}</li>
+              ))}
+            </ul>
+
+            {/* Come iniziare */}
+            <h3 style={{ marginBottom: '0.6em' }}>{t('cyberServices.howTitle')}</h3>
+            <ol style={{ marginBottom: '2em' }}>
+              {t('cyberServices.steps').map((s, i) => (
+                <li key={i} style={{ marginBottom: '0.4em' }}>{s}</li>
+              ))}
+            </ol>
+
+            {/* Download */}
+            <div style={{ textAlign: 'center', margin: '2em 0' }}>
+              <a
+                href={`${import.meta.env.BASE_URL}downloads/soc-suite-deploy.zip`}
+                className="button icon solid fa-download"
+                download
+              >
+                {t('cyberServices.downloadBtn')}
+              </a>
+              <p style={{ fontSize: '0.85em', color: '#888', marginTop: '0.8em' }}>
+                {t('cyberServices.downloadNote')}
+              </p>
+            </div>
+
+            {/* Chiave di licenza */}
+            <div style={{
+              border: '1px solid #eee', borderRadius: '6px', padding: '1.5em',
+              background: '#fafafa', marginBottom: '2em',
+            }}>
+              <h4 style={{ marginBottom: '0.5em' }}>
+                <i className="icon solid fa-key" style={{ color: '#d52349', marginRight: '0.5em' }}></i>
+                {t('cyberServices.licenseTitle')}
+              </h4>
+              <p style={{ fontSize: '0.95em', color: '#666', margin: 0 }}>
+                {t('cyberServices.licenseText')}
+              </p>
+            </div>
 
             <hr style={{ maxWidth: '200px', margin: '0 auto 2em' }} />
 
@@ -74,8 +119,8 @@ const CyberServices = () => {
               {t('cyberServices.contact')}
             </p>
 
-            <div>
-              <a href="mailto:arcari.nicholas0@gmail.com" className="button icon solid fa-envelope" style={{ marginRight: '10px', marginBottom: '10px' }}>
+            <div style={{ textAlign: 'center' }}>
+              <a href="mailto:arcari.nicholas0@gmail.com?subject=SOC%20Suite%20-%20richiesta%20licenza" className="button icon solid fa-envelope" style={{ marginRight: '10px', marginBottom: '10px' }}>
                 Email
               </a>
               <a href="https://www.linkedin.com/in/nicholas-arcari-6245893a7" className="button alt icon brands fa-linkedin" target="_blank" rel="noopener noreferrer" style={{ marginBottom: '10px' }}>
@@ -83,7 +128,7 @@ const CyberServices = () => {
               </a>
             </div>
 
-            <div style={{ marginTop: '2em' }}>
+            <div style={{ marginTop: '2em', textAlign: 'center' }}>
               <Link to="/" className="button alt small icon solid fa-arrow-left">
                 {t('cyberServices.back')}
               </Link>
