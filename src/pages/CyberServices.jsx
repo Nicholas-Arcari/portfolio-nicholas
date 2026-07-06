@@ -7,6 +7,7 @@ import Footer from '../components/Footer';
 
 const CyberServices = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [guide, setGuide] = useState('simple');
   const { t } = useLanguage();
 
   useEffect(() => {
@@ -77,13 +78,54 @@ const CyberServices = () => {
               ))}
             </ul>
 
-            {/* Come iniziare */}
+            {/* Come installare - due guide */}
             <h3 style={{ marginBottom: '0.6em' }}>{t('cyberServices.howTitle')}</h3>
-            <ol style={{ marginBottom: '2em' }}>
-              {t('cyberServices.steps').map((s, i) => (
-                <li key={i} style={{ marginBottom: '0.4em' }}>{s}</li>
-              ))}
-            </ol>
+            <div style={{ display: 'flex', gap: '0.5em', marginBottom: '1.2em', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => setGuide('simple')}
+                className={guide === 'simple' ? 'button small' : 'button alt small'}
+              >
+                {t('cyberServices.tabSimple')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setGuide('tech')}
+                className={guide === 'tech' ? 'button small' : 'button alt small'}
+              >
+                {t('cyberServices.tabTech')}
+              </button>
+            </div>
+
+            {guide === 'simple' ? (
+              <div style={{ marginBottom: '2em' }}>
+                <p style={{ color: '#666', marginBottom: '0.8em' }}>
+                  {t('cyberServices.simpleIntro')}
+                </p>
+                <ol>
+                  {t('cyberServices.simpleSteps').map((s, i) => (
+                    <li key={i} style={{ marginBottom: '0.6em', lineHeight: 1.5 }}>{s}</li>
+                  ))}
+                </ol>
+                <p style={{ fontSize: '0.9em', color: '#888', marginTop: '1em' }}>
+                  {t('cyberServices.simpleHelp')}
+                </p>
+              </div>
+            ) : (
+              <div style={{ marginBottom: '2em' }}>
+                <p style={{ color: '#666', marginBottom: '0.8em' }}>
+                  {t('cyberServices.techIntro')}
+                </p>
+                <ol>
+                  {t('cyberServices.techSteps').map((s, i) => (
+                    <li key={i} style={{ marginBottom: '0.6em', lineHeight: 1.5 }}>{s}</li>
+                  ))}
+                </ol>
+                <p style={{ fontSize: '0.9em', color: '#888', marginTop: '1em' }}>
+                  {t('cyberServices.techNotes')}
+                </p>
+              </div>
+            )}
 
             {/* Download */}
             <div style={{ textAlign: 'center', margin: '2em 0' }}>
