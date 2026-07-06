@@ -346,9 +346,9 @@ const Home = () => {
                           <br /><br />
                           <strong>Stack:</strong> <span className="tech-stack">Python, FastAPI, React, Vite, Docker, nginx, SQLite, Postgres</span>
                         </p>
-                        <a href="https://github.com/Nicholas-Arcari/soc-toolkit" className="button icon brands fa-github" target="_blank" rel="noopener noreferrer">{t('home.cyber.viewRepo')}</a>
+                        <Link to="/cyber-services" className="button icon solid fa-shield-alt">{t('home.cyber.soc.productPage')}</Link>
                         {' '}
-                        <a href="https://github.com/Nicholas-Arcari/soc-toolkit/releases" className="button alt icon solid fa-download" target="_blank" rel="noopener noreferrer">{t('home.cyber.download')}</a>
+                        <a href={`${import.meta.env.BASE_URL}downloads/soc-suite-deploy.zip`} className="button alt icon solid fa-download" download>{t('home.cyber.download')}</a>
                         <p style={{ fontSize: '0.85em', color: '#888', marginTop: '0.8em' }}>{t('home.cyber.soc.license')}</p>
 
                     </div>
