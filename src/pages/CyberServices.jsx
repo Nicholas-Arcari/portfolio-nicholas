@@ -153,6 +153,57 @@ const CyberServices = () => {
               <p style={{ fontSize: '0.95em', color: '#666', margin: 0 }}>
                 {t('cyberServices.licenseText')}
               </p>
+              <p style={{ fontSize: '0.9em', marginTop: '0.9em', marginBottom: 0 }}>
+                <a
+                  href={`${import.meta.env.BASE_URL}downloads/soc-suite-eula.pdf`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <i className="icon solid fa-file-alt" style={{ marginRight: '0.4em' }}></i>
+                  {t('cyberServices.eulaLink')}
+                </a>
+              </p>
+            </div>
+
+            <hr style={{ maxWidth: '200px', margin: '0 auto 2em' }} />
+
+            {/* Citizen Shield */}
+            <div id="citizen-shield" style={{ textAlign: 'center' }}>
+              <i className="icon solid fa-user-shield" style={{ fontSize: '4em', color: '#d52349', marginBottom: '0.3em', display: 'block' }}></i>
+              <h2 style={{ fontSize: '3em', marginBottom: '0.2em' }}>{t('cyberServices.shield.heading')}</h2>
+              <p style={{ fontSize: '0.85em', color: '#d52349', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '1em' }}>
+                {t('cyberServices.shield.status')}
+              </p>
+              <p style={{ fontSize: '1.2em', color: '#666', maxWidth: '640px', margin: '0 auto 2em' }}>
+                {t('cyberServices.shield.text')}
+              </p>
+            </div>
+
+            <h3 style={{ marginBottom: '0.6em' }}>{t('cyberServices.shield.productTitle')}</h3>
+            <ul style={{ marginBottom: '2em' }}>
+              {t('cyberServices.shield.features').map((f, i) => (
+                <li key={i} style={{ marginBottom: '0.3em' }}>{f}</li>
+              ))}
+            </ul>
+
+            <h3 style={{ marginBottom: '0.6em' }}>{t('cyberServices.shield.howTitle')}</h3>
+            <ul style={{ marginBottom: '1em' }}>
+              {t('cyberServices.shield.how').map((s, i) => (
+                <li key={i} style={{ marginBottom: '0.3em', lineHeight: 1.5 }}>{s}</li>
+              ))}
+            </ul>
+            <p style={{ fontSize: '0.9em', color: '#888', marginBottom: '2em' }}>
+              {t('cyberServices.shield.notes')}
+            </p>
+
+            <div style={{
+              border: '1px solid #eee', borderRadius: '6px', padding: '1.5em',
+              background: '#fafafa', marginBottom: '2em',
+            }}>
+              <p style={{ fontSize: '0.95em', color: '#666', margin: 0 }}>
+                <i className="icon solid fa-lock" style={{ color: '#d52349', marginRight: '0.5em' }}></i>
+                {t('cyberServices.shield.contactNote')}
+              </p>
             </div>
 
             <hr style={{ maxWidth: '200px', margin: '0 auto 2em' }} />
