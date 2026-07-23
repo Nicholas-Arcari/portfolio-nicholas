@@ -1,13 +1,12 @@
-// src/pages/CyberServices.jsx
+// src/pages/CitizenShield.jsx
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import TerminalText from '../components/TerminalText';
 import { useLanguage } from '../contexts/LanguageContext';
 import Footer from '../components/Footer';
 
-const CyberServices = () => {
+const CitizenShield = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [guide, setGuide] = useState('simple');
   const { t } = useLanguage();
 
   useEffect(() => {
@@ -28,7 +27,7 @@ const CyberServices = () => {
         <div className="container">
           <h1 id="logo"><Link to="/">Nicholas Arcari</Link></h1>
           <br />
-          <TerminalText lines={t('cyberServices.terminal')} />
+          <TerminalText lines={t('citizenShield.terminal')} />
 
           <nav id="nav">
             <ul>
@@ -63,116 +62,57 @@ const CyberServices = () => {
           <article className="box post" style={{ padding: '4em 2em' }}>
 
             <div style={{ textAlign: 'center' }}>
-              <i className="icon solid fa-shield-alt" style={{ fontSize: '4em', color: '#d52349', marginBottom: '0.3em', display: 'block' }}></i>
-              <h2 style={{ fontSize: '3em', marginBottom: '0.3em' }}>{t('cyberServices.heading')}</h2>
+              <i className="icon solid fa-user-shield" style={{ fontSize: '4em', color: '#d52349', marginBottom: '0.3em', display: 'block' }}></i>
+              <h2 style={{ fontSize: '3em', marginBottom: '0.2em' }}>{t('citizenShield.heading')}</h2>
+              <p style={{ fontSize: '0.85em', color: '#d52349', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '1em' }}>
+                {t('citizenShield.status')}
+              </p>
               <p style={{ fontSize: '1.2em', color: '#666', maxWidth: '640px', margin: '0 auto 2em' }}>
-                {t('cyberServices.text')}
+                {t('citizenShield.text')}
               </p>
             </div>
 
-            {/* Cosa include */}
-            <h3 style={{ marginBottom: '0.6em' }}>{t('cyberServices.productTitle')}</h3>
+            {/* Gli 8 moduli */}
+            <h3 style={{ marginBottom: '0.6em' }}>{t('citizenShield.productTitle')}</h3>
             <ul style={{ marginBottom: '2em' }}>
-              {t('cyberServices.features').map((f, i) => (
+              {t('citizenShield.features').map((f, i) => (
                 <li key={i} style={{ marginBottom: '0.3em' }}>{f}</li>
               ))}
             </ul>
 
-            {/* Come installare - due guide */}
-            <h3 style={{ marginBottom: '0.6em' }}>{t('cyberServices.howTitle')}</h3>
-            <div style={{ display: 'flex', gap: '0.5em', marginBottom: '1.2em', flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                onClick={() => setGuide('simple')}
-                className={guide === 'simple' ? 'button small' : 'button alt small'}
-              >
-                {t('cyberServices.tabSimple')}
-              </button>
-              <button
-                type="button"
-                onClick={() => setGuide('tech')}
-                className={guide === 'tech' ? 'button small' : 'button alt small'}
-              >
-                {t('cyberServices.tabTech')}
-              </button>
-            </div>
+            {/* Come funziona */}
+            <h3 style={{ marginBottom: '0.6em' }}>{t('citizenShield.howTitle')}</h3>
+            <ul style={{ marginBottom: '1em' }}>
+              {t('citizenShield.how').map((s, i) => (
+                <li key={i} style={{ marginBottom: '0.3em', lineHeight: 1.5 }}>{s}</li>
+              ))}
+            </ul>
+            <p style={{ fontSize: '0.9em', color: '#888', marginBottom: '2em' }}>
+              {t('citizenShield.notes')}
+            </p>
 
-            {guide === 'simple' ? (
-              <div style={{ marginBottom: '2em' }}>
-                <p style={{ color: '#666', marginBottom: '0.8em' }}>
-                  {t('cyberServices.simpleIntro')}
-                </p>
-                <ol>
-                  {t('cyberServices.simpleSteps').map((s, i) => (
-                    <li key={i} style={{ marginBottom: '0.6em', lineHeight: 1.5 }}>{s}</li>
-                  ))}
-                </ol>
-                <p style={{ fontSize: '0.9em', color: '#888', marginTop: '1em' }}>
-                  {t('cyberServices.simpleHelp')}
-                </p>
-              </div>
-            ) : (
-              <div style={{ marginBottom: '2em' }}>
-                <p style={{ color: '#666', marginBottom: '0.8em' }}>
-                  {t('cyberServices.techIntro')}
-                </p>
-                <ol>
-                  {t('cyberServices.techSteps').map((s, i) => (
-                    <li key={i} style={{ marginBottom: '0.6em', lineHeight: 1.5 }}>{s}</li>
-                  ))}
-                </ol>
-                <p style={{ fontSize: '0.9em', color: '#888', marginTop: '1em' }}>
-                  {t('cyberServices.techNotes')}
-                </p>
-              </div>
-            )}
-
-            {/* Download */}
-            <div style={{ textAlign: 'center', margin: '2em 0' }}>
-              <a
-                href={`${import.meta.env.BASE_URL}downloads/soc-suite-deploy.zip`}
-                className="button icon solid fa-download"
-                download
-              >
-                {t('cyberServices.downloadBtn')}
-              </a>
-              <p style={{ fontSize: '0.85em', color: '#888', marginTop: '0.8em' }}>
-                {t('cyberServices.downloadNote')}
-              </p>
-            </div>
-
-            {/* Chiave di licenza */}
+            {/* Accesso */}
             <div style={{
               border: '1px solid #eee', borderRadius: '6px', padding: '1.5em',
               background: '#fafafa', marginBottom: '2em',
             }}>
               <h4 style={{ marginBottom: '0.5em' }}>
-                <i className="icon solid fa-key" style={{ color: '#d52349', marginRight: '0.5em' }}></i>
-                {t('cyberServices.licenseTitle')}
+                <i className="icon solid fa-lock" style={{ color: '#d52349', marginRight: '0.5em' }}></i>
+                {t('citizenShield.accessTitle')}
               </h4>
               <p style={{ fontSize: '0.95em', color: '#666', margin: 0 }}>
-                {t('cyberServices.licenseText')}
-              </p>
-              <p style={{ fontSize: '0.9em', marginTop: '0.9em', marginBottom: 0 }}>
-                <a
-                  href={`${import.meta.env.BASE_URL}downloads/soc-suite-eula.pdf`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <i className="icon solid fa-file-alt" style={{ marginRight: '0.4em' }}></i>
-                  {t('cyberServices.eulaLink')}
-                </a>
+                {t('citizenShield.contactNote')}
               </p>
             </div>
 
             <hr style={{ maxWidth: '200px', margin: '0 auto 2em' }} />
 
             <p style={{ fontSize: '1em', color: '#888', marginBottom: '2em', textAlign: 'center' }}>
-              {t('cyberServices.contact')}
+              {t('citizenShield.contact')}
             </p>
 
             <div style={{ textAlign: 'center' }}>
-              <a href="mailto:arcari.nicholas0@gmail.com?subject=SOC%20Suite%20-%20richiesta%20licenza" className="button icon solid fa-envelope" style={{ marginRight: '10px', marginBottom: '10px' }}>
+              <a href="mailto:arcari.nicholas0@gmail.com?subject=Citizen%20Shield%20-%20richiesta%20accesso%20beta" className="button icon solid fa-envelope" style={{ marginRight: '10px', marginBottom: '10px' }}>
                 Email
               </a>
               <a href="https://www.linkedin.com/in/nicholas-arcari-6245893a7" className="button alt icon brands fa-linkedin" target="_blank" rel="noopener noreferrer" style={{ marginBottom: '10px' }}>
@@ -182,7 +122,7 @@ const CyberServices = () => {
 
             <div style={{ marginTop: '2em', textAlign: 'center' }}>
               <Link to="/" className="button alt small icon solid fa-arrow-left">
-                {t('cyberServices.back')}
+                {t('citizenShield.back')}
               </Link>
             </div>
 
@@ -195,4 +135,4 @@ const CyberServices = () => {
   );
 };
 
-export default CyberServices;
+export default CitizenShield;
