@@ -380,6 +380,14 @@ const Home = () => {
                             {t('cyberServices.ctaBtn')}
                           </Link>
                         </div>
+                        <div style={{ textAlign: 'center', padding: '2em 1em', backgroundColor: '#f9f9f9', borderRadius: '8px', marginTop: '1.5em' }}>
+                          <i className="icon solid fa-user-shield" style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.5em', display: 'block' }}></i>
+                          <h3>{t('cyberServices.ctaShieldTitle')}</h3>
+                          <p style={{ color: '#666' }}>{t('cyberServices.ctaShieldDesc')}</p>
+                          <Link to="/cyber-services" className="button icon solid fa-arrow-circle-right">
+                            {t('cyberServices.ctaBtn')}
+                          </Link>
+                        </div>
                     </div>
                 )}
               </article>
