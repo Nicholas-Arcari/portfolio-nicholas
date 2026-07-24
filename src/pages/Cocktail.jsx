@@ -100,7 +100,7 @@ const Cocktail = () => {
                {/* LISTA COCKTAIL */}
                <article className="box post">
                   <header><h2>{t('cocktail.title')} <strong>{t('cocktail.titleBold')}</strong></h2></header>
-                  <a href="#" className="image featured"><img src="images/img3.jpg" alt="Cocktails" /></a>
+                  <span className="image featured"><img src="images/img3.jpg" alt="Cocktails" /></span>
 
                   <p>{t('cocktail.subtitle')}</p>
 

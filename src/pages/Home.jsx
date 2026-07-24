@@ -109,21 +109,21 @@ const Home = () => {
           <div className="row aln-center">
             <div className="col-4 col-6-medium col-12-small">
               <section>
-                <a href="#" className="image featured"><img src="images/img5.jpg" alt="Cybersecurity" /></a>
+                <span className="image featured"><img src="images/img5.jpg" alt="Cybersecurity" /></span>
                 <header><h3>{t('home.features.cyber.title')}</h3></header>
                 <p>{t('home.features.cyber.text')}</p>
               </section>
             </div>
             <div className="col-4 col-6-medium col-12-small">
               <section>
-                <a href="#" className="image featured"><img src="images/img6.jpg" alt="Web Development" /></a>
+                <span className="image featured"><img src="images/img6.jpg" alt="Web Development" /></span>
                 <header><h3>{t('home.features.fullstack.title')}</h3></header>
                 <p>{t('home.features.fullstack.text')}</p>
               </section>
             </div>
             <div className="col-4 col-6-medium col-12-small">
               <section>
-                <a href="#" className="image featured"><img src="images/img7.jpg" alt="DevOps" /></a>
+                <span className="image featured"><img src="images/img7.jpg" alt="DevOps" /></span>
                 <header><h3>{t('home.features.devops.title')}</h3></header>
                 <p>{t('home.features.devops.text')}</p>
               </section>
@@ -351,6 +351,22 @@ const Home = () => {
                         <a href={`${import.meta.env.BASE_URL}downloads/soc-suite-deploy.zip`} className="button alt icon solid fa-download" download>{t('home.cyber.download')}</a>
                         <p style={{ fontSize: '0.85em', color: '#888', marginTop: '0.8em' }}>{t('home.cyber.soc.license')}</p>
 
+                        <br /><br />
+                        <hr />
+
+                        <h3>{t('home.cyber.shield.title')}</h3>
+                        <p>
+                          {t('home.cyber.shield.desc')}
+                          <br /><br />
+                          <strong>Modules:</strong> {t('home.cyber.shield.modules')}
+                          <br />
+                          <strong>Architecture:</strong> {t('home.cyber.shield.architecture')}
+                          <br /><br />
+                          <strong>Stack:</strong> <span className="tech-stack">Python 3.12, FastAPI, SQLAlchemy, PostgreSQL, React, TypeScript, Tailwind, Docker, Nuitka</span>
+                        </p>
+                        <Link to="/citizen-shield" className="button icon solid fa-user-shield">{t('home.cyber.shield.productPage')}</Link>
+                        <p style={{ fontSize: '0.85em', color: '#888', marginTop: '0.8em' }}>{t('home.cyber.shield.license')}</p>
+
                     </div>
                 )}
               </article>
@@ -372,7 +388,7 @@ const Home = () => {
 
                 {showServices && (
                     <div className="fade-in">
-                        <div style={{ textAlign: 'center', padding: '2em 1em', backgroundColor: '#f9f9f9', borderRadius: '8px' }}>
+                        <div className="soft-panel" style={{ textAlign: 'center', padding: '2em 1em' }}>
                           <i className="icon solid fa-shield-alt" style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.5em', display: 'block' }}></i>
                           <h3>{t('cyberServices.ctaTitle')}</h3>
                           <p style={{ color: '#666' }}>{t('cyberServices.ctaDesc')}</p>
@@ -380,7 +396,7 @@ const Home = () => {
                             {t('cyberServices.ctaBtn')}
                           </Link>
                         </div>
-                        <div style={{ textAlign: 'center', padding: '2em 1em', backgroundColor: '#f9f9f9', borderRadius: '8px', marginTop: '1.5em' }}>
+                        <div className="soft-panel" style={{ textAlign: 'center', padding: '2em 1em', marginTop: '1.5em' }}>
                           <i className="icon solid fa-user-shield" style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.5em', display: 'block' }}></i>
                           <h3>{t('citizenShield.ctaTitle')}</h3>
                           <p style={{ color: '#666' }}>{t('citizenShield.ctaDesc')}</p>
@@ -447,7 +463,7 @@ const Home = () => {
                           {t('home.sidebar.ccnaDesc')}
                         </p>
                         {/* Progress Bar */}
-                        <div style={{ backgroundColor: '#e0e0e0', borderRadius: '5px', height: '10px', width: '100%' }}>
+                        <div className="progress-track">
                           <div style={{ backgroundColor: '#4caf50', width: '60%', height: '100%', borderRadius: '5px' }}></div>
                         </div>
                         <span style={{ fontSize: '0.8em', color: '#666', display: 'block', marginTop: '5px' }}>
@@ -465,7 +481,7 @@ const Home = () => {
                           {t('home.sidebar.secplusDesc')}
                         </p>
                         {/* Progress Bar */}
-                        <div style={{ backgroundColor: '#e0e0e0', borderRadius: '5px', height: '10px', width: '100%' }}>
+                        <div className="progress-track">
                           <div style={{ backgroundColor: '#ff9800', width: '0%', height: '100%', borderRadius: '5px' }}></div>
                         </div>
                         <span style={{ fontSize: '0.8em', color: '#666', display: 'block', marginTop: '5px' }}>
@@ -483,7 +499,7 @@ const Home = () => {
                           {t('home.sidebar.ieltsDesc')}
                         </p>
                         {/* Progress Bar */}
-                        <div style={{ backgroundColor: '#e0e0e0', borderRadius: '5px', height: '10px', width: '100%' }}>
+                        <div className="progress-track">
                           <div style={{ backgroundColor: '#4caf50', width: '90%', height: '100%', borderRadius: '5px' }}></div>
                         </div>
                         <span style={{ fontSize: '0.8em', color: '#666', display: 'block', marginTop: '5px' }}>

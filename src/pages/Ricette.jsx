@@ -94,7 +94,7 @@ const Ricette = () => {
 
                <article className="box post">
                   <header><h2>{t('ricette.title')} <strong>{t('ricette.titleBold')}</strong></h2></header>
-                  <a href="#" className="image featured"><img src="images/img2.jpg" alt="Cucina" /></a>
+                  <span className="image featured"><img src="images/img2.jpg" alt="Cucina" /></span>
 
                   <p>{t('ricette.subtitle')}</p>
 

@@ -91,54 +91,56 @@ const About = () => {
                     </h2>
                   </header>
 
-                  <div style={{ fontSize: '1.1em', lineHeight: '1.8', color: '#555', marginBottom: '2em' }}>
+                  <div style={{ fontSize: '1.1em', lineHeight: '1.8', color: '#555' }}>
                     {t('about.bio').map((paragraph, index) => (
                       <p key={index}>{paragraph}</p>
                     ))}
                   </div>
 
-                  {/* LISTA CONTATTI (Ex Footer) */}
-                  <h3 style={{ fontSize: '1.5em', marginBottom: '1em' }}>{t('about.contacts')}</h3>
-                  <ul className="icons" style={{ listStyle: 'none', padding: 0 }}>
-
-                    <li style={{ marginBottom: '10px', display: 'flex', alignItems: 'center' }}>
-                      <i className="icon solid fa-envelope" style={{ width: '30px', color: '#d52349', fontSize: '1.2em' }}></i>
-                      <a href="mailto:arcari.nicholas0@gmail.com" style={{ fontWeight: 'bold', color: '#444' }}>arcari.nicholas0@gmail.com</a>
-                    </li>
-
-                    <li style={{ marginBottom: '10px', display: 'flex', alignItems: 'center' }}>
-                      <i className="icon solid fa-phone" style={{ width: '30px', color: '#d52349', fontSize: '1.2em' }}></i>
-                      <span>+39 351 714 0966</span>
-                    </li>
-
-                    <li style={{ marginBottom: '10px', display: 'flex', alignItems: 'center' }}>
-                      <i className="icon solid fa-map-marker-alt" style={{ width: '30px', color: '#d52349', fontSize: '1.2em' }}></i>
-                      <span>{t('about.location')}</span>
-                    </li>
-
-                    <li style={{ marginBottom: '10px', display: 'flex', alignItems: 'center' }}>
-                      <i className="icon brands fa-linkedin" style={{ width: '30px', color: '#0077b5', fontSize: '1.2em' }}></i>
-                      <a href="https://www.linkedin.com/in/nicholas-arcari-6245893a7/" target="_blank" rel="noreferrer">LinkedIn</a>
-                    </li>
-
-                    <li style={{ marginBottom: '10px', display: 'flex', alignItems: 'center' }}>
-                      <i className="icon brands fa-github" style={{ width: '30px', color: '#333', fontSize: '1.2em' }}></i>
-                      <a href="https://github.com/Nicholas-Arcari" target="_blank" rel="noreferrer">GitHub</a>
-                    </li>
-
-                    <li style={{ marginBottom: '10px', display: 'flex', alignItems: 'center' }}>
-                      <i className="icon solid fa-terminal" style={{ width: '30px', color: '#C02026', fontSize: '1.2em' }}></i>
-                      <a href="https://tryhackme.com/p/arcari.nicholas0" target="_blank" rel="noreferrer">TryHackMe</a>
-                    </li>
-
-                    <li style={{ marginBottom: '10px', display: 'flex', alignItems: 'center' }}>
-                      <i className="icon solid fa-bug" style={{ width: '30px', color: '#333', fontSize: '1.2em' }}></i>
-                      <a href="https://hackerone.com/arcari" target="_blank" rel="noreferrer">HackerOne</a>
-                    </li>
-
-                  </ul>
-
                 </div>
+              </div>
+
+              {/* CONTATTI: sotto foto e testo, a tutta larghezza */}
+              <div style={{ marginTop: '3em' }}>
+                <h3 style={{ fontSize: '1.5em', marginBottom: '1em' }}>{t('about.contacts')}</h3>
+                <ul className="about-contacts">
+
+                  <li>
+                    <i className="icon solid fa-envelope" style={{ width: '30px', color: '#d52349', fontSize: '1.2em' }}></i>
+                    <a href="mailto:arcari.nicholas0@gmail.com" style={{ fontWeight: 'bold' }}>arcari.nicholas0@gmail.com</a>
+                  </li>
+
+                  <li>
+                    <i className="icon solid fa-phone" style={{ width: '30px', color: '#d52349', fontSize: '1.2em' }}></i>
+                    <span>+39 351 714 0966</span>
+                  </li>
+
+                  <li>
+                    <i className="icon solid fa-map-marker-alt" style={{ width: '30px', color: '#d52349', fontSize: '1.2em' }}></i>
+                    <span>{t('about.location')}</span>
+                  </li>
+
+                  <li>
+                    <i className="icon brands fa-linkedin" style={{ width: '30px', color: '#0077b5', fontSize: '1.2em' }}></i>
+                    <a href="https://www.linkedin.com/in/nicholas-arcari-6245893a7/" target="_blank" rel="noreferrer">LinkedIn</a>
+                  </li>
+
+                  <li>
+                    <i className="icon brands fa-github" style={{ width: '30px', color: '#333', fontSize: '1.2em' }}></i>
+                    <a href="https://github.com/Nicholas-Arcari" target="_blank" rel="noreferrer">GitHub</a>
+                  </li>
+
+                  <li>
+                    <i className="icon solid fa-terminal" style={{ width: '30px', color: '#C02026', fontSize: '1.2em' }}></i>
+                    <a href="https://tryhackme.com/p/arcari.nicholas0" target="_blank" rel="noreferrer">TryHackMe</a>
+                  </li>
+
+                  <li>
+                    <i className="icon solid fa-bug" style={{ width: '30px', color: '#333', fontSize: '1.2em' }}></i>
+                    <a href="https://hackerone.com/arcari" target="_blank" rel="noreferrer">HackerOne</a>
+                  </li>
+
+                </ul>
               </div>
             </article>
 

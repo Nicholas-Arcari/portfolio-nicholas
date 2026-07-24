@@ -92,10 +92,7 @@ const CitizenShield = () => {
             </p>
 
             {/* Accesso */}
-            <div style={{
-              border: '1px solid #eee', borderRadius: '6px', padding: '1.5em',
-              background: '#fafafa', marginBottom: '2em',
-            }}>
+            <div className="soft-panel" style={{ padding: '1.5em', marginBottom: '2em' }}>
               <h4 style={{ marginBottom: '0.5em' }}>
                 <i className="icon solid fa-lock" style={{ color: '#d52349', marginRight: '0.5em' }}></i>
                 {t('citizenShield.accessTitle')}

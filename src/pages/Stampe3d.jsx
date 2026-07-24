@@ -153,9 +153,9 @@ const Stampe3d = () => {
                                 <div key={index} className="col-6 col-12-medium">
                                     <article className="box feature">
                                         {project.image ? (
-                                        <a href="#" className="image featured">
+                                        <span className="image featured">
                                             <img src={project.image} alt={project.title} style={{ objectFit: 'cover', height: '300px' }} />
-                                        </a>
+                                        </span>
                                         ) : (
                                         <div className="image-placeholder">
                                             <i className="icon solid fa-cube"></i>
@@ -163,7 +163,7 @@ const Stampe3d = () => {
                                         )}
                                         <header>
                                             <h3>{project.title}</h3>
-                                            <span style={{ display: 'inline-block', backgroundColor: '#eee', color: '#444', padding: '2px 10px', borderRadius: '15px', fontSize: '0.8em', marginBottom: '10px' }}>
+                                            <span className="tag-chip">
                                             {project.topic}
                                             </span>
                                         </header>
@@ -251,9 +251,9 @@ const Stampe3d = () => {
                                 <div key={index} className="col-6 col-12-medium">
                                     <article className="box feature" style={{ opacity: 0.9 }}>
                                         {project.image ? (
-                                        <a href="#" className="image featured">
+                                        <span className="image featured">
                                             <img src={project.image} alt={project.title} style={{ objectFit: 'cover', height: '300px', filter: 'grayscale(30%)' }} />
-                                        </a>
+                                        </span>
                                         ) : (
                                         <div className="image-placeholder" style={{ filter: 'grayscale(30%)', opacity: 0.7 }}>
                                             <i className="icon solid fa-cube"></i>
@@ -261,7 +261,7 @@ const Stampe3d = () => {
                                         )}
                                         <header>
                                             <h3>{project.title}</h3>
-                                            <span style={{ display: 'inline-block', backgroundColor: '#eee', color: '#444', padding: '2px 10px', borderRadius: '15px', fontSize: '0.8em', marginBottom: '10px' }}>
+                                            <span className="tag-chip">
                                             {project.topic}
                                             </span>
                                         </header>
