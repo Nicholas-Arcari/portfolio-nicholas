@@ -268,8 +268,8 @@ body.dark-mode #header .terminal-container {
 /* Il template disegna una banda bianca di 8px in fondo all'header con un
    inset box-shadow: va scurita, altrimenti resta una barra bianca */
 body.dark-mode #header > .container {
-    border-bottom-color: #2a2a2a;
-    box-shadow: inset 0px -8px 0px 0px #1a1a1a, inset 0px -10px 0px 0px #2a2a2a;
+    border-bottom-color: #3d3d3d;
+    box-shadow: inset 0px -8px 0px 0px #1a1a1a, inset 0px -10px 0px 0px #3d3d3d;
 }
 
 /* Nav */
@@ -297,8 +297,8 @@ body.dark-mode #features p {
 /* Banner */
 body.dark-mode #banner {
     background: #1e1e1e;
-    border-top-color: #2a2a2a;
-    border-bottom-color: #2a2a2a;
+    border-top-color: #3d3d3d;
+    border-bottom-color: #3d3d3d;
     box-shadow: inset 0px -8px 0px 0px #1e1e1e, inset 0px 8px 0px 0px #1e1e1e;
 }
 
@@ -383,13 +383,22 @@ body.dark-mode input::placeholder {
    sparivano del tutto. Stesso ruolo visivo del #e5e5e5 del tema chiaro. */
 body.dark-mode hr,
 body.dark-mode .divided li,
-body.dark-mode #sidebar section,
+body.dark-mode #sidebar > section,
+body.dark-mode #sidebar > article,
 body.dark-mode #footer,
 body.dark-mode #copyright {
-    border-color: #333333;
+    border-color: #3d3d3d;
 }
 body.dark-mode hr {
-    border-top-color: #333333;
+    border-top-color: #3d3d3d;
+}
+/* Header, banner, sidebar e altre sezioni del template non usano un semplice
+   bordo ma un box-shadow inset chiaro (#fff + #e5e5e5) per disegnare la linea:
+   nel dark quel box-shadow va ridipinto, altrimenti la riga resta chiara o
+   scompare del tutto. */
+body.dark-mode #sidebar > section,
+body.dark-mode #sidebar > article {
+    box-shadow: inset 0px 8px 0px 0px #111111, inset 0px 10px 0px 0px #3d3d3d;
 }
 
 /* Footer */
