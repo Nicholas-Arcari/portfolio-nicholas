@@ -396,9 +396,22 @@ body.dark-mode hr {
    bordo ma un box-shadow inset chiaro (#fff + #e5e5e5) per disegnare la linea:
    nel dark quel box-shadow va ridipinto, altrimenti la riga resta chiara o
    scompare del tutto. */
+/* Nota: "body.dark-mode .box" azzera il box-shadow con !important per togliere
+   l'ombra decorativa dei box; qui serve !important (e la maggiore specificita
+   di #content > article) per riportare la riga inset su questi contenitori. */
 body.dark-mode #sidebar > section,
-body.dark-mode #sidebar > article {
-    box-shadow: inset 0px 8px 0px 0px #111111, inset 0px 10px 0px 0px #3d3d3d;
+body.dark-mode #sidebar > article,
+body.dark-mode #content > section,
+body.dark-mode #content > article {
+    border-top-color: #3d3d3d;
+    box-shadow: inset 0px 8px 0px 0px #111111, inset 0px 10px 0px 0px #3d3d3d !important;
+}
+/* Il primo elemento non ha separatore (come nel tema chiaro) */
+body.dark-mode #sidebar > section:first-child,
+body.dark-mode #sidebar > article:first-child,
+body.dark-mode #content > section:first-child,
+body.dark-mode #content > article:first-child {
+    box-shadow: none !important;
 }
 
 /* Footer */
