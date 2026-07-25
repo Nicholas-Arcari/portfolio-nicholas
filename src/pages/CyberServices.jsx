@@ -152,7 +152,7 @@ const CyberServices = () => {
               </p>
               <p style={{ fontSize: '0.9em', marginTop: '0.9em', marginBottom: 0 }}>
                 <a
-                  href={`${import.meta.env.BASE_URL}downloads/soc-suite-eula.pdf`}
+                  href={`${import.meta.env.BASE_URL}downloads/${t('cyberServices.eulaPdf')}`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
