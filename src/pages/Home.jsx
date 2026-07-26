@@ -489,24 +489,6 @@ const Home = () => {
                         </span>
                       </div>
 
-                      {/* IELTS English B2 */}
-                      <div>
-                        <h4 style={{ marginBottom: '0.5em', fontSize: '1.1em' }}>
-                          <i className="icon solid fa-language" style={{ marginRight: '10px', color: '#005a9e' }}></i>
-                          IELTS English B2
-                        </h4>
-                        <p style={{ fontSize: '0.9em', marginBottom: '0.5em' }}>
-                          {t('home.sidebar.ieltsDesc')}
-                        </p>
-                        {/* Progress Bar */}
-                        <div className="progress-track">
-                          <div style={{ backgroundColor: '#4caf50', width: '90%', height: '100%', borderRadius: '5px' }}></div>
-                        </div>
-                        <span style={{ fontSize: '0.8em', color: '#666', display: 'block', marginTop: '5px' }}>
-                          {t('home.sidebar.ieltsStatus')}
-                        </span>
-                      </div>
-
                     </article>
                   </li>
                 </ul>
