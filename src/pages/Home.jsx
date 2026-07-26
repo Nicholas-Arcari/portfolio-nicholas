@@ -482,7 +482,7 @@ const Home = () => {
                         </p>
                         {/* Progress Bar */}
                         <div className="progress-track">
-                          <div style={{ backgroundColor: '#ff9800', width: '0%', height: '100%', borderRadius: '5px' }}></div>
+                          <div style={{ backgroundColor: '#ff9800', width: '50%', height: '100%', borderRadius: '5px' }}></div>
                         </div>
                         <span style={{ fontSize: '0.8em', color: '#666', display: 'block', marginTop: '5px' }}>
                           {t('home.sidebar.secplusStatus')}
