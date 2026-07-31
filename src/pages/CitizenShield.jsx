@@ -16,14 +16,10 @@ const CitizenShield = () => {
   const faq = t('citizenShield.faq');
 
   useEffect(() => {
-    document.body.classList.remove('homepage');
-    document.body.classList.add('no-sidebar');
+    // Layout con sidebar destra, come la home
+    document.body.classList.remove('no-sidebar');
+    document.body.classList.add('homepage');
     window.scrollTo(0, 0);
-
-    return () => {
-      document.body.classList.remove('no-sidebar');
-      document.body.classList.add('homepage');
-    };
   }, []);
 
   return (
@@ -65,6 +61,10 @@ const CitizenShield = () => {
 
       <section id="main">
         <div className="container">
+          <div className="row">
+
+            {/* Content */}
+            <div id="content" className="col-8 col-12-medium">
           <article className="box post" style={{ padding: '4em 2em' }}>
 
             <div style={{ textAlign: 'center' }}>
@@ -96,47 +96,6 @@ const CitizenShield = () => {
             <p style={{ fontSize: '0.9em', color: '#888', marginBottom: '2em' }}>
               {t('citizenShield.notes')}
             </p>
-
-            {/* Accesso */}
-            <div className="soft-panel" style={{ padding: '1.5em', marginBottom: '2em' }}>
-              <h4 style={{ marginBottom: '0.5em' }}>
-                <i className="icon solid fa-lock" style={{ color: '#d52349', marginRight: '0.5em' }}></i>
-                {t('citizenShield.accessTitle')}
-              </h4>
-              <p style={{ fontSize: '0.95em', color: '#666', margin: 0 }}>
-                {t('citizenShield.contactNote')}
-              </p>
-            </div>
-
-            {/* Video installazione (lazy: scaricato solo al click sul pulsante) */}
-            <div style={{ textAlign: 'center', margin: '2em 0' }}>
-              <h3 style={{ marginBottom: '0.4em' }}>{t('citizenShield.videoTitle')}</h3>
-              <p style={{ color: '#666', maxWidth: '560px', margin: '0 auto 1em' }}>
-                {t('citizenShield.videoIntro')}
-              </p>
-              <button
-                type="button"
-                className="button icon brands fa-windows"
-                style={{ margin: '0 8px 8px' }}
-                onClick={() => setVideo({
-                  src: `${VIDEO_BASE}/citizen-shield-install-windows.mp4`,
-                  title: `${t('citizenShield.videoTitle')} — ${t('citizenShield.videoWindows')}`,
-                })}
-              >
-                {t('citizenShield.videoWindows')}
-              </button>
-              <button
-                type="button"
-                className="button alt icon brands fa-linux"
-                style={{ margin: '0 8px 8px' }}
-                onClick={() => setVideo({
-                  src: `${VIDEO_BASE}/citizen-shield-install-linux-macos.mp4`,
-                  title: `${t('citizenShield.videoTitle')} — ${t('citizenShield.videoLinux')}`,
-                })}
-              >
-                {t('citizenShield.videoLinux')}
-              </button>
-            </div>
 
             {/* FAQ (menu a scomparsa, default nascosto) */}
             <div style={{ marginBottom: '2em' }}>
@@ -194,6 +153,65 @@ const CitizenShield = () => {
             </div>
 
           </article>
+            </div>
+
+            {/* Sidebar destra: Video installazione + Accesso */}
+            <div id="sidebar" className="col-4 col-12-medium">
+
+              {/* Video: come si installa */}
+              <section>
+                <ul className="divided">
+                  <li>
+                    <article className="box highlight">
+                      <header><h3>{t('citizenShield.videoTitle')}</h3></header>
+                      <p style={{ fontSize: '0.95em', color: '#666' }}>{t('citizenShield.videoIntro')}</p>
+                      <button
+                        type="button"
+                        className="button icon brands fa-windows"
+                        style={{ width: '100%', marginBottom: '10px' }}
+                        onClick={() => setVideo({
+                          src: `${VIDEO_BASE}/citizen-shield-install-windows.mp4`,
+                          title: `${t('citizenShield.videoTitle')} — ${t('citizenShield.videoWindows')}`,
+                        })}
+                      >
+                        {t('citizenShield.videoWindows')}
+                      </button>
+                      <button
+                        type="button"
+                        className="button alt icon brands fa-linux"
+                        style={{ width: '100%' }}
+                        onClick={() => setVideo({
+                          src: `${VIDEO_BASE}/citizen-shield-install-linux-macos.mp4`,
+                          title: `${t('citizenShield.videoTitle')} — ${t('citizenShield.videoLinux')}`,
+                        })}
+                      >
+                        {t('citizenShield.videoLinux')}
+                      </button>
+                    </article>
+                  </li>
+                </ul>
+              </section>
+
+              {/* Accesso */}
+              <section>
+                <ul className="divided">
+                  <li>
+                    <article className="box highlight">
+                      <header>
+                        <h3>
+                          <i className="icon solid fa-lock" style={{ color: '#d52349', marginRight: '0.5em' }}></i>
+                          {t('citizenShield.accessTitle')}
+                        </h3>
+                      </header>
+                      <p style={{ fontSize: '0.95em', color: '#666', margin: 0 }}>{t('citizenShield.contactNote')}</p>
+                    </article>
+                  </li>
+                </ul>
+              </section>
+
+            </div>
+
+          </div>
         </div>
       </section>
 
