@@ -5,6 +5,7 @@ import TerminalText from '../components/TerminalText';
 import { useLanguage } from '../contexts/LanguageContext';
 import Footer from '../components/Footer';
 import VideoModal from '../components/VideoModal';
+import { VIDEO_BASE } from '../config/media';
 
 const CyberServices = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -157,7 +158,7 @@ const CyberServices = () => {
                 className="button icon brands fa-windows"
                 style={{ margin: '0 8px 8px' }}
                 onClick={() => setVideo({
-                  src: `${import.meta.env.BASE_URL}videos/soc-suite-install-windows.mp4`,
+                  src: `${VIDEO_BASE}/soc-suite-install-windows.mp4`,
                   title: `${t('cyberServices.videoTitle')} — ${t('cyberServices.videoWindows')}`,
                 })}
               >
@@ -168,7 +169,7 @@ const CyberServices = () => {
                 className="button alt icon brands fa-linux"
                 style={{ margin: '0 8px 8px' }}
                 onClick={() => setVideo({
-                  src: `${import.meta.env.BASE_URL}videos/soc-suite-install-linux-macos.mp4`,
+                  src: `${VIDEO_BASE}/soc-suite-install-linux-macos.mp4`,
                   title: `${t('cyberServices.videoTitle')} — ${t('cyberServices.videoLinux')}`,
                 })}
               >
