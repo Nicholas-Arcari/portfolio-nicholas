@@ -91,6 +91,67 @@ export const translations = {
       licenseText: 'La licenza è gratuita. La chiave non è nel pacchetto: per riceverla scrivimi via email indicando il deployment id scelto durante l’installazione. Emetto la licenza dedicata al tuo deployment e te la invio in maniera sicura e tracciata.',
       eulaLink: 'Leggi il contratto di licenza (EULA, PDF)',
       eulaPdf: 'soc-suite-eula.pdf',
+      faqTitle: 'Domande frequenti',
+      faqShow: 'Mostra le FAQ',
+      faqHide: 'Nascondi le FAQ',
+      faq: {
+        techTitle: 'Domande tecniche (architettura e sicurezza)',
+        tech: [
+          {
+            q: 'Perch\u00e9 on-premise e non un servizio in cloud (SaaS)?',
+            a: 'I dati che tratta un SOC (log, email di phishing, IOC, indicatori sui tuoi sistemi) sono estremamente sensibili. Tenendoli sul tuo server elimini alla radice il rischio di esfiltrazione verso terzi e rispetti i requisiti di data residency e GDPR: nessun dato lascia la tua infrastruttura e non c\'\u00e8 alcun phone-home.',
+          },
+          {
+            q: 'Perch\u00e9 HTTPS con certificati self-signed anche in rete locale?',
+            a: 'Un reverse proxy incluso serve tutto in HTTPS cos\u00ec il traffico \u00e8 cifrato anche dentro la LAN (niente credenziali o report in chiaro). I certificati sono self-signed di default per non dipendere da una CA esterna, ma puoi sostituirli in certs/ con i tuoi certificati aziendali mantenendo gli stessi nomi file.',
+          },
+          {
+            q: 'La licenza "telefona a casa" o comunica con l\'esterno?',
+            a: 'No. L\'attivazione \u00e8 basata su firma Ed25519 verificata interamente in locale: funziona anche in reti isolate o air-gapped. Non viene contattato alcun server di licenza, n\u00e9 in fase di attivazione n\u00e9 durante l\'uso.',
+          },
+          {
+            q: 'Da dove arrivano le immagini Docker e sono affidabili?',
+            a: 'Sono immagini pubbliche e versionate su GHCR (nessun login richiesto). Puoi ispezionarle prima del deploy e fissarle a un digest specifico per garantire build riproducibili.',
+          },
+          {
+            q: 'Il toolkit raccoglie telemetria o dati su di me?',
+            a: 'No, nessuna telemetria. L\'unico stato persistito \u00e8 locale (cartella data/ e license.key): resta sul tuo server e sotto il tuo controllo.',
+          },
+          {
+            q: 'Come gestite aggiornamenti e vulnerabilit\u00e0?',
+            a: 'Gli aggiornamenti si applicano con docker compose pull && docker compose up -d ; ogni release \u00e8 versionata con changelog. Puoi ricostruire i container o fissare le versioni secondo la tua policy di patching.',
+          },
+        ],
+        generalTitle: 'Domande generali (funzionalit\u00e0 e falsi positivi)',
+        general: [
+          {
+            q: 'Cosa fa esattamente la suite?',
+            a: 'Il SOC Toolkit copre triage delle email di phishing, analisi dei log con mappatura MITRE ATT&CK, estrazione di IOC, scansione YARA/Sigma e file inspector; l\'OSINT Toolkit copre attack surface e investigazione OSINT.',
+          },
+          {
+            q: 'Il triage del phishing pu\u00f2 sbagliare (falsi positivi o negativi)?',
+            a: 'S\u00ec, come qualunque strumento automatico. \u00c8 pensato per supportare l\'analista: assegna un punteggio e mostra gli indicatori trovati, ma la decisione finale resta all\'operatore. Non va inteso come un verdetto infallibile.',
+          },
+          {
+            q: 'Serve una connessione internet per usarla?',
+            a: 'L\'analisi di log ed email gira in locale. Alcune funzioni di arricchimento e OSINT interrogano fonti esterne (se le abiliti), ma il cuore dell\'analisi non dipende da internet.',
+          },
+          {
+            q: 'Quante persone possono usarla insieme?',
+            a: '\u00c8 multi-utente con account opzionali (JWT): il primo utente registrato diventa amministratore e pu\u00f2 gestire gli altri.',
+          },
+          {
+            q: '\u00c8 adatta a una piccola azienda o a un freelance?',
+            a: 'S\u00ec: requisiti modesti (circa 4 GB di RAM), installazione in pochi minuti e nessun costo di licenza. Scala dal singolo professionista al team di sicurezza.',
+          },
+        ],
+      },
+      videoTitle: 'Video: come si installa',
+      videoIntro: 'Guarda la procedura passo-passo. Il video viene scaricato solo quando premi un pulsante, cos\u00ec la pagina resta leggera.',
+      videoWindows: 'Windows',
+      videoLinux: 'Linux / macOS',
+      videoUnsupported: 'Il tuo browser non supporta la riproduzione del video.',
+      videoClose: 'Chiudi',
       contact: 'Vuoi saperne di pi\u00f9? Contattami direttamente.',
       back: 'Torna alla Home',
       ctaTitle: 'SOC Suite',
@@ -132,6 +193,71 @@ export const translations = {
       notes: 'Nota onesta: la marca temporale dimostra che il report non \u00e8 stato alterato dopo la firma, ma l\'utilizzabilit\u00e0 in sede legale dipende dalla procedura seguita e va valutata con un avvocato. Il servizio affianca, non sostituisce, la denuncia alle autorit\u00e0 competenti.',
       accessTitle: 'Accesso',
       contactNote: 'Prodotto in sviluppo, con codice sorgente privato e accesso su invito. Scrivimi se vuoi entrare nella beta o proporlo alle persone che assisti.',
+      faqTitle: 'Domande frequenti',
+      faqShow: 'Mostra le FAQ',
+      faqHide: 'Nascondi le FAQ',
+      faq: {
+        techTitle: 'Domande tecniche (architettura e sicurezza)',
+        tech: [
+          {
+            q: 'Perch\u00e9 il control plane \u00e8 in cloud ma le scansioni girano in locale?',
+            a: 'Il cloud gestisce solo account, licenze e dashboard. Gli strumenti invasivi (scansione di rete, ricerca account, analisi dei dispositivi) girano sul tuo agent Docker locale: cos\u00ec i tuoi dispositivi e la tua rete non vengono mai esposti alla mia infrastruttura.',
+          },
+          {
+            q: 'Cosa significa "zero-knowledge"?',
+            a: 'I moduli sensibili cifrano i dati lato client con AES-256-GCM: il server conserva soltanto testo cifrato e la passphrase non lascia mai il tuo browser. In pratica io non sono in grado di leggere i tuoi contenuti.',
+          },
+          {
+            q: 'Come comunicano l\'agent locale e il cloud?',
+            a: 'I risultati arrivano alla dashboard in tempo reale via WebSocket. L\'agent lavora in uscita (outbound) e non apre porte in ingresso sul tuo computer, riducendo la superficie di attacco.',
+          },
+          {
+            q: 'Cosa garantisce l\'integrit\u00e0 dei report?',
+            a: 'Ogni report ha un hash SHA-256 e una marca temporale RFC 3161: dimostrano che il file non \u00e8 stato alterato dopo la firma. Nota onesta: questo prova l\'integrit\u00e0, non equivale automaticamente all\'ammissibilit\u00e0 in tribunale, che dipende dalla procedura seguita e va valutata con un avvocato.',
+          },
+          {
+            q: 'Cosa succede ai miei dati e come li elimino?',
+            a: 'Ogni risultato ha una scadenza con countdown visibile e cancellazione definitiva (hard delete) allo scadere. In pi\u00f9 il Quick Exit (o Esc tre volte) azzera immediatamente sessione, dati locali e connessione.',
+          },
+          {
+            q: 'Il codice \u00e8 ispezionabile?',
+            a: 'Il codice sorgente \u00e8 privato (beta su invito), ma le scelte crittografiche sono standard e documentate: AES-256-GCM per la cifratura lato client, SHA-256 e RFC 3161 per l\'integrit\u00e0 dei report.',
+          },
+        ],
+        generalTitle: 'Domande generali (funzionalit\u00e0 e falsi positivi)',
+        general: [
+          {
+            q: '\u00c8 gi\u00e0 disponibile?',
+            a: '\u00c8 in beta privata su invito, con codice sorgente chiuso. Scrivimi se vuoi entrare nella beta o proporlo alle persone che assisti.',
+          },
+          {
+            q: 'A chi \u00e8 rivolto?',
+            a: 'A chi subisce cyberstalking, doxxing, sextortion o teme che i propri dispositivi siano compromessi, e a chi assiste queste persone (operatori, sportelli, professionisti).',
+          },
+          {
+            q: 'Cosa trova il modulo anti-stalkerware?',
+            a: 'Cerca app di sorveglianza note su Android e iOS. Pu\u00f2 dare falsi positivi (ad esempio app legittime di parental control) o non rilevare stalkerware sconosciuto: \u00e8 un aiuto alla verifica, non una garanzia assoluta. Nel dubbio, rivolgiti a un professionista o alle autorit\u00e0.',
+          },
+          {
+            q: 'I falsi positivi sono un problema?',
+            a: 'Come ogni scanner, gli strumenti segnalano possibili rischi da verificare, non emettono verdetti definitivi. I risultati vanno letti come indicazioni da approfondire, non come prove certe.',
+          },
+          {
+            q: 'Devo installare qualcosa ed essere esperto di tecnologia?',
+            a: 'I moduli sono guidati passo-passo. Serve poter installare un agent Docker sul tuo computer; se necessario ti aiuto nella configurazione.',
+          },
+          {
+            q: 'Sostituisce la denuncia o le forze dell\'ordine?',
+            a: 'No. Il servizio affianca, non sostituisce, la denuncia alle autorit\u00e0 competenti: per i reati rivolgiti sempre alle forze dell\'ordine.',
+          },
+        ],
+      },
+      videoTitle: 'Video: come si installa',
+      videoIntro: 'Guarda la procedura passo-passo di installazione dell\'agent. Il video viene scaricato solo quando premi un pulsante, cos\u00ec la pagina resta leggera.',
+      videoWindows: 'Windows',
+      videoLinux: 'Linux / macOS',
+      videoUnsupported: 'Il tuo browser non supporta la riproduzione del video.',
+      videoClose: 'Chiudi',
       contact: 'Vuoi saperne di pi\u00f9? Contattami direttamente.',
       back: 'Torna alla Home',
       ctaTitle: 'Citizen Shield',
@@ -1095,6 +1221,67 @@ export const translations = {
       licenseText: 'The licence is free of charge. The key is not in the package: to get it, email me with the deployment id you chose during install. I issue the licence bound to your deployment and send it to you securely and with tracking.',
       eulaLink: 'Read the End User License Agreement (PDF)',
       eulaPdf: 'soc-suite-eula-en.pdf',
+      faqTitle: 'Frequently asked questions',
+      faqShow: 'Show the FAQ',
+      faqHide: 'Hide the FAQ',
+      faq: {
+        techTitle: 'Technical questions (architecture and security)',
+        tech: [
+          {
+            q: 'Why on-premise instead of a cloud service (SaaS)?',
+            a: 'The data a SOC handles (logs, phishing emails, IOCs, indicators about your own systems) is extremely sensitive. Keeping it on your own server removes the risk of exfiltration to third parties at the source and meets data-residency and GDPR requirements: no data ever leaves your infrastructure and there is no phone-home.',
+          },
+          {
+            q: 'Why HTTPS with self-signed certificates even on the local network?',
+            a: 'An included reverse proxy serves everything over HTTPS so traffic is encrypted even inside the LAN (no credentials or reports in the clear). The certificates are self-signed by default to avoid depending on an external CA, but you can replace them in certs/ with your own corporate certificates, keeping the same file names.',
+          },
+          {
+            q: 'Does the licence "phone home" or talk to the outside?',
+            a: 'No. Activation is based on an Ed25519 signature verified entirely locally: it works even on isolated or air-gapped networks. No licence server is ever contacted, neither at activation nor during use.',
+          },
+          {
+            q: 'Where do the Docker images come from, and are they trustworthy?',
+            a: 'They are public, versioned images on GHCR (no login required). You can inspect them before deploying and pin them to a specific digest for reproducible builds.',
+          },
+          {
+            q: 'Does the toolkit collect telemetry or data about me?',
+            a: 'No telemetry. The only persisted state is local (the data/ folder and license.key): it stays on your server and under your control.',
+          },
+          {
+            q: 'How do you handle updates and vulnerabilities?',
+            a: 'Updates are applied with docker compose pull && docker compose up -d ; every release is versioned with a changelog. You can rebuild the containers or pin versions according to your own patching policy.',
+          },
+        ],
+        generalTitle: 'General questions (features and false positives)',
+        general: [
+          {
+            q: 'What exactly does the suite do?',
+            a: 'The SOC Toolkit covers phishing email triage, log analysis with MITRE ATT&CK mapping, IOC extraction, YARA/Sigma scanning and a file inspector; the OSINT Toolkit covers attack surface and investigative OSINT.',
+          },
+          {
+            q: 'Can the phishing triage get it wrong (false positives or negatives)?',
+            a: 'Yes, like any automated tool. It is meant to support the analyst: it assigns a score and shows the indicators it found, but the final decision stays with the operator. It is not an infallible verdict.',
+          },
+          {
+            q: 'Do I need an internet connection to use it?',
+            a: 'Log and email analysis runs locally. Some enrichment and OSINT features query external sources (if you enable them), but the core analysis does not depend on the internet.',
+          },
+          {
+            q: 'How many people can use it together?',
+            a: 'It is multi-user with optional accounts (JWT): the first registered user becomes the administrator and can manage the others.',
+          },
+          {
+            q: 'Is it suitable for a small business or a freelancer?',
+            a: 'Yes: modest requirements (about 4 GB of RAM), install in minutes and no licensing cost. It scales from a single professional to a security team.',
+          },
+        ],
+      },
+      videoTitle: 'Video: how to install it',
+      videoIntro: 'Watch the step-by-step procedure. The video is only downloaded when you press a button, so the page stays lightweight.',
+      videoWindows: 'Windows',
+      videoLinux: 'Linux / macOS',
+      videoUnsupported: 'Your browser does not support video playback.',
+      videoClose: 'Close',
       contact: 'Want to know more? Get in touch directly.',
       back: 'Back to Home',
       ctaTitle: 'SOC Suite',
@@ -1136,6 +1323,71 @@ export const translations = {
       notes: 'Honest note: the timestamp proves the report has not been altered since signing, but whether it holds up in court depends on the process followed and should be reviewed with a lawyer. The service supports, and does not replace, a report to the authorities.',
       accessTitle: 'Access',
       contactNote: 'Product under development, closed source and invite-only. Get in touch if you want to join the beta or offer it to the people you assist.',
+      faqTitle: 'Frequently asked questions',
+      faqShow: 'Show the FAQ',
+      faqHide: 'Hide the FAQ',
+      faq: {
+        techTitle: 'Technical questions (architecture and security)',
+        tech: [
+          {
+            q: 'Why is the control plane in the cloud but the scans run locally?',
+            a: 'The cloud only handles accounts, licensing and the dashboard. The invasive tools (network scanning, account lookup, device analysis) run on your local Docker agent: that way your devices and your network are never exposed to my infrastructure.',
+          },
+          {
+            q: 'What does "zero-knowledge" mean?',
+            a: 'Sensitive modules encrypt data client-side with AES-256-GCM: the server only stores ciphertext and the passphrase never leaves your browser. In practice I am not able to read your content.',
+          },
+          {
+            q: 'How do the local agent and the cloud communicate?',
+            a: 'Results reach the dashboard in real time over WebSocket. The agent works outbound and does not open any inbound ports on your computer, reducing the attack surface.',
+          },
+          {
+            q: 'What guarantees the integrity of the reports?',
+            a: 'Every report carries a SHA-256 hash and an RFC 3161 timestamp: they prove the file has not been altered since signing. Honest note: this proves integrity, it does not automatically equal admissibility in court, which depends on the process followed and should be reviewed with a lawyer.',
+          },
+          {
+            q: 'What happens to my data and how do I delete it?',
+            a: 'Every result has an expiry with a visible countdown and a hard delete when it runs out. On top of that, Quick Exit (or Esc three times) instantly wipes the session, local data and the connection.',
+          },
+          {
+            q: 'Is the code auditable?',
+            a: 'The source code is private (invite-only beta), but the cryptographic choices are standard and documented: AES-256-GCM for client-side encryption, SHA-256 and RFC 3161 for report integrity.',
+          },
+        ],
+        generalTitle: 'General questions (features and false positives)',
+        general: [
+          {
+            q: 'Is it available yet?',
+            a: 'It is in a private, invite-only beta, with closed source code. Get in touch if you want to join the beta or offer it to the people you assist.',
+          },
+          {
+            q: 'Who is it for?',
+            a: 'People dealing with cyberstalking, doxxing, sextortion or a possibly compromised device, and those who assist them (caseworkers, help desks, professionals).',
+          },
+          {
+            q: 'What does the anti-stalkerware module find?',
+            a: 'It looks for known surveillance apps on Android and iOS. It can return false positives (for example legitimate parental-control apps) or miss unknown stalkerware: it is an aid to verification, not an absolute guarantee. When in doubt, turn to a professional or the authorities.',
+          },
+          {
+            q: 'Are false positives a problem?',
+            a: 'Like any scanner, the tools flag possible risks to be verified, they do not issue definitive verdicts. Results should be read as leads to investigate, not as hard proof.',
+          },
+          {
+            q: 'Do I need to install anything and be tech-savvy?',
+            a: 'The modules are guided step by step. You need to be able to install a Docker agent on your computer; I can help with the setup if needed.',
+          },
+          {
+            q: 'Does it replace a police report or law enforcement?',
+            a: 'No. The service supports, and does not replace, a report to the relevant authorities: for crimes, always turn to law enforcement.',
+          },
+        ],
+      },
+      videoTitle: 'Video: how to install it',
+      videoIntro: 'Watch the step-by-step agent installation. The video is only downloaded when you press a button, so the page stays lightweight.',
+      videoWindows: 'Windows',
+      videoLinux: 'Linux / macOS',
+      videoUnsupported: 'Your browser does not support video playback.',
+      videoClose: 'Close',
       contact: 'Want to know more? Get in touch directly.',
       back: 'Back to Home',
       ctaTitle: 'Citizen Shield',

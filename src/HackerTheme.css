@@ -12,28 +12,96 @@
 }
 
 /* ===== IMAGE PLACEHOLDER ===== */
-/* Stesso margine inferiore di ".image.featured" del template, cosi le schede
-   con e senza immagine hanno la stessa spaziatura prima del titolo */
+/* Deve pareggiare esattamente ".image.featured" del template: stesso margine
+   inferiore (3.5em) e stessa cornice da 6px (".image" ha border: solid 6px).
+   L'immagine e alta 300px + 6px*2 di bordo = 312px totali: qui riproduciamo la
+   stessa altezza cosi le schede con e senza immagine sono identiche. */
 .image-placeholder {
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 300px;
+    height: 312px;
     margin: 0 0 3.5em 0;
+    border: solid 6px #ebebeb;
     background: #f0f0f0;
     color: #bbb;
     font-size: 3em;
-    border-radius: 4px;
 }
 body.dark-mode .image-placeholder {
     background: #1e2a45;
     color: #555;
+    border-color: #2a2a2a;
 }
 
 @media screen and (max-width: 736px) {
     .image-placeholder {
         margin: 0 0 1.5em 0;
     }
+}
+
+/* ===== VIDEO MODAL ===== */
+/* Overlay in sovrimpressione per i video tutorial. Il tag <video> viene montato
+   (e quindi scaricato) solo quando il modal e aperto: nessun peso a pagina chiusa. */
+.video-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5em;
+    background: rgba(0, 0, 0, 0.78);
+}
+.video-modal-box {
+    width: 100%;
+    max-width: 900px;
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 12px 44px rgba(0, 0, 0, 0.45);
+}
+.video-modal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1em;
+    padding: 0.85em 1.2em;
+    border-bottom: 1px solid #eee;
+}
+.video-modal-title {
+    margin: 0;
+    font-size: 1em;
+}
+.video-modal-close {
+    background: none;
+    border: none;
+    box-shadow: none;
+    cursor: pointer;
+    padding: 0 0.2em;
+    font-size: 1.7em;
+    line-height: 1;
+    color: #888;
+    min-width: auto;
+    height: auto;
+}
+.video-modal-close:hover {
+    background: none;
+    color: #d52349;
+}
+.video-modal-video {
+    display: block;
+    width: 100%;
+    max-height: 76vh;
+    background: #000;
+}
+body.dark-mode .video-modal-box {
+    background: #1b1b1b;
+}
+body.dark-mode .video-modal-head {
+    border-bottom-color: #2f2f2f;
+}
+body.dark-mode .video-modal-title {
+    color: #efefef;
 }
 
 /* ===== PANNELLI SOFT ===== */

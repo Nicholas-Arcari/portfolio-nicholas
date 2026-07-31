@@ -4,11 +4,16 @@ import { Link } from 'react-router-dom';
 import TerminalText from '../components/TerminalText';
 import { useLanguage } from '../contexts/LanguageContext';
 import Footer from '../components/Footer';
+import VideoModal from '../components/VideoModal';
 
 const CyberServices = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [guide, setGuide] = useState('simple');
+  const [showFaq, setShowFaq] = useState(false); // Default: nascosto
+  const [video, setVideo] = useState(null); // { src, title } | null — lazy: caricato solo al click
   const { t } = useLanguage();
+
+  const faq = t('cyberServices.faq');
 
   useEffect(() => {
     document.body.classList.remove('homepage');
@@ -141,6 +146,36 @@ const CyberServices = () => {
               </p>
             </div>
 
+            {/* Video installazione (lazy: scaricato solo al click sul pulsante) */}
+            <div style={{ textAlign: 'center', margin: '2em 0' }}>
+              <h3 style={{ marginBottom: '0.4em' }}>{t('cyberServices.videoTitle')}</h3>
+              <p style={{ color: '#666', maxWidth: '560px', margin: '0 auto 1em' }}>
+                {t('cyberServices.videoIntro')}
+              </p>
+              <button
+                type="button"
+                className="button icon brands fa-windows"
+                style={{ margin: '0 8px 8px' }}
+                onClick={() => setVideo({
+                  src: `${import.meta.env.BASE_URL}videos/soc-suite-install-windows.mp4`,
+                  title: `${t('cyberServices.videoTitle')} — ${t('cyberServices.videoWindows')}`,
+                })}
+              >
+                {t('cyberServices.videoWindows')}
+              </button>
+              <button
+                type="button"
+                className="button alt icon brands fa-linux"
+                style={{ margin: '0 8px 8px' }}
+                onClick={() => setVideo({
+                  src: `${import.meta.env.BASE_URL}videos/soc-suite-install-linux-macos.mp4`,
+                  title: `${t('cyberServices.videoTitle')} — ${t('cyberServices.videoLinux')}`,
+                })}
+              >
+                {t('cyberServices.videoLinux')}
+              </button>
+            </div>
+
             {/* Chiave di licenza */}
             <div className="soft-panel" style={{ padding: '1.5em', marginBottom: '2em' }}>
               <h4 style={{ marginBottom: '0.5em' }}>
@@ -160,6 +195,40 @@ const CyberServices = () => {
                   {t('cyberServices.eulaLink')}
                 </a>
               </p>
+            </div>
+
+            {/* FAQ (menu a scomparsa, default nascosto) */}
+            <div style={{ marginBottom: '2em' }}>
+              <h3 style={{ marginBottom: '0.6em' }}>{t('cyberServices.faqTitle')}</h3>
+              <button
+                type="button"
+                className="button alt small"
+                onClick={() => setShowFaq(!showFaq)}
+                aria-expanded={showFaq}
+              >
+                {showFaq ? t('cyberServices.faqHide') : t('cyberServices.faqShow')}
+                <i className={`icon solid ${showFaq ? 'fa-chevron-up' : 'fa-chevron-down'}`} style={{ marginLeft: '10px' }}></i>
+              </button>
+
+              {showFaq && (
+                <div className="fade-in" style={{ marginTop: '1.5em' }}>
+                  <h4 style={{ marginBottom: '0.8em', color: '#d52349' }}>{faq.techTitle}</h4>
+                  {faq.tech.map((item, i) => (
+                    <div key={`tech-${i}`} style={{ marginBottom: '1.2em' }}>
+                      <p style={{ fontWeight: 'bold', marginBottom: '0.3em' }}>{item.q}</p>
+                      <p style={{ color: '#666', margin: 0 }}>{item.a}</p>
+                    </div>
+                  ))}
+
+                  <h4 style={{ margin: '1.8em 0 0.8em', color: '#d52349' }}>{faq.generalTitle}</h4>
+                  {faq.general.map((item, i) => (
+                    <div key={`gen-${i}`} style={{ marginBottom: '1.2em' }}>
+                      <p style={{ fontWeight: 'bold', marginBottom: '0.3em' }}>{item.q}</p>
+                      <p style={{ color: '#666', margin: 0 }}>{item.a}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <hr style={{ maxWidth: '200px', margin: '0 auto 2em' }} />
@@ -186,6 +255,15 @@ const CyberServices = () => {
           </article>
         </div>
       </section>
+
+      <VideoModal
+        open={!!video}
+        src={video?.src}
+        title={video?.title}
+        onClose={() => setVideo(null)}
+        unsupportedText={t('cyberServices.videoUnsupported')}
+        closeLabel={t('cyberServices.videoClose')}
+      />
 
       <Footer />
     </div>
