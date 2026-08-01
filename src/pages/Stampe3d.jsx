@@ -152,15 +152,13 @@ const Stampe3d = () => {
                             filteredExecuted.map((project, index) => (
                                 <div key={index} className="col-6 col-12-medium">
                                     <article className="box feature">
-                                        {project.image ? (
                                         <span className="image featured">
-                                            <img src={project.image} alt={project.title} style={{ objectFit: 'cover', height: '300px' }} />
+                                          {project.image ? (
+                                            <img src={project.image} alt={project.title} style={{ objectFit: 'cover', height: '300px', width: '100%', display: 'block' }} />
+                                          ) : (
+                                            <span className="image-fallback"><i className="icon solid fa-cube"></i></span>
+                                          )}
                                         </span>
-                                        ) : (
-                                        <div className="image-placeholder">
-                                            <i className="icon solid fa-cube"></i>
-                                        </div>
-                                        )}
                                         <header>
                                             <h3>{project.title}</h3>
                                             <span className="tag-chip">
@@ -250,15 +248,13 @@ const Stampe3d = () => {
                             filteredFuture.map((project, index) => (
                                 <div key={index} className="col-6 col-12-medium">
                                     <article className="box feature" style={{ opacity: 0.9 }}>
-                                        {project.image ? (
                                         <span className="image featured">
-                                            <img src={project.image} alt={project.title} style={{ objectFit: 'cover', height: '300px', filter: 'grayscale(30%)' }} />
+                                          {project.image ? (
+                                            <img src={project.image} alt={project.title} style={{ objectFit: 'cover', height: '300px', width: '100%', display: 'block', filter: 'grayscale(30%)' }} />
+                                          ) : (
+                                            <span className="image-fallback" style={{ filter: 'grayscale(30%)', opacity: 0.7 }}><i className="icon solid fa-cube"></i></span>
+                                          )}
                                         </span>
-                                        ) : (
-                                        <div className="image-placeholder" style={{ filter: 'grayscale(30%)', opacity: 0.7 }}>
-                                            <i className="icon solid fa-cube"></i>
-                                        </div>
-                                        )}
                                         <header>
                                             <h3>{project.title}</h3>
                                             <span className="tag-chip">

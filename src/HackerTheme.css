@@ -11,32 +11,25 @@
     transform: translateY(0);
 }
 
-/* ===== IMAGE PLACEHOLDER ===== */
-/* Deve pareggiare esattamente ".image.featured" del template: stesso margine
-   inferiore (3.5em) e stessa cornice da 6px (".image" ha border: solid 6px).
-   L'immagine e alta 300px + 6px*2 di bordo = 312px totali: qui riproduciamo la
-   stessa altezza cosi le schede con e senza immagine sono identiche. */
-.image-placeholder {
+/* ===== IMAGE FALLBACK (scheda senza immagine) ===== */
+/* La scheda senza immagine usa lo STESSO contenitore ".image.featured" di
+   quella con immagine (identici bordo 6px e margine 3.5em del template):
+   qui riempiamo solo l'interno con un riquadro alto 300px, esattamente come
+   l'immagine (anch'essa alta 300px). Cosi le due varianti sono strutturalmente
+   identiche e non esiste piu alcuno sbilanciamento di padding/margine. */
+.image.featured .image-fallback {
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 312px;
-    margin: 0 0 3.5em 0;
-    border: solid 6px #ebebeb;
+    width: 100%;
+    height: 300px;
     background: #f0f0f0;
     color: #bbb;
     font-size: 3em;
 }
-body.dark-mode .image-placeholder {
+body.dark-mode .image.featured .image-fallback {
     background: #1e2a45;
     color: #555;
-    border-color: #2a2a2a;
-}
-
-@media screen and (max-width: 736px) {
-    .image-placeholder {
-        margin: 0 0 1.5em 0;
-    }
 }
 
 /* ===== VIDEO MODAL ===== */

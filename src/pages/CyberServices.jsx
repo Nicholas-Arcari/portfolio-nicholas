@@ -147,8 +147,13 @@ const CyberServices = () => {
               </p>
             </div>
 
-            {/* FAQ (menu a scomparsa, default nascosto) */}
-            <div style={{ marginBottom: '2em' }}>
+          </article>
+
+          {/* FAQ come articolo #content separato: il template disegna la doppia
+              riga orizzontale sopra gli article successivi al primo, separando
+              visivamente le FAQ dal resto della pagina (light e dark mode). */}
+          <article className="box post" style={{ padding: '4em 2em' }}>
+            <div style={{ marginBottom: '1em' }}>
               <h3 style={{ marginBottom: '0.6em' }}>{t('cyberServices.faqTitle')}</h3>
               <button
                 type="button"
@@ -181,27 +186,11 @@ const CyberServices = () => {
               )}
             </div>
 
-            <hr style={{ maxWidth: '200px', margin: '0 auto 2em' }} />
-
-            <p style={{ fontSize: '1em', color: '#888', marginBottom: '2em', textAlign: 'center' }}>
-              {t('cyberServices.contact')}
-            </p>
-
-            <div style={{ textAlign: 'center' }}>
-              <a href="mailto:arcari.nicholas0@gmail.com?subject=SOC%20Suite%20-%20richiesta%20licenza" className="button icon solid fa-envelope" style={{ marginRight: '10px', marginBottom: '10px' }}>
-                Email
-              </a>
-              <a href="https://www.linkedin.com/in/nicholas-arcari-6245893a7" className="button alt icon brands fa-linkedin" target="_blank" rel="noopener noreferrer" style={{ marginBottom: '10px' }}>
-                LinkedIn
-              </a>
-            </div>
-
-            <div style={{ marginTop: '2em', textAlign: 'center' }}>
+            <div style={{ marginTop: '1em', textAlign: 'center' }}>
               <Link to="/" className="button alt small icon solid fa-arrow-left">
                 {t('cyberServices.back')}
               </Link>
             </div>
-
           </article>
             </div>
 
@@ -264,6 +253,32 @@ const CyberServices = () => {
                           {t('cyberServices.eulaLink')}
                         </a>
                       </p>
+                    </article>
+                  </li>
+                </ul>
+              </section>
+
+              {/* Contatti */}
+              <section>
+                <ul className="divided">
+                  <li>
+                    <article className="box highlight">
+                      <header>
+                        <h3>
+                          <i className="icon solid fa-envelope" style={{ color: '#d52349', marginRight: '0.5em' }}></i>
+                          {t('cyberServices.contactTitle')}
+                        </h3>
+                      </header>
+                      <p style={{ fontSize: '0.95em', color: '#666' }}>{t('cyberServices.contact')}</p>
+                      <a href="mailto:arcari.nicholas0@gmail.com?subject=SOC%20Suite%20-%20richiesta%20licenza" className="button icon solid fa-envelope" style={{ width: '100%', marginBottom: '10px' }}>
+                        Email
+                      </a>
+                      <a href="https://www.linkedin.com/in/nicholas-arcari-6245893a7" className="button alt icon brands fa-linkedin" target="_blank" rel="noopener noreferrer" style={{ width: '100%', marginBottom: '10px' }}>
+                        LinkedIn
+                      </a>
+                      <Link to="/" className="button alt small icon solid fa-arrow-left" style={{ width: '100%' }}>
+                        {t('cyberServices.back')}
+                      </Link>
                     </article>
                   </li>
                 </ul>

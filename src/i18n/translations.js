@@ -153,6 +153,7 @@ export const translations = {
       videoUnsupported: 'Il tuo browser non supporta la riproduzione del video.',
       videoClose: 'Chiudi',
       contact: 'Vuoi saperne di pi\u00f9? Contattami direttamente.',
+      contactTitle: 'Contatti',
       back: 'Torna alla Home',
       ctaTitle: 'SOC Suite',
       ctaDesc: 'SOC Suite on-premise: SOC Toolkit + OSINT Toolkit, self-hosted via Docker.',
@@ -259,6 +260,7 @@ export const translations = {
       videoUnsupported: 'Il tuo browser non supporta la riproduzione del video.',
       videoClose: 'Chiudi',
       contact: 'Vuoi saperne di pi\u00f9? Contattami direttamente.',
+      contactTitle: 'Contatti',
       back: 'Torna alla Home',
       ctaTitle: 'Citizen Shield',
       ctaDesc: 'Citizen Shield: OPSEC e difesa personale, control plane cloud + agent Docker in locale.',
@@ -439,7 +441,7 @@ export const translations = {
         'PS: se non metti le patate precedentemente lessate dentro la pasta al pesto non penso possiamo diventare amici.',
       ],
       contacts: 'Contatti',
-      location: 'Salsomaggiore Terme (PR), Italia',
+      location: 'Salsomaggiore Terme (PR) e Roma, Italia',
     },
 
     // --- RICETTE ---
@@ -1292,6 +1294,7 @@ export const translations = {
       videoUnsupported: 'Your browser does not support video playback.',
       videoClose: 'Close',
       contact: 'Want to know more? Get in touch directly.',
+      contactTitle: 'Contact',
       back: 'Back to Home',
       ctaTitle: 'SOC Suite',
       ctaDesc: 'SOC Suite on-premise: SOC Toolkit + OSINT Toolkit, self-hosted via Docker.',
@@ -1398,6 +1401,7 @@ export const translations = {
       videoUnsupported: 'Your browser does not support video playback.',
       videoClose: 'Close',
       contact: 'Want to know more? Get in touch directly.',
+      contactTitle: 'Contact',
       back: 'Back to Home',
       ctaTitle: 'Citizen Shield',
       ctaDesc: 'Citizen Shield: personal OPSEC and defense, cloud control plane + local Docker agent.',
@@ -1578,7 +1582,7 @@ export const translations = {
         'PS: if you don\'t put previously boiled potatoes in your pesto pasta, I don\'t think we can be friends.',
       ],
       contacts: 'Contacts',
-      location: 'Salsomaggiore Terme (PR), Italy',
+      location: 'Salsomaggiore Terme (PR) and Rome, Italy',
     },
 
     // --- RICETTE ---
