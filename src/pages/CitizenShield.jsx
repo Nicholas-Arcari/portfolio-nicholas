@@ -135,13 +135,16 @@ const CitizenShield = () => {
                 </div>
               )}
             </div>
-
-            <div style={{ marginTop: '1em', textAlign: 'center' }}>
-              <Link to="/" className="button alt small icon solid fa-arrow-left">
-                {t('citizenShield.back')}
-              </Link>
-            </div>
           </article>
+
+          {/* Doppia riga orizzontale sotto le FAQ (come quella disegnata sopra) */}
+          <div className="double-rule" aria-hidden="true"></div>
+
+          <div style={{ margin: '2em 0', textAlign: 'center' }}>
+            <Link to="/" className="button alt small icon solid fa-arrow-left">
+              {t('citizenShield.back')}
+            </Link>
+          </div>
             </div>
 
             {/* Sidebar destra: Video installazione + Accesso */}

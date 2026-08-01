@@ -4,6 +4,9 @@ import { Link } from 'react-router-dom';
 import TerminalText from '../components/TerminalText';
 import { useLanguage } from '../contexts/LanguageContext';
 import Footer from '../components/Footer';
+import WheelOfFortune from '../components/WheelOfFortune';
+
+const DRINK_SYMBOLS = ['🍸', '🍹', '🍺', '🥃', '🍶', '🧉', '🍾', '🥂', '🍋', '🍊', '🍒', '🍓', '☕', '🍷', '🥤', '🫗'];
 
 const Cocktail_classici = () => {
   const { t } = useLanguage();
@@ -23,7 +26,8 @@ const Cocktail_classici = () => {
     };
   }, []);
 
-  const cocktailsData = t('cocktailClassici.cocktails');
+  // Simbolo assegnato per indice: coerente tra lista e ruota della fortuna
+  const cocktailsData = t('cocktailClassici.cocktails').map((c, i) => ({ ...c, sym: DRINK_SYMBOLS[i % DRINK_SYMBOLS.length] }));
 
   // Filtra i cocktail in base alla ricerca
   const filteredCocktails = cocktailsData.filter(cocktail =>
@@ -116,7 +120,7 @@ const Cocktail_classici = () => {
                  filteredCocktails.map((cocktail, index) => (
                    <React.Fragment key={index}>
                      <article className="box post">
-                        <header><h2>{cocktail.name}</h2></header>
+                        <header><h2>{cocktail.sym} {cocktail.name}</h2></header>
 
                         <h3>{t('cocktailClassici.ingredientsLabel')}</h3>
                         <p>{cocktail.ingredients}</p>
@@ -141,6 +145,25 @@ const Cocktail_classici = () => {
 
             {/* SIDEBAR */}
             <div id="sidebar" className="col-4 col-12-medium">
+
+               {/* Ruota della Fortuna */}
+               <section>
+                <ul className="divided">
+                  <li>
+                    <article className="box highlight">
+                      <WheelOfFortune
+                        items={cocktailsData}
+                        title={t('wheel.title')}
+                        intro={t('wheel.intro')}
+                        spinLabel={t('wheel.spin')}
+                        spinningLabel={t('wheel.spinning')}
+                        resultLabel={t('wheel.result')}
+                      />
+                    </article>
+                  </li>
+                </ul>
+              </section>
+
                <section>
                 <ul className="divided">
                   <li>

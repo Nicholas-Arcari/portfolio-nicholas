@@ -4,6 +4,9 @@ import { Link } from 'react-router-dom';
 import TerminalText from '../components/TerminalText';
 import { useLanguage } from '../contexts/LanguageContext';
 import Footer from '../components/Footer';
+import WheelOfFortune from '../components/WheelOfFortune';
+
+const PIZZA_SYMBOLS = ['🍕', '🔥', '🧀', '🌶️', '🍅', '🫒', '🥓', '🍄', '🧄', '🌿'];
 
 const Pizze = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -24,7 +27,8 @@ const Pizze = () => {
   }, []);
 
   // --- DATABASE PIZZE ---
-  const pizzasData = t('pizze.pizzas');
+  // Simbolo assegnato per indice: coerente tra lista e ruota della fortuna
+  const pizzasData = t('pizze.pizzas').map((p, i) => ({ ...p, sym: PIZZA_SYMBOLS[i % PIZZA_SYMBOLS.length] }));
   const filteredPizzas = pizzasData.filter(pizza =>
     pizza.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -113,7 +117,7 @@ const Pizze = () => {
                     filteredPizzas.map((pizza, index) => (
                       <React.Fragment key={index}>
                         <hr />
-                        <h3>{pizza.name}</h3>
+                        <h3>{pizza.sym} {pizza.name}</h3>
                         <p>
                           {pizza.description}<br />
                           <strong>{t('pizze.topping')}</strong> {pizza.topping}<br />
@@ -132,6 +136,25 @@ const Pizze = () => {
 
             {/* SIDEBAR */}
             <div id="sidebar" className="col-4 col-12-medium">
+
+               {/* Ruota della Fortuna */}
+               <section>
+                <ul className="divided">
+                  <li>
+                    <article className="box highlight">
+                      <WheelOfFortune
+                        items={pizzasData}
+                        title={t('wheel.title')}
+                        intro={t('wheel.intro')}
+                        spinLabel={t('wheel.spin')}
+                        spinningLabel={t('wheel.spinning')}
+                        resultLabel={t('wheel.result')}
+                      />
+                    </article>
+                  </li>
+                </ul>
+              </section>
+
                <section>
                 <ul className="divided">
                   <li>

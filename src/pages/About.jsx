@@ -121,6 +121,11 @@ const About = () => {
                   </li>
 
                   <li>
+                    <i className="icon solid fa-map-marker-alt" style={{ width: '30px', color: '#d52349', fontSize: '1.2em' }}></i>
+                    <span>{t('about.location2')}</span>
+                  </li>
+
+                  <li>
                     <i className="icon brands fa-linkedin" style={{ width: '30px', color: '#0077b5', fontSize: '1.2em' }}></i>
                     <a href="https://www.linkedin.com/in/nicholas-arcari-6245893a7/" target="_blank" rel="noreferrer">LinkedIn</a>
                   </li>

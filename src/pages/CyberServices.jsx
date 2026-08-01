@@ -9,7 +9,7 @@ import { VIDEO_BASE } from '../config/media';
 
 const CyberServices = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [guide, setGuide] = useState('simple');
+  const [guide, setGuide] = useState(null); // Default: nascosto; si apre al click sul bottone
   const [showFaq, setShowFaq] = useState(false); // Default: nascosto
   const [video, setVideo] = useState(null); // { src, title } | null — lazy: caricato solo al click
   const { t } = useLanguage();
@@ -89,22 +89,24 @@ const CyberServices = () => {
             <div style={{ display: 'flex', gap: '0.5em', marginBottom: '1.2em', flexWrap: 'wrap' }}>
               <button
                 type="button"
-                onClick={() => setGuide('simple')}
+                onClick={() => setGuide(guide === 'simple' ? null : 'simple')}
                 className={guide === 'simple' ? 'button small' : 'button alt small'}
+                aria-expanded={guide === 'simple'}
               >
                 {t('cyberServices.tabSimple')}
               </button>
               <button
                 type="button"
-                onClick={() => setGuide('tech')}
+                onClick={() => setGuide(guide === 'tech' ? null : 'tech')}
                 className={guide === 'tech' ? 'button small' : 'button alt small'}
+                aria-expanded={guide === 'tech'}
               >
                 {t('cyberServices.tabTech')}
               </button>
             </div>
 
-            {guide === 'simple' ? (
-              <div style={{ marginBottom: '2em' }}>
+            {guide === 'simple' && (
+              <div className="fade-in" style={{ marginBottom: '2em' }}>
                 <p style={{ color: '#666', marginBottom: '0.8em' }}>
                   {t('cyberServices.simpleIntro')}
                 </p>
@@ -117,8 +119,10 @@ const CyberServices = () => {
                   {t('cyberServices.simpleHelp')}
                 </p>
               </div>
-            ) : (
-              <div style={{ marginBottom: '2em' }}>
+            )}
+
+            {guide === 'tech' && (
+              <div className="fade-in" style={{ marginBottom: '2em' }}>
                 <p style={{ color: '#666', marginBottom: '0.8em' }}>
                   {t('cyberServices.techIntro')}
                 </p>
@@ -185,13 +189,16 @@ const CyberServices = () => {
                 </div>
               )}
             </div>
-
-            <div style={{ marginTop: '1em', textAlign: 'center' }}>
-              <Link to="/" className="button alt small icon solid fa-arrow-left">
-                {t('cyberServices.back')}
-              </Link>
-            </div>
           </article>
+
+          {/* Doppia riga orizzontale sotto le FAQ (come quella disegnata sopra) */}
+          <div className="double-rule" aria-hidden="true"></div>
+
+          <div style={{ margin: '2em 0', textAlign: 'center' }}>
+            <Link to="/" className="button alt small icon solid fa-arrow-left">
+              {t('cyberServices.back')}
+            </Link>
+          </div>
             </div>
 
             {/* Sidebar destra: Video installazione + Chiave di licenza */}

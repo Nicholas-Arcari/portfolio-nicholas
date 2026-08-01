@@ -4,6 +4,9 @@ import { Link } from 'react-router-dom';
 import TerminalText from '../components/TerminalText';
 import { useLanguage } from '../contexts/LanguageContext';
 import Footer from '../components/Footer';
+import WheelOfFortune from '../components/WheelOfFortune';
+
+const DRINK_SYMBOLS = ['🍸', '🍹', '🍺', '🥃', '🍶', '🧉', '🍾', '🥂', '🍋', '🍊', '🍒', '🍓', '☕', '🍷', '🥤', '🫗'];
 
 const Cocktail = () => {
   const { t } = useLanguage();
@@ -24,7 +27,8 @@ const Cocktail = () => {
   }, []);
 
   // --- DATABASE COCKTAIL TECH (from translations) ---
-  const cocktailsData = t('cocktail.cocktails');
+  // Simbolo assegnato per indice: coerente tra lista e ruota della fortuna
+  const cocktailsData = t('cocktail.cocktails').map((c, i) => ({ ...c, sym: DRINK_SYMBOLS[i % DRINK_SYMBOLS.length] }));
 
   // Filtra i cocktail
   const filteredCocktails = cocktailsData.filter(cocktail =>
@@ -131,7 +135,7 @@ const Cocktail = () => {
                     filteredCocktails.map((cocktail, index) => (
                       <React.Fragment key={index}>
                         <hr />
-                        <h3>{cocktail.name}</h3>
+                        <h3>{cocktail.sym} {cocktail.name}</h3>
                         <p>{cocktail.description}<br />
                         <strong>{t('cocktail.ingredients')}</strong> {cocktail.ingredients}<br />
                         <strong>{t('cocktail.preparation')}</strong> {cocktail.preparation}</p>
@@ -147,6 +151,24 @@ const Cocktail = () => {
 
             {/* 2. SIDEBAR  */}
             <div id="sidebar" className="col-4 col-12-medium">
+
+              {/* Ruota della Fortuna */}
+              <section>
+                <ul className="divided">
+                  <li>
+                    <article className="box highlight">
+                      <WheelOfFortune
+                        items={cocktailsData}
+                        title={t('wheel.title')}
+                        intro={t('wheel.intro')}
+                        spinLabel={t('wheel.spin')}
+                        spinningLabel={t('wheel.spinning')}
+                        resultLabel={t('wheel.result')}
+                      />
+                    </article>
+                  </li>
+                </ul>
+              </section>
 
               <section>
                 <ul className="divided">

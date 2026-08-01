@@ -32,6 +32,15 @@ export const translations = {
       resultFound: 'risultato trovato',
     },
 
+    // --- RUOTA DELLA FORTUNA ---
+    wheel: {
+      title: 'Ruota della Fortuna',
+      intro: 'Non sai cosa scegliere? Gira la ruota e lascia decidere al caso!',
+      spin: 'Gira la ruota!',
+      spinning: 'Gira...',
+      result: 'Ti suggerisco:',
+    },
+
     // --- 404 ---
     masterDetails: {
       title: 'Work in Progress',
@@ -441,7 +450,8 @@ export const translations = {
         'PS: se non metti le patate precedentemente lessate dentro la pasta al pesto non penso possiamo diventare amici.',
       ],
       contacts: 'Contatti',
-      location: 'Salsomaggiore Terme (PR) e Roma, Italia',
+      location: 'Salsomaggiore Terme (PR), Italia',
+      location2: 'Roma (RM), Italia',
     },
 
     // --- RICETTE ---
@@ -1173,6 +1183,15 @@ export const translations = {
       resultFound: 'result found',
     },
 
+    // --- WHEEL OF FORTUNE ---
+    wheel: {
+      title: 'Wheel of Fortune',
+      intro: "Can't decide? Spin the wheel and let chance choose!",
+      spin: 'Spin the wheel!',
+      spinning: 'Spinning...',
+      result: 'I suggest:',
+    },
+
     // --- 404 ---
     masterDetails: {
       title: 'Work in Progress',
@@ -1582,7 +1601,8 @@ export const translations = {
         'PS: if you don\'t put previously boiled potatoes in your pesto pasta, I don\'t think we can be friends.',
       ],
       contacts: 'Contacts',
-      location: 'Salsomaggiore Terme (PR) and Rome, Italy',
+      location: 'Salsomaggiore Terme (PR), Italy',
+      location2: 'Rome (RM), Italy',
     },
 
     // --- RICETTE ---

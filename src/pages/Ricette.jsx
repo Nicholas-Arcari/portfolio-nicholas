@@ -4,6 +4,9 @@ import { Link } from 'react-router-dom';
 import TerminalText from '../components/TerminalText';
 import { useLanguage } from '../contexts/LanguageContext';
 import Footer from '../components/Footer';
+import WheelOfFortune from '../components/WheelOfFortune';
+
+const FOOD_SYMBOLS = ['🍎', '🍰', '🍝', '🍲', '🧀', '🥧', '🍮', '🥘', '🍜', '🍛'];
 
 const Ricette = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -24,7 +27,8 @@ const Ricette = () => {
   }, []);
 
   // --- DATABASE RICETTE ---
-  const recipesData = t('ricette.recipes');
+  // Simbolo assegnato per indice: coerente tra lista e ruota della fortuna
+  const recipesData = t('ricette.recipes').map((r, i) => ({ ...r, sym: FOOD_SYMBOLS[i % FOOD_SYMBOLS.length] }));
   const filteredRecipes = recipesData.filter(recipe =>
     recipe.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -125,7 +129,7 @@ const Ricette = () => {
                     filteredRecipes.map((recipe, index) => (
                       <React.Fragment key={index}>
                         <hr />
-                        <h3>{recipe.name}</h3>
+                        <h3>{recipe.sym} {recipe.name}</h3>
                         <p>
                           {recipe.description}<br />
                           <strong>{t('ricette.ingredients')}</strong> {recipe.ingredients}<br />
@@ -145,6 +149,24 @@ const Ricette = () => {
 
             {/* COLONNA DESTRA: Sidebar */}
             <div id="sidebar" className="col-4 col-12-medium">
+
+              {/* Ruota della Fortuna */}
+              <section>
+                <ul className="divided">
+                  <li>
+                    <article className="box highlight">
+                      <WheelOfFortune
+                        items={recipesData}
+                        title={t('wheel.title')}
+                        intro={t('wheel.intro')}
+                        spinLabel={t('wheel.spin')}
+                        spinningLabel={t('wheel.spinning')}
+                        resultLabel={t('wheel.result')}
+                      />
+                    </article>
+                  </li>
+                </ul>
+              </section>
 
               {/* Box Link Pizze */}
               <section>

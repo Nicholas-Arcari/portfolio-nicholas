@@ -32,6 +32,56 @@ body.dark-mode .image.featured .image-fallback {
     color: #555;
 }
 
+/* ===== DOUBLE RULE ===== */
+/* Riproduce la doppia riga orizzontale del template (le stesse due linee
+   #e5e5e5 distanziate di 8px che separano gli #content > article), ma come
+   divisore autonomo da inserire dove serve (es. sotto le FAQ). */
+.double-rule {
+    height: 10px;
+    border: 0;
+    border-top: solid 2px #e5e5e5;
+    box-shadow: inset 0px 8px 0px 0px #fff, inset 0px 10px 0px 0px #e5e5e5;
+    margin: 3.5em 0 0 0;
+}
+body.dark-mode .double-rule {
+    border-top-color: #3d3d3d;
+    box-shadow: inset 0px 8px 0px 0px #111111, inset 0px 10px 0px 0px #3d3d3d;
+}
+
+/* ===== RUOTA DELLA FORTUNA ===== */
+.wheel-stage {
+    position: relative;
+    width: 100%;
+    max-width: 260px;
+    margin: 0.6em auto 0;
+}
+.wheel-svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.25));
+}
+/* Puntatore triangolare in alto, punta rivolta verso il basso sulla ruota */
+.wheel-pointer {
+    position: absolute;
+    top: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 11px solid transparent;
+    border-right: 11px solid transparent;
+    border-top: 18px solid #d52349;
+    z-index: 2;
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+}
+.wheel-result strong {
+    color: #d52349;
+}
+body.dark-mode .wheel-result strong {
+    color: #ff6b81;
+}
+
 /* ===== VIDEO MODAL ===== */
 /* Overlay in sovrimpressione per i video tutorial. Il tag <video> viene montato
    (e quindi scaricato) solo quando il modal e aperto: nessun peso a pagina chiusa. */
