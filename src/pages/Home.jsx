@@ -13,6 +13,7 @@ const Home = () => {
   const [showWork, setShowWork] = useState(false); // Default: nascosto
   const [showCyber, setShowCyber] = useState(false); // Default: nascosto
   const [showServices, setShowServices] = useState(false); // Default: nascosto
+  const [showFinance, setShowFinance] = useState(false); // Default: nascosto
 
   const { t } = useLanguage();
 
@@ -403,6 +404,36 @@ const Home = () => {
                           <Link to="/citizen-shield" className="button icon solid fa-arrow-circle-right">
                             {t('citizenShield.ctaBtn')}
                           </Link>
+                        </div>
+                    </div>
+                )}
+              </article>
+
+              {/* --- ARTICOLO 4: SERVIZI DI FINANZA (ESPANDIBILE) --- */}
+              <article className="box post">
+                <header>
+                    <h2><a href="#">{t('home.finance.title')} <strong>{t('home.finance.titleBold')}</strong></a></h2>
+                    <div style={{ textAlign: 'left', marginTop: '15px', marginBottom: '20px' }}>
+                        <button
+                            className="button alt small"
+                            onClick={() => setShowFinance(!showFinance)}
+                        >
+                            {showFinance ? t('home.finance.hide') : t('home.finance.show')}
+                            <i className={`icon solid ${showFinance ? 'fa-chevron-up' : 'fa-chevron-down'}`} style={{ marginLeft: '10px' }}></i>
+                        </button>
+                    </div>
+                </header>
+
+                {showFinance && (
+                    <div className="fade-in">
+                        <div className="soft-panel" style={{ textAlign: 'center', padding: '2em 1em' }}>
+                          <i className="icon solid fa-chart-line" style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.5em', display: 'block' }}></i>
+                          <h3>{t('home.finance.finanzmeTitle')}</h3>
+                          <p style={{ color: '#666' }}>{t('home.finance.finanzmeDesc')}</p>
+                          <p style={{ fontSize: '0.9em', color: '#888', marginTop: '1em', marginBottom: 0 }}>
+                            <i className="icon solid fa-lock" style={{ marginRight: '0.4em' }}></i>
+                            {t('home.finance.finanzmeNote')}
+                          </p>
                         </div>
                     </div>
                 )}

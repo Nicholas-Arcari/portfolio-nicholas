@@ -387,6 +387,15 @@ export const translations = {
         show: 'Mostra Servizi',
         hide: 'Nascondi Servizi',
       },
+      finance: {
+        title: 'Servizi di',
+        titleBold: 'Finanza',
+        show: 'Mostra Servizi',
+        hide: 'Nascondi Servizi',
+        finanzmeTitle: 'FinanzMe',
+        finanzmeDesc: 'Gestione delle finanze personali self-hosted e multi-utente (2-5 persone), con tracciamento automatico delle spese via open banking PSD2 (GoCardless) ed estendibile verso un futuro bot di trading su azioni/ETF. Architettura a microservizi (Spring Boot, FastAPI, worker asincrono su RabbitMQ) con Keycloak, Vault, Traefik, PostgreSQL/TimescaleDB e stack di osservabilità.',
+        finanzmeNote: 'Repository privata, in arrivo su GitHub.',
+      },
       sidebar: {
         uniDate: '2021 - 2025',
         uniTitle: 'Universit\u00e0 di Parma',
@@ -1516,6 +1525,15 @@ export const translations = {
         titleBold: 'Services',
         show: 'Show Services',
         hide: 'Hide Services',
+      },
+      finance: {
+        title: 'Finance',
+        titleBold: 'Services',
+        show: 'Show Services',
+        hide: 'Hide Services',
+        finanzmeTitle: 'FinanzMe',
+        finanzmeDesc: 'Self-hosted, multi-user personal finance tracker (2-5 people) with automated expense tracking via PSD2 open banking (GoCardless), extensible toward a future stocks/ETF trading bot. Microservices architecture (Spring Boot, FastAPI, async RabbitMQ worker) with Keycloak, Vault, Traefik, PostgreSQL/TimescaleDB and an observability stack.',
+        finanzmeNote: 'Private repository, coming soon on GitHub.',
       },
       sidebar: {
         uniDate: '2021 - 2025',

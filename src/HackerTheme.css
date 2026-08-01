@@ -44,7 +44,12 @@ body.dark-mode .image-placeholder {
    (e quindi scaricato) solo quando il modal e aperto: nessun peso a pagina chiusa. */
 .video-modal-overlay {
     position: fixed;
-    inset: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
     z-index: 3000;
     display: flex;
     align-items: center;
@@ -91,6 +96,7 @@ body.dark-mode .image-placeholder {
 .video-modal-video {
     display: block;
     width: 100%;
+    min-height: 240px;
     max-height: 76vh;
     background: #000;
 }
