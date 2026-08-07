@@ -262,7 +262,7 @@ body.dark-mode .tag-chip {
     display: grid;
     grid-template-rows: repeat(2, auto);
     grid-auto-flow: column;
-    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-columns: auto;
     column-gap: 2em;
     row-gap: 0.9em;
 }
@@ -270,17 +270,15 @@ body.dark-mode .tag-chip {
 .about-contacts li {
     display: flex;
     align-items: center;
-    min-width: 0;
     border: 0;
     padding: 0;
 }
 
-/* Evita che l'indirizzo email piu lungo allarghi la sua colonna */
+/* Nessun troncamento con i puntini: le voci restano leggibili per intero e la
+   colonna si adatta alla lunghezza del testo (se lo spazio manca, va a capo). */
 .about-contacts li a,
 .about-contacts li span {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
 }
 
 @media screen and (max-width: 980px) {

@@ -408,6 +408,13 @@ const Home = () => {
                             {t('home.finance.finanzmeNote')}
                           </p>
                         </div>
+
+                        {/* Secondo servizio: ancora senza nome, segnaposto */}
+                        <div className="soft-panel" style={{ textAlign: 'center', padding: '2em 1em', marginTop: '1.5em' }}>
+                          <i className="icon solid fa-hourglass-half" style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.5em', display: 'block' }}></i>
+                          <h3>{t('home.finance.soonTitle')}</h3>
+                          <p style={{ color: '#666', textAlign: 'center', marginBottom: 0 }}>{t('home.finance.soonDesc')}</p>
+                        </div>
                     </div>
                 )}
               </article>
