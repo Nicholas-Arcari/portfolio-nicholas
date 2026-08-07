@@ -276,6 +276,125 @@ export const translations = {
       ctaBtn: 'Scopri di pi\u00f9',
     },
 
+    // --- FINANZME ---
+    finanzMe: {
+      terminal: [
+        '> ./load_module.sh --finanzme',
+        '> Inizializzazione servizi finanziari...',
+        '> Moduli: [Open Banking, Analytics, Ingestion]',
+        '> Pronto.',
+      ],
+      heading: 'FinanzMe',
+      status: 'In sviluppo - repository privata',
+      text: 'Piattaforma self-hosted per la gestione delle finanze personali, pensata per un piccolo gruppo di persone (2-5). Le spese vengono raccolte automaticamente dalla banca tramite open banking PSD2 e analizzate in locale, con un\'architettura a microservizi predisposta per estendersi in futuro verso un modulo di trading su azioni ed ETF.',
+      productTitle: 'Cosa include',
+      features: [
+        'Core API in Java 21 + Spring Boot 3: utenti, conti e transazioni',
+        'Servizio analytics in Python 3.12 + FastAPI: categorizzazione e report',
+        'Ingestion worker asincrono: recupero dati bancari via PSD2 e code RabbitMQ',
+        'Autenticazione OIDC/JWT con Keycloak e segreti gestiti da HashiCorp Vault',
+        'PostgreSQL 16 con estensione TimescaleDB per le serie temporali, pi\u00f9 Redis',
+        'Interfaccia web React 18 + TypeScript con grafici e filtri',
+        'Osservabilit\u00e0 opzionale: Prometheus, Loki, Promtail e Grafana',
+      ],
+      howTitle: 'Come si installa',
+      tabSimple: 'Guida semplice',
+      tabTech: 'Guida tecnica',
+      simpleIntro: 'Installazione self-hosted, riservata a chi ha accesso al progetto. Servono circa 20 minuti.',
+      simpleSteps: [
+        'Installa "Docker Desktop" dal sito ufficiale (gratuito) e avvialo: e il programma che fa girare i servizi sul tuo computer. Servono circa 6 GB di RAM liberi.',
+        'Ottieni il progetto (accesso su invito, repository privata) ed estrailo in una cartella a tua scelta.',
+        'Copia il file ".env.example" in un nuovo file chiamato ".env" e compila i valori richiesti. Importante: i valori di esempio servono solo per le prove in locale, scegli password lunghe e casuali.',
+        'Indica al computer dove trovare i siti locali del progetto: aggiungi i nomi "finanzme.local" e i relativi sottodomini al file "hosts" del sistema, puntandoli a 127.0.0.1 (su Mac e Linux e /etc/hosts ; su Windows va aperto come amministratore).',
+        'Apri il "Terminale" nella cartella del progetto e lancia: docker compose up -d --build . Il primo avvio scarica e compila i servizi, quindi richiede qualche minuto.',
+        'Apri il browser su http://finanzme.local . Al primo accesso cambia subito le credenziali di default dei pannelli di amministrazione, prima di collegare qualsiasi conto reale.',
+      ],
+      simpleHelp: 'Qualche passaggio non e chiaro? Scrivimi: posso guidarti nella configurazione.',
+      techIntro: 'Requisiti: Docker 24+, Docker Compose v2 e circa 6 GB di RAM. Traefik fa da edge e termina il TLS, Keycloak gestisce l\'autenticazione OIDC/JWT e Vault custodisce i segreti.',
+      techSteps: [
+        'cp .env.example .env e valorizza le variabili di Postgres, Redis, RabbitMQ, Keycloak e Vault. I placeholder di sviluppo vanno sostituiti con segreti ad alta entropia prima di qualunque deploy, anche di staging.',
+        'Aggiungi al file hosts (o al DNS interno) i record di finanzme.local e dei sottodomini dei servizi verso l\'host che ospita lo stack.',
+        'Avvia l\'ambiente di sviluppo con docker compose up -d --build : l\'override di dev abilita hot reload ed espone le porte dei datastore solo per il debug locale.',
+        'Profilo osservabilita opzionale: docker compose --profile observability up -d per metriche e log centralizzati su Grafana.',
+        'Configura le credenziali dell\'aggregatore bancario dentro Vault: vengono lette dall\'ingestion worker all\'avvio, non transitano dal codice ne dal database.',
+        'In produzione tutto passa da Traefik su 80/443 senza esporre le porte dei singoli servizi, Vault gira in modalita produzione, Swagger resta disabilitato e le origini CORS sono elencate in modo esplicito.',
+      ],
+      techNotes: 'Aggiornamenti: docker compose pull && docker compose up -d --build . Lo schema del database e versionato, quindi gli aggiornamenti applicano le migrazioni senza perdita di dati; e comunque buona pratica un backup del volume PostgreSQL prima di ogni major.',
+      faqTitle: 'Domande frequenti',
+      faqShow: 'Mostra le FAQ',
+      faqHide: 'Nascondi le FAQ',
+      faq: {
+        techTitle: 'Domande tecniche (architettura e sicurezza)',
+        tech: [
+          {
+            q: 'Perch\u00e9 un\'architettura a microservizi per un\'app personale?',
+            a: 'Perch\u00e9 i tre domini hanno esigenze diverse: l\'API core deve rispondere subito, l\'analytics fa calcoli pesanti e l\'ingestion aspetta risposte lente dalle banche. Separandoli, una chiamata bancaria lenta non blocca l\'interfaccia e ogni servizio si aggiorna o riavvia senza fermare gli altri.',
+          },
+          {
+            q: 'Le mie credenziali bancarie vengono memorizzate?',
+            a: 'No, e non le vedo mai. L\'accesso avviene tramite open banking PSD2: autorizzi la connessione direttamente presso la tua banca e il sistema riceve solo un consenso di sola lettura, revocabile. Le chiavi dell\'aggregatore stanno in HashiCorp Vault, mai nel codice o nel database.',
+          },
+          {
+            q: 'Perch\u00e9 Keycloak e non un login scritto a mano?',
+            a: 'Perch\u00e9 l\'autenticazione fatta in casa \u00e8 una delle fonti di vulnerabilit\u00e0 pi\u00f9 comuni. Keycloak porta OIDC/JWT standard, gestione di sessioni e refresh token, policy sulle password e MFA, tutto gi\u00e0 collaudato in produzione da anni.',
+          },
+          {
+            q: 'Dove finiscono i miei dati finanziari?',
+            a: 'Restano interamente sulla tua infrastruttura, in PostgreSQL (con TimescaleDB per le serie temporali). Non c\'\u00e8 alcun servizio cloud che li raccoglie: gli unici dati che escono sono le chiamate verso il tuo istituto bancario tramite l\'aggregatore PSD2.',
+          },
+          {
+            q: 'Come \u00e8 protetta la superficie esposta?',
+            a: 'Traefik \u00e8 l\'unico punto d\'ingresso e termina il TLS. In produzione le porte dei singoli servizi non vengono pubblicate sull\'host, la documentazione interattiva delle API resta disabilitata e le origini CORS sono elencate una per una, senza wildcard.',
+          },
+          {
+            q: 'Come mi accorgo se qualcosa non funziona?',
+            a: 'C\'\u00e8 un profilo di osservabilit\u00e0 opzionale con Prometheus per le metriche, Loki e Promtail per i log centralizzati e Grafana per le dashboard: utile sia per gli errori applicativi sia per accorgersi di ingestion fallite.',
+          },
+        ],
+        generalTitle: 'Domande generali (funzionalit\u00e0 e falsi positivi)',
+        general: [
+          {
+            q: '\u00c8 gi\u00e0 utilizzabile?',
+            a: 'Non ancora. L\'infrastruttura e i servizi sono in piedi, mentre il flusso di consenso bancario, l\'ingestion delle transazioni e la categorizzazione automatica sono in fase di implementazione. La repository \u00e8 privata.',
+          },
+          {
+            q: 'Per quante persone \u00e8 pensato?',
+            a: 'Per un nucleo ristretto, indicativamente da 2 a 5 persone, ognuna con il proprio account e i propri conti, ma con la possibilit\u00e0 di leggere report condivisi.',
+          },
+          {
+            q: 'Con quali banche funziona?',
+            a: 'Con gli istituti europei coperti dall\'aggregatore PSD2 utilizzato, che sono la maggior parte. Il consenso alla lettura dei conti ha validit\u00e0 90 giorni per legge e va poi rinnovato: non \u00e8 un limite dell\'applicazione.',
+          },
+          {
+            q: 'La categorizzazione automatica pu\u00f2 sbagliare?',
+            a: 'S\u00ec, ed \u00e8 normale. La classificazione si basa su regole e statistica: gli esercenti con nomi ambigui finiranno talvolta nella categoria sbagliata. Ogni transazione resta modificabile a mano e le regole sono personalizzabili, cos\u00ec gli errori non si ripetono.',
+          },
+          {
+            q: 'Comprer\u00e0 o vender\u00e0 titoli al posto mio?',
+            a: 'No. Il modulo di trading \u00e8 una prospettiva futura e parte da backtesting e paper-trading, cio\u00e8 simulazioni. Non \u00e8 previsto l\'invio automatico di ordini reali in questa fase, e nulla di quanto mostrato costituisce consulenza finanziaria.',
+          },
+          {
+            q: 'Posso provarlo anch\'io?',
+            a: 'Il codice \u00e8 privato e il progetto \u00e8 ancora in sviluppo. Scrivimi se ti interessa provarlo quando sar\u00e0 pronto o semplicemente parlare delle scelte tecniche.',
+          },
+        ],
+      },
+      videoTitle: 'Video: come si installa',
+      videoIntro: 'Guarda la procedura passo-passo. Il video viene scaricato solo quando premi un pulsante, cos\u00ec la pagina resta leggera.',
+      videoWindows: 'Windows',
+      videoLinux: 'Linux / macOS',
+      videoUnsupported: 'Il tuo browser non supporta la riproduzione del video.',
+      videoClose: 'Chiudi',
+      accessTitle: 'Accesso',
+      contactNote: 'Progetto personale in sviluppo, con codice sorgente privato. Scrivimi se vuoi saperne di pi\u00f9 o seguirne l\'evoluzione.',
+      contact: 'Vuoi saperne di pi\u00f9? Contattami direttamente.',
+      contactTitle: 'Contatti',
+      back: 'Torna alla Home',
+      ctaTitle: 'FinanzMe',
+      ctaDesc: 'FinanzMe: gestione finanziaria self-hosted, open banking PSD2 e analytics in architettura a microservizi.',
+      ctaBtn: 'Scopri di pi\u00f9',
+    },
+
     // --- HOME ---
     home: {
       terminal: [
@@ -1424,6 +1543,125 @@ export const translations = {
       back: 'Back to Home',
       ctaTitle: 'Citizen Shield',
       ctaDesc: 'Citizen Shield: personal OPSEC and defense, cloud control plane + local Docker agent.',
+      ctaBtn: 'Learn more',
+    },
+
+    // --- FINANZME ---
+    finanzMe: {
+      terminal: [
+        '> ./load_module.sh --finanzme',
+        '> Initializing financial services...',
+        '> Modules: [Open Banking, Analytics, Ingestion]',
+        '> Ready.',
+      ],
+      heading: 'FinanzMe',
+      status: 'In development - private repository',
+      text: 'A self-hosted personal finance platform built for a small group of people (2-5). Expenses are collected automatically from the bank through PSD2 open banking and analysed locally, on a microservices architecture designed to extend later toward a stocks and ETF trading module.',
+      productTitle: 'What\'s included',
+      features: [
+        'Core API in Java 21 + Spring Boot 3: users, accounts and transactions',
+        'Analytics service in Python 3.12 + FastAPI: categorization and reports',
+        'Async ingestion worker: PSD2 bank data retrieval over RabbitMQ queues',
+        'OIDC/JWT authentication with Keycloak and secrets held in HashiCorp Vault',
+        'PostgreSQL 16 with the TimescaleDB extension for time series, plus Redis',
+        'React 18 + TypeScript web interface with charts and filters',
+        'Optional observability: Prometheus, Loki, Promtail and Grafana',
+      ],
+      howTitle: 'How to install',
+      tabSimple: 'Simple guide',
+      tabTech: 'Technical guide',
+      simpleIntro: 'Self-hosted install, reserved to those with access to the project. Takes about 20 minutes.',
+      simpleSteps: [
+        'Install "Docker Desktop" from the official site (it is free) and launch it: it is the program that runs the services on your computer. You need about 6 GB of free RAM.',
+        'Get the project (invite only, private repository) and extract it into a folder of your choice.',
+        'Copy the ".env.example" file to a new file named ".env" and fill in the required values. Important: the sample values are only meant for local testing, pick long random passwords.',
+        'Tell your computer where the project\'s local sites are: add "finanzme.local" and its subdomains to the system "hosts" file, pointing them to 127.0.0.1 (on Mac and Linux it is /etc/hosts ; on Windows it must be opened as administrator).',
+        'Open the "Terminal" in the project folder and run: docker compose up -d --build . The first start downloads and builds the services, so it takes a few minutes.',
+        'Open your browser at http://finanzme.local . On first access, immediately change the default credentials of the admin panels, before connecting any real account.',
+      ],
+      simpleHelp: 'Any step unclear? Email me: I can walk you through the setup.',
+      techIntro: 'Requirements: Docker 24+, Docker Compose v2 and about 6 GB of RAM. Traefik acts as the edge and terminates TLS, Keycloak handles OIDC/JWT authentication and Vault holds the secrets.',
+      techSteps: [
+        'cp .env.example .env and fill in the Postgres, Redis, RabbitMQ, Keycloak and Vault variables. The development placeholders must be replaced with high-entropy secrets before any deploy, staging included.',
+        'Add the finanzme.local records and the service subdomains to your hosts file (or internal DNS), pointing at the host running the stack.',
+        'Start the development environment with docker compose up -d --build : the dev override enables hot reload and exposes the datastore ports for local debugging only.',
+        'Optional observability profile: docker compose --profile observability up -d for centralized metrics and logs in Grafana.',
+        'Configure the banking aggregator credentials inside Vault: they are read by the ingestion worker at startup and never pass through the code or the database.',
+        'In production everything goes through Traefik on 80/443 with no per-service ports published, Vault runs in production mode, Swagger stays disabled and CORS origins are listed explicitly.',
+      ],
+      techNotes: 'Updates: docker compose pull && docker compose up -d --build . The database schema is versioned, so updates apply migrations without data loss; backing up the PostgreSQL volume before a major is still good practice.',
+      faqTitle: 'Frequently asked questions',
+      faqShow: 'Show the FAQ',
+      faqHide: 'Hide the FAQ',
+      faq: {
+        techTitle: 'Technical questions (architecture and security)',
+        tech: [
+          {
+            q: 'Why a microservices architecture for a personal app?',
+            a: 'Because the three domains have different needs: the core API must respond instantly, analytics does heavy computation and ingestion waits on slow bank responses. Keeping them separate means a slow banking call never blocks the UI, and each service can be updated or restarted without stopping the others.',
+          },
+          {
+            q: 'Are my banking credentials stored anywhere?',
+            a: 'No, and I never see them. Access happens through PSD2 open banking: you authorize the connection directly with your bank and the system only receives a read-only, revocable consent. The aggregator keys live in HashiCorp Vault, never in the code or the database.',
+          },
+          {
+            q: 'Why Keycloak instead of a hand-rolled login?',
+            a: 'Because home-made authentication is one of the most common sources of vulnerabilities. Keycloak brings standard OIDC/JWT, session and refresh-token handling, password policies and MFA, all battle-tested in production for years.',
+          },
+          {
+            q: 'Where does my financial data end up?',
+            a: 'It stays entirely on your own infrastructure, in PostgreSQL (with TimescaleDB for time series). No cloud service collects it: the only data leaving is the calls to your own bank through the PSD2 aggregator.',
+          },
+          {
+            q: 'How is the exposed surface protected?',
+            a: 'Traefik is the single entry point and terminates TLS. In production the individual service ports are not published on the host, the interactive API documentation stays disabled and CORS origins are listed one by one, with no wildcards.',
+          },
+          {
+            q: 'How do I notice when something breaks?',
+            a: 'There is an optional observability profile with Prometheus for metrics, Loki and Promtail for centralized logs and Grafana for dashboards: useful both for application errors and for spotting failed ingestions.',
+          },
+        ],
+        generalTitle: 'General questions (features and false positives)',
+        general: [
+          {
+            q: 'Is it usable yet?',
+            a: 'Not yet. The infrastructure and services are up, while the bank consent flow, transaction ingestion and automatic categorization are still being implemented. The repository is private.',
+          },
+          {
+            q: 'How many people is it for?',
+            a: 'For a small household, roughly 2 to 5 people, each with their own account and their own bank accounts, but able to read shared reports.',
+          },
+          {
+            q: 'Which banks does it work with?',
+            a: 'With the European institutions covered by the PSD2 aggregator in use, which is most of them. Consent to read the accounts is valid for 90 days by law and must then be renewed: that is not an application limit.',
+          },
+          {
+            q: 'Can the automatic categorization get it wrong?',
+            a: 'Yes, and that is normal. Classification is based on rules and statistics: merchants with ambiguous names will sometimes land in the wrong category. Every transaction stays editable by hand and the rules are customizable, so mistakes do not repeat.',
+          },
+          {
+            q: 'Will it buy or sell securities on my behalf?',
+            a: 'No. The trading module is a future prospect and starts from backtesting and paper-trading, that is, simulations. Automatically sending real orders is not planned at this stage, and nothing shown constitutes financial advice.',
+          },
+          {
+            q: 'Can I try it too?',
+            a: 'The code is private and the project is still under development. Get in touch if you would like to try it once it is ready, or simply to talk about the technical choices.',
+          },
+        ],
+      },
+      videoTitle: 'Video: how to install it',
+      videoIntro: 'Watch the step-by-step procedure. The video is only downloaded when you press a button, so the page stays lightweight.',
+      videoWindows: 'Windows',
+      videoLinux: 'Linux / macOS',
+      videoUnsupported: 'Your browser does not support video playback.',
+      videoClose: 'Close',
+      accessTitle: 'Access',
+      contactNote: 'Personal project under development, closed source. Get in touch if you want to know more or follow how it evolves.',
+      contact: 'Want to know more? Get in touch directly.',
+      contactTitle: 'Contact',
+      back: 'Back to Home',
+      ctaTitle: 'FinanzMe',
+      ctaDesc: 'FinanzMe: self-hosted personal finance, PSD2 open banking and analytics on a microservices architecture.',
       ctaBtn: 'Learn more',
     },
 

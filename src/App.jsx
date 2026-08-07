@@ -19,6 +19,7 @@ import About from './pages/About';
 import NotFound from './pages/NotFound';
 import CyberServices from './pages/CyberServices';
 import CitizenShield from './pages/CitizenShield';
+import FinanzMe from './pages/FinanzMe';
 import './HackerTheme.css';
 
 function App() {
@@ -42,6 +43,7 @@ function App() {
             <Route path="/about" element={<About />} />
             <Route path="/cyber-services" element={<CyberServices />} />
             <Route path="/citizen-shield" element={<CitizenShield />} />
+            <Route path="/finanzme" element={<FinanzMe />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </PageTransition>

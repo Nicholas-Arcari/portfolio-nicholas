@@ -429,7 +429,10 @@ const Home = () => {
                         <div className="soft-panel" style={{ textAlign: 'center', padding: '2em 1em' }}>
                           <i className="icon solid fa-chart-line" style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.5em', display: 'block' }}></i>
                           <h3>{t('home.finance.finanzmeTitle')}</h3>
-                          <p style={{ color: '#666' }}>{t('home.finance.finanzmeDesc')}</p>
+                          <p style={{ color: '#666', textAlign: 'center' }}>{t('home.finance.finanzmeDesc')}</p>
+                          <Link to="/finanzme" className="button icon solid fa-arrow-circle-right">
+                            {t('finanzMe.ctaBtn')}
+                          </Link>
                           <p style={{ fontSize: '0.9em', color: '#888', marginTop: '1em', marginBottom: 0 }}>
                             <i className="icon solid fa-lock" style={{ marginRight: '0.4em' }}></i>
                             {t('home.finance.finanzmeNote')}
