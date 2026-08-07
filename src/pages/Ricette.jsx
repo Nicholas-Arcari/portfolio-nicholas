@@ -5,8 +5,7 @@ import TerminalText from '../components/TerminalText';
 import { useLanguage } from '../contexts/LanguageContext';
 import Footer from '../components/Footer';
 import WheelOfFortune from '../components/WheelOfFortune';
-
-const FOOD_SYMBOLS = ['🍎', '🍰', '🍝', '🍲', '🧀', '🥧', '🍮', '🥘', '🍜', '🍛'];
+import { FOOD_SYMBOLS, withSymbols } from '../config/symbols';
 
 const Ricette = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -28,7 +27,7 @@ const Ricette = () => {
 
   // --- DATABASE RICETTE ---
   // Simbolo assegnato per indice: coerente tra lista e ruota della fortuna
-  const recipesData = t('ricette.recipes').map((r, i) => ({ ...r, sym: FOOD_SYMBOLS[i % FOOD_SYMBOLS.length] }));
+  const recipesData = withSymbols(t('ricette.recipes'), FOOD_SYMBOLS);
   const filteredRecipes = recipesData.filter(recipe =>
     recipe.name.toLowerCase().includes(searchTerm.toLowerCase())
   );

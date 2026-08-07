@@ -5,8 +5,7 @@ import TerminalText from '../components/TerminalText';
 import { useLanguage } from '../contexts/LanguageContext';
 import Footer from '../components/Footer';
 import WheelOfFortune from '../components/WheelOfFortune';
-
-const PIZZA_SYMBOLS = ['🍕', '🔥', '🧀', '🌶️', '🍅', '🫒', '🥓', '🍄', '🧄', '🌿'];
+import { PIZZA_SYMBOLS, withSymbols } from '../config/symbols';
 
 const Pizze = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -28,7 +27,7 @@ const Pizze = () => {
 
   // --- DATABASE PIZZE ---
   // Simbolo assegnato per indice: coerente tra lista e ruota della fortuna
-  const pizzasData = t('pizze.pizzas').map((p, i) => ({ ...p, sym: PIZZA_SYMBOLS[i % PIZZA_SYMBOLS.length] }));
+  const pizzasData = withSymbols(t('pizze.pizzas'), PIZZA_SYMBOLS);
   const filteredPizzas = pizzasData.filter(pizza =>
     pizza.name.toLowerCase().includes(searchTerm.toLowerCase())
   );

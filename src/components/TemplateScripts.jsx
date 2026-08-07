@@ -1,10 +1,12 @@
 // src/components/TemplateScripts.jsx
 import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const TemplateScripts = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   useEffect(() => {
     // Definiamo la funzione di inizializzazione
@@ -57,12 +59,39 @@ const TemplateScripts = () => {
       ).appendTo($body);
 
       // Creiamo il Pannello Laterale clonando i link del menu originale
-      $('<div id="navPanel">' +
+      const $navPanel = $('<div id="navPanel">' +
         '<nav>' +
         $nav.navList() +
         '</nav>' +
         '</div>'
-      )
+      );
+
+      // --- FIX MENU MOBILE: sottomenu "Passioni" ---
+      // navList() clona i link presenti nel DOM al momento dell'init, ma il
+      // sottomenu delle passioni e' renderizzato da React solo quando aperto
+      // (hover): al caricamento non esiste, quindi i suoi link non finivano nel
+      // pannello mobile. In piu' la voce "Passioni" non ha href, per cui il tap
+      // non produceva alcun effetto. Qui reinseriamo i link figli sotto di essa.
+      // Nota: sotto i 980px "#nav" e' nascosto e si usa solo "#navPanel",
+      // quindi questo e' l'unico punto che governa il menu su telefono.
+      const passionLinks = [
+        { href: '#/ricette', label: t('nav.recipes') },
+        { href: '#/cocktail', label: t('nav.cocktails') },
+        { href: '#/stampe3d', label: t('nav.prints3d') },
+      ];
+      const $passions = $navPanel.find('a.link').filter(function () {
+        return !$(this).attr('href');
+      }).first();
+
+      if ($passions.length > 0) {
+        const childrenHtml = passionLinks.map((l) =>
+          '<a class="link depth-1" href="' + l.href + '">' +
+          '<span class="indent-1"></span>' + l.label + '</a>'
+        ).join('');
+        $passions.after(childrenHtml);
+      }
+
+      $navPanel
         .appendTo($body)
         .panel({
           delay: 500,
@@ -124,7 +153,7 @@ const TemplateScripts = () => {
       }
     };
 
-  }, [location, navigate]); // Riesegui ogni volta che l'utente cambia pagina
+  }, [location, navigate, t]); // Riesegui a ogni cambio pagina o di lingua
 
   return null; // Questo componente non mostra nulla a video
 };

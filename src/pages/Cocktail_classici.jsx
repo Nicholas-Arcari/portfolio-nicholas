@@ -5,8 +5,7 @@ import TerminalText from '../components/TerminalText';
 import { useLanguage } from '../contexts/LanguageContext';
 import Footer from '../components/Footer';
 import WheelOfFortune from '../components/WheelOfFortune';
-
-const DRINK_SYMBOLS = ['🍸', '🍹', '🍺', '🥃', '🍶', '🧉', '🍾', '🥂', '🍋', '🍊', '🍒', '🍓', '☕', '🍷', '🥤', '🫗'];
+import { DRINK_SYMBOLS, withSymbols } from '../config/symbols';
 
 const Cocktail_classici = () => {
   const { t } = useLanguage();
@@ -27,7 +26,7 @@ const Cocktail_classici = () => {
   }, []);
 
   // Simbolo assegnato per indice: coerente tra lista e ruota della fortuna
-  const cocktailsData = t('cocktailClassici.cocktails').map((c, i) => ({ ...c, sym: DRINK_SYMBOLS[i % DRINK_SYMBOLS.length] }));
+  const cocktailsData = withSymbols(t('cocktailClassici.cocktails'), DRINK_SYMBOLS);
 
   // Filtra i cocktail in base alla ricerca
   const filteredCocktails = cocktailsData.filter(cocktail =>

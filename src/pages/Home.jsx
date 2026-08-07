@@ -334,39 +334,9 @@ const Home = () => {
                         </p>
                         <a href="https://github.com/Nicholas-Arcari/detection-engineering" className="button icon brands fa-github" target="_blank" rel="noopener noreferrer">{t('home.cyber.viewRepo')}</a>
 
-                        <br /><br />
-                        <hr />
-
-                        <h3>{t('home.cyber.soc.title')}</h3>
-                        <p>
-                          {t('home.cyber.soc.desc')}
-                          <br /><br />
-                          <strong>Modules:</strong> {t('home.cyber.soc.modules')}
-                          <br />
-                          <strong>Integrations:</strong> {t('home.cyber.soc.integrations')}
-                          <br /><br />
-                          <strong>Stack:</strong> <span className="tech-stack">Python, FastAPI, React, Vite, Docker, nginx, SQLite, Postgres</span>
-                        </p>
-                        <Link to="/cyber-services" className="button icon solid fa-shield-alt">{t('home.cyber.soc.productPage')}</Link>
-                        {' '}
-                        <a href={`${import.meta.env.BASE_URL}downloads/soc-suite-deploy.zip`} className="button alt icon solid fa-download" download>{t('home.cyber.download')}</a>
-                        <p style={{ fontSize: '0.85em', color: '#888', marginTop: '0.8em' }}>{t('home.cyber.soc.license')}</p>
-
-                        <br /><br />
-                        <hr />
-
-                        <h3>{t('home.cyber.shield.title')}</h3>
-                        <p>
-                          {t('home.cyber.shield.desc')}
-                          <br /><br />
-                          <strong>Modules:</strong> {t('home.cyber.shield.modules')}
-                          <br />
-                          <strong>Architecture:</strong> {t('home.cyber.shield.architecture')}
-                          <br /><br />
-                          <strong>Stack:</strong> <span className="tech-stack">Python 3.12, FastAPI, SQLAlchemy, PostgreSQL, React, TypeScript, Tailwind, Docker, Nuitka</span>
-                        </p>
-                        <Link to="/citizen-shield" className="button icon solid fa-user-shield">{t('home.cyber.shield.productPage')}</Link>
-                        <p style={{ fontSize: '0.85em', color: '#888', marginTop: '0.8em' }}>{t('home.cyber.shield.license')}</p>
+                        {/* SOC Suite e Citizen Shield non compaiono qui: sono
+                            prodotti e vivono nella sezione "Servizi di
+                            Cybersecurity" con le rispettive schede prodotto. */}
 
                     </div>
                 )}
