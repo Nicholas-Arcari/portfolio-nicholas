@@ -51,6 +51,7 @@ export const translations = {
       ],
       title: 'Laurea Magistrale in Cybersecurity',
       subtitle: 'Corso di laurea magistrale LM-66 presso Sapienza Università di Roma, interamente in lingua inglese. Di seguito gli insegnamenti del piano di studi.',
+      cfuNote: 'Piano da 120 CFU: agli insegnamenti elencati qui (102 CFU tra obbligatori, esame a scelta e prova finale) si aggiungono 18 CFU da scegliere tra i gruppi opzionali del corso.',
       search: 'Cerca un insegnamento (es. Cryptography, Forensics)...',
       noResults: 'Nessun insegnamento trovato.',
       courses: [
@@ -1371,6 +1372,7 @@ export const translations = {
       ],
       title: 'MSc in Cybersecurity',
       subtitle: 'Master\'s degree programme LM-66 at Sapienza University of Rome, taught entirely in English. Below are the courses in the study plan.',
+      cfuNote: 'A 120-credit programme: on top of the courses listed here (102 CFU of mandatory exams, free-choice exam and final thesis), 18 CFU are chosen from the programme\'s optional groups.',
       search: 'Search a course (e.g. Cryptography, Forensics)...',
       noResults: 'No course found.',
       courses: [

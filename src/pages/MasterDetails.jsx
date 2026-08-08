@@ -79,6 +79,13 @@ const MasterDetails = () => {
                   <header><h2>{t('masterDetails.title')}</h2></header>
                   <p>{t('masterDetails.subtitle')}</p>
 
+                  {/* Nota CFU: chiarisce perche' la somma degli insegnamenti
+                      elencati non arriva da sola ai 120 CFU del corso */}
+                  <p className="soft-panel" style={{ padding: '1em 1.2em', fontSize: '0.9em', color: '#888', marginBottom: '1.5em' }}>
+                    <i className="icon solid fa-info-circle" style={{ color: '#d52349', marginRight: '0.5em' }}></i>
+                    {t('masterDetails.cfuNote')}
+                  </p>
+
                   {/* BARRA DI RICERCA */}
                   <input
                     type="text"
