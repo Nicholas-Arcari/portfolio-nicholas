@@ -113,7 +113,6 @@ const MasterDetails = () => {
                                   <span className="button alt small" style={{ pointerEvents: 'none' }}>{course.cfu}</span>
                                 </span>
                             </div>
-                            <p style={{ margin: '0.4em 0 0', fontSize: '0.9em', color: '#888' }}>{course.term}</p>
                             <p style={{ marginTop: '0.5em' }}>{course.description}</p>
                         </div>
                         {index < filteredCourses.length - 1 && <hr />}
