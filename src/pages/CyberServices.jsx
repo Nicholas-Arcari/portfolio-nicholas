@@ -151,6 +151,29 @@ const CyberServices = () => {
               </p>
             </div>
 
+            {/* Le immagini pubblicate: cosa contengono e come verificarle */}
+            <h3 style={{ marginBottom: '0.6em' }}>{t('cyberServices.imagesTitle')}</h3>
+            <p style={{ marginBottom: '1.2em', lineHeight: 1.6 }}>{t('cyberServices.imagesIntro')}</p>
+            <ul style={{ marginBottom: '1.8em' }}>
+              {t('cyberServices.images').map((img, i) => (
+                <li key={i} style={{ marginBottom: '0.5em', lineHeight: 1.5 }}>{img}</li>
+              ))}
+            </ul>
+
+            <h4 style={{ marginBottom: '0.5em' }}>{t('cyberServices.imagesTrustTitle')}</h4>
+            <p style={{ marginBottom: '1em', lineHeight: 1.6 }}>{t('cyberServices.imagesTrustIntro')}</p>
+            {/* Sfondo grigio traslucido e colore ereditato: unico blocco che
+                regge sia il tema chiaro sia quello scuro senza duplicare stili. */}
+            <pre style={{
+              fontFamily: 'monospace', fontSize: '0.78em', lineHeight: 1.6,
+              whiteSpace: 'pre', overflowX: 'auto', margin: '0 0 1em',
+              padding: '0.9em 1em', borderLeft: '3px solid #d52349',
+              background: 'rgba(128,128,128,0.12)', borderRadius: '3px',
+            }}>{t('cyberServices.imagesVerifyCmd')}</pre>
+            <p style={{ fontSize: '0.9em', color: '#888', marginBottom: '2em' }}>
+              {t('cyberServices.imagesTrustNote')}
+            </p>
+
           </article>
 
           {/* FAQ come articolo #content separato: il template disegna la doppia

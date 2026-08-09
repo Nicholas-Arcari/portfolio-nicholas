@@ -118,6 +118,24 @@ const CitizenShield = () => {
               {t('citizenShield.agentNote')}
             </p>
 
+            {/* Le altre immagini pubblicate e la verifica della firma */}
+            <h3 style={{ marginBottom: '0.6em' }}>{t('citizenShield.imagesTitle')}</h3>
+            <p style={{ marginBottom: '1.2em', lineHeight: 1.6 }}>{t('citizenShield.imagesIntro')}</p>
+            <ul style={{ marginBottom: '1.5em' }}>
+              {t('citizenShield.images').map((img, i) => (
+                <li key={i} style={{ marginBottom: '0.5em', lineHeight: 1.5 }}>{img}</li>
+              ))}
+            </ul>
+            <p style={{ marginBottom: '1em', lineHeight: 1.6 }}>{t('citizenShield.imagesTrustIntro')}</p>
+            {/* Sfondo grigio traslucido e colore ereditato: unico blocco che
+                regge sia il tema chiaro sia quello scuro senza duplicare stili. */}
+            <pre style={{
+              fontFamily: 'monospace', fontSize: '0.78em', lineHeight: 1.6,
+              whiteSpace: 'pre', overflowX: 'auto', margin: '0 0 2em',
+              padding: '0.9em 1em', borderLeft: '3px solid #d52349',
+              background: 'rgba(128,128,128,0.12)', borderRadius: '3px',
+            }}>{t('citizenShield.imagesVerifyCmd')}</pre>
+
           </article>
 
           {/* FAQ come articolo #content separato: il template disegna la doppia
