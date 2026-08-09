@@ -97,6 +97,27 @@ const CitizenShield = () => {
               {t('citizenShield.notes')}
             </p>
 
+            {/* L'agent locale: perche' esiste, come si esegue, cosa fa ogni modulo */}
+            <h3 style={{ marginBottom: '0.6em' }}>{t('citizenShield.agentTitle')}</h3>
+            <p style={{ marginBottom: '1.5em', lineHeight: 1.6 }}>{t('citizenShield.agentIntro')}</p>
+
+            <h4 style={{ marginBottom: '0.5em' }}>{t('citizenShield.agentFlowTitle')}</h4>
+            <ol style={{ marginBottom: '1.8em' }}>
+              {t('citizenShield.agentFlow').map((s, i) => (
+                <li key={i} style={{ marginBottom: '0.4em', lineHeight: 1.5 }}>{s}</li>
+              ))}
+            </ol>
+
+            <h4 style={{ marginBottom: '0.5em' }}>{t('citizenShield.agentModulesTitle')}</h4>
+            <ul style={{ marginBottom: '1em' }}>
+              {t('citizenShield.agentModules').map((m, i) => (
+                <li key={i} style={{ marginBottom: '0.5em', lineHeight: 1.5 }}>{m}</li>
+              ))}
+            </ul>
+            <p style={{ fontSize: '0.9em', color: '#888', marginBottom: '2em' }}>
+              {t('citizenShield.agentNote')}
+            </p>
+
           </article>
 
           {/* FAQ come articolo #content separato: il template disegna la doppia
