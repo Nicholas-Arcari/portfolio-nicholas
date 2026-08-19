@@ -9,6 +9,7 @@ import { VIDEO_BASE } from '../config/media';
 
 const CitizenShield = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [showImages, setShowImages] = useState(false); // Default: nascosto
   const [showFaq, setShowFaq] = useState(false); // Default: nascosto
   const [video, setVideo] = useState(null); // { src, title } | null — lazy: caricato solo al click
   const { t } = useLanguage();
@@ -118,30 +119,48 @@ const CitizenShield = () => {
               {t('citizenShield.agentNote')}
             </p>
 
-            {/* Le altre immagini pubblicate e la verifica della firma */}
-            <h3 style={{ marginBottom: '0.6em' }}>{t('citizenShield.imagesTitle')}</h3>
-            <p style={{ marginBottom: '1.2em', lineHeight: 1.6 }}>{t('citizenShield.imagesIntro')}</p>
-            <ul style={{ marginBottom: '1.5em' }}>
-              {t('citizenShield.images').map((img, i) => (
-                <li key={i} style={{ marginBottom: '0.5em', lineHeight: 1.5 }}>{img}</li>
-              ))}
-            </ul>
-            <p style={{ marginBottom: '1em', lineHeight: 1.6 }}>{t('citizenShield.imagesTrustIntro')}</p>
-            {/* Sfondo grigio traslucido e colore ereditato: unico blocco che
-                regge sia il tema chiaro sia quello scuro senza duplicare stili. */}
-            <pre style={{
-              fontFamily: 'monospace', fontSize: '0.78em', lineHeight: 1.6,
-              whiteSpace: 'pre', overflowX: 'auto', margin: '0 0 2em',
-              padding: '0.9em 1em', borderLeft: '3px solid #d52349',
-              background: 'rgba(128,128,128,0.12)', borderRadius: '3px',
-            }}>{t('citizenShield.imagesVerifyCmd')}</pre>
-
           </article>
 
           {/* FAQ come articolo #content separato: il template disegna la doppia
               riga orizzontale sopra gli article successivi al primo, separando
               visivamente le FAQ dal resto della pagina (light e dark mode). */}
           <article className="box post" style={{ padding: '4em 2em' }}>
+            {/* Dettaglio tecnico sulle immagini: richiudibile come le FAQ e
+                dentro lo stesso article, così il template non disegna una
+                seconda doppia riga fra i due blocchi. */}
+            <div style={{ marginBottom: '2.5em' }}>
+              <h3 style={{ marginBottom: '0.6em' }}>{t('citizenShield.imagesTitle')}</h3>
+              <button
+                type="button"
+                className="button alt small"
+                onClick={() => setShowImages(!showImages)}
+                aria-expanded={showImages}
+              >
+                {showImages ? t('citizenShield.imagesHide') : t('citizenShield.imagesShow')}
+                <i className={`icon solid ${showImages ? 'fa-chevron-up' : 'fa-chevron-down'}`} style={{ marginLeft: '10px' }}></i>
+              </button>
+
+              {showImages && (
+                <div className="fade-in" style={{ marginTop: '1.5em' }}>
+                  <p style={{ marginBottom: '1.2em', lineHeight: 1.6 }}>{t('citizenShield.imagesIntro')}</p>
+                  <ul style={{ marginBottom: '1.5em' }}>
+                    {t('citizenShield.images').map((img, i) => (
+                      <li key={i} style={{ marginBottom: '0.5em', lineHeight: 1.5 }}>{img}</li>
+                    ))}
+                  </ul>
+                  <p style={{ marginBottom: '1em', lineHeight: 1.6 }}>{t('citizenShield.imagesTrustIntro')}</p>
+                  {/* Sfondo grigio traslucido e colore ereditato: unico blocco che
+                      regge sia il tema chiaro sia quello scuro senza duplicare stili. */}
+                  <pre style={{
+                    fontFamily: 'monospace', fontSize: '0.78em', lineHeight: 1.6,
+                    whiteSpace: 'pre', overflowX: 'auto', margin: 0,
+                    padding: '0.9em 1em', borderLeft: '3px solid #d52349',
+                    background: 'rgba(128,128,128,0.12)', borderRadius: '3px',
+                  }}>{t('citizenShield.imagesVerifyCmd')}</pre>
+                </div>
+              )}
+            </div>
+
             <div style={{ marginBottom: '1em' }}>
               <h3 style={{ marginBottom: '0.6em' }}>{t('citizenShield.faqTitle')}</h3>
               <button

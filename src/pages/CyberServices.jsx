@@ -10,6 +10,7 @@ import { VIDEO_BASE } from '../config/media';
 const CyberServices = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [guide, setGuide] = useState(null); // Default: nascosto; si apre al click sul bottone
+  const [showImages, setShowImages] = useState(false); // Default: nascosto
   const [showFaq, setShowFaq] = useState(false); // Default: nascosto
   const [video, setVideo] = useState(null); // { src, title } | null — lazy: caricato solo al click
   const { t } = useLanguage();
@@ -84,6 +85,13 @@ const CyberServices = () => {
               ))}
             </ul>
 
+          </article>
+
+          {/* L'installazione sta in un article suo: il template traccia la
+              doppia riga sopra ogni article dopo il primo, e quella del
+              blocco successivo la chiude, isolandola visivamente. */}
+          <article className="box post" style={{ padding: '4em 2em' }}>
+
             {/* Come installare - due guide */}
             <h3 style={{ marginBottom: '0.6em' }}>{t('cyberServices.howTitle')}</h3>
             <div style={{ display: 'flex', gap: '0.5em', marginBottom: '1.2em', flexWrap: 'wrap' }}>
@@ -151,35 +159,53 @@ const CyberServices = () => {
               </p>
             </div>
 
-            {/* Le immagini pubblicate: cosa contengono e come verificarle */}
-            <h3 style={{ marginBottom: '0.6em' }}>{t('cyberServices.imagesTitle')}</h3>
-            <p style={{ marginBottom: '1.2em', lineHeight: 1.6 }}>{t('cyberServices.imagesIntro')}</p>
-            <ul style={{ marginBottom: '1.8em' }}>
-              {t('cyberServices.images').map((img, i) => (
-                <li key={i} style={{ marginBottom: '0.5em', lineHeight: 1.5 }}>{img}</li>
-              ))}
-            </ul>
-
-            <h4 style={{ marginBottom: '0.5em' }}>{t('cyberServices.imagesTrustTitle')}</h4>
-            <p style={{ marginBottom: '1em', lineHeight: 1.6 }}>{t('cyberServices.imagesTrustIntro')}</p>
-            {/* Sfondo grigio traslucido e colore ereditato: unico blocco che
-                regge sia il tema chiaro sia quello scuro senza duplicare stili. */}
-            <pre style={{
-              fontFamily: 'monospace', fontSize: '0.78em', lineHeight: 1.6,
-              whiteSpace: 'pre', overflowX: 'auto', margin: '0 0 1em',
-              padding: '0.9em 1em', borderLeft: '3px solid #d52349',
-              background: 'rgba(128,128,128,0.12)', borderRadius: '3px',
-            }}>{t('cyberServices.imagesVerifyCmd')}</pre>
-            <p style={{ fontSize: '0.9em', color: '#888', marginBottom: '2em' }}>
-              {t('cyberServices.imagesTrustNote')}
-            </p>
-
           </article>
 
           {/* FAQ come articolo #content separato: il template disegna la doppia
               riga orizzontale sopra gli article successivi al primo, separando
               visivamente le FAQ dal resto della pagina (light e dark mode). */}
           <article className="box post" style={{ padding: '4em 2em' }}>
+            {/* Dettaglio tecnico sulle immagini: richiudibile come le FAQ e
+                dentro lo stesso article, così il template non disegna una
+                seconda doppia riga fra i due blocchi. */}
+            <div style={{ marginBottom: '2.5em' }}>
+              <h3 style={{ marginBottom: '0.6em' }}>{t('cyberServices.imagesTitle')}</h3>
+              <button
+                type="button"
+                className="button alt small"
+                onClick={() => setShowImages(!showImages)}
+                aria-expanded={showImages}
+              >
+                {showImages ? t('cyberServices.imagesHide') : t('cyberServices.imagesShow')}
+                <i className={`icon solid ${showImages ? 'fa-chevron-up' : 'fa-chevron-down'}`} style={{ marginLeft: '10px' }}></i>
+              </button>
+
+              {showImages && (
+                <div className="fade-in" style={{ marginTop: '1.5em' }}>
+                  <p style={{ marginBottom: '1.2em', lineHeight: 1.6 }}>{t('cyberServices.imagesIntro')}</p>
+                  <ul style={{ marginBottom: '1.8em' }}>
+                    {t('cyberServices.images').map((img, i) => (
+                      <li key={i} style={{ marginBottom: '0.5em', lineHeight: 1.5 }}>{img}</li>
+                    ))}
+                  </ul>
+
+                  <h4 style={{ marginBottom: '0.5em' }}>{t('cyberServices.imagesTrustTitle')}</h4>
+                  <p style={{ marginBottom: '1em', lineHeight: 1.6 }}>{t('cyberServices.imagesTrustIntro')}</p>
+                  {/* Sfondo grigio traslucido e colore ereditato: unico blocco che
+                      regge sia il tema chiaro sia quello scuro senza duplicare stili. */}
+                  <pre style={{
+                    fontFamily: 'monospace', fontSize: '0.78em', lineHeight: 1.6,
+                    whiteSpace: 'pre', overflowX: 'auto', margin: '0 0 1em',
+                    padding: '0.9em 1em', borderLeft: '3px solid #d52349',
+                    background: 'rgba(128,128,128,0.12)', borderRadius: '3px',
+                  }}>{t('cyberServices.imagesVerifyCmd')}</pre>
+                  <p style={{ fontSize: '0.9em', color: '#888', margin: 0 }}>
+                    {t('cyberServices.imagesTrustNote')}
+                  </p>
+                </div>
+              )}
+            </div>
+
             <div style={{ marginBottom: '1em' }}>
               <h3 style={{ marginBottom: '0.6em' }}>{t('cyberServices.faqTitle')}</h3>
               <button

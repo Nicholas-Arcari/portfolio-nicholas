@@ -100,8 +100,11 @@ export const translations = {
       text: 'Suite di cybersecurity on-premise per team di sicurezza: triage delle email di phishing, analisi dei log con mappatura MITRE ATT&CK, estrazione IOC, scansione YARA/Sigma e OSINT investigativo. Gira interamente sul tuo server: nessun dato lascia la tua infrastruttura.',
       productTitle: 'Cosa include',
       features: [
-        'SOC Toolkit: phishing, log, IOC, YARA/Sigma, file inspector',
-        'OSINT Toolkit: attack surface e investigazione OSINT',
+        'SOC Toolkit: triage phishing, analisi log con mappatura MITRE ATT&CK, estrazione e pivot degli IOC, regole YARA e Sigma, ispezione file, analisi di link e codici QR',
+        'OSINT Toolkit: superficie di attacco, investigazione su persone e username, ricerca di credenziali esposte nel codice, analisi di numeri di telefono, verifica delle violazioni note',
+        'Feed di notizie di sicurezza e integrazione MISP per la condivisione degli indicatori',
+        'Registro delle attivit\u00e0: traccia in sola aggiunta di accessi, modifiche alle chiavi di integrazione e attivazioni di licenza',
+        'Accessi per utente e metriche Prometheus, per chi la porta in produzione',
         'Self-hosted via Docker: installazione in pochi minuti',
         'Licenza offline: verificata in locale, nessun phone-home',
       ],
@@ -132,6 +135,8 @@ export const translations = {
       downloadBtn: 'Scarica il pacchetto di deploy',
       downloadNote: 'ZIP con docker-compose, configurazione e guida di installazione',
       imagesTitle: 'Le quattro immagini pubbliche',
+      imagesShow: 'Mostra il dettaglio tecnico',
+      imagesHide: 'Nascondi il dettaglio tecnico',
       imagesIntro: 'La suite si installa scaricando quattro immagini da GHCR, il registro di GitHub. Sono pubbliche di proposito: docker compose up funziona senza login e senza token. Non \u00e8 il registro a proteggere il prodotto, \u00e8 la licenza, che viene verificata in locale quando i contenitori sono gi\u00e0 partiti.',
       images: [
         'soc-suite-soc-backend: il motore di SOC Toolkit. FastAPI servito da uvicorn su Python 3.12 slim, gira come utente non privilegiato e non come root. Qui stanno il triage delle email di phishing, l\'analisi dei log con mappatura MITRE ATT&CK, l\'estrazione degli IOC e le regole YARA e Sigma.',
@@ -267,6 +272,8 @@ export const translations = {
       ],
       agentNote: 'Cinque degli otto moduli girano nell\'agent, pi\u00f9 il controllo preliminare dell\'host; gli altri tre restano nel control plane perch\u00e9 non hanno bisogno di toccare la tua macchina. Il filo comune \u00e8 che dal tuo computer non escono i dati, escono solo le conclusioni.',
       imagesTitle: 'Le altre due immagini pubbliche',
+      imagesShow: 'Mostra il dettaglio tecnico',
+      imagesHide: 'Nascondi il dettaglio tecnico',
       imagesIntro: 'Oltre all\'agent, l\'installazione scarica altre due immagini da GHCR, anch\'esse pubbliche perch\u00e9 il comando di avvio funzioni senza login e senza token.',
       images: [
         'citizen-shield-backend: il control plane. FastAPI servito da uvicorn su Python 3.12 slim, come utente non privilegiato. All\'avvio applica da solo le migrazioni del database, poi espone l\'API e il canale WebSocket su cui l\'agent rimanda i risultati; custodisce account, licenze e risultati cifrati.',
@@ -1460,8 +1467,11 @@ export const translations = {
       text: 'An on-premise cybersecurity suite for security teams: phishing email triage, log analysis with MITRE ATT&CK mapping, IOC extraction, YARA/Sigma scanning and investigative OSINT. It runs entirely on your own server: no data ever leaves your infrastructure.',
       productTitle: 'What\'s included',
       features: [
-        'SOC Toolkit: phishing, logs, IOC, YARA/Sigma, file inspector',
-        'OSINT Toolkit: attack surface and investigative OSINT',
+        'SOC Toolkit: phishing triage, log analysis with MITRE ATT&CK mapping, IOC extraction and pivoting, YARA and Sigma rules, file inspection, link and QR analysis',
+        'OSINT Toolkit: attack surface, people and username investigation, exposed-credential scanning, phone number analysis, known-breach checks',
+        'Security news feed and MISP integration for indicator sharing',
+        'Activity trail: an append-only record of sign-ins, integration-key changes and licence activations',
+        'Per-user accounts and Prometheus metrics, for anyone running it in production',
         'Self-hosted via Docker: up and running in minutes',
         'Offline license: verified locally, no phone-home',
       ],
@@ -1492,6 +1502,8 @@ export const translations = {
       downloadBtn: 'Download the deploy package',
       downloadNote: 'ZIP with docker-compose, configuration and install guide',
       imagesTitle: 'The four public images',
+      imagesShow: 'Show the technical detail',
+      imagesHide: 'Hide the technical detail',
       imagesIntro: 'Installing the suite means pulling four images from GHCR, GitHub\'s registry. They are public on purpose: docker compose up works with no login and no token. It is not the registry that protects the product, it is the licence, which is checked locally once the containers are already running.',
       images: [
         'soc-suite-soc-backend: the SOC Toolkit engine. FastAPI served by uvicorn on Python 3.12 slim, running as an unprivileged user rather than root. This is where phishing email triage, log analysis with MITRE ATT&CK mapping, IOC extraction and the YARA and Sigma rules live.',
@@ -1627,6 +1639,8 @@ export const translations = {
       ],
       agentNote: 'Five of the eight modules run in the agent, plus the host pre-flight check; the other three stay in the control plane because they never need to touch your machine. The common thread is that your computer sends out conclusions, not data.',
       imagesTitle: 'The other two public images',
+      imagesShow: 'Show the technical detail',
+      imagesHide: 'Hide the technical detail',
       imagesIntro: 'Besides the agent, installing pulls two more images from GHCR, public as well so that the start-up command works with no login and no token.',
       images: [
         'citizen-shield-backend: the control plane. FastAPI served by uvicorn on Python 3.12 slim, as an unprivileged user. On start-up it applies the database migrations itself, then exposes the API and the WebSocket channel the agent sends its results back on; it holds accounts, licences and encrypted results.',
