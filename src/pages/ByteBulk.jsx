@@ -1,20 +1,17 @@
-// src/pages/FinanzMe.jsx
+// src/pages/ByteBulk.jsx
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import TerminalText from '../components/TerminalText';
 import { useLanguage } from '../contexts/LanguageContext';
 import Footer from '../components/Footer';
-import VideoModal from '../components/VideoModal';
-import { VIDEO_BASE } from '../config/media';
 
-const FinanzMe = () => {
+const ByteBulk = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [guide, setGuide] = useState(null); // Default: nascosto; si apre al click sul bottone
   const [showFaq, setShowFaq] = useState(false); // Default: nascosto
-  const [video, setVideo] = useState(null); // { src, title } | null — lazy: caricato solo al click
   const { t } = useLanguage();
 
-  const faq = t('finanzMe.faq');
+  const faq = t('byteBulk.faq');
 
   useEffect(() => {
     // Layout con sidebar destra, come la home
@@ -30,7 +27,7 @@ const FinanzMe = () => {
         <div className="container">
           <h1 id="logo"><Link to="/">Nicholas Arcari</Link></h1>
           <br />
-          <TerminalText lines={t('finanzMe.terminal')} />
+          <TerminalText lines={t('byteBulk.terminal')} />
 
           <nav id="nav">
             <ul>
@@ -69,47 +66,32 @@ const FinanzMe = () => {
           <article className="box post" style={{ padding: '4em 2em' }}>
 
             <div style={{ textAlign: 'center' }}>
-              <i className="icon solid fa-chart-line" style={{ fontSize: '4em', color: '#d52349', marginBottom: '0.3em', display: 'block' }}></i>
-              <h2 style={{ fontSize: '3em', marginBottom: '0.2em' }}>{t('finanzMe.heading')}</h2>
+              <i className="icon solid fa-dumbbell" style={{ fontSize: '4em', color: '#d52349', marginBottom: '0.3em', display: 'block' }}></i>
+              <h2 style={{ fontSize: '3em', marginBottom: '0.2em' }}>{t('byteBulk.heading')}</h2>
               <p style={{ fontSize: '0.85em', color: '#d52349', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '1em' }}>
-                {t('finanzMe.status')}
+                {t('byteBulk.status')}
               </p>
               <p style={{ fontSize: '1.2em', color: '#666', maxWidth: '640px', margin: '0 auto 2em' }}>
-                {t('finanzMe.text')}
+                {t('byteBulk.text')}
               </p>
             </div>
 
             {/* Cosa include */}
-            <h3 style={{ marginBottom: '0.6em' }}>{t('finanzMe.productTitle')}</h3>
+            <h3 style={{ marginBottom: '0.6em' }}>{t('byteBulk.productTitle')}</h3>
             <ul style={{ marginBottom: '2em' }}>
-              {t('finanzMe.features').map((f, i) => (
+              {t('byteBulk.features').map((f, i) => (
                 <li key={i} style={{ marginBottom: '0.3em' }}>{f}</li>
               ))}
             </ul>
-
-            {/* Come installare - due guide, nascoste finche non si preme un bottone */}
-            {/* Come ci arrivano i dati: l'equivalente della sezione
-                sull'architettura nelle altre due pagine. Qui la domanda e'
-                chi tocca le credenziali della banca. */}
-            <h3 style={{ marginBottom: '0.6em' }}>{t('finanzMe.architectureTitle')}</h3>
-            <p style={{ marginBottom: '1.2em', lineHeight: 1.6 }}>{t('finanzMe.architectureIntro')}</p>
-            <ul style={{ marginBottom: '1em' }}>
-              {t('finanzMe.architecture').map((a, i) => (
-                <li key={i} style={{ marginBottom: '0.5em', lineHeight: 1.5 }}>{a}</li>
-              ))}
-            </ul>
-            <p style={{ fontSize: '0.9em', color: '#888', marginBottom: '1em' }}>
-              {t('finanzMe.architectureNote')}
-            </p>
 
           </article>
 
           {/* L'installazione in un article suo: il template traccia la doppia
               riga sopra ogni article dopo il primo, e quella del blocco
-              successivo la chiude, isolandola come sulle altre due pagine. */}
+              successivo la chiude, isolandola come sulle altre pagine. */}
           <article className="box post" style={{ padding: '4em 2em' }}>
 
-            <h3 style={{ marginBottom: '0.6em' }}>{t('finanzMe.howTitle')}</h3>
+            <h3 style={{ marginBottom: '0.6em' }}>{t('byteBulk.howTitle')}</h3>
             <div style={{ display: 'flex', gap: '0.5em', marginBottom: '1.2em', flexWrap: 'wrap' }}>
               <button
                 type="button"
@@ -117,7 +99,7 @@ const FinanzMe = () => {
                 className={guide === 'simple' ? 'button small' : 'button alt small'}
                 aria-expanded={guide === 'simple'}
               >
-                {t('finanzMe.tabSimple')}
+                {t('byteBulk.tabSimple')}
               </button>
               <button
                 type="button"
@@ -125,22 +107,22 @@ const FinanzMe = () => {
                 className={guide === 'tech' ? 'button small' : 'button alt small'}
                 aria-expanded={guide === 'tech'}
               >
-                {t('finanzMe.tabTech')}
+                {t('byteBulk.tabTech')}
               </button>
             </div>
 
             {guide === 'simple' && (
               <div className="fade-in" style={{ marginBottom: '2em' }}>
                 <p style={{ color: '#666', marginBottom: '0.8em' }}>
-                  {t('finanzMe.simpleIntro')}
+                  {t('byteBulk.simpleIntro')}
                 </p>
                 <ol>
-                  {t('finanzMe.simpleSteps').map((s, i) => (
+                  {t('byteBulk.simpleSteps').map((s, i) => (
                     <li key={i} style={{ marginBottom: '0.6em', lineHeight: 1.5 }}>{s}</li>
                   ))}
                 </ol>
                 <p style={{ fontSize: '0.9em', color: '#888', marginTop: '1em' }}>
-                  {t('finanzMe.simpleHelp')}
+                  {t('byteBulk.simpleHelp')}
                 </p>
               </div>
             )}
@@ -148,15 +130,15 @@ const FinanzMe = () => {
             {guide === 'tech' && (
               <div className="fade-in" style={{ marginBottom: '2em' }}>
                 <p style={{ color: '#666', marginBottom: '0.8em' }}>
-                  {t('finanzMe.techIntro')}
+                  {t('byteBulk.techIntro')}
                 </p>
                 <ol>
-                  {t('finanzMe.techSteps').map((s, i) => (
+                  {t('byteBulk.techSteps').map((s, i) => (
                     <li key={i} style={{ marginBottom: '0.6em', lineHeight: 1.5 }}>{s}</li>
                   ))}
                 </ol>
                 <p style={{ fontSize: '0.9em', color: '#888', marginTop: '1em' }}>
-                  {t('finanzMe.techNotes')}
+                  {t('byteBulk.techNotes')}
                 </p>
               </div>
             )}
@@ -167,17 +149,17 @@ const FinanzMe = () => {
               riga orizzontale sopra gli article successivi al primo, separando
               visivamente le FAQ dal resto della pagina (light e dark mode). */}
           <article className="box post" style={{ padding: '4em 2em' }}>
-            {/* Titolo e comando centrati come sulle altre due pagine: sono
+            {/* Titolo e comando centrati come sulle altre pagine prodotto: sono
                 l'invito ad aprire il blocco. Il contenuto torna a sinistra. */}
             <div style={{ marginBottom: '1em', textAlign: 'center' }}>
-              <h3 style={{ marginBottom: '0.6em' }}>{t('finanzMe.faqTitle')}</h3>
+              <h3 style={{ marginBottom: '0.6em' }}>{t('byteBulk.faqTitle')}</h3>
               <button
                 type="button"
                 className="button alt small"
                 onClick={() => setShowFaq(!showFaq)}
                 aria-expanded={showFaq}
               >
-                {showFaq ? t('finanzMe.faqHide') : t('finanzMe.faqShow')}
+                {showFaq ? t('byteBulk.faqHide') : t('byteBulk.faqShow')}
                 <i className={`icon solid ${showFaq ? 'fa-chevron-up' : 'fa-chevron-down'}`} style={{ marginLeft: '10px' }}></i>
               </button>
 
@@ -208,43 +190,52 @@ const FinanzMe = () => {
 
           <div style={{ margin: '2em 0', textAlign: 'center' }}>
             <Link to="/" className="button alt small icon solid fa-arrow-left">
-              {t('finanzMe.back')}
+              {t('byteBulk.back')}
             </Link>
           </div>
             </div>
 
-            {/* Sidebar destra: Video installazione + Accesso + Contatti */}
+            {/* Sidebar destra: Requisiti + HTTPS/PWA + Contatti.
+                Niente box video come sulle altre due pagine prodotto: i video
+                sono asset di una GitHub Release e per ByteBulk non esistono,
+                quindi al loro posto sta il requisito che conta davvero. */}
             <div id="sidebar" className="col-4 col-12-medium">
 
-              {/* Video: come si installa */}
+              {/* Requisiti */}
               <section>
                 <ul className="divided">
                   <li>
                     <article className="box highlight">
-                      <header><h3>{t('finanzMe.videoTitle')}</h3></header>
-                      <p style={{ fontSize: '0.95em', color: '#666' }}>{t('finanzMe.videoIntro')}</p>
-                      <button
-                        type="button"
-                        className="button icon brands fa-windows"
-                        style={{ width: '100%', marginBottom: '10px' }}
-                        onClick={() => setVideo({
-                          src: `${VIDEO_BASE}/finanzme-install-windows.mp4`,
-                          title: `${t('finanzMe.videoTitle')} — ${t('finanzMe.videoWindows')}`,
-                        })}
-                      >
-                        {t('finanzMe.videoWindows')}
-                      </button>
-                      <button
-                        type="button"
-                        className="button alt icon brands fa-linux"
-                        style={{ width: '100%' }}
-                        onClick={() => setVideo({
-                          src: `${VIDEO_BASE}/finanzme-install-linux-macos.mp4`,
-                          title: `${t('finanzMe.videoTitle')} — ${t('finanzMe.videoLinux')}`,
-                        })}
-                      >
-                        {t('finanzMe.videoLinux')}
-                      </button>
+                      <header>
+                        <h3>
+                          <i className="icon solid fa-microchip" style={{ color: '#d52349', marginRight: '0.5em' }}></i>
+                          {t('byteBulk.reqTitle')}
+                        </h3>
+                      </header>
+                      <p style={{ fontSize: '0.95em', color: '#666' }}>{t('byteBulk.reqIntro')}</p>
+                      <ul style={{ fontSize: '0.9em', marginBottom: 0 }}>
+                        {t('byteBulk.reqList').map((r, i) => (
+                          <li key={i} style={{ marginBottom: '0.2em' }}>{r}</li>
+                        ))}
+                      </ul>
+                    </article>
+                  </li>
+                </ul>
+              </section>
+
+              {/* HTTPS e app installabile: e il vincolo che decide se scanner e
+                  installazione PWA funzionano, quindi sta in evidenza. */}
+              <section>
+                <ul className="divided">
+                  <li>
+                    <article className="box highlight">
+                      <header>
+                        <h3>
+                          <i className="icon solid fa-mobile-alt" style={{ color: '#d52349', marginRight: '0.5em' }}></i>
+                          {t('byteBulk.httpsTitle')}
+                        </h3>
+                      </header>
+                      <p style={{ fontSize: '0.95em', color: '#666', margin: 0 }}>{t('byteBulk.httpsText')}</p>
                     </article>
                   </li>
                 </ul>
@@ -258,10 +249,10 @@ const FinanzMe = () => {
                       <header>
                         <h3>
                           <i className="icon solid fa-lock" style={{ color: '#d52349', marginRight: '0.5em' }}></i>
-                          {t('finanzMe.accessTitle')}
+                          {t('byteBulk.accessTitle')}
                         </h3>
                       </header>
-                      <p style={{ fontSize: '0.95em', color: '#666', margin: 0 }}>{t('finanzMe.contactNote')}</p>
+                      <p style={{ fontSize: '0.95em', color: '#666', margin: 0 }}>{t('byteBulk.contactNote')}</p>
                     </article>
                   </li>
                 </ul>
@@ -275,18 +266,18 @@ const FinanzMe = () => {
                       <header>
                         <h3>
                           <i className="icon solid fa-envelope" style={{ color: '#d52349', marginRight: '0.5em' }}></i>
-                          {t('finanzMe.contactTitle')}
+                          {t('byteBulk.contactTitle')}
                         </h3>
                       </header>
-                      <p style={{ fontSize: '0.95em', color: '#666' }}>{t('finanzMe.contact')}</p>
-                      <a href="mailto:arcari.nicholas0@gmail.com?subject=FinanzMe%20-%20informazioni" className="button icon solid fa-envelope" style={{ width: '100%', marginBottom: '10px' }}>
+                      <p style={{ fontSize: '0.95em', color: '#666' }}>{t('byteBulk.contact')}</p>
+                      <a href="mailto:arcari.nicholas0@gmail.com?subject=ByteBulk%20-%20informazioni" className="button icon solid fa-envelope" style={{ width: '100%', marginBottom: '10px' }}>
                         Email
                       </a>
                       <a href="https://www.linkedin.com/in/nicholas-arcari-6245893a7" className="button alt icon brands fa-linkedin" target="_blank" rel="noopener noreferrer" style={{ width: '100%', marginBottom: '10px' }}>
                         LinkedIn
                       </a>
                       <Link to="/" className="button alt small icon solid fa-arrow-left" style={{ width: '100%' }}>
-                        {t('finanzMe.back')}
+                        {t('byteBulk.back')}
                       </Link>
                     </article>
                   </li>
@@ -299,18 +290,9 @@ const FinanzMe = () => {
         </div>
       </section>
 
-      <VideoModal
-        open={!!video}
-        src={video?.src}
-        title={video?.title}
-        onClose={() => setVideo(null)}
-        unsupportedText={t('finanzMe.videoUnsupported')}
-        closeLabel={t('finanzMe.videoClose')}
-      />
-
       <Footer />
     </div>
   );
 };
 
-export default FinanzMe;
+export default ByteBulk;

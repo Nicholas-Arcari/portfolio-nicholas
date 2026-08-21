@@ -14,6 +14,7 @@ const Home = () => {
   const [showCyber, setShowCyber] = useState(false); // Default: nascosto
   const [showServices, setShowServices] = useState(false); // Default: nascosto
   const [showFinance, setShowFinance] = useState(false); // Default: nascosto
+  const [showExtra, setShowExtra] = useState(false); // Default: nascosto
 
   const { t } = useLanguage();
 
@@ -414,6 +415,48 @@ const Home = () => {
                           <i className="icon solid fa-hourglass-half" style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.5em', display: 'block' }}></i>
                           <h3>{t('home.finance.soonTitle')}</h3>
                           <p style={{ color: '#666', textAlign: 'center', marginBottom: 0 }}>{t('home.finance.soonDesc')}</p>
+                        </div>
+                    </div>
+                )}
+              </article>
+
+              {/* --- ARTICOLO 5: SERVIZI EXTRA (ESPANDIBILE) ---
+                  Stessa struttura dei due blocchi sopra: raccoglie i progetti
+                  che non ricadono ne sotto cybersecurity ne sotto finanza. */}
+              <article className="box post">
+                <header>
+                    <h2><a href="#">{t('home.extra.title')} <strong>{t('home.extra.titleBold')}</strong></a></h2>
+                    <div style={{ textAlign: 'left', marginTop: '15px', marginBottom: '20px' }}>
+                        <button
+                            className="button alt small"
+                            onClick={() => setShowExtra(!showExtra)}
+                        >
+                            {showExtra ? t('home.extra.hide') : t('home.extra.show')}
+                            <i className={`icon solid ${showExtra ? 'fa-chevron-up' : 'fa-chevron-down'}`} style={{ marginLeft: '10px' }}></i>
+                        </button>
+                    </div>
+                </header>
+
+                {showExtra && (
+                    <div className="fade-in">
+                        <div className="soft-panel" style={{ textAlign: 'center', padding: '2em 1em' }}>
+                          <i className="icon solid fa-dumbbell" style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.5em', display: 'block' }}></i>
+                          <h3>{t('home.extra.bytebulkTitle')}</h3>
+                          <p style={{ color: '#666', textAlign: 'center' }}>{t('home.extra.bytebulkDesc')}</p>
+                          <Link to="/bytebulk" className="button icon solid fa-arrow-circle-right">
+                            {t('byteBulk.ctaBtn')}
+                          </Link>
+                          <p style={{ fontSize: '0.9em', color: '#888', marginTop: '1em', marginBottom: 0 }}>
+                            <i className="icon solid fa-lock" style={{ marginRight: '0.4em' }}></i>
+                            {t('home.extra.bytebulkNote')}
+                          </p>
+                        </div>
+
+                        {/* Segnaposto, come nella sezione finanza */}
+                        <div className="soft-panel" style={{ textAlign: 'center', padding: '2em 1em', marginTop: '1.5em' }}>
+                          <i className="icon solid fa-hourglass-half" style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.5em', display: 'block' }}></i>
+                          <h3>{t('home.extra.soonTitle')}</h3>
+                          <p style={{ color: '#666', textAlign: 'center', marginBottom: 0 }}>{t('home.extra.soonDesc')}</p>
                         </div>
                     </div>
                 )}

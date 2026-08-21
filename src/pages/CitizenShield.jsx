@@ -124,11 +124,13 @@ const CitizenShield = () => {
           {/* FAQ come articolo #content separato: il template disegna la doppia
               riga orizzontale sopra gli article successivi al primo, separando
               visivamente le FAQ dal resto della pagina (light e dark mode). */}
+          {/* Dettaglio tecnico sulle immagini in un article suo: il template
+              traccia la doppia riga sopra ogni article dopo il primo, ed è
+              quella che lo separa dalle domande frequenti. Titolo e comando
+              centrati perché sono l'invito ad aprirlo; il contenuto torna a
+              sinistra, dove si legge. */}
           <article className="box post" style={{ padding: '4em 2em' }}>
-            {/* Dettaglio tecnico sulle immagini: richiudibile come le FAQ e
-                dentro lo stesso article, così il template non disegna una
-                seconda doppia riga fra i due blocchi. */}
-            <div style={{ marginBottom: '2.5em' }}>
+            <div style={{ textAlign: 'center' }}>
               <h3 style={{ marginBottom: '0.6em' }}>{t('citizenShield.imagesTitle')}</h3>
               <button
                 type="button"
@@ -141,7 +143,7 @@ const CitizenShield = () => {
               </button>
 
               {showImages && (
-                <div className="fade-in" style={{ marginTop: '1.5em' }}>
+                <div className="fade-in" style={{ marginTop: '1.5em', textAlign: 'left' }}>
                   <p style={{ marginBottom: '1.2em', lineHeight: 1.6 }}>{t('citizenShield.imagesIntro')}</p>
                   <ul style={{ marginBottom: '1.5em' }}>
                     {t('citizenShield.images').map((img, i) => (
@@ -161,7 +163,10 @@ const CitizenShield = () => {
               )}
             </div>
 
-            <div style={{ marginBottom: '1em' }}>
+          </article>
+
+          <article className="box post" style={{ padding: '4em 2em' }}>
+            <div style={{ marginBottom: '1em', textAlign: 'center' }}>
               <h3 style={{ marginBottom: '0.6em' }}>{t('citizenShield.faqTitle')}</h3>
               <button
                 type="button"
@@ -174,7 +179,7 @@ const CitizenShield = () => {
               </button>
 
               {showFaq && (
-                <div className="fade-in" style={{ marginTop: '1.5em' }}>
+                <div className="fade-in" style={{ marginTop: '1.5em', textAlign: 'left' }}>
                   <h4 style={{ marginBottom: '0.8em', color: '#d52349' }}>{faq.techTitle}</h4>
                   {faq.tech.map((item, i) => (
                     <div key={`tech-${i}`} style={{ marginBottom: '1.2em' }}>
