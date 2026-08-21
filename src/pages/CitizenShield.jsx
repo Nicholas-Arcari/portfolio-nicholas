@@ -150,6 +150,7 @@ const CitizenShield = () => {
                       <li key={i} style={{ marginBottom: '0.5em', lineHeight: 1.5 }}>{img}</li>
                     ))}
                   </ul>
+                  <h4 style={{ marginBottom: '0.5em' }}>{t('citizenShield.imagesTrustTitle')}</h4>
                   <p style={{ marginBottom: '1em', lineHeight: 1.6 }}>{t('citizenShield.imagesTrustIntro')}</p>
                   {/* Sfondo grigio traslucido e colore ereditato: unico blocco che
                       regge sia il tema chiaro sia quello scuro senza duplicare stili. */}
