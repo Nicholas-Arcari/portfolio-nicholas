@@ -1,20 +1,15 @@
 import { useLocation } from 'react-router-dom';
-import { useEffect, useState } from 'react';
 
+// La dissolvenza in entrata non ha bisogno di stato. Prima il componente
+// montava invisibile e un effetto lo rendeva visibile al fotogramma dopo,
+// cioe' due render e un setState dentro un effetto per una cosa che il
+// browser sa gia' fare. Cambiando `key` a ogni percorso React rimonta il
+// contenitore, e rimontarlo fa ripartire l'animazione CSS da sola.
 const PageTransition = ({ children }) => {
   const location = useLocation();
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    setVisible(false);
-    const frame = requestAnimationFrame(() => {
-      setVisible(true);
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [location.pathname]);
 
   return (
-    <div className={`page-transition ${visible ? 'page-visible' : ''}`}>
+    <div key={location.pathname} className="page-transition">
       {children}
     </div>
   );

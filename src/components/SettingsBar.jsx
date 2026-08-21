@@ -1,5 +1,5 @@
-import { useTheme } from '../contexts/ThemeContext';
-import { useLanguage } from '../contexts/LanguageContext';
+import { useTheme } from '../contexts/themeContext';
+import { useLanguage } from '../contexts/languageContext';
 
 const SettingsBar = () => {
   const { theme, toggleTheme } = useTheme();

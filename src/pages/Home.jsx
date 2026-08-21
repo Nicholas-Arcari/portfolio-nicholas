@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import TerminalText from '../components/TerminalText';
-import { useLanguage } from '../contexts/LanguageContext';
+import { useLanguage } from '../contexts/languageContext';
 import Footer from '../components/Footer';
 
 const Home = () => {

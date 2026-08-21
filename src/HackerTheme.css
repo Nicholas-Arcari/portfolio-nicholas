@@ -1,14 +1,24 @@
 /* src/HackerTheme.css */
 
 /* ===== PAGE TRANSITION ===== */
+/* Un'animazione, non una transizione: parte da sola al montaggio, che e' il
+   momento in cui serve. Il componente cambia `key` a ogni percorso, quindi
+   React rimonta e l'animazione riparte senza che nessuno tocchi una classe. */
 .page-transition {
-    opacity: 0;
-    transform: translateY(8px);
-    transition: opacity 0.35s ease, transform 0.35s ease;
+    animation: page-enter 0.35s ease both;
 }
-.page-transition.page-visible {
-    opacity: 1;
-    transform: translateY(0);
+
+@keyframes page-enter {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Chi ha chiesto al sistema operativo meno animazioni non le riceve: la
+   pagina compare e basta, senza spostamenti. */
+@media (prefers-reduced-motion: reduce) {
+    .page-transition {
+        animation: none;
+    }
 }
 
 /* ===== IMAGE FALLBACK (scheda senza immagine) ===== */

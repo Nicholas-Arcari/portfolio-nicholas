@@ -1,8 +1,8 @@
 // src/App.jsx
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
-import { ThemeProvider } from './contexts/ThemeContext';
-import { LanguageProvider } from './contexts/LanguageContext';
+import { ThemeProvider } from './contexts/ThemeProvider';
+import { LanguageProvider } from './contexts/LanguageProvider';
 import Home from './pages/Home';
 import Ricette from './pages/Ricette';
 import Cocktail from './pages/Cocktail';

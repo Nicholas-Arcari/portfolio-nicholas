@@ -1,7 +1,7 @@
 // src/components/TemplateScripts.jsx
 import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useLanguage } from '../contexts/LanguageContext';
+import { useLanguage } from '../contexts/languageContext';
 
 const TemplateScripts = () => {
   const location = useLocation();
