@@ -9,8 +9,6 @@ const FreelanceDetails = () => {
   const { t } = useLanguage();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  const projectName = "MGP";
-
   // Layout Right Sidebar
   useEffect(() => {
     document.body.classList.remove('homepage');
