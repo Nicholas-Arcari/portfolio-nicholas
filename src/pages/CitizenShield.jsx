@@ -9,6 +9,7 @@ import { VIDEO_BASE } from '../config/media';
 
 const CitizenShield = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [guide, setGuide] = useState(null); // Default: nascosto; si apre al click sul bottone
   const [showImages, setShowImages] = useState(false); // Default: nascosto
   const [showFaq, setShowFaq] = useState(false); // Default: nascosto
   const [video, setVideo] = useState(null); // { src, title } | null — lazy: caricato solo al click
@@ -126,13 +127,58 @@ const CitizenShield = () => {
               ogni article dopo il primo lo separa dal resto della pagina. */}
           <article className="box post" style={{ padding: '4em 2em' }}>
 
+            {/* Come installare - due guide */}
             <h3 style={{ marginBottom: '0.6em' }}>{t('citizenShield.installTitle')}</h3>
-            <p style={{ marginBottom: '1.2em', lineHeight: 1.6 }}>{t('citizenShield.installIntro')}</p>
-            <ol>
-              {t('citizenShield.installSteps').map((s, i) => (
-                <li key={i} style={{ marginBottom: '0.6em', lineHeight: 1.5 }}>{s}</li>
-              ))}
-            </ol>
+            <div style={{ display: 'flex', gap: '0.5em', marginBottom: '1.2em', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => setGuide(guide === 'simple' ? null : 'simple')}
+                className={guide === 'simple' ? 'button small' : 'button alt small'}
+                aria-expanded={guide === 'simple'}
+              >
+                {t('citizenShield.tabSimple')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setGuide(guide === 'tech' ? null : 'tech')}
+                className={guide === 'tech' ? 'button small' : 'button alt small'}
+                aria-expanded={guide === 'tech'}
+              >
+                {t('citizenShield.tabTech')}
+              </button>
+            </div>
+
+            {guide === 'simple' && (
+              <div className="fade-in" style={{ marginBottom: '2em' }}>
+                <p style={{ color: '#666', marginBottom: '0.8em' }}>
+                  {t('citizenShield.simpleIntro')}
+                </p>
+                <ol>
+                  {t('citizenShield.simpleSteps').map((s, i) => (
+                    <li key={i} style={{ marginBottom: '0.6em', lineHeight: 1.5 }}>{s}</li>
+                  ))}
+                </ol>
+                <p style={{ fontSize: '0.9em', color: '#888', marginTop: '1em' }}>
+                  {t('citizenShield.simpleHelp')}
+                </p>
+              </div>
+            )}
+
+            {guide === 'tech' && (
+              <div className="fade-in" style={{ marginBottom: '2em' }}>
+                <p style={{ color: '#666', marginBottom: '0.8em' }}>
+                  {t('citizenShield.techIntro')}
+                </p>
+                <ol>
+                  {t('citizenShield.techSteps').map((s, i) => (
+                    <li key={i} style={{ marginBottom: '0.6em', lineHeight: 1.5 }}>{s}</li>
+                  ))}
+                </ol>
+                <p style={{ fontSize: '0.9em', color: '#888', marginTop: '1em' }}>
+                  {t('citizenShield.techNotes')}
+                </p>
+              </div>
+            )}
 
             {/* Download */}
             <div style={{ textAlign: 'center', margin: '2em 0' }}>
@@ -277,18 +323,28 @@ const CitizenShield = () => {
                 </ul>
               </section>
 
-              {/* Accesso */}
+              {/* Chiave di licenza */}
               <section>
                 <ul className="divided">
                   <li>
                     <article className="box highlight">
                       <header>
                         <h3>
-                          <i className="icon solid fa-lock" style={{ color: '#d52349', marginRight: '0.5em' }}></i>
-                          {t('citizenShield.accessTitle')}
+                          <i className="icon solid fa-key" style={{ color: '#d52349', marginRight: '0.5em' }}></i>
+                          {t('citizenShield.licenseTitle')}
                         </h3>
                       </header>
-                      <p style={{ fontSize: '0.95em', color: '#666', margin: 0 }}>{t('citizenShield.contactNote')}</p>
+                      <p style={{ fontSize: '0.95em', color: '#666' }}>{t('citizenShield.licenseText')}</p>
+                      <p style={{ fontSize: '0.9em', marginTop: '0.9em', marginBottom: 0 }}>
+                        <a
+                          href={`${import.meta.env.BASE_URL}downloads/${t('citizenShield.eulaPdf')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <i className="icon solid fa-file-alt" style={{ marginRight: '0.4em' }}></i>
+                          {t('citizenShield.eulaLink')}
+                        </a>
+                      </p>
                     </article>
                   </li>
                 </ul>
