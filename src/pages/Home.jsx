@@ -452,6 +452,19 @@ const Home = () => {
                           </p>
                         </div>
 
+                        <div className="soft-panel" style={{ textAlign: 'center', padding: '2em 1em', marginTop: '1.5em' }}>
+                          <i className="icon solid fa-seedling" style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.5em', display: 'block' }}></i>
+                          <h3>{t('home.extra.seedcastTitle')}</h3>
+                          <p style={{ color: '#666', textAlign: 'center' }}>{t('home.extra.seedcastDesc')}</p>
+                          <Link to="/seedcast" className="button icon solid fa-arrow-circle-right">
+                            {t('seedCast.ctaBtn')}
+                          </Link>
+                          <p style={{ fontSize: '0.9em', color: '#888', marginTop: '1em', marginBottom: 0 }}>
+                            <i className="icon solid fa-lock" style={{ marginRight: '0.4em' }}></i>
+                            {t('home.extra.seedcastNote')}
+                          </p>
+                        </div>
+
                         {/* Segnaposto, come nella sezione finanza */}
                         <div className="soft-panel" style={{ textAlign: 'center', padding: '2em 1em', marginTop: '1.5em' }}>
                           <i className="icon solid fa-hourglass-half" style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.5em', display: 'block' }}></i>

@@ -121,6 +121,35 @@ const CitizenShield = () => {
 
           </article>
 
+          {/* "Come installare" in un article suo, come nella pagina della SOC
+              Suite: la doppia riga orizzontale che il template traccia sopra
+              ogni article dopo il primo lo separa dal resto della pagina. */}
+          <article className="box post" style={{ padding: '4em 2em' }}>
+
+            <h3 style={{ marginBottom: '0.6em' }}>{t('citizenShield.installTitle')}</h3>
+            <p style={{ marginBottom: '1.2em', lineHeight: 1.6 }}>{t('citizenShield.installIntro')}</p>
+            <ol>
+              {t('citizenShield.installSteps').map((s, i) => (
+                <li key={i} style={{ marginBottom: '0.6em', lineHeight: 1.5 }}>{s}</li>
+              ))}
+            </ol>
+
+            {/* Download */}
+            <div style={{ textAlign: 'center', margin: '2em 0' }}>
+              <a
+                href={`${import.meta.env.BASE_URL}downloads/citizen-shield-deploy.zip`}
+                className="button icon solid fa-download"
+                download
+              >
+                {t('citizenShield.downloadBtn')}
+              </a>
+              <p style={{ fontSize: '0.85em', color: '#888', marginTop: '0.8em' }}>
+                {t('citizenShield.downloadNote')}
+              </p>
+            </div>
+
+          </article>
+
           {/* FAQ come articolo #content separato: il template disegna la doppia
               riga orizzontale sopra gli article successivi al primo, separando
               visivamente le FAQ dal resto della pagina (light e dark mode). */}

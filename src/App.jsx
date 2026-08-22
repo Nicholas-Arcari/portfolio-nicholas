@@ -21,6 +21,7 @@ import CyberServices from './pages/CyberServices';
 import CitizenShield from './pages/CitizenShield';
 import FinanzMe from './pages/FinanzMe';
 import ByteBulk from './pages/ByteBulk';
+import SeedCast from './pages/SeedCast';
 import './HackerTheme.css';
 
 function App() {
@@ -46,6 +47,7 @@ function App() {
             <Route path="/citizen-shield" element={<CitizenShield />} />
             <Route path="/finanzme" element={<FinanzMe />} />
             <Route path="/bytebulk" element={<ByteBulk />} />
+            <Route path="/seedcast" element={<SeedCast />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </PageTransition>
