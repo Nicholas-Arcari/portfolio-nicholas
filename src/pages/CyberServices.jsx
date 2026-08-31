@@ -12,7 +12,7 @@ const CyberServices = () => {
   const [guide, setGuide] = useState(null); // Default: nascosto; si apre al click sul bottone
   const [showImages, setShowImages] = useState(false); // Default: nascosto
   const [showFaq, setShowFaq] = useState(false); // Default: nascosto
-  const [video, setVideo] = useState(null); // { src, title } | null — lazy: caricato solo al click
+  const [video, setVideo] = useState(null); // { src, title } | null - lazy: caricato solo al click
   const { t } = useLanguage();
 
   const faq = t('cyberServices.faq');
@@ -285,7 +285,7 @@ const CyberServices = () => {
                         style={{ width: '100%', marginBottom: '10px' }}
                         onClick={() => setVideo({
                           src: `${VIDEO_BASE}/soc-suite-install-windows.mp4`,
-                          title: `${t('cyberServices.videoTitle')} — ${t('cyberServices.videoWindows')}`,
+                          title: `${t('cyberServices.videoTitle')} - ${t('cyberServices.videoWindows')}`,
                         })}
                       >
                         {t('cyberServices.videoWindows')}
@@ -296,7 +296,7 @@ const CyberServices = () => {
                         style={{ width: '100%' }}
                         onClick={() => setVideo({
                           src: `${VIDEO_BASE}/soc-suite-install-linux-macos.mp4`,
-                          title: `${t('cyberServices.videoTitle')} — ${t('cyberServices.videoLinux')}`,
+                          title: `${t('cyberServices.videoTitle')} - ${t('cyberServices.videoLinux')}`,
                         })}
                       >
                         {t('cyberServices.videoLinux')}

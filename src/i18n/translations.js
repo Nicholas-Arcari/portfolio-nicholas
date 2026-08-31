@@ -847,7 +847,7 @@ export const translations = {
         intro: 'Una selezione dei principali progetti pratici presenti nel mio portfolio GitHub, focalizzati su hardening, analisi di rete, offensive security e detection engineering.',
         labs: {
           title: 'Cybersecurity Labs',
-          desc: 'Ambiente di training full-stack con 10 moduli progressivi \u2014 dalla ricognizione OSINT e vulnerability scanning fino a web exploitation, privilege escalation, post-exploitation e digital forensics. Ogni modulo segue la metodologia Kill Chain ed \u00e8 mappato sul framework MITRE ATT&CK. 54 finding documentati: 13 Critical, 20 High, 10 Medium su superfici di attacco web, system e cloud.',
+          desc: 'Ambiente di training full-stack con 10 moduli progressivi - dalla ricognizione OSINT e vulnerability scanning fino a web exploitation, privilege escalation, post-exploitation e digital forensics. Ogni modulo segue la metodologia Kill Chain ed \u00e8 mappato sul framework MITRE ATT&CK. 54 finding documentati: 13 Critical, 20 High, 10 Medium su superfici di attacco web, system e cloud.',
           red: 'Dalla ricognizione (OSINT) e Vulnerability Assessment fino all\'exploitation avanzata (Web, System & Wireless), Social Engineering e Post-Exploitation (Pivoting/Persistence).',
           blue: 'Difesa attiva con Wazuh (SIEM), Hardening di sistemi, configurazione Honeypots e Digital Forensics con Wireshark.',
           cloud: 'Sicurezza per Docker, Kubernetes e ambienti Cloud (AWS/Azure).',
@@ -861,7 +861,7 @@ export const translations = {
         },
         tor: {
           title: 'Tor Network Analysis',
-          desc: 'Deep-dive tecnico sulla rete Tor \u2014 meccaniche del protocollo onion routing, crittografia dei circuiti (AES-128-CTR, ntor handshake), infrastruttura delle directory authority e configurazione bridge/relay. Documenta attacchi e difese noti (traffic correlation, browser fingerprinting, DNS leak), best practice di OPSEC e considerazioni legali/etiche. Include 5 laboratori pratici e oltre 210 check di validazione automatizzati.',
+          desc: 'Deep-dive tecnico sulla rete Tor - meccaniche del protocollo onion routing, crittografia dei circuiti (AES-128-CTR, ntor handshake), infrastruttura delle directory authority e configurazione bridge/relay. Documenta attacchi e difese noti (traffic correlation, browser fingerprinting, DNS leak), best practice di OPSEC e considerazioni legali/etiche. Include 5 laboratori pratici e oltre 210 check di validazione automatizzati.',
           arch: 'Analisi del protocollo onion routing, crittografia dei circuiti (AES-128-CTR, ntor handshake) e infrastruttura directory authority.',
           censorship: 'Implementazione di Bridge Obfs4 per offuscare il traffico e aggirare DPI (Deep Packet Inspection) o blocchi ISP.',
           automation: 'Script Bash per la rotazione automatica dell\'IP, gestione del ControlPort e tunneling via Proxychains. 210+ check di validazione.',
@@ -876,13 +876,13 @@ export const translations = {
         },
         ctf: {
           title: 'CTF Writeups',
-          desc: 'Raccolta di writeup e walkthrough di Capture The Flag \u2014 web exploitation, privilege escalation, forensics, crittografia e reverse engineering. Ogni writeup documenta la metodologia completa: ricognizione, identificazione vulnerabilit\u00e0, exploitation e lezioni apprese.',
+          desc: 'Raccolta di writeup e walkthrough di Capture The Flag - web exploitation, privilege escalation, forensics, crittografia e reverse engineering. Ogni writeup documenta la metodologia completa: ricognizione, identificazione vulnerabilit\u00e0, exploitation e lezioni apprese.',
           categories: 'Web Exploitation, Privilege Escalation, Forensics, Crittografia, Reverse Engineering, Miscellaneous.',
           tools: '12 script di automazione per attivit\u00e0 ricorrenti in CTF.',
         },
         detection: {
           title: 'Detection Engineering',
-          desc: 'Libreria di regole di detection personalizzate in 4 formati principali: Sigma (SIEM-agnostic), Yara (malware detection), Suricata (network IDS) e Wazuh (HIDS/SIEM). Regole organizzate per tattica MITRE ATT&CK \u2014 da credential access e lateral movement fino a exfiltration e C2 detection. Include guide di setup, mappatura test Atomic Red Team, dashboard Kibana/Grafana e validazione CI/CD. Heatmap di copertura ATT&CK Navigator.',
+          desc: 'Libreria di regole di detection personalizzate in 4 formati principali: Sigma (SIEM-agnostic), Yara (malware detection), Suricata (network IDS) e Wazuh (HIDS/SIEM). Regole organizzate per tattica MITRE ATT&CK - da credential access e lateral movement fino a exfiltration e C2 detection. Include guide di setup, mappatura test Atomic Red Team, dashboard Kibana/Grafana e validazione CI/CD. Heatmap di copertura ATT&CK Navigator.',
           formats: 'Sigma (SIEM-agnostic), Yara (malware), Suricata (network IDS), Wazuh (HIDS/SIEM).',
           testing: 'Mappatura Atomic Red Team, dashboard Kibana/Grafana e validazione CI/CD.',
         },
@@ -2541,7 +2541,7 @@ export const translations = {
         intro: 'A selection of key hands-on projects from my GitHub portfolio, focused on hardening, network analysis, offensive security and detection engineering.',
         labs: {
           title: 'Cybersecurity Labs',
-          desc: 'Full-stack cybersecurity training environment with 10 progressive modules \u2014 from OSINT reconnaissance and vulnerability scanning to web exploitation, privilege escalation, post-exploitation, and digital forensics. Each module follows the Kill Chain methodology and is mapped to the MITRE ATT&CK framework. 54 findings documented: 13 Critical, 20 High, 10 Medium severity across web, system, and cloud attack surfaces.',
+          desc: 'Full-stack cybersecurity training environment with 10 progressive modules - from OSINT reconnaissance and vulnerability scanning to web exploitation, privilege escalation, post-exploitation, and digital forensics. Each module follows the Kill Chain methodology and is mapped to the MITRE ATT&CK framework. 54 findings documented: 13 Critical, 20 High, 10 Medium severity across web, system, and cloud attack surfaces.',
           red: 'From reconnaissance (OSINT) and Vulnerability Assessment to advanced exploitation (Web, System & Wireless), Social Engineering and Post-Exploitation (Pivoting/Persistence).',
           blue: 'Active defense with Wazuh (SIEM), System Hardening, Honeypot configuration and Digital Forensics with Wireshark.',
           cloud: 'Security for Docker, Kubernetes and Cloud environments (AWS/Azure).',
@@ -2555,7 +2555,7 @@ export const translations = {
         },
         tor: {
           title: 'Tor Network Analysis',
-          desc: 'Comprehensive technical deep-dive into the Tor network \u2014 covering onion routing protocol mechanics, circuit cryptography (AES-128-CTR, ntor handshake), directory authority infrastructure, and bridge/relay configuration. Documents known attacks and defenses (traffic correlation, browser fingerprinting, DNS leaks), operational security best practices, and legal/ethical considerations. Includes 5 hands-on labs and 210+ automated validation checks.',
+          desc: 'Comprehensive technical deep-dive into the Tor network - covering onion routing protocol mechanics, circuit cryptography (AES-128-CTR, ntor handshake), directory authority infrastructure, and bridge/relay configuration. Documents known attacks and defenses (traffic correlation, browser fingerprinting, DNS leaks), operational security best practices, and legal/ethical considerations. Includes 5 hands-on labs and 210+ automated validation checks.',
           arch: 'Analysis of the onion routing protocol, circuit cryptography (AES-128-CTR, ntor handshake) and directory authority infrastructure.',
           censorship: 'Implementation of Obfs4 Bridges to obfuscate traffic and bypass DPI (Deep Packet Inspection) or ISP blocks.',
           automation: 'Bash scripts for automatic IP rotation, ControlPort management and tunneling via Proxychains. 210+ validation checks.',
@@ -2570,13 +2570,13 @@ export const translations = {
         },
         ctf: {
           title: 'CTF Writeups',
-          desc: 'Collection of Capture The Flag writeups and walkthroughs \u2014 covering web exploitation, privilege escalation, forensics, cryptography, and reverse engineering challenges. Each writeup documents the full methodology: reconnaissance, vulnerability identification, exploitation, and lessons learned.',
+          desc: 'Collection of Capture The Flag writeups and walkthroughs - covering web exploitation, privilege escalation, forensics, cryptography, and reverse engineering challenges. Each writeup documents the full methodology: reconnaissance, vulnerability identification, exploitation, and lessons learned.',
           categories: 'Web Exploitation, Privilege Escalation, Forensics, Cryptography, Reverse Engineering, Miscellaneous.',
           tools: '12 automation scripts for recurring CTF tasks.',
         },
         detection: {
           title: 'Detection Engineering',
-          desc: 'Library of custom detection rules across 4 major formats: Sigma (SIEM-agnostic), Yara (malware detection), Suricata (network IDS), and Wazuh (HIDS/SIEM). Rules organized by MITRE ATT&CK tactic \u2014 from credential access and lateral movement to exfiltration and C2 detection. Includes lab setup guides, Atomic Red Team test mappings, Kibana/Grafana dashboards, and CI/CD rule validation. Full ATT&CK Navigator coverage heatmaps.',
+          desc: 'Library of custom detection rules across 4 major formats: Sigma (SIEM-agnostic), Yara (malware detection), Suricata (network IDS), and Wazuh (HIDS/SIEM). Rules organized by MITRE ATT&CK tactic - from credential access and lateral movement to exfiltration and C2 detection. Includes lab setup guides, Atomic Red Team test mappings, Kibana/Grafana dashboards, and CI/CD rule validation. Full ATT&CK Navigator coverage heatmaps.',
           formats: 'Sigma (SIEM-agnostic), Yara (malware), Suricata (network IDS), Wazuh (HIDS/SIEM).',
           testing: 'Atomic Red Team test mappings, Kibana/Grafana dashboards and CI/CD validation.',
         },
@@ -2808,20 +2808,20 @@ export const translations = {
         {
           name: 'Americano',
           ingredients: 'Soda, Bitter, Sweet Vermouth, Orange, Lemon.',
-          preparation: 'Chill the glass with ice. Discard excess ice or water, then pour in 35ml of Sweet Vermouth and 35ml of Bitter. Add soda to taste (30\u201360ml depending on preference) and stir gently. Add fresh ice, stir again, and garnish with an orange slice in the drink and a squeezed lemon twist on the rim.',
-          history: 'It is called "Americano" in honor of Americans, who were accustomed to drinking "on the rocks" \u2014 that is, with ice. In early 20th-century Italy, vermouth was typically served cold in small coupes without ice. During that era, bartenders began adding a bitter component to vermouth, along with soda (common in both Europe and America) to give the drink a pleasant fizz.',
+          preparation: 'Chill the glass with ice. Discard excess ice or water, then pour in 35ml of Sweet Vermouth and 35ml of Bitter. Add soda to taste (30-60ml depending on preference) and stir gently. Add fresh ice, stir again, and garnish with an orange slice in the drink and a squeezed lemon twist on the rim.',
+          history: 'It is called "Americano" in honor of Americans, who were accustomed to drinking "on the rocks" - that is, with ice. In early 20th-century Italy, vermouth was typically served cold in small coupes without ice. During that era, bartenders began adding a bitter component to vermouth, along with soda (common in both Europe and America) to give the drink a pleasant fizz.',
         },
         {
           name: 'Bloody Mary',
           ingredients: 'Vodka, Tomato Juice, Celery, Tabasco, Worcestershire Sauce, Pepper, Salt, Fresh Lemon.',
-          preparation: 'Chill the glass. In a shaker (or better yet, using the "rolling" technique), combine ice and 45ml of Vodka. Cut a lemon in half, squeeze 5\u201310ml of juice, and add it to 125ml of tomato juice. Season with a pinch of salt, pepper, a few dashes of Tabasco and Worcestershire. Mix to aerate without shaking too aggressively. Pour into the glass over fresh ice and garnish with celery and a lemon twist.',
-          history: 'This drink was born in France around the 1920s\u201330s, created by Ferdinand "Pete" Petiot, a bartender at Harry\'s New York Bar in Paris. He initially made a simple mix of vodka and tomato juice. A New York hotel manager tasted it, loved it, and convinced Petiot to move to the Saint Regis Hotel in New York. To suit American palates \u2014 which favored bolder, spicier flavors \u2014 he added sauces and seasonings, creating the modern Bloody Mary. The celery was added in the 1960s: originally served as a crudit\u00e9, a guest at a cocktail party dipped it into her glass, starting the tradition.',
+          preparation: 'Chill the glass. In a shaker (or better yet, using the "rolling" technique), combine ice and 45ml of Vodka. Cut a lemon in half, squeeze 5-10ml of juice, and add it to 125ml of tomato juice. Season with a pinch of salt, pepper, a few dashes of Tabasco and Worcestershire. Mix to aerate without shaking too aggressively. Pour into the glass over fresh ice and garnish with celery and a lemon twist.',
+          history: 'This drink was born in France around the 1920s-30s, created by Ferdinand "Pete" Petiot, a bartender at Harry\'s New York Bar in Paris. He initially made a simple mix of vodka and tomato juice. A New York hotel manager tasted it, loved it, and convinced Petiot to move to the Saint Regis Hotel in New York. To suit American palates - which favored bolder, spicier flavors - he added sauces and seasonings, creating the modern Bloody Mary. The celery was added in the 1960s: originally served as a crudit\u00e9, a guest at a cocktail party dipped it into her glass, starting the tradition.',
         },
         {
           name: 'Bombardino',
           ingredients: 'Zabov (Egg Liqueur), Whipped Cream, Cocoa Powder.',
           preparation: 'Heat the Zabov (without boiling it), pour it into a heat-resistant glass, and top with generous whipped cream and a dusting of cocoa powder.',
-          history: 'A drink born in the 1950s\u201360s, the golden age of vintage cocktails on the ski slopes. Legend has it that it was created by a young Genoese bartender who had retreated to the mountains.',
+          history: 'A drink born in the 1950s-60s, the golden age of vintage cocktails on the ski slopes. Legend has it that it was created by a young Genoese bartender who had retreated to the mountains.',
         },
         {
           name: 'Corpse Reviver #2',
@@ -2833,7 +2833,7 @@ export const translations = {
           name: 'Cosmopolitan',
           ingredients: 'Vodka (45ml), Cointreau (30ml), Fresh Lime Juice (15ml), Cranberry Juice (50ml), Orange Zest.',
           preparation: 'Chill a coupe glass. In a shaker with ice, combine Vodka, Cointreau, cranberry juice, and lime juice. Shake vigorously. Strain into the glass (no ice). Take an orange peel and express its essential oils over the drink to perfume it.',
-          history: 'The origins are hazy. A "Cosmopolitan" version appears as early as 1927 (Harry MacElhone), but the modern recipe as we know it dates to either 1934 or the 1980s. A well-known unwritten rule says to add "just enough cranberry to make people say \'Ooh, how pretty \u2014 it\'s pink!\'".',
+          history: 'The origins are hazy. A "Cosmopolitan" version appears as early as 1927 (Harry MacElhone), but the modern recipe as we know it dates to either 1934 or the 1980s. A well-known unwritten rule says to add "just enough cranberry to make people say \'Ooh, how pretty - it\'s pink!\'".',
         },
         {
           name: 'Daiquiri',
@@ -2863,12 +2863,12 @@ export const translations = {
           name: 'Long Island Iced Tea',
           ingredients: 'Vodka, Rum, Gin, Tequila, Cointreau, Lemon Juice, Cane Sugar Syrup, Coca-Cola.',
           preparation: 'Use a tall glass (Highball) and chill it with ice. In a shaker, combine 15ml Vodka, 15ml Rum, 15ml Gin, 15ml Tequila, 15ml Cointreau, 25ml lemon juice, and 10ml sugar syrup. Shake and strain into the glass over fresh ice. Add just a splash of Coca-Cola for the iced-tea color and garnish with lemon.',
-          history: 'Legend has it that this drink was born during Prohibition (1920s\u201330s) to disguise alcohol as iced tea, mixing whatever was on hand (lemon, sugar, cola) to fool police inspections. The recipe was officially codified in the 1960s by Robert "Rosebud" Butt and went on to become a worldwide classic.',
+          history: 'Legend has it that this drink was born during Prohibition (1920s-30s) to disguise alcohol as iced tea, mixing whatever was on hand (lemon, sugar, cola) to fool police inspections. The recipe was officially codified in the 1960s by Robert "Rosebud" Butt and went on to become a worldwide classic.',
         },
         {
           name: 'Manhattan',
           ingredients: 'Rye Whiskey (or Bourbon), Sweet Vermouth, Angostura Bitters, Brandied Cherries, Orange Zest.',
-          preparation: 'In a mixing glass, pour 50ml of Rye Whiskey, 25ml of sweet vermouth, and 2\u20134 dashes of Angostura Bitters. Stir with ice and strain into a pre-chilled coupe. Garnish with a brandied cherry and express the oils from an orange peel over the drink.',
+          preparation: 'In a mixing glass, pour 50ml of Rye Whiskey, 25ml of sweet vermouth, and 2-4 dashes of Angostura Bitters. Stir with ice and strain into a pre-chilled coupe. Garnish with a brandied cherry and express the oils from an orange peel over the drink.',
           history: 'Born in America. It is said to have been created at an election party for Samuel J. Tilden, Governor of New York and presidential candidate. Also present at the party was Jennie Jerome, Winston Churchill\'s mother, to whom the drink is sometimes attributed, though the historical dates are debated.',
         },
         {
@@ -2880,7 +2880,7 @@ export const translations = {
         {
           name: 'Mojito',
           ingredients: 'Cuban Rum, Mint, White Cane Sugar, Seltzer (or Sparkling Water), Lime, Angostura Bitters (optional).',
-          preparation: 'In a tall glass (Tumbler), add 25ml of lime juice and 4\u20135g of white cane sugar. Stir well to dissolve the sugar. Add the mint (without crushing it too hard) and a splash of soda. Pour in 45ml of Rum and fill the glass with ice (coarsely crushed is best). Stir from the bottom up. Top with more ice and soda. Garnish with a mint sprig and a few drops of Angostura.',
+          preparation: 'In a tall glass (Tumbler), add 25ml of lime juice and 4-5g of white cane sugar. Stir well to dissolve the sugar. Add the mint (without crushing it too hard) and a splash of soda. Pour in 45ml of Rum and fill the glass with ice (coarsely crushed is best). Stir from the bottom up. Top with more ice and soda. Garnish with a mint sprig and a few drops of Angostura.',
           history: 'Of Cuban origin (La Bodeguita del Medio, Havana), made famous by Hemingway in the 1950s. It likely descends from the "Draque," a drink attributed to the pirate Francis Drake (1500s) made with aguardiente, lime, and mint. The name combines "mojo" (sauce/charm) and "mojadito" (moist).',
         },
         {
@@ -2904,20 +2904,20 @@ export const translations = {
         {
           name: 'Old Fashioned',
           ingredients: 'Bourbon (or Rye Whiskey), Angostura Bitters, Sugar Cube (or syrup), Water (splash), Orange Zest.',
-          preparation: 'Place the sugar cube in the glass, saturate it with 2\u20133 dashes of Angostura and a splash of water (or soda). Muddle until dissolved. Add ice and 45ml of Bourbon. Stir at length to dilute and chill. Garnish with an orange peel expressed over the drink.',
+          preparation: 'Place the sugar cube in the glass, saturate it with 2-3 dashes of Angostura and a splash of water (or soda). Muddle until dissolved. Add ice and 45ml of Bourbon. Stir at length to dilute and chill. Garnish with an orange peel expressed over the drink.',
           history: 'Defined as the original "Whiskey Cocktail" as early as 1862 by Jerry Thomas. It embodies the earliest definition of a cocktail: spirits, sugar, water, and bitters. It consistently ranks among the best-selling drinks in the world.',
         },
         {
           name: 'Pi\u00f1a Colada',
           ingredients: 'White Rum, Pineapple Juice, Coconut Milk (or Coconut Cream), Ice.',
-          preparation: 'In a blender, combine 45ml White Rum, 120ml Pineapple Juice, 10\u201320ml Coconut Milk, and crushed ice. Blend until smooth and creamy (frozen). Garnish with a pineapple wedge and leaf.',
+          preparation: 'In a blender, combine 45ml White Rum, 120ml Pineapple Juice, 10-20ml Coconut Milk, and crushed ice. Blend until smooth and creamy (frozen). Garnish with a pineapple wedge and leaf.',
           history: 'The official drink of Puerto Rico. The name means "strained pineapple." Born in the Caribbean, it is the king of tropical (Tiki) cocktails.',
         },
         {
           name: 'Ramos Gin Fizz',
           ingredients: 'London Dry Gin, Simple Syrup, Egg White, Fresh Cream, Lemon Juice, Lime Juice, Orange Flower Water, Soda.',
-          preparation: 'Dry shake (without ice) 45ml Gin, 25ml syrup, 30ml cream, 15ml lemon juice, 10ml lime juice, egg white, and 3 drops of orange flower water. Add ice and shake vigorously for a long time (at least 2\u20133 minutes). Strain into a tall glass (no ice) and slowly top with soda to raise the foam above the rim.',
-          history: 'New Orleans, 1888, Henry Charles Ramos. Famous for the marathon shaking required to emulsify cream and egg white. His establishment employed "shaker boys" \u2014 young men hired solely to shake drinks in relays for 10\u201315 minutes at a time.',
+          preparation: 'Dry shake (without ice) 45ml Gin, 25ml syrup, 30ml cream, 15ml lemon juice, 10ml lime juice, egg white, and 3 drops of orange flower water. Add ice and shake vigorously for a long time (at least 2-3 minutes). Strain into a tall glass (no ice) and slowly top with soda to raise the foam above the rim.',
+          history: 'New Orleans, 1888, Henry Charles Ramos. Famous for the marathon shaking required to emulsify cream and egg white. His establishment employed "shaker boys" - young men hired solely to shake drinks in relays for 10-15 minutes at a time.',
         },
         {
           name: 'Sex on the Beach',
@@ -2929,7 +2929,7 @@ export const translations = {
           name: 'Spritz',
           ingredients: 'Aperol (or Campari/Select), Prosecco, Soda (or Sparkling Water), Orange.',
           preparation: 'In a wine glass filled with ice, pour 3 parts Prosecco (70ml), 2 parts Aperol (50ml), and 1 part Soda (splash). Stir gently and garnish with an orange slice.',
-          history: 'Born in the Triveneto region during Austrian rule. Habsburg soldiers found Venetian wines too strong and diluted them (spritzen = to spray/splash) with sparkling water. In the 1920s\u201330s, bitter liqueurs (Aperol, Select) were added, creating the version we know today.',
+          history: 'Born in the Triveneto region during Austrian rule. Habsburg soldiers found Venetian wines too strong and diluted them (spritzen = to spray/splash) with sparkling water. In the 1920s-30s, bitter liqueurs (Aperol, Select) were added, creating the version we know today.',
         },
         {
           name: 'Vesper',
@@ -3174,7 +3174,7 @@ export const translations = {
         },
         {
           title: "Kiroshi Optics Replica",
-          description: "CHOOMS! Whether you're out for a night on the town in Night City or storming Arasaka Tower, you'd better have the best optics eddies can buy \u2014 and nothing beats Kiroshi.",
+          description: "CHOOMS! Whether you're out for a night on the town in Night City or storming Arasaka Tower, you'd better have the best optics eddies can buy - and nothing beats Kiroshi.",
           material: "PLA+ and Resin (for the lenses)",
           image: "images/stampa/stampa14.jpg",
           topic: "Cosplay",

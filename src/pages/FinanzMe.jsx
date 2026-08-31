@@ -11,7 +11,7 @@ const FinanzMe = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [guide, setGuide] = useState(null); // Default: nascosto; si apre al click sul bottone
   const [showFaq, setShowFaq] = useState(false); // Default: nascosto
-  const [video, setVideo] = useState(null); // { src, title } | null — lazy: caricato solo al click
+  const [video, setVideo] = useState(null); // { src, title } | null - lazy: caricato solo al click
   const { t } = useLanguage();
 
   const faq = t('finanzMe.faq');
@@ -229,7 +229,7 @@ const FinanzMe = () => {
                         style={{ width: '100%', marginBottom: '10px' }}
                         onClick={() => setVideo({
                           src: `${VIDEO_BASE}/finanzme-install-windows.mp4`,
-                          title: `${t('finanzMe.videoTitle')} — ${t('finanzMe.videoWindows')}`,
+                          title: `${t('finanzMe.videoTitle')} - ${t('finanzMe.videoWindows')}`,
                         })}
                       >
                         {t('finanzMe.videoWindows')}
@@ -240,7 +240,7 @@ const FinanzMe = () => {
                         style={{ width: '100%' }}
                         onClick={() => setVideo({
                           src: `${VIDEO_BASE}/finanzme-install-linux-macos.mp4`,
-                          title: `${t('finanzMe.videoTitle')} — ${t('finanzMe.videoLinux')}`,
+                          title: `${t('finanzMe.videoTitle')} - ${t('finanzMe.videoLinux')}`,
                         })}
                       >
                         {t('finanzMe.videoLinux')}
