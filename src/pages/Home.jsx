@@ -376,6 +376,13 @@ const Home = () => {
                             {t('citizenShield.ctaBtn')}
                           </Link>
                         </div>
+
+                        {/* Segnaposto: il prossimo servizio di sicurezza in lavorazione */}
+                        <div className="soft-panel" style={{ textAlign: 'center', padding: '2em 1em', marginTop: '1.5em' }}>
+                          <i className="icon solid fa-hourglass-half" style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.5em', display: 'block' }}></i>
+                          <h3>{t('home.services.soonTitle')}</h3>
+                          <p style={{ color: '#666', textAlign: 'center', marginBottom: 0 }}>{t('home.services.soonDesc')}</p>
+                        </div>
                     </div>
                 )}
               </article>
@@ -408,13 +415,6 @@ const Home = () => {
                             <i className="icon solid fa-lock" style={{ marginRight: '0.4em' }}></i>
                             {t('home.finance.finanzmeNote')}
                           </p>
-                        </div>
-
-                        {/* Secondo servizio: ancora senza nome, segnaposto */}
-                        <div className="soft-panel" style={{ textAlign: 'center', padding: '2em 1em', marginTop: '1.5em' }}>
-                          <i className="icon solid fa-hourglass-half" style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.5em', display: 'block' }}></i>
-                          <h3>{t('home.finance.soonTitle')}</h3>
-                          <p style={{ color: '#666', textAlign: 'center', marginBottom: 0 }}>{t('home.finance.soonDesc')}</p>
                         </div>
                     </div>
                 )}
@@ -464,13 +464,6 @@ const Home = () => {
                             {t('home.extra.seedcastNote')}
                           </p>
                         </div>
-
-                        {/* Segnaposto, come nella sezione finanza */}
-                        <div className="soft-panel" style={{ textAlign: 'center', padding: '2em 1em', marginTop: '1.5em' }}>
-                          <i className="icon solid fa-hourglass-half" style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.5em', display: 'block' }}></i>
-                          <h3>{t('home.extra.soonTitle')}</h3>
-                          <p style={{ color: '#666', textAlign: 'center', marginBottom: 0 }}>{t('home.extra.soonDesc')}</p>
-                        </div>
                     </div>
                 )}
               </article>
@@ -495,7 +488,7 @@ const Home = () => {
                   <li>
                     <article className="box excerpt">
                       <header><span className="date">{t('home.sidebar.uniDate')}</span><h3><a href="#">{t('home.sidebar.uniTitle')}</a></h3></header>
-                      <p>{t('home.sidebar.uniDesc')}<br />{t('home.sidebar.uniGrade')} <strong>90/110</strong>.</p>
+                      <p>{t('home.sidebar.uniDesc')}</p>
 
                       {/* BOTTONE VIEW MORE UNIVERSITA */}
                       <Link to="/university-details" className="button icon solid fa-arrow-circle-right" style={{ marginTop: '10px' }}>
@@ -507,7 +500,7 @@ const Home = () => {
                   <li>
                     <article className="box excerpt">
                       <header><span className="date">{t('home.sidebar.hsDate')}</span><h3><a href="#">{t('home.sidebar.hsTitle')}</a></h3></header>
-                      <p>{t('home.sidebar.hsDesc')}<br />{t('home.sidebar.hsGrade')} <strong>88/100</strong>.</p>
+                      <p>{t('home.sidebar.hsDesc')}</p>
                     </article>
                   </li>
                 </ul>

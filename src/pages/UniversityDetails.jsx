@@ -136,8 +136,7 @@ const UniversityDetails = () => {
                       <p>
                         <strong>{t('university.sidebarAteneol')}</strong> {t('university.sidebarUni')}<br />
                         <strong>{t('university.sidebarCorsol')}</strong> {t('university.sidebarCourse')}<br />
-                        <strong>{t('university.sidebarPeriodol')}</strong> {t('university.sidebarPeriod')}<br />
-                        <strong>{t('university.sidebarVotol')}</strong> {t('university.sidebarGrade')}
+                        <strong>{t('university.sidebarPeriodol')}</strong> {t('university.sidebarPeriod')}
                       </p>
                     </article>
                   </li>
