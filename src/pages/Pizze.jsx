@@ -5,6 +5,7 @@ import TerminalText from '../components/TerminalText';
 import { useLanguage } from '../contexts/languageContext';
 import Footer from '../components/Footer';
 import WheelOfFortune from '../components/WheelOfFortune';
+import { jumpToItem } from '../utils/jumpToItem';
 import { PIZZA_SYMBOLS, withSymbols } from '../config/symbols';
 
 const Pizze = () => {
@@ -116,7 +117,7 @@ const Pizze = () => {
                     filteredPizzas.map((pizza, index) => (
                       <React.Fragment key={index}>
                         <hr />
-                        <h3>{pizza.sym} {pizza.name}</h3>
+                        <h3 id={`pizza-${pizza.idx}`} className="wheel-anchor">{pizza.sym} {pizza.name}</h3>
                         <p>
                           {pizza.description}<br />
                           <strong>{t('pizze.topping')}</strong> {pizza.topping}<br />
@@ -148,6 +149,8 @@ const Pizze = () => {
                         spinLabel={t('wheel.spin')}
                         spinningLabel={t('wheel.spinning')}
                         resultLabel={t('wheel.result')}
+                        goToLabel={t('wheel.goTo')}
+                        onPick={(i) => jumpToItem(`pizza-${i}`, () => setSearchTerm(''))}
                       />
                     </article>
                   </li>

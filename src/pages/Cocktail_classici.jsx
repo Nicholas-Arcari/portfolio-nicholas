@@ -5,6 +5,7 @@ import TerminalText from '../components/TerminalText';
 import { useLanguage } from '../contexts/languageContext';
 import Footer from '../components/Footer';
 import WheelOfFortune from '../components/WheelOfFortune';
+import { jumpToItem } from '../utils/jumpToItem';
 import { DRINK_SYMBOLS, withSymbols } from '../config/symbols';
 
 const Cocktail_classici = () => {
@@ -119,7 +120,7 @@ const Cocktail_classici = () => {
                  filteredCocktails.map((cocktail, index) => (
                    <React.Fragment key={index}>
                      <article className="box post">
-                        <header><h2>{cocktail.sym} {cocktail.name}</h2></header>
+                        <header><h2 id={`classico-${cocktail.idx}`} className="wheel-anchor">{cocktail.sym} {cocktail.name}</h2></header>
 
                         <h3>{t('cocktailClassici.ingredientsLabel')}</h3>
                         <p>{cocktail.ingredients}</p>
@@ -157,6 +158,8 @@ const Cocktail_classici = () => {
                         spinLabel={t('wheel.spin')}
                         spinningLabel={t('wheel.spinning')}
                         resultLabel={t('wheel.result')}
+                        goToLabel={t('wheel.goTo')}
+                        onPick={(i) => jumpToItem(`classico-${i}`, () => setSearchTerm(''))}
                       />
                     </article>
                   </li>

@@ -5,6 +5,7 @@ import TerminalText from '../components/TerminalText';
 import { useLanguage } from '../contexts/languageContext';
 import Footer from '../components/Footer';
 import WheelOfFortune from '../components/WheelOfFortune';
+import { jumpToItem } from '../utils/jumpToItem';
 import { FOOD_SYMBOLS, withSymbols } from '../config/symbols';
 
 const Ricette = () => {
@@ -128,7 +129,7 @@ const Ricette = () => {
                     filteredRecipes.map((recipe, index) => (
                       <React.Fragment key={index}>
                         <hr />
-                        <h3>{recipe.sym} {recipe.name}</h3>
+                        <h3 id={`ricetta-${recipe.idx}`} className="wheel-anchor">{recipe.sym} {recipe.name}</h3>
                         <p>
                           {recipe.description}<br />
                           <strong>{t('ricette.ingredients')}</strong> {recipe.ingredients}<br />
@@ -161,6 +162,8 @@ const Ricette = () => {
                         spinLabel={t('wheel.spin')}
                         spinningLabel={t('wheel.spinning')}
                         resultLabel={t('wheel.result')}
+                        goToLabel={t('wheel.goTo')}
+                        onPick={(i) => jumpToItem(`ricetta-${i}`, () => setSearchTerm(''))}
                       />
                     </article>
                   </li>

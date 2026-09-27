@@ -91,6 +91,50 @@ body.dark-mode .double-rule {
 body.dark-mode .wheel-result strong {
     color: #ff6b81;
 }
+/* Il suggerimento e' un pulsante (porta alla sua riga nella lista), ma deve
+   leggersi come testo: via lo stile a pillola che il template da' a ogni
+   <button>, compreso il colore che impone con !important. */
+.wheel-result-link,
+.wheel-result-link:hover,
+.wheel-result-link:active {
+    background: none;
+    box-shadow: none;
+}
+.wheel-result-link {
+    color: inherit !important;
+    text-transform: none;
+    letter-spacing: normal;
+    font-weight: inherit;
+    font-size: 1em;
+    padding: 0.3em 0.6em;
+    cursor: pointer;
+}
+.wheel-result-link:hover strong {
+    text-decoration: underline;
+}
+.wheel-result-link:focus-visible {
+    outline: 2px solid #d52349;
+    outline-offset: 2px;
+}
+.wheel-result-hint {
+    display: block;
+    font-size: 0.8em;
+    color: #888;
+    margin-top: 0.2em;
+}
+/* La riga raggiunta: margine sopra perche' sotto i 980px la barra del menu e'
+   fissa in alto e la coprirebbe, poi un lampo breve per ritrovarla. */
+.wheel-anchor {
+    scroll-margin-top: 4em;
+}
+.wheel-target {
+    animation: wheel-flash 1.8s ease-out;
+    border-radius: 4px;
+}
+@keyframes wheel-flash {
+    0%, 35% { background-color: rgba(213, 35, 73, 0.18); }
+    100% { background-color: transparent; }
+}
 
 /* ===== VIDEO MODAL ===== */
 /* Overlay in sovrimpressione per i video tutorial. Il tag <video> viene montato

@@ -39,6 +39,7 @@ export const translations = {
       spin: 'Gira la ruota!',
       spinning: 'Gira...',
       result: 'Ti suggerisco:',
+      goTo: 'Vai alla voce nella lista',
     },
 
     // --- 404 ---
@@ -1718,6 +1719,7 @@ export const translations = {
       spin: 'Spin the wheel!',
       spinning: 'Spinning...',
       result: 'I suggest:',
+      goTo: 'Jump to it in the list',
     },
 
     // --- 404 ---
