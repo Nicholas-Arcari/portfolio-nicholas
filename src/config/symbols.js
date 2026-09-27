@@ -22,6 +22,8 @@ export const DRINK_SYMBOLS = [
   '🧊', '🫐', '🍇', '🥭', '🌰', '🍯',
 ];
 
-// Applica i simboli a una lista, per indice.
+// Applica i simboli a una lista, per indice. L'indice resta anche nell'elemento
+// (`idx`): la ricerca filtra la lista, e la voce suggerita dalla ruota va
+// ritrovata per la sua posizione nell'elenco completo, non in quello filtrato.
 export const withSymbols = (items, pool) =>
-  items.map((item, i) => ({ ...item, sym: pool[i % pool.length] }));
+  items.map((item, i) => ({ ...item, sym: pool[i % pool.length], idx: i }));
