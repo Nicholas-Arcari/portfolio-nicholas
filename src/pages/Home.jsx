@@ -305,36 +305,6 @@ const Home = () => {
                         </p>
                         <a href="https://github.com/Nicholas-Arcari/FlipperZero-guide" className="button icon brands fa-github" target="_blank" rel="noopener noreferrer">{t('home.cyber.viewRepo')}</a>
 
-                        <br /><br />
-                        <hr />
-
-                        <h3>{t('home.cyber.ctf.title')}</h3>
-                        <p>
-                          {t('home.cyber.ctf.desc')}
-                          <br /><br />
-                          <strong>Categories:</strong> {t('home.cyber.ctf.categories')}
-                          <br />
-                          <strong>Automation:</strong> {t('home.cyber.ctf.tools')}
-                          <br /><br />
-                          <strong>Stack:</strong> <span className="tech-stack">Python, Bash, Burp Suite, Wireshark, Ghidra</span>
-                        </p>
-                        <a href="https://github.com/Nicholas-Arcari/ctf-writeups" className="button icon brands fa-github" target="_blank" rel="noopener noreferrer">{t('home.cyber.viewRepo')}</a>
-
-                        <br /><br />
-                        <hr />
-
-                        <h3>{t('home.cyber.detection.title')}</h3>
-                        <p>
-                          {t('home.cyber.detection.desc')}
-                          <br /><br />
-                          <strong>Formats:</strong> {t('home.cyber.detection.formats')}
-                          <br />
-                          <strong>Testing & CI/CD:</strong> {t('home.cyber.detection.testing')}
-                          <br /><br />
-                          <strong>Stack:</strong> <span className="tech-stack">Sigma, Yara, Suricata, Wazuh, ELK Stack, MITRE ATT&CK</span>
-                        </p>
-                        <a href="https://github.com/Nicholas-Arcari/detection-engineering" className="button icon brands fa-github" target="_blank" rel="noopener noreferrer">{t('home.cyber.viewRepo')}</a>
-
                         {/* SOC Suite e Citizen Shield non compaiono qui: sono
                             prodotti e vivono nella sezione "Servizi di
                             Cybersecurity" con le rispettive schede prodotto. */}
@@ -522,13 +492,6 @@ const Home = () => {
                         <p style={{ fontSize: '0.9em', marginBottom: '0.5em' }}>
                           {t('home.sidebar.ccnaDesc')}
                         </p>
-                        {/* Progress Bar */}
-                        <div className="progress-track">
-                          <div style={{ backgroundColor: '#4caf50', width: '60%', height: '100%', borderRadius: '5px' }}></div>
-                        </div>
-                        <span style={{ fontSize: '0.8em', color: '#666', display: 'block', marginTop: '5px' }}>
-                          {t('home.sidebar.ccnaStatus')}
-                        </span>
                       </div>
 
                       {/* CompTIA Security+ */}
@@ -540,13 +503,6 @@ const Home = () => {
                         <p style={{ fontSize: '0.9em', marginBottom: '0.5em' }}>
                           {t('home.sidebar.secplusDesc')}
                         </p>
-                        {/* Progress Bar */}
-                        <div className="progress-track">
-                          <div style={{ backgroundColor: '#ff9800', width: '50%', height: '100%', borderRadius: '5px' }}></div>
-                        </div>
-                        <span style={{ fontSize: '0.8em', color: '#666', display: 'block', marginTop: '5px' }}>
-                          {t('home.sidebar.secplusStatus')}
-                        </span>
                       </div>
 
                     </article>

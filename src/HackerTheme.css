@@ -183,17 +183,6 @@ body.dark-mode .soft-panel p {
     color: #a0a0a0;
 }
 
-/* ===== PROGRESS BAR CERTIFICAZIONI ===== */
-.progress-track {
-    background-color: #e0e0e0;
-    border-radius: 5px;
-    height: 10px;
-    width: 100%;
-}
-body.dark-mode .progress-track {
-    background-color: #2f2f2f;
-}
-
 /* ===== TAG / CHIP ===== */
 .tag-chip {
     display: inline-block;
