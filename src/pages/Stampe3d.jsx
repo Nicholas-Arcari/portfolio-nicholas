@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import TerminalText from '../components/TerminalText';
 import { useLanguage } from '../contexts/languageContext';
 import Footer from '../components/Footer';
+import SearchInput from '../components/SearchInput';
 
 const Stampe3d = () => {
   const { t } = useLanguage();
@@ -127,11 +128,10 @@ const Stampe3d = () => {
                     <div className="fade-in">
                         {/* SEARCH BAR ESEGUITI */}
                         <div style={{ marginBottom: '30px', textAlign: 'center' }}>
-                        <input
-                            type="text"
+                        <SearchInput
                             placeholder={t('stampe3d.searchPlaceholder')}
                             value={searchTermExecuted}
-                            onChange={(e) => setSearchTermExecuted(e.target.value)}
+                            onChange={setSearchTermExecuted}
                             style={{
                             width: '60%',
                             padding: '10px',
@@ -223,11 +223,10 @@ const Stampe3d = () => {
                     <div className="fade-in">
                         {/* SEARCH BAR FUTURI */}
                         <div style={{ marginBottom: '30px', textAlign: 'center' }}>
-                        <input
-                            type="text"
+                        <SearchInput
                             placeholder={t('stampe3d.searchPlaceholder')}
                             value={searchTermFuture}
-                            onChange={(e) => setSearchTermFuture(e.target.value)}
+                            onChange={setSearchTermFuture}
                             style={{
                             width: '60%',
                             padding: '10px',
