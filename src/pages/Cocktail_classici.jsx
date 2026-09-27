@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import TerminalText from '../components/TerminalText';
 import { useLanguage } from '../contexts/languageContext';
 import Footer from '../components/Footer';
+import SearchInput from '../components/SearchInput';
 import WheelOfFortune from '../components/WheelOfFortune';
 import { jumpToItem } from '../utils/jumpToItem';
 import { DRINK_SYMBOLS, withSymbols } from '../config/symbols';
@@ -93,11 +94,10 @@ const Cocktail_classici = () => {
                   <p>{t('cocktailClassici.subtitle')}</p>
 
                   {/* BARRA DI RICERCA */}
-                  <input
-                    type="text"
+                  <SearchInput
                     placeholder={t('cocktailClassici.search')}
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={setSearchTerm}
                     style={{
                       width: '100%',
                       padding: '15px',

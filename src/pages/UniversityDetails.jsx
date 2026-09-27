@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import TerminalText from '../components/TerminalText';
 import { useLanguage } from '../contexts/languageContext';
 import Footer from '../components/Footer';
+import SearchInput from '../components/SearchInput';
 
 const UniversityDetails = () => {
   const { t } = useLanguage();
@@ -80,11 +81,10 @@ const UniversityDetails = () => {
                   <p>{t('university.subtitle')}</p>
 
                   {/* BARRA DI RICERCA */}
-                  <input
-                    type="text"
+                  <SearchInput
                     placeholder={t('university.search')}
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={setSearchTerm}
                     style={{
                       width: '100%',
                       padding: '15px',
