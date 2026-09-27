@@ -3,6 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Crawler: i motori di ricerca indicizzano; chi raccoglie contenuti per
+         addestrare modelli di IA trova noai/noimageai. Un robots.txt qui non
+         servirebbe, perche' i crawler lo cercano solo alla radice del dominio;
+         e un bot malevolo ignora entrambi, quindi non e' una difesa. -->
+    <meta name="robots" content="index, follow, noai, noimageai" />
     <title>Nicholas Arcari - Portfolio</title>
     <link rel="stylesheet" href="/assets/css/main.css" />
 
