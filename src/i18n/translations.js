@@ -850,7 +850,7 @@ export const translations = {
         titleBold: 'Cybersecurity',
         show: 'Mostra Progetti',
         hide: 'Nascondi Progetti',
-        intro: 'Una selezione dei principali progetti pratici presenti nel mio portfolio GitHub, focalizzati su hardening, analisi di rete, offensive security e detection engineering.',
+        intro: 'Una selezione dei principali progetti pratici presenti nel mio portfolio GitHub, focalizzati su hardening, analisi di rete e offensive security.',
         labs: {
           title: 'Cybersecurity Labs',
           desc: 'Ambiente di training full-stack con 10 moduli progressivi - dalla ricognizione OSINT e vulnerability scanning fino a web exploitation, privilege escalation, post-exploitation e digital forensics. Ogni modulo segue la metodologia Kill Chain ed \u00e8 mappato sul framework MITRE ATT&CK. 54 finding documentati: 13 Critical, 20 High, 10 Medium su superfici di attacco web, system e cloud.',
@@ -2532,7 +2532,7 @@ export const translations = {
         titleBold: 'Projects',
         show: 'Show Projects',
         hide: 'Hide Projects',
-        intro: 'A selection of key hands-on projects from my GitHub portfolio, focused on hardening, network analysis, offensive security and detection engineering.',
+        intro: 'A selection of key hands-on projects from my GitHub portfolio, focused on hardening, network analysis and offensive security.',
         labs: {
           title: 'Cybersecurity Labs',
           desc: 'Full-stack cybersecurity training environment with 10 progressive modules - from OSINT reconnaissance and vulnerability scanning to web exploitation, privilege escalation, post-exploitation, and digital forensics. Each module follows the Kill Chain methodology and is mapped to the MITRE ATT&CK framework. 54 findings documented: 13 Critical, 20 High, 10 Medium severity across web, system, and cloud attack surfaces.',
