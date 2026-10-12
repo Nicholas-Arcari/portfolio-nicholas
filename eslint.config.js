@@ -30,4 +30,11 @@ export default defineConfig([
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
     },
   },
+  // Gli script della build girano in Node, non nel browser
+  {
+    files: ['build/**/*.js'],
+    languageOptions: {
+      globals: globals.node,
+    },
+  },
 ])

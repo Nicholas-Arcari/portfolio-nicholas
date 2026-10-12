@@ -796,3 +796,395 @@ body.dark-mode .course-link,
 body.dark-mode .course-link:hover {
     color: #ff6b81;
 }
+
+/* ===== INDICE DI UN HOMEWORK ===== */
+/* Titolo e pulsante "Indice" sulla stessa riga, che va a capo sui telefoni */
+.hw-title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6em 1.2em;
+    margin-bottom: 1.5em;
+}
+.hw-title h2 {
+    margin: 0;
+}
+.hw-index-button {
+    padding: 0.7em 1.6em;
+}
+
+/* Con il modal aperto la pagina sotto non scorre. Lo spazio della barra di
+   scorrimento resta riservato: senza, la pagina si allargherebbe, i grafici
+   si ridisegnerebbero piu' alti e il salto alla sezione arriverebbe storto. */
+html.hw-index-open {
+    overflow: hidden;
+    scrollbar-gutter: stable;
+}
+dialog.hw-index {
+    width: min(36em, calc(100vw - 2em));
+    max-width: none;
+    max-height: min(85vh, 48em);
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    background: #fff;
+    color: #444;
+    box-shadow: 0 12px 44px rgba(0, 0, 0, 0.45);
+    overflow: hidden;
+}
+dialog.hw-index[open] {
+    display: flex;
+    flex-direction: column;
+}
+/* Lo sfondo opaco: si capisce che il riquadro e' in sovrimpressione */
+dialog.hw-index::backdrop {
+    background: rgba(0, 0, 0, 0.68);
+}
+.hw-index-box {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+.hw-index-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1em;
+    padding: 0.85em 1.2em;
+    border-bottom: 1px solid #eee;
+}
+.hw-index-head h4 {
+    margin: 0;
+    font-size: 1em;
+    color: #555;
+}
+dialog.hw-index .hw-index-close,
+dialog.hw-index .hw-index-close:hover {
+    background: none;
+    border: none;
+    box-shadow: none;
+    cursor: pointer;
+    padding: 0 0.2em;
+    font-size: 1.7em;
+    line-height: 1;
+    color: #888 !important;
+    min-width: auto;
+    height: auto;
+    letter-spacing: normal;
+}
+dialog.hw-index .hw-index-close:hover {
+    color: #d52349 !important;
+}
+.hw-index-body {
+    overflow-y: auto;
+    min-height: 0;
+    overscroll-behavior: contain;
+}
+dialog.hw-index .hw-index-list {
+    list-style: none;
+    margin: 0;
+    padding: 0.4em 0 0.8em;
+}
+dialog.hw-index .hw-index-list li {
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+/* Le voci sono pulsanti: via lo stile dei pulsanti del template */
+dialog.hw-index .hw-index-list button,
+dialog.hw-index .hw-index-list button:hover,
+dialog.hw-index .hw-index-list button:active {
+    display: block;
+    width: 100%;
+    margin: 0;
+    padding: 0.5em 1.2em;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    color: #444 !important;
+    font-family: inherit;
+    font-size: 0.95em;
+    font-weight: 400;
+    letter-spacing: normal;
+    line-height: 1.4;
+    text-align: left;
+    text-transform: none;
+    cursor: pointer;
+}
+dialog.hw-index .hw-index-list button:hover,
+dialog.hw-index .hw-index-list button:focus-visible {
+    background: rgba(213, 35, 73, 0.08);
+    color: #d52349 !important;
+}
+dialog.hw-index .hw-index-list .hw-index-level-0 button {
+    font-weight: 600;
+    margin-top: 0.3em;
+}
+dialog.hw-index .hw-index-list .hw-index-level-1 button {
+    padding-left: 2.2em;
+}
+dialog.hw-index .hw-index-list .hw-index-level-2 button {
+    padding-left: 3.4em;
+    font-size: 0.88em;
+}
+body.dark-mode dialog.hw-index {
+    background: #1b1b1b;
+    color: #d4d4d4;
+}
+body.dark-mode .hw-index-head {
+    border-bottom-color: #2f2f2f;
+}
+body.dark-mode .hw-index-head h4 {
+    color: #efefef;
+}
+body.dark-mode dialog.hw-index .hw-index-list button {
+    color: #d4d4d4 !important;
+}
+body.dark-mode dialog.hw-index .hw-index-list button:hover,
+body.dark-mode dialog.hw-index .hw-index-list button:focus-visible {
+    background: rgba(255, 107, 129, 0.1);
+    color: #ff6b81 !important;
+}
+
+/* La sezione raggiunta dall'indice: un po' di respiro sopra il titolo, e
+   sotto i 980px anche lo spazio della barra del menu, che li' e' fissa in
+   alto (44px); poi un lampo breve come per la ruota della fortuna */
+.hw1-anchor {
+    scroll-margin-top: 1.5rem;
+}
+@media screen and (max-width: 980px) {
+    .hw1-anchor {
+        scroll-margin-top: calc(44px + 1rem);
+    }
+}
+.hw1-anchor:focus {
+    outline: none;
+}
+.hw1-anchor:focus-visible {
+    outline: 2px solid #d52349;
+    outline-offset: 4px;
+}
+.hw-index-target {
+    animation: wheel-flash 1.8s ease-out;
+    border-radius: 4px;
+}
+@media (prefers-reduced-motion: reduce) {
+    .hw-index-target {
+        animation: none;
+    }
+}
+
+/* ===== HOMEWORK #1: consegna, campi, test e discussione ===== */
+.hw1-section h5 {
+    margin: 2em 0 0.6em;
+    font-size: 0.95em;
+    letter-spacing: 1px;
+}
+.hw1-section h6 {
+    margin: 0.4em 0 0.4em;
+    font-size: 0.85em;
+    letter-spacing: 1px;
+}
+.hw1-original {
+    margin: 0 0 2em;
+}
+.hw1-original summary {
+    cursor: pointer;
+    font-weight: 600;
+    margin-bottom: 0.6em;
+}
+.hw1-original blockquote {
+    margin: 0;
+    padding: 0.9em 1.2em;
+    font-style: normal;
+    font-size: 0.92em;
+    background: rgba(0, 0, 0, 0.03);
+}
+.hw1-original blockquote p,
+.hw1-original blockquote ul {
+    margin-bottom: 0.9em;
+    text-align: left;
+}
+.hw1-original blockquote li {
+    margin: 0.2em 0;
+}
+body.dark-mode .hw1-original blockquote {
+    background: rgba(255, 255, 255, 0.04);
+    border-left-color: #333;
+}
+.hw1-field-error {
+    color: #c62828;
+    font-size: 0.85em;
+}
+body.dark-mode p.hw1-field-error {
+    color: #ff8a80;
+}
+.hw1-controls input[aria-invalid="true"] {
+    border-color: #c62828;
+    outline-color: #c62828;
+}
+.hw1-badge-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5em 1em;
+    padding: 0.6em 0.9em;
+    border-radius: 5px;
+    font-size: 0.9em;
+    text-align: left;
+}
+.hw1-badge-line.is-task {
+    background: rgba(63, 167, 150, 0.12);
+}
+.hw1-badge-line.is-custom {
+    background: rgba(240, 165, 0, 0.14);
+}
+.hw1-badge-line .hw1-restore {
+    padding: 0.55em 1.3em;
+}
+.hw1-formulas,
+.hw1-output {
+    font-family: monospace;
+    font-size: 0.85em;
+    line-height: 1.55;
+    padding: 0.8em 1em;
+    border-radius: 5px;
+    background: rgba(0, 0, 0, 0.04);
+    overflow-x: auto;
+    white-space: pre;
+    margin: 0 0 1.5em;
+}
+.hw1-output {
+    max-height: 28em;
+    overflow-y: auto;
+}
+body.dark-mode .hw1-formulas,
+body.dark-mode .hw1-output {
+    background: rgba(255, 255, 255, 0.05);
+    color: #d4d4d4;
+}
+.hw1-table-title {
+    margin: 1em 0 0.4em;
+    text-align: left;
+}
+.hw1-scroll {
+    max-height: 22em;
+    overflow-y: auto;
+    margin: 0 0 1.5em;
+    border: 1px solid #e5e5e5;
+    border-radius: 5px;
+}
+body.dark-mode .hw1-scroll {
+    border-color: #2a2a2a;
+}
+.hw1-compact {
+    margin: 0;
+    font-family: monospace;
+}
+.hw1-compact thead th {
+    position: sticky;
+    top: 0;
+    background: #878787;
+}
+.hw1-compact tr.is-empty td {
+    color: #aaa;
+}
+.hw1-figure-wide {
+    margin: 0.5em 0 1.5em;
+}
+.hw1-uniformity {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 0.5em 1.8em;
+    margin-bottom: 1.5em;
+}
+.hw1-coord {
+    min-width: 0;
+}
+.hw1-test {
+    margin: 0.8em 0;
+    padding: 0.3em 0 0.3em 0.9em;
+    border-left: 4px solid #999;
+}
+.hw1-test.is-valid,
+.hw1-test.is-descriptive {
+    border-left-color: #2e7d6b;
+}
+.hw1-test.is-invalid {
+    border-left-color: #c77700;
+}
+.hw1-test p {
+    margin: 0 0 0.45em;
+    text-align: left;
+}
+.hw1-badge {
+    display: inline-block;
+    padding: 0.15em 0.6em;
+    border-radius: 3px;
+    font-size: 0.72em;
+    font-weight: 700;
+    letter-spacing: 1px;
+    vertical-align: middle;
+    color: #fff;
+    background: #777;
+}
+.hw1-badge.is-valid,
+.hw1-badge.is-descriptive {
+    background: #2e7d6b;
+}
+.hw1-badge.is-invalid {
+    background: #b26a00;
+}
+body.dark-mode span.hw1-badge {
+    color: #fff;
+}
+.hw1-reasons {
+    margin: 0.2em 0 0.6em;
+    font-size: 0.9em;
+}
+.hw1-reasons li {
+    margin: 0.3em 0;
+}
+.hw1-pending {
+    font-style: italic;
+}
+.hw1-discussion-table th[data-label] {
+    font-weight: 600;
+}
+/* La tabella della discussione ha quattro colonne di testo: sui telefoni
+   ogni riga diventa una scheda, come la tabella degli homework */
+@media screen and (max-width: 736px) {
+    .hw1-discussion-table thead {
+        display: none;
+    }
+    .hw1-discussion-table,
+    .hw1-discussion-table tbody,
+    .hw1-discussion-table tr,
+    .hw1-discussion-table th,
+    .hw1-discussion-table td {
+        display: block;
+        width: 100%;
+    }
+    .hw1-discussion-table tr {
+        padding: 0.6em 0;
+    }
+    .hw1-discussion-table th,
+    .hw1-discussion-table td {
+        border: 0;
+        padding: 0.25em 0;
+    }
+    .hw1-discussion-table td::before {
+        content: attr(data-label) ": ";
+        font-weight: 600;
+    }
+}
+.hw1-download .button {
+    display: block;
+    margin-top: 0.8em;
+    padding-left: 1em;
+    padding-right: 1em;
+    text-align: center;
+    white-space: normal;
+}
