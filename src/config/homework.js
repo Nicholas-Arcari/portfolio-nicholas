@@ -27,7 +27,10 @@ export const STATISTICS_HOMEWORK = [
   {
     slug: 'homework-2',
     name: 'Homework #2',
-    description: { it: '', en: '' },
+    description: {
+      it: `Dalla frase mnemonica all'indirizzo Ethereum: la pipeline di un wallet (BIP-39, BIP-32, BIP-44, secp256k1, Keccak-256, EIP-55) scritta da zero e verificata con i vettori di test ufficiali, la distinzione fra generazione e derivazione delle chiavi, crittografia a chiave pubblica, hashing, checksum e codifica, le proprietà statistiche di ogni passaggio e il contesto storico.`,
+      en: `From a mnemonic sentence to an Ethereum address: the wallet pipeline (BIP-39, BIP-32, BIP-44, secp256k1, Keccak-256, EIP-55) written from scratch and checked against the official test vectors, the distinction between key generation and derivation, public-key cryptography, hashing, checksums and encoding, the statistical properties of every step and the historical context.`,
+    },
     created: '2026-10-12T08:28:00+02:00',
     due: '2026-10-15T00:00:00+02:00',
   },

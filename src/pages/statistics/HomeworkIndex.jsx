@@ -10,42 +10,9 @@
 // blocco dello scorrimento e il salto alla sezione: i titoli delle sezioni
 // hanno tabIndex -1, cosi' il focus arriva li' e la tastiera riparte da li'.
 import React, { useEffect, useRef } from 'react';
+import { goToSection } from './goToSection';
 
 const OPEN_CLASS = 'hw-index-open';
-const FOLLOW_MS = 2500;
-
-// Porta il titolo in cima e lo segue per un paio di secondi: se nel
-// frattempo qualcosa sopra cambia altezza (il terminale dell'intestazione che
-// scrive una riga, un grafico che finisce di disegnarsi), lo scorrimento
-// riparte verso la nuova posizione invece di fermarsi storto. Se l'utente
-// scorre da se', si smette subito di inseguire.
-function scrollToSection(target) {
-  const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
-  const userEvents = ['wheel', 'touchstart', 'keydown', 'mousedown'];
-  const started = performance.now();
-  let stopped = false;
-  let lastTop = target.getBoundingClientRect().top + window.scrollY;
-  const stop = () => {
-    stopped = true;
-    userEvents.forEach((type) => window.removeEventListener(type, stop));
-  };
-  userEvents.forEach((type) => window.addEventListener(type, stop, { passive: true }));
-  target.scrollIntoView({ behavior, block: 'start' });
-  const follow = () => {
-    if (stopped) return;
-    if (performance.now() - started > FOLLOW_MS) {
-      stop();
-      return;
-    }
-    const top = target.getBoundingClientRect().top + window.scrollY;
-    if (Math.abs(top - lastTop) > 1) {
-      lastTop = top;
-      target.scrollIntoView({ behavior, block: 'start' });
-    }
-    requestAnimationFrame(follow);
-  };
-  requestAnimationFrame(follow);
-}
 
 const HomeworkIndex = ({ sections, labels }) => {
   const dialogRef = useRef(null);
@@ -67,15 +34,7 @@ const HomeworkIndex = ({ sections, labels }) => {
 
   const go = (id) => {
     close();
-    const target = document.getElementById(id);
-    if (!target) return;
-    target.focus({ preventScroll: true });
-    scrollToSection(target);
-    // un lampo breve sul titolo raggiunto, come per la ruota della fortuna
-    target.classList.remove('hw-index-target');
-    void target.offsetWidth;
-    target.classList.add('hw-index-target');
-    target.addEventListener('animationend', () => target.classList.remove('hw-index-target'), { once: true });
+    goToSection(id);
   };
 
   return (

@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="author" content="Nicholas Arcari">
+  <meta name="description" content="Homework #2 di Statistics: dalla frase mnemonica all'indirizzo Ethereum, con BIP-39, BIP-32, BIP-44, secp256k1, Keccak-256 ed EIP-55.">
+  <title>Homework #2 - Statistics</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!--
+    Homework #2 - Statistics, Nicholas Arcari.
+    La pagina e' uno scheletro: i testi (italiano e inglese) e i calcoli
+    arrivano da app.js e homework2.js, due script classici, cosi' il file si
+    apre anche con un doppio clic, senza server e senza connessione. Nessun
+    dato lascia il browser: niente rete, niente salvataggi tranne la lingua.
+  -->
+  <header class="page-header">
+    <div class="wrap">
+      <p class="eyebrow" id="course">Statistics, laurea magistrale in Cybersecurity, Sapienza Università di Roma</p>
+      <div class="title-row">
+        <h1>Homework #2</h1>
+        <button type="button" id="open-index" class="btn alt" aria-haspopup="dialog">Indice</button>
+        <div class="lang" id="language" role="group" aria-label="Lingua">
+          <button type="button" data-lang="it" aria-pressed="true">IT</button>
+          <button type="button" data-lang="en" aria-pressed="false">EN</button>
+        </div>
+      </div>
+      <p class="subtitle" id="subtitle">Dalla frase mnemonica all’indirizzo Ethereum: hashing, derivazione delle chiavi e primitive crittografiche.</p>
+      <p class="author">Nicholas Arcari</p>
+    </div>
+  </header>
+
+  <main id="app" class="wrap">
+    <noscript>
+      <p class="note">Questo programma ha bisogno di JavaScript. / This program needs JavaScript.</p>
+    </noscript>
+  </main>
+
+  <dialog id="index-dialog" class="index" aria-labelledby="index-title">
+    <div class="index-box">
+      <div class="index-head">
+        <h2 id="index-title">Indice dell’homework</h2>
+        <button type="button" class="index-close" aria-label="Chiudi">&times;</button>
+      </div>
+      <nav class="index-body" aria-labelledby="index-title">
+        <ul id="index-list"></ul>
+      </nav>
+    </div>
+  </dialog>
+
+  <footer class="page-footer">
+    <div class="wrap">
+      <p>
+        Nicholas Arcari ·
+        <span id="online-label">Versione online</span>:
+        <a href="https://nicholas-arcari.github.io/portfolio-nicholas/#/statistics/homework-2">nicholas-arcari.github.io/portfolio-nicholas</a>
+      </p>
+    </div>
+  </footer>
+
+  <script src="homework2.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,11 +1,12 @@
-// build/hw1-standalone.js
-// Il programma scaricabile dell'Homework #1 di Statistics, generato a ogni
-// build dagli stessi sorgenti della pagina del sito: se cambia il codice,
-// cambia anche il download, e i due non possono raccontare cose diverse.
+// build/homework-standalone.js
+// I programmi scaricabili degli homework di Statistics, generati a ogni build
+// dagli stessi sorgenti delle pagine del sito: se cambia il codice, cambia
+// anche il download, e i due non possono raccontare cose diverse.
 //
-// Il risultato e' una cartella con index.html, style.css, homework1.js,
-// app.js e README.txt, pubblicata cosi' com'e' (la versione online) e in uno
-// zip (il download). I sorgenti sono moduli ES, che un browser non carica da
+// Per ogni homework il risultato e' una cartella con index.html, style.css,
+// la libreria (homework1.js, homework2.js, ...), app.js, package.json e
+// README.txt, pubblicata cosi' com'e' (la versione online) e in uno zip (il
+// download). I sorgenti sono moduli ES, che un browser non carica da
 // file://: qui diventano script classici, che si aprono con un doppio clic.
 // La conversione e' volutamente minima e conserva il codice riga per riga,
 // commenti compresi, perche' il file scaricato deve restare leggibile:
@@ -19,14 +20,38 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import zlib from 'node:zlib';
 
-const SOURCE = fileURLToPath(new URL('../src/pages/statistics/hw1/', import.meta.url));
+const STATISTICS = fileURLToPath(new URL('../src/pages/statistics/', import.meta.url));
 const OUTPUT = 'downloads/statistics';
-const FOLDER = 'homework1';
-
-// Il nome con cui ogni modulo e' visibile agli altri nel programma generato
-const MODULES = { 'homework1.js': 'Homework1', 'view.js': 'view$', 'texts.js': 'texts$' };
-
 const STATIC_FILES = ['index.html', 'style.css', 'README.txt'];
+
+/**
+ * Gli homework con un programma scaricabile. `library` e' il file dei
+ * calcoli, che diventa lo script globale `global`; `inner` sono i moduli che
+ * la libreria importa e che finiscono dentro di lei (per l'Homework #2 la
+ * lista di parole di BIP-39).
+ */
+export const HOMEWORKS = [
+  {
+    number: 1,
+    source: 'hw1',
+    library: 'homework1.js',
+    global: 'Homework1',
+    inner: [],
+    contents: 'Computations: toy curve, point addition, scalar multiplication, statistics,\n * animation and command line (node homework1.js [k] [p]).',
+    description: 'Homework #1 - Statistics: from a private key to a public key with elliptic-curve scalar multiplication, as in Ethereum.',
+  },
+  {
+    number: 2,
+    source: 'hw2',
+    library: 'homework2.js',
+    global: 'Homework2',
+    inner: ['wordlist.js'],
+    contents: 'The wallet pipeline (BIP-39, BIP-32, BIP-44, secp256k1, Keccak-256, EIP-55),\n * the official test vectors, statistics and command line (node homework2.js [options]).',
+    description: 'Homework #2 - Statistics: from a wallet seed to an Ethereum address, with BIP-39, BIP-32, BIP-44, secp256k1, Keccak-256 and EIP-55.',
+  },
+];
+
+const folderOf = (hw) => `homework${hw.number}`;
 
 const CONTENT_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -37,93 +62,104 @@ const CONTENT_TYPES = {
   '.zip': 'application/zip',
 };
 
-const read = (file) => readFileSync(path.join(SOURCE, file), 'utf8');
+const read = (hw, file) => readFileSync(path.join(STATISTICS, hw.source, file), 'utf8');
 
-function moduleName(specifier, file) {
-  const name = MODULES[path.basename(specifier)];
-  if (!name) throw new Error(`hw1-standalone: ${file} importa ${specifier}, che il programma scaricabile non contiene`);
+/** Il nome con cui ogni modulo e' visibile agli altri nel programma generato. */
+function modules(hw) {
+  const names = { [hw.library]: hw.global, 'view.js': 'view$', 'texts.js': 'texts$' };
+  for (const file of hw.inner) names[file] = `${path.basename(file, '.js')}$`;
+  return names;
+}
+
+function moduleName(hw, specifier, file) {
+  const name = modules(hw)[path.basename(specifier)];
+  if (!name) throw new Error(`homework-standalone: ${file} importa ${specifier}, che il programma scaricabile non contiene`);
   return name;
 }
 
 /** One ES module as a function body: its imports as local constants, its exports as a list. */
-function convert(file) {
+function convert(hw, file) {
   const exported = [];
-  const lines = read(file).split('\n').map((line) => {
+  const lines = read(hw, file).split('\n').map((line) => {
     let m = line.match(/^import \* as (\w+) from '([^']+)';$/);
-    if (m) return `const ${m[1]} = ${moduleName(m[2], file)};`;
+    if (m) return `const ${m[1]} = ${moduleName(hw, m[2], file)};`;
     m = line.match(/^import \{ ([^}]+) \} from '([^']+)';$/);
     if (m) {
       const names = m[1].split(',').map((n) => n.trim().replace(/\s+as\s+/, ': '));
-      return `const { ${names.join(', ')} } = ${moduleName(m[2], file)};`;
+      return `const { ${names.join(', ')} } = ${moduleName(hw, m[2], file)};`;
     }
-    if (/^import\b/.test(line)) throw new Error(`hw1-standalone: ${file}: import non supportato: ${line}`);
+    if (/^import\b/.test(line)) throw new Error(`homework-standalone: ${file}: import non supportato: ${line}`);
     m = line.match(/^export (const|let|function\*?|class) (\w+)/);
     if (m) {
       exported.push(m[2]);
       return line.slice('export '.length);
     }
-    if (/^export\b/.test(line)) throw new Error(`hw1-standalone: ${file}: export non supportato: ${line}`);
+    if (/^export\b/.test(line)) throw new Error(`homework-standalone: ${file}: export non supportato: ${line}`);
     return line;
   });
   return { body: lines.join('\n').trimEnd(), exported };
 }
 
-const banner = (what) => `/*
- * Homework #1 - Statistics - Nicholas Arcari
+/** A module as a variable holding what it exports: var view$ = (function () { ... })(); */
+function moduleScript(hw, file) {
+  const { body, exported } = convert(hw, file);
+  return [`var ${modules(hw)[file]} = (function () {`, "'use strict';", '', body, '', `return { ${exported.join(', ')} };`, '})();'].join('\n');
+}
+
+const banner = (hw, what) => `/*
+ * Homework #${hw.number} - Statistics - Nicholas Arcari
  * Sapienza University of Rome, MSc in Cybersecurity
  *
  * ${what}
  *
  * Generated from the sources of the online page,
- * https://nicholas-arcari.github.io/portfolio-nicholas/#/statistics/homework-1
+ * https://nicholas-arcari.github.io/portfolio-nicholas/#/statistics/homework-${hw.number}
  */
 `;
 
-// package.json accanto ai file: dice a Node che homework1.js e' CommonJS anche
+// package.json accanto ai file: dice a Node che la libreria e' CommonJS anche
 // se la cartella finisce dentro un progetto con "type": "module", cosi'
-// require('./homework1.js') restituisce la libreria e npm start la esegue.
-const PACKAGE = {
-  name: 'homework1-statistics',
+// require('./homeworkN.js') restituisce la libreria e npm start la esegue.
+const packageJson = (hw) => ({
+  name: `${folderOf(hw)}-statistics`,
   version: '1.0.0',
   private: true,
-  description: 'Homework #1 - Statistics: from a private key to a public key with elliptic-curve scalar multiplication, as in Ethereum.',
+  description: hw.description,
   author: 'Nicholas Arcari',
   type: 'commonjs',
-  main: 'homework1.js',
-  scripts: { start: 'node homework1.js' },
+  main: hw.library,
+  scripts: { start: `node ${hw.library}` },
   engines: { node: '>=14' },
-};
+});
 
-/** homework1.js: the computations, usable from index.html and from Node. */
-function libraryScript() {
-  const { body, exported } = convert('homework1.js');
+/** The library: the computations, usable from index.html and from Node, with its inner modules inside. */
+function libraryScript(hw) {
+  const { body, exported } = convert(hw, hw.library);
   return [
-    banner('Computations: toy curve, point addition, scalar multiplication, statistics,\n * animation and command line (node homework1.js [k] [p]).'),
-    'var Homework1 = (function () {',
+    banner(hw, hw.contents),
+    `var ${hw.global} = (function () {`,
     "'use strict';",
     '',
+    ...hw.inner.map((file) => `${moduleScript(hw, file)}\n`),
     body,
     '',
     `return { ${exported.join(', ')} };`,
     '})();',
     '',
-    read('standalone/cli.js').replace(/^\/\* global [^*]*\*\/\n/, ''),
+    read(hw, 'standalone/cli.js').replace(/^\/\* global [^*]*\*\/\n/, ''),
   ].join('\n');
 }
 
 /** app.js: view.js, texts.js and the interface, in one classic script. */
-function appScript() {
-  const modules = ['view.js', 'texts.js'].map((file) => {
-    const { body, exported } = convert(file);
-    return [`var ${MODULES[file]} = (function () {`, "'use strict';", '', body, '', `return { ${exported.join(', ')} };`, '})();'].join('\n');
-  });
-  const app = convert('standalone/app.js');
+function appScript(hw) {
+  const parts = ['view.js', 'texts.js'].map((file) => moduleScript(hw, file));
+  const app = convert(hw, 'standalone/app.js');
   return [
-    banner('Interface and texts (Italian and English). Needs homework1.js, loaded first.'),
+    banner(hw, `Interface and texts (Italian and English). Needs ${hw.library}, loaded first.`),
     '(function () {',
     "'use strict';",
     '',
-    ...modules.map((m) => `${m}\n`),
+    ...parts.map((m) => `${m}\n`),
     '(function () {',
     "'use strict';",
     '',
@@ -134,13 +170,13 @@ function appScript() {
   ].join('\n');
 }
 
-/** Every file of the program: name -> content. */
-export function standaloneFiles() {
+/** Every file of the program of one homework: name -> content. */
+export function standaloneFiles(hw) {
   const files = {};
-  for (const name of STATIC_FILES) files[name] = read(`standalone/${name}`);
-  files['homework1.js'] = libraryScript();
-  files['app.js'] = appScript();
-  files['package.json'] = `${JSON.stringify(PACKAGE, null, 2)}\n`;
+  for (const name of STATIC_FILES) files[name] = read(hw, `standalone/${name}`);
+  files[hw.library] = libraryScript(hw);
+  files['app.js'] = appScript(hw);
+  files['package.json'] = `${JSON.stringify(packageJson(hw), null, 2)}\n`;
   return files;
 }
 
@@ -162,13 +198,13 @@ function crc32(data) {
 }
 
 /** Date of the newest source file, so that the same sources give the same zip. */
-function sourceDate() {
-  const sources = ['homework1.js', 'view.js', 'texts.js', 'standalone/app.js', 'standalone/cli.js', ...STATIC_FILES.map((f) => `standalone/${f}`)];
-  return new Date(Math.max(...sources.map((f) => statSync(path.join(SOURCE, f)).mtimeMs)));
+function sourceDate(hw) {
+  const sources = [hw.library, ...hw.inner, 'view.js', 'texts.js', 'standalone/app.js', 'standalone/cli.js', ...STATIC_FILES.map((f) => `standalone/${f}`)];
+  return new Date(Math.max(...sources.map((f) => statSync(path.join(STATISTICS, hw.source, f)).mtimeMs)));
 }
 
-/** A zip archive (deflate) with every file inside the folder homework1/. */
-export function zipFiles(files, date = sourceDate()) {
+/** A zip archive (deflate) with every file inside the folder of the homework (homework1/, ...). */
+export function zipFiles(hw, files, date = sourceDate(hw)) {
   const time = (date.getHours() << 11) | (date.getMinutes() << 5) | Math.floor(date.getSeconds() / 2);
   const day = ((date.getFullYear() - 1980) << 9) | ((date.getMonth() + 1) << 5) | date.getDate();
   const local = [];
@@ -177,7 +213,7 @@ export function zipFiles(files, date = sourceDate()) {
   for (const [name, content] of Object.entries(files)) {
     const data = Buffer.from(content, 'utf8');
     const packed = zlib.deflateRawSync(data, { level: 9 });
-    const fileName = Buffer.from(`${FOLDER}/${name}`, 'utf8');
+    const fileName = Buffer.from(`${folderOf(hw)}/${name}`, 'utf8');
     const crc = crc32(data);
 
     const header = Buffer.alloc(30);
@@ -231,17 +267,19 @@ export function zipFiles(files, date = sourceDate()) {
 
 // --- Plugin di Vite -------------------------------------------------------
 
-export default function hw1Standalone() {
+export default function homeworkStandalone() {
   return {
-    name: 'hw1-standalone',
+    name: 'homework-standalone',
 
-    // In build: dist/downloads/statistics/homework1/... e homework1.zip
+    // In build: dist/downloads/statistics/homeworkN/... e homeworkN.zip
     generateBundle() {
-      const files = standaloneFiles();
-      for (const [name, content] of Object.entries(files)) {
-        this.emitFile({ type: 'asset', fileName: `${OUTPUT}/${FOLDER}/${name}`, source: content });
+      for (const hw of HOMEWORKS) {
+        const files = standaloneFiles(hw);
+        for (const [name, content] of Object.entries(files)) {
+          this.emitFile({ type: 'asset', fileName: `${OUTPUT}/${folderOf(hw)}/${name}`, source: content });
+        }
+        this.emitFile({ type: 'asset', fileName: `${OUTPUT}/${folderOf(hw)}.zip`, source: zipFiles(hw, files) });
       }
-      this.emitFile({ type: 'asset', fileName: `${OUTPUT}/${FOLDER}.zip`, source: zipFiles(files) });
     },
 
     // In sviluppo: gli stessi file, rigenerati a ogni richiesta dai sorgenti
@@ -251,19 +289,19 @@ export default function hw1Standalone() {
         const url = (req.url || '').split('?')[0];
         if (!url.startsWith(prefix)) return next();
         const rest = url.slice(prefix.length);
+        const hw = HOMEWORKS.find((h) => rest === `${folderOf(h)}.zip` || rest.startsWith(`${folderOf(h)}/`));
+        if (!hw) return next();
         try {
-          const files = standaloneFiles();
+          const files = standaloneFiles(hw);
           let name = null;
           let body = null;
-          if (rest === `${FOLDER}.zip`) {
+          if (rest === `${folderOf(hw)}.zip`) {
             name = rest;
-            body = zipFiles(files);
-          } else if (rest.startsWith(`${FOLDER}/`)) {
-            name = rest.slice(FOLDER.length + 1) || 'index.html';
+            body = zipFiles(hw, files);
+          } else {
+            name = rest.slice(folderOf(hw).length + 1) || 'index.html';
             if (!Object.hasOwn(files, name)) return next();
             body = files[name];
-          } else {
-            return next();
           }
           res.setHeader('Content-Type', CONTENT_TYPES[path.extname(name)] || 'application/octet-stream');
           res.end(body);

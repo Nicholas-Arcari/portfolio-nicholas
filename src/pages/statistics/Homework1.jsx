@@ -7,8 +7,8 @@
 // Qui c'e' solo la pagina React. La matematica, le statistiche e i disegni
 // stanno in hw1/homework1.js, i testi in hw1/texts.js e la logica di
 // presentazione in hw1/view.js: sono gli stessi file da cui la build ricava
-// il programma scaricabile (build/hw1-standalone.js), cosi' la pagina e il
-// download non possono raccontare due cose diverse.
+// il programma scaricabile (build/homework-standalone.js), cosi' la pagina e
+// il download non possono raccontare due cose diverse.
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLanguage } from '../../contexts/languageContext';
 import { useTheme } from '../../contexts/themeContext';
