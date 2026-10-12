@@ -779,3 +779,20 @@ body.dark-mode .hw1-key strong { color: #ff6b81; }
 }
 .hw1-figure { margin: 0; min-width: 0; }
 .hw1-figure figcaption { font-size: 0.8em; color: #888; margin-top: 0.3em; }
+
+/* Il nome di un corso con una pagina sua (Statistics) e' un link: rosso
+   anche nel tema chiaro, come nel tema scuro, perche' si capisca a colpo
+   d'occhio che si puo' cliccare. Il template rende i link nei titoli del
+   colore del titolo: qui la classe vince su "h3 a". */
+.course-link,
+.course-link:hover {
+    color: #d52349;
+    border-bottom: 1px solid transparent;
+}
+.course-link:hover {
+    border-bottom-color: currentColor;
+}
+body.dark-mode .course-link,
+body.dark-mode .course-link:hover {
+    color: #ff6b81;
+}

@@ -108,7 +108,7 @@ const MasterDetails = () => {
                         <div style={{ marginBottom: '2em' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1em', flexWrap: 'wrap' }}>
                                 {/* Un corso con una pagina sua (per ora Statistics, con gli homework) ha il nome cliccabile */}
-                                <h3 style={{ margin: 0 }}>{course.link ? <Link to={course.link}>{course.name}</Link> : course.name}</h3>
+                                <h3 style={{ margin: 0 }}>{course.link ? <Link to={course.link} className="course-link">{course.name}</Link> : course.name}</h3>
                                 <span style={{ display: 'flex', gap: '0.4em', flexWrap: 'wrap' }}>
                                   <span className="button alt small" style={{ pointerEvents: 'none' }}>{course.year}</span>
                                   <span className="button alt small" style={{ pointerEvents: 'none' }}>{course.cfu}</span>
