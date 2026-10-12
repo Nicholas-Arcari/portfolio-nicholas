@@ -11,7 +11,7 @@
 // commenti compresi, perche' il file scaricato deve restare leggibile:
 //   import * as x from './m.js'     ->  const x = <modulo>;
 //   import { a, b as c } from ...   ->  const { a, b: c } = <modulo>;
-//   export const / function ...     ->  dichiarazione, restituita alla fine
+//   export const / function(*) ...  ->  dichiarazione, restituita alla fine
 // Qualunque altra forma di import o export ferma la build invece di produrre
 // un programma rotto.
 import { readFileSync, statSync } from 'node:fs';
@@ -33,6 +33,7 @@ const CONTENT_TYPES = {
   '.css': 'text/css; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
   '.txt': 'text/plain; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
   '.zip': 'application/zip',
 };
 
@@ -56,7 +57,7 @@ function convert(file) {
       return `const { ${names.join(', ')} } = ${moduleName(m[2], file)};`;
     }
     if (/^import\b/.test(line)) throw new Error(`hw1-standalone: ${file}: import non supportato: ${line}`);
-    m = line.match(/^export (const|let|function|class) (\w+)/);
+    m = line.match(/^export (const|let|function\*?|class) (\w+)/);
     if (m) {
       exported.push(m[2]);
       return line.slice('export '.length);
@@ -78,20 +79,20 @@ const banner = (what) => `/*
  */
 `;
 
-// La riga di comando funziona qualunque sia il nome del file, e sia che Node
-// lo carichi come script CommonJS sia come modulo ES (per esempio dentro una
-// cartella con "type": "module" nel package.json).
-const CLI = `
-// Command line: node homework1.js [k] [p]
-if (typeof module === 'object' && module && module.exports) {
-  module.exports = Homework1;
-  if (typeof require === 'function' && require.main === module) {
-    process.exitCode = Homework1.runCli(process.argv.slice(2), console.log);
-  }
-} else if (typeof window === 'undefined' && typeof process === 'object' && process && process.versions && process.versions.node) {
-  process.exitCode = Homework1.runCli(process.argv.slice(2), console.log);
-}
-`;
+// package.json accanto ai file: dice a Node che homework1.js e' CommonJS anche
+// se la cartella finisce dentro un progetto con "type": "module", cosi'
+// require('./homework1.js') restituisce la libreria e npm start la esegue.
+const PACKAGE = {
+  name: 'homework1-statistics',
+  version: '1.0.0',
+  private: true,
+  description: 'Homework #1 - Statistics: from a private key to a public key with elliptic-curve scalar multiplication, as in Ethereum.',
+  author: 'Nicholas Arcari',
+  type: 'commonjs',
+  main: 'homework1.js',
+  scripts: { start: 'node homework1.js' },
+  engines: { node: '>=14' },
+};
 
 /** homework1.js: the computations, usable from index.html and from Node. */
 function libraryScript() {
@@ -105,7 +106,8 @@ function libraryScript() {
     '',
     `return { ${exported.join(', ')} };`,
     '})();',
-    CLI,
+    '',
+    read('standalone/cli.js').replace(/^\/\* global [^*]*\*\/\n/, ''),
   ].join('\n');
 }
 
@@ -138,6 +140,7 @@ export function standaloneFiles() {
   for (const name of STATIC_FILES) files[name] = read(`standalone/${name}`);
   files['homework1.js'] = libraryScript();
   files['app.js'] = appScript();
+  files['package.json'] = `${JSON.stringify(PACKAGE, null, 2)}\n`;
   return files;
 }
 
@@ -160,7 +163,7 @@ function crc32(data) {
 
 /** Date of the newest source file, so that the same sources give the same zip. */
 function sourceDate() {
-  const sources = ['homework1.js', 'view.js', 'texts.js', 'standalone/app.js', ...STATIC_FILES.map((f) => `standalone/${f}`)];
+  const sources = ['homework1.js', 'view.js', 'texts.js', 'standalone/app.js', 'standalone/cli.js', ...STATIC_FILES.map((f) => `standalone/${f}`)];
   return new Date(Math.max(...sources.map((f) => statSync(path.join(SOURCE, f)).mtimeMs)));
 }
 

@@ -109,13 +109,22 @@ const title = (id, level, label) => h(HEADINGS[level], { id, tabindex: -1, class
 const label = (caption, field) => h('label', null, h('span', { text: caption }), field);
 const pending = () => h('p', { class: 'note pending', role: 'status', text: text.ui.computing });
 
+// The width of every chart comes from the ResizeObserver, measured after
+// layout: reading clientWidth right after another chart has been resized
+// would make the browser lay out the whole page again, once per chart. The
+// height is set at once, the drawing happens a few milliseconds per frame.
 const charts = new Map(); // canvas -> { draw, data, width }
 const resizer = new ResizeObserver((entries) => {
   for (const entry of entries) {
-    const chart = charts.get(entry.target);
-    if (!chart || entry.target.clientWidth === chart.width) continue;
-    chart.width = entry.target.clientWidth;
-    chart.draw(entry.target, chart.data, palette());
+    const canvas = entry.target;
+    const chart = charts.get(canvas);
+    const width = Math.round(entry.contentRect.width);
+    if (!chart || width <= 0 || width === chart.width) continue;
+    chart.width = width;
+    canvas.style.height = `${hw.chartHeight(chart.draw, chart.data, width)}px`;
+    view.scheduleFrameJob(() => {
+      if (charts.get(canvas) === chart && chart.width === width) chart.draw(canvas, { ...chart.data, width }, palette());
+    });
   }
 });
 
@@ -137,8 +146,7 @@ function fill(region, ...nodes) {
 
 function redrawAll() {
   for (const [canvas, chart] of charts) {
-    chart.width = canvas.clientWidth;
-    chart.draw(canvas, chart.data, palette());
+    if (chart.width > 0) chart.draw(canvas, { ...chart.data, width: chart.width }, palette());
   }
   if (animation) animation.setPalette(palette());
 }
@@ -496,39 +504,49 @@ function statsSection() {
   );
 }
 
-function compute(key) {
-  const [p, base] = key.split('|');
-  try {
-    const curve = hw.explorationCurve(Number(p));
-    return { stats: hw.explore(curve, view.parseBase(base)) };
-  } catch (error) {
-    return { error: error instanceof Error ? error.message : String(error) };
-  }
-}
+const inflight = new Map();
 
-/** Statistics of a key, from the cache or computed after the page has had a chance to paint. */
+/**
+ * Statistics of a key ("p|base"), from the cache or computed in slices of a
+ * few milliseconds (exploreAsync): a page opened from file:// cannot start a
+ * worker, and this way it never freezes, even on a slow phone.
+ */
 function withStats(key, done) {
   if (results.has(key)) {
     done(results.get(key));
     return;
   }
-  setTimeout(() => {
-    if (!results.has(key)) results.set(key, compute(key));
-    done(results.get(key));
-  }, 30);
+  if (!inflight.has(key)) {
+    const [p, base] = key.split('|');
+    let job;
+    try {
+      job = hw.exploreAsync(hw.explorationCurve(Number(p)), view.parseBase(base));
+    } catch (error) {
+      job = Promise.reject(error);
+    }
+    inflight.set(
+      key,
+      job
+        .then((stats) => ({ stats }), (error) => ({ error: error instanceof Error ? error.message : String(error) }))
+        .then((result) => {
+          results.set(key, result);
+          inflight.delete(key);
+          return result;
+        }),
+    );
+  }
+  inflight.get(key).then(done);
 }
 
-function testResult(labelText, test, u, s) {
-  const U = text.stats.uniformity;
-  const status = view.testStatus(test);
+function testResult(block) {
   return h(
     'div',
-    { class: `test is-${status}` },
-    h('p', { class: 'test-head' }, h('strong', { text: labelText }), ' ', h('span', { class: `badge is-${status}`, text: U.status[status] })),
-    h('p', { class: 'note', text: U.statusHelp[status] }),
-    test.computable ? h('p', { text: U.line(test) }) : null,
-    test.reasons.length ? h('ul', { class: 'reasons' }, test.reasons.map((r) => h('li', { text: U.reasons[r](test, u, s) }))) : null,
-    test.computable ? h('p', { text: status === 'invalid' ? U.noVerdict : U.verdict(test) }) : null,
+    { class: `test is-${block.status}` },
+    h('p', { class: 'test-head' }, h('strong', { text: block.label }), ' ', h('span', { class: `badge is-${block.status}`, text: block.statusLabel })),
+    h('p', { class: 'note', text: block.help }),
+    block.line ? h('p', { text: block.line }) : null,
+    block.reasons.length ? h('ul', { class: 'reasons' }, block.reasons.map((r) => h('li', { text: r }))) : null,
+    block.verdict ? h('p', { text: block.verdict }) : null,
   );
 }
 
@@ -540,7 +558,7 @@ function analyses(prefix, result) {
   if (!s) {
     return view.ANALYSES.map((key, i) => [titles[i], result.error ? h('p', { class: 'note', text: text.ui.error(result.error) }) : pending()]);
   }
-  const data = view.chartData(s, { kBits: T.correlation.kBits, flipBits: T.avalanche.kBits });
+  const data = view.chartData(s, { kBits: T.correlation.kBits, flipBits: T.avalanche.kBits, decimal: F.decimal });
   const C = T.correlation;
   const A = T.avalanche;
   const valueRows = ['pearsonKX', 'pearsonKY', 'spearmanKX', 'spearmanKY'];
@@ -588,8 +606,8 @@ function analyses(prefix, result) {
           'section',
           { class: 'coord' },
           h('h5', { text: T.uniformity.coordTitle(coord) }),
-          testResult(T.uniformity.naiveLabel, u.naive, u, s),
-          testResult(T.uniformity.distinctLabel, u.distinct, u, s),
+          testResult(view.uniformityBlock(u.naive, u, s, T.uniformity.naiveLabel, T.uniformity)),
+          testResult(view.uniformityBlock(u.distinct, u, s, T.uniformity.distinctLabel, T.uniformity)),
           why ? h('p', { text: why }) : null,
         );
       }),
@@ -616,7 +634,11 @@ function analyses(prefix, result) {
     titles[5],
     h('p', { text: A.intro }),
     s.avalanche.measurements > 0
-      ? [figure(A.chartTitle, hw.drawBarChart, data.distances), figure(A.heatmapTitle(data.sac.range), hw.drawHeatmap, data.sac, true)]
+      ? [
+        figure(A.chartTitle, hw.drawBarChart, data.distances),
+        figure(A.heatmapTitle(), hw.drawHeatmap, data.sac, true),
+        h('div', { class: 'uniformity' }, view.avalancheBlocks(s, A, T.uniformity).map((block) => h('section', { class: 'coord' }, testResult(block)))),
+      ]
       : null,
     paras(A.explain(s)),
   ];
@@ -680,7 +702,11 @@ function discussionSection() {
 function updateProperties() {
   const D = text.discussion;
   const pooledKey = `${TASK.p}|pooled`;
-  if (!results.has(pooledKey)) results.set(pooledKey, compute(pooledKey));
+  if (!results.has(pooledKey)) {
+    fill(regions.properties, pending());
+    withStats(pooledKey, () => updateProperties());
+    return;
+  }
   const T = results.get(pooledKey).stats;
   const E = (results.get(`${state.extP}|${state.extBase}`) || {}).stats;
   if (!T || !E) {

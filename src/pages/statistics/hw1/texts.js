@@ -15,6 +15,7 @@ function formatters(decimal, na) {
   const missing = (v) => v === null || v === undefined || Number.isNaN(v);
   return {
     na,
+    decimal,
     num: (v, digits = 3) => (missing(v) ? na : local((Math.abs(v) < 0.5 * 10 ** -digits ? 0 : v).toFixed(digits))),
     pval: (v) => (missing(v) ? na : v === 0 ? '0' : v < 0.001 ? local(v.toExponential(1)) : local(v.toFixed(3))),
     pct: (v) => (missing(v) ? na : `${local((100 * v).toFixed(1))}%`),
@@ -246,6 +247,7 @@ const it = {
     intro: (task, facts) => [
       'La consegna chiede di ripetere l’esperimento con valori diversi di k e, se utile, con punti base validi diversi, e di esplorare le proprietà statistiche dei punti ottenuti. Per un punto base G si usano tutti i valori di k da 1 a n - 1, dove n è l’ordine di G: oltre n i punti si ripetono, perché kG dipende solo da k modulo n.',
       `Due avvertenze valgono per tutta la sezione. Primo, i dati non sono un campione casuale ma l’intera popolazione dei multipli: i test sono descrittivi, e un p-value misura quanto la popolazione si discosta da un modello, non un’inferenza su qualcosa di più grande. Secondo, la curva della consegna ha ${facts.order} punti in tutto, e anche usando tutti i punti base insieme le osservazioni sono ${facts.pooledN}. Per questo la sezione 3.2 ripete le stesse analisi su curve con la stessa equazione ma più grandi.`,
+      'Ogni analisi ha due test: quello che si farebbe d’istinto, che presuppone osservazioni indipendenti e qui non è valido, e uno esatto, che confronta i dati con insiemi o funzioni casuali che rispettano le stesse simmetrie (simulazioni e permutazioni). Le scelte casuali vengono da un generatore con seme fisso: la pagina, il programma scaricabile e il terminale danno gli stessi numeri.',
     ],
     taskIntro: (task, n) =>
       `Il punto base predefinito qui sono tutti i punti validi insieme: con il solo G = ${fmtPoint(task.G)} della consegna, di ordine ${n}, i valori di k sarebbero ${n - 1}, troppo pochi per qualunque statistica. Il selettore permette di scegliere G o un qualunque altro punto della curva.`,
@@ -330,31 +332,33 @@ const it = {
       },
     },
     bits: {
-      intro: 'Per ogni posizione di bit, la quota di 1 fra i valori distinti di x e di y. La linea tratteggiata è la quota attesa per valori uniformi in [0, p): per i bit alti è sotto 1/2 perché p non è una potenza di 2.',
+      intro: 'Per ogni posizione di bit, la quota di 1 fra i valori distinti di x e di y. La linea tratteggiata è la quota attesa per un insieme casuale della stessa dimensione e con le stesse simmetrie dei valori osservati: per i bit alti è sotto 1/2 perché p non è una potenza di 2.',
       chartX: 'Bit di x: quota di 1 per posizione',
       chartY: 'Bit di y: quota di 1 per posizione',
       explain: (s) => {
         const Dx = s.bits.x[0].distinct;
         const Dy = s.bits.y[0].distinct;
         const out = [
-          `Le quote sono calcolate sui valori distinti (${Dx} per x, ${Dy} per y): i valori ripetuti non portano informazione nuova, si ripetono per ragioni algebriche. Il riferimento è un insieme di altrettanti valori estratti a caso da [0, p) senza reinserimento, quindi lo z-score usa la distribuzione ipergeometrica, con la correzione per popolazione finita.`,
+          `Le quote sono calcolate sui valori distinti (${Dx} per x, ${Dy} per y): i valori ripetuti non portano informazione nuova, si ripetono per ragioni algebriche. Il riferimento è lo stesso del test di uniformità esatto (sezione d): insiemi scelti a caso fra quelli con le stesse simmetrie, per i quali media e varianza di ogni quota si calcolano esattamente. Lo z-score quindi non presuppone osservazioni indipendenti.`,
         ];
         const describe = (b, c) => (b ? `il bit ${b.bit} di ${c} (z = ${IT.num(b.z, 2)})` : `nessun bit di ${c}`);
         out.push(`Gli scarti più grandi dall’atteso sono ${describe(worstBit(s.bits.x), 'x')} e ${describe(worstBit(s.bits.y), 'y')}; oltre |z| = 3 ci sono ${bitsBeyond(s)} bit su ${2 * s.bitLength}.`);
+        const fixedY = s.bits.y.filter((b) => b.fixed).map((b) => b.bit);
         if (Dy === s.p) {
-          out.push('Per y compaiono tutti i p valori: le quote coincidono per forza con quelle attese e lo z-score non è definito.');
-        } else if (s.uniformity.y.distinct.folded) {
+          out.push('Per y compaiono tutti i p valori: le quote sono per forza quelle dell’intero [0, p), e non c’è nulla da misurare.');
+        } else if (fixedY.length && s.uniformity.y.symmetry === 'pairs') {
           const t = trailingOnes(s.p);
-          out.push(`${t > 1 ? `I bit di y da 0 a ${t - 1} sono bilanciati` : 'Il bit 0 di y è bilanciato'} per costruzione: y e p - y compaiono sempre insieme, e p = ${s.p} in binario è ${s.p.toString(2)}, che finisce con ${t === 1 ? 'una cifra 1' : `${t} cifre 1`}, quindi ${t === 1 ? 'l’ultima cifra' : `le ultime ${t} cifre`} di p - y sono il complemento di quelle di y. Per lo stesso motivo lo z-score di y è solo indicativo: i valori arrivano a coppie.`);
+          const which = fixedY.length === 1 ? `Il bit ${fixedY[0]} di y è fissato` : `I bit di y da ${fixedY[0]} a ${fixedY[fixedY.length - 1]} sono fissati`;
+          out.push(`${which} dalla simmetria: y e p - y compaiono sempre insieme, e p = ${s.p} in binario è ${s.p.toString(2)}, che finisce con ${t === 1 ? 'una cifra 1' : `${t} cifre 1`}, quindi ${t === 1 ? 'l’ultima cifra' : `le ultime ${t} cifre`} di p - y sono il complemento di quelle di y. Qualunque insieme con questa simmetria ha lì esattamente metà di 1: per quei bit lo z-score non esiste.`);
         }
         return out;
       },
     },
     uniformity: {
-      intro: 'Il test χ² confronta i conteggi con quelli di valori uniformi in [0, p). Le classi sono gruppi di valori consecutivi, il più possibile numerose (una per valore sulle curve piccole, al più 32 su quelle grandi) purché ognuna attenda almeno 5 osservazioni: la regola di Cochran. Il test è fatto due volte: su tutte le osservazioni, come si farebbe d’istinto, e sui soli valori distinti, che è il modo corretto quando i valori si ripetono per ragioni algebriche.',
+      intro: 'Il test χ² confronta i conteggi con quelli di valori uniformi in [0, p), su classi di valori consecutivi: le più numerose possibili (una per valore sulle curve piccole, al più 32 su quelle grandi) purché ognuna attenda almeno 5 osservazioni. Due versioni, una accanto all’altra: quella che si farebbe d’istinto, su tutte le osservazioni e con la distribuzione χ² come riferimento, e quella esatta, sui valori distinti confrontati con insiemi casuali che hanno le stesse simmetrie.',
       coordTitle: (c) => `Coordinata ${c}`,
-      naiveLabel: 'Su tutte le osservazioni',
-      distinctLabel: 'Sui valori distinti',
+      naiveLabel: 'Test ingenuo: tutte le osservazioni',
+      distinctLabel: 'Test esatto: valori distinti',
       status: {
         valid: 'VALIDO',
         descriptive: 'DESCRITTIVO',
@@ -363,52 +367,54 @@ const it = {
       },
       statusHelp: {
         valid: 'Le ipotesi del test sono rispettate.',
-        descriptive: 'Ipotesi rispettate, ma i dati sono la popolazione intera: il risultato descrive, non generalizza.',
+        descriptive: 'Test esatto, ma i dati sono la popolazione intera: il risultato descrive, non generalizza.',
         invalid: 'Il numero è calcolato, ma le ipotesi del test non reggono: non va usato per concludere.',
         na: 'Il test non si può calcolare.',
       },
-      line: (t) => {
-        const where = t.folded ? ` sui valori min(y, p - y), in [0, ${t.population - 1}]` : '';
-        const fpc = t.fpc < 1 ? ` (Pearson ${IT.num(t.pearsonChi2, 2)} diviso per la correzione ${IT.num(t.fpc, 3)})` : '';
-        return `χ² = ${IT.num(t.chi2, 2)}${fpc} con ${count(t.df, 'grado', 'gradi')} di libertà su ${t.bins} classi${t.perValue ? ', una per valore' : ''}${where}; minimo atteso per classe ${IT.num(t.minExpected, 2)}; p-value ${IT.pval(t.pValue)}.`;
-      },
+      line: (t) =>
+        t.exact
+          ? `χ² = ${IT.num(t.chi2, 2)} su ${t.bins} classi${t.perValue ? ', una per valore' : ''}; p-value esatto ${IT.pval(t.pValue)}, dal confronto con ${t.sims} insiemi casuali.`
+          : `χ² = ${IT.num(t.chi2, 2)} con ${count(t.df, 'grado', 'gradi')} di libertà su ${t.bins} classi${t.perValue ? ', una per valore' : ''}; minimo atteso per classe ${IT.num(t.minExpected, 2)}; p-value ${IT.pval(t.pValue)} secondo la distribuzione χ².`,
       reasons: {
         'small-sample': (t) =>
           t.computable
-            ? `Con N = ${t.N} osservazioni nemmeno due classi arrivano a 5 osservazioni attese: il valore è calcolato su 2 classi, ma l’approssimazione χ² non regge.`
+            ? `Con N = ${t.N} osservazioni nemmeno due classi arrivano a 5 osservazioni attese: l’approssimazione χ² non regge.`
             : `Con N = ${t.N} non c’è nulla da confrontare.`,
-        'low-expected': (t) => `Il minimo atteso per classe è ${IT.num(t.minExpected, 2)}, sotto 5: la statistica non segue bene la distribuzione χ².`,
         duplicates: (t, u) =>
           `Le osservazioni non sono indipendenti: ogni valore compare ${u.sameMultiplicity ? `esattamente ${u.maxMult} volte` : `da ${u.minMult} a ${u.maxMult} volte`} per ragioni algebriche, quindi i conteggi sono multipli fissi e la statistica è gonfiata all’incirca di quel fattore.`,
         exhaustive: (t) =>
-          t.fpc < 1
-            ? 'I dati sono l’intera popolazione, non un campione casuale. Il modello di confronto è un insieme di altrettanti valori estratti a caso da [0, p) senza reinserimento, per cui la statistica di Pearson è divisa per la correzione per popolazione finita (p - D)/(p - 1): senza, un insieme che copre metà di [0, p) sembrerebbe sempre troppo regolare.'
+          t.exact
+            ? 'I dati sono l’intera popolazione, non un campione. Il riferimento è la stessa costruzione fatta a caso: insiemi con lo stesso numero di valori e le stesse simmetrie, estratti senza reinserimento. Il p-value è la quota di questi insiemi con una statistica almeno altrettanto lontana dall’uniforme: esatto a meno dell’errore Monte Carlo, senza approssimazione χ² e senza ipotesi di indipendenza.'
             : 'I dati sono l’intera popolazione dei multipli, non un campione casuale: il p-value descrive quanto la popolazione si discosta dall’uniforme, non è un’inferenza su qualcosa di più grande.',
-        symmetric: () => 'Le y sono simmetriche: il sottogruppo contiene -P con ogni P, quindi y e p - y compaiono sempre insieme e le classi si rispecchiano a due a due. Il test usa allora min(y, p - y), altrimenti ogni scarto sarebbe contato due volte.',
-        'all-values': (t, u, s) => `Compaiono tutti i ${t.population === s.p ? `${s.p} valori di [0, p)` : `${t.population} valori di [0, (p - 1)/2]`}: l’insieme dei valori distinti è uniforme per costruzione e non resta nulla da verificare.`,
+        orbits: (t) =>
+          t.symmetry === 'pairs'
+            ? 'Le y arrivano a coppie: il sottogruppo contiene -P con ogni P, quindi y e p - y compaiono sempre insieme. Anche gli insiemi casuali di riferimento sono fatti di coppie {y, p - y}.'
+            : 'Le x arrivano a terne: per p ≡ 1 (mod 3), con (x, y) è sulla curva anche (βx, y), dove β è una radice cubica dell’unità, quindi x, βx e β²x compaiono insieme. Anche gli insiemi casuali di riferimento sono fatti di terne.',
+        'low-power': (t) => `Con soli ${t.N} valori distinti il test è esatto ma non ha potenza: non riuscirebbe a rifiutare nemmeno un insieme chiaramente non uniforme.`,
+        'all-values': (t, u, s) => `Compaiono tutti i ${s.p} valori di [0, p): l’insieme dei valori distinti è uniforme per costruzione e non resta nulla da verificare.`,
       },
       verdict: (t) => {
-        if (t.tooRegular) return `Lettura: la statistica è più piccola di quanto darebbe quasi ogni insieme casuale della stessa dimensione (coda sinistra ${IT.pval(t.leftTail)}): i valori sono distribuiti fra le classi in modo più regolare del caso. Fra più test un valore così può capitare: va confrontato con le altre curve.`;
-        if (t.verdict === 'reject') return `Lettura: uno scarto così grande è raro per un insieme casuale della stessa dimensione (p-value ${IT.pval(t.pValue)}): a livello di classi i valori non sembrano uniformi.`;
-        return `Lettura: uno scarto così è del tutto normale per un insieme casuale della stessa dimensione (p-value ${IT.pval(t.pValue)}): a livello di classi i valori sembrano uniformi.`;
+        if (t.tooRegular) return `Lettura: la statistica è più piccola di quanto darebbe quasi ogni insieme di riferimento (coda sinistra ${IT.pval(t.leftTail)}): i valori sono distribuiti fra le classi in modo più regolare del caso. Fra più test un valore così può capitare: va confrontato con le altre curve.`;
+        if (t.verdict === 'reject') return `Lettura: uno scarto così grande è raro fra gli insiemi di riferimento (p-value ${IT.pval(t.pValue)}): a livello di classi i valori non sembrano uniformi.`;
+        return `Lettura: uno scarto così è del tutto normale fra gli insiemi di riferimento (p-value ${IT.pval(t.pValue)}): a livello di classi i valori sembrano uniformi.`;
       },
       noVerdict: 'Lettura: nessuna conclusione, il test non è valido per i motivi sopra.',
       why: (s, coord) => {
         const u = s.uniformity[coord];
         const d = u.distinct;
         if (!d.computable) return null;
-        if (d.reasons.includes('small-sample') || d.reasons.includes('low-expected')) {
+        if (d.reasons.includes('low-power')) {
           return `Il limite vero è la dimensione: ${u.observedValues} valori distinti sono troppo pochi per qualunque test di uniformità. Il risultato non dice che la funzione sia uniforme, né che non lo sia.`;
         }
         if (d.verdict === 'reject') {
           return `I valori possibili sono vincolati dalla curva (${u.attainable} su ${s.p}) e il sottogruppo ne copre una parte non distribuita in modo uniforme.`;
         }
         const share = coord === 'x' ? 'circa metà' : s.p % 3 === 2 ? 'tutti' : 'circa un terzo';
-        return `Perché sembra uniforme: i valori raggiungibili, ${share} di [0, p), sono sparsi sull’intervallo come un sottoinsieme casuale. La struttura non sta in dove cadono ma in quali sono possibili, in quante volte compaiono (coppie e terne) e nella simmetria y ↔ p - y: cose che un test a classi non vede.`;
+        return `Perché sembra uniforme: i valori raggiungibili, ${share} di [0, p), sono sparsi sull’intervallo come un insieme casuale con le stesse simmetrie. La struttura non sta in dove cadono ma in quali sono possibili, in quante volte compaiono (coppie e terne) e nelle simmetrie stesse: cose che un test a classi non vede, e che il test ingenuo scambia per mancanza di uniformità.`;
       },
     },
     correlation: {
-      intro: 'Due livelli. Sui valori: la correlazione di Pearson (lineare) e di Spearman (sui ranghi) fra k e le coordinate del punto. Sui bit: per ogni bit di k e ogni bit di x e di y, il coefficiente φ, cioè Pearson su variabili 0/1. Se i bit fossero indipendenti, φ·√N sarebbe circa una normale standard: |φ| > 3/√N è insolito, ma su molte celle qualcuna lo supera per caso, lo 0,27%.',
+      intro: 'Due livelli. Sui valori: la correlazione di Pearson (lineare) e di Spearman (sui ranghi) fra k e le coordinate del punto. Sui bit: per ogni bit di k e ogni bit di x e di y, il coefficiente φ, cioè Pearson su variabili 0/1. Se l’uscita non dipendesse da k, ogni φ avrebbe deviazione standard esattamente 1/√(N - 1): |φ| > 3/√(N - 1) è insolito, ma su molte celle qualcuna lo supera per caso.',
       colMeasure: 'Misura',
       colValue: 'Valore',
       rows: {
@@ -436,44 +442,65 @@ const it = {
           out.push('Nessuna cella della matrice è definita: con così pochi valori ogni bit è costante.');
           return out;
         }
-        out.push(`Matrice bit a bit: |φ| massimo ${IT.num(b.maxAbs)}, medio ${IT.num(b.meanAbs)}, soglia 3/√N = ${IT.num(b.threshold)}. Celle oltre la soglia: ${b.above} su ${b.defined}, contro circa ${IT.num(b.expectedAbove, 1)} attese per puro caso. Test globale: Σ N·φ² confrontata con una χ² a ${count(b.defined, 'grado', 'gradi')} di libertà, trattando le celle come indipendenti, che è un’approssimazione; p-value ${IT.pval(b.globalP)}.`);
+        out.push(`Matrice bit a bit: |φ| massimo ${IT.num(b.maxAbs)}, medio ${IT.num(b.meanAbs)}, soglia 3/√(N - 1) = ${IT.num(b.threshold)}. Celle oltre la soglia: ${b.above} su ${b.defined}, contro ${IT.num(b.expectedAbove, 1)} in media sulle permutazioni del test.`);
+        if (b.pValue !== null) {
+          out.push(`Test globale per permutazione: la statistica N·Σφ² = ${IT.num(b.statistic, 1)} è confrontata con quella di ${b.sims} riassegnazioni casuali delle uscite ai valori di k, che rompono ogni legame fra ingresso e uscita lasciando invariate tutte le altre proprietà dei dati. P-value esatto, a meno dell’errore Monte Carlo: ${IT.pval(b.pValue)}.`);
+        }
         if (s.pooled && b.maxAbs === 0) {
           out.push('Tutte le φ sono esattamente zero, per costruzione: su una curva di ordine primo, accorpando tutti i punti base, per ogni k i punti kG percorrono l’intero gruppo, quindi la distribuzione dell’uscita non dipende affatto da k. È un’indipendenza che viene dalla media su tutti i G, non dalla funzione k → kG per un G fissato.');
-        } else if (s.pooled && b.globalP !== null && b.globalP < 0.05) {
-          out.push('Il test globale rifiuta l’indipendenza, ma per un motivo che riguarda l’accorpamento e non k → kG: con sottogruppi di ordini diversi, i k grandi esistono solo nei sottogruppi grandi, che contengono punti diversi, quindi i bit alti di k dicono da quale sottogruppo viene il punto.');
-        } else if (b.globalP !== null && b.globalP < 0.05) {
-          out.push('Il test globale rifiuta l’indipendenza: su un gruppo così piccolo la struttura dei multipli si vede anche a livello di singoli bit.');
-        } else {
-          out.push('Il test globale non trova legami fra singoli bit: a livello di bit k e kG sembrano indipendenti, anche se kG è una funzione deterministica e fortemente strutturata di k. È il limite di questi test: vedono solo dipendenze lineari fra coppie di bit.');
+        } else if (s.pooled && b.pValue !== null && b.pValue < 0.05) {
+          out.push('Il test rifiuta l’indipendenza, ma per un motivo che riguarda l’accorpamento e non k → kG: con sottogruppi di ordini diversi, i k grandi esistono solo nei sottogruppi grandi, che contengono punti diversi, quindi i bit alti di k dicono da quale sottogruppo viene il punto.');
+        } else if (b.pValue !== null && b.pValue < 0.05) {
+          out.push('Il test rifiuta l’indipendenza: su un gruppo così piccolo la struttura dei multipli si vede anche a livello di singoli bit.');
+        } else if (b.pValue !== null) {
+          out.push('Il test non trova legami fra singoli bit: a livello di bit k e kG sembrano indipendenti, anche se kG è una funzione deterministica e fortemente strutturata di k. È il limite di queste misure: vedono solo dipendenze lineari fra coppie di bit.');
         }
         if (s.smallSample) out.push(`Con N = ${s.N} queste stime sono molto instabili.`);
         return out;
       },
     },
     avalanche: {
-      intro: 'Si inverte un bit di k e si contano i bit di x e di y che cambiano. Ogni coppia {k, k con il bit invertito} è contata una volta sola, e solo se entrambi i valori stanno fra 1 e n - 1. Per una funzione di hash ideale ogni bit d’uscita cambierebbe con probabilità 1/2; qui l’uscita è un valore in [0, p), quindi il riferimento per ciascun bit è 2q(1 - q), dove q è la quota di 1 attesa per quel bit fra valori uniformi in [0, p).',
+      intro: 'Si inverte un bit di k e si contano i bit di x e di y che cambiano. Ogni coppia {k, k con il bit invertito} è contata una volta sola, e solo se entrambi i valori stanno fra 1 e n - 1. Per una funzione di hash ideale ogni bit d’uscita cambierebbe con probabilità 1/2; qui l’uscita è un valore in [0, p), quindi il riferimento ideale per ciascun bit è 2q(1 - q), dove q è la quota di 1 attesa per quel bit fra valori uniformi in [0, p).',
       chartTitle: 'Bit d’uscita cambiati invertendo un bit di k: quante coppie per ogni numero di bit (tratteggio: riferimento ideale)',
-      heatmapTitle: (range) => `Matrice di valanga: per ogni bit di k invertito (righe) e ogni bit di x e di y (colonne), quanto la probabilità di cambio si scosta dal riferimento. La scala va da -${IT.short(range)} a +${IT.short(range)}.`,
+      heatmapTitle: () => 'Matrice di valanga: per ogni bit di k invertito (righe) e ogni bit di x e di y (colonne), quanto la frequenza di cambio si scosta da quella delle funzioni di riferimento del test esatto, in deviazioni standard. Rosso: cambia più spesso; blu: meno spesso. La scala va da -4 a +4.',
       kBits: 'bit di k invertito',
       none: 'Dentro il sottogruppo non ci sono due valori di k che differiscano di un solo bit: l’effetto valanga non è misurabile.',
+      naiveLabel: 'Test ingenuo: misure indipendenti',
+      exactLabel: 'Test esatto: funzioni con la stessa simmetria',
+      naiveLine: (a) =>
+        `Σz² = ${IT.num(a.naive.z2, 1)} su ${count(a.naive.cells, 'cella', 'celle')} contro il riferimento ideale; celle oltre 3σ: ${a.naive.above}, attese ${IT.num(a.naive.expectedAbove, 1)}; p-value ${IT.pval(a.naive.pValue)} secondo la distribuzione χ².`,
+      naiveReasons: (s) => [
+        `Le misure non sono indipendenti. La coppia {kG, (k + 2^i)G} e la sua speculare {(n - k - 2^i)G, (n - k)G} = {-(k + 2^i)G, -kG} hanno le stesse x, e nel ${IT.pct(s.avalanche.mirrorShareAll)} dei casi vengono contate entrambe: la stessa misura entra due volte. In più, coppie diverse condividono un punto.`,
+        'Il riferimento 2q(1 - q) vale per valori uniformi in [0, p), mentre le uscite sono punti della curva: non tutti i valori sono possibili.',
+        s.pooled ? 'Accorpando i punti base, le stesse coppie di punti ricompaiono per molti G diversi.' : null,
+      ].filter(Boolean),
+      exactLine: (a) =>
+        `Σz² = ${IT.num(a.exact.statistic, 1)} su ${count(a.exact.cells, 'cella', 'celle')}, standardizzate con media e deviazione standard di ${a.exact.sims} funzioni di riferimento; celle oltre 3σ: ${a.exact.above}, in media ${IT.num(a.exact.expectedAbove, 1)} per le funzioni di riferimento; p-value esatto ${IT.pval(a.exact.pValue)}.`,
+      exactReasons: (s) => [
+        `Le funzioni di riferimento hanno la stessa immagine, la stessa simmetria f(n - k) = -f(k) e le stesse coppie di k di k → kG: cambia solo, a caso, quale coppia di punti opposti {P, -P} va a quale coppia {k, n - k}, e con che segno${s.pooled ? ', sottogruppo per sottogruppo' : ''}. La dipendenza fra le misure c’è anche nel riferimento, quindi non serve alcuna correzione.`,
+        'I dati sono l’intera popolazione delle coppie: il p-value descrive quanto è tipica la matrice osservata fra le funzioni con la stessa struttura.',
+      ],
+      exactVerdict: (s) => {
+        const e = s.avalanche.exact;
+        return e.pValue < 0.05
+          ? `Lettura: la matrice osservata è più lontana dal riferimento di quasi tutte le funzioni con la stessa struttura (p-value ${IT.pval(e.pValue)}): c’è struttura oltre la simmetria.`
+          : `Lettura: la matrice è tipica di una funzione casuale con la stessa simmetria (p-value ${IT.pval(e.pValue)}): a livello di bit, k → kG si comporta come se avesse un effetto valanga.`;
+      },
       explain: (s) => {
         const a = s.avalanche;
         if (!a.measurements) return [it.stats.avalanche.none];
-        const u = a.vsUniform;
-        const c = a.vsCurve;
         const out = [
-          `Su ${a.measurements} coppie cambia in media il ${IT.pct(a.meanFraction)} dei ${a.outputBits} bit d’uscita, contro il ${IT.pct(a.idealMeanFraction)} del riferimento.`,
-          `Matrice di valanga (Strict Avalanche Criterion): scarto massimo dal riferimento ${IT.num(a.maxDev)}, medio ${IT.num(a.meanDev)}. Celle oltre 3σ: ${u.above} su ${u.cells}, contro circa ${IT.num(u.expectedAbove, 1)} attese per caso; test globale Σz² a ${count(u.cells, 'grado', 'gradi')} di libertà, p-value ${IT.pval(u.pValue)}. Con un altro riferimento, due punti distinti della curva presi a caso (${a.curveIdealExact ? 'calcolato esattamente su tutte le coppie di punti' : 'stimato su 200.000 coppie'}), p-value ${IT.pval(c.pValue)}.`,
+          `Su ${a.measurements} coppie cambia in media il ${IT.pct(a.meanFraction)} dei ${a.outputBits} bit d’uscita, contro il ${IT.pct(a.idealMeanFraction)} del riferimento ideale; lo scarto di una cella dall’ideale è al massimo ${IT.num(a.maxDev)}, in media ${IT.num(a.meanDev)}.`,
         ];
-        const rejects = u.pValue !== null && u.pValue < 0.05;
-        if (s.pooled && rejects) {
-          out.push(`Lo scarto viene dall’accorpamento. Per k e i fissati, al variare di G la coppia (kG, (k + 2^i)G) è (P, rP) con r = (k + 2^i)/k modulo n: combinazioni diverse di k e i con lo stesso r danno esattamente le stesse coppie di punti. Le stesse misure entrano molte volte, le osservazioni non sono indipendenti e le bande a 3σ sono troppo strette.${s.orders && s.orders.length > 1 ? ' Con sottogruppi di ordini diversi, in più, ogni riga mescola gruppi di dimensioni diverse.' : ''}`);
-        } else if (rejects && u.y.pValue >= 0.05 && u.xCorrected.pValue >= 0.05) {
-          out.push(`Lo scarto sta tutto nelle colonne x (p-value ${IT.pval(u.x.pValue)}), mentre le colonne y sono compatibili con il caso (p-value ${IT.pval(u.y.pValue)}). La ragione è la simmetria x(P) = x(-P): la coppia {kG, (k + 2^i)G} e la coppia speculare {(n - k - 2^i)G, (n - k)G} = {-(k + 2^i)G, -kG} hanno le stesse x, e nel ${IT.pct(a.mirrorShareAll)} dei casi vengono contate entrambe. La stessa misura entra due volte, e la varianza di ogni frequenza cresce del fattore 1 + d, dove d è la quota di coppie doppie (l’effetto del disegno). Correggendo le colonne x per questo fattore il test dà p-value ${IT.pval(u.xCorrected.pValue)}, con ${count(u.xCorrected.above, 'cella', 'celle')} oltre 3σ: tolta la dipendenza, la matrice di valanga è compatibile con quella ideale.`);
-        } else if (rejects) {
-          out.push(`Resta uno scarto che la simmetria x(P) = x(-P) non spiega da sola: colonne x corrette p-value ${IT.pval(u.xCorrected.pValue)}, colonne y p-value ${IT.pval(u.y.pValue)}. Su gruppi piccoli invertire il bit i di k significa sommare sempre lo stesso punto 2^i·G, e la struttura del gruppo si vede anche nei bit.`);
-        } else {
-          out.push('Lo scarto è compatibile con il caso: a livello di singoli bit la funzione si comporta come se avesse un effetto valanga, pur non essendo progettata per averlo.');
+        const naive = a.naive.pValue;
+        const exact = a.exact.pValue;
+        if (exact === null) return out;
+        if (naive !== null && naive < 0.05 && exact >= 0.05) {
+          out.push(`Il confronto fra i due test è il risultato: quello ingenuo rifiuta (p-value ${IT.pval(naive)}), quello esatto no (p-value ${IT.pval(exact)}). Lo scarto che il test ingenuo vede non è assenza di valanga, ma dipendenza fra le misure: tenendone conto, la matrice è quella di una funzione casuale con la stessa simmetria.`);
+        } else if (s.pooled && exact < 0.05) {
+          out.push(`Anche il test esatto rifiuta, per un motivo che riguarda l’accorpamento: per k e i fissati, al variare di G la coppia (kG, (k + 2^i)G) è (P, rP) con r = (k + 2^i)/k modulo n, e combinazioni diverse di k e i con lo stesso r danno le stesse coppie di punti in tutti i sottogruppi. Le funzioni di riferimento, rimescolate sottogruppo per sottogruppo, non hanno questa ripetizione.${s.orders && s.orders.length > 1 ? ' Con sottogruppi di ordini diversi, in più, ogni riga mescola gruppi di dimensioni diverse.' : ''}`);
+        } else if (exact < 0.05) {
+          out.push('Anche il test esatto rifiuta: su un gruppo così piccolo la struttura si vede anche nei bit, perché invertire il bit i di k (da 0 a 1) significa sommare sempre lo stesso punto 2^i·G.');
         }
         if (s.smallSample) out.push(`Con N = ${s.N} queste stime sono molto instabili.`);
         return out;
@@ -549,18 +576,18 @@ const it = {
       frequency: (T, E) =>
         `Le x collidono a coppie (${E.correlation.mirror.matches} coppie su ${E.correlation.mirror.pairs} con p = ${E.p}), le y ${E.p % 3 === 1 ? 'a terne' : 'mai'}. Il punto intero non si ripete mai per k in [1, n - 1].`,
       bits: (T, E) =>
-        `Con p = ${E.p}, ${bitsBeyond(E)} bit su ${2 * E.bitLength} oltre |z| = 3 sui valori distinti; il bit 0 di y è bilanciato per costruzione.`,
+        `Con p = ${E.p}, ${bitsBeyond(E)} bit su ${2 * E.bitLength} oltre |z| = 3 rispetto a insiemi casuali con le stesse simmetrie; i bit bassi di y sono fissati dalla simmetria y ↔ p - y.`,
       uniformity: (T, E) => {
         const d = E.uniformity.x.distinct;
         const dy = E.uniformity.y.distinct;
         if (!d.computable) return IT.na;
-        return `Valori distinti con p = ${E.p}: p-value ${IT.pval(d.pValue)} per x e ${IT.pval(dy.pValue)} per y, rispetto a un sottoinsieme casuale della stessa dimensione. Sulla curva della consegna i valori sono troppo pochi per un test valido.`;
+        return `Test esatto sui valori distinti con p = ${E.p}: p-value ${IT.pval(d.pValue)} per x e ${IT.pval(dy.pValue)} per y, rispetto a insiemi casuali con le stesse simmetrie; il test ingenuo, che ignora i valori ripetuti, è non valido. Sulla curva della consegna i valori sono troppo pochi perché un test abbia potenza.`;
       },
       correlation: (T, E) =>
-        `r(k, x) = ${IT.num(E.correlation.pearsonKX)} per simmetria; φ bit a bit con p = ${E.p}: ${count(E.correlation.bits.above, 'cella', 'celle')} oltre 3/√N su ${E.correlation.bits.defined} (attese ${IT.num(E.correlation.bits.expectedAbove, 1)}), p-value globale ${IT.pval(E.correlation.bits.globalP)}. Omomorfismo vero in ${E.homomorphism.holds} prove su ${E.homomorphism.trials}.`,
+        `r(k, x) = ${IT.num(E.correlation.pearsonKX)} per simmetria; φ bit a bit con p = ${E.p}: ${count(E.correlation.bits.above, 'cella', 'celle')} oltre 3/√(N - 1) su ${E.correlation.bits.defined} (in media ${IT.num(E.correlation.bits.expectedAbove, 1)} per caso), test per permutazione p-value ${IT.pval(E.correlation.bits.pValue)}. Omomorfismo vero in ${E.homomorphism.holds} prove su ${E.homomorphism.trials}.`,
       avalanche: (T, E) => {
-        const u = E.avalanche.vsUniform;
-        return `Con p = ${E.p} cambia in media il ${IT.pct(E.avalanche.meanFraction)} dei bit (riferimento ${IT.pct(E.avalanche.idealMeanFraction)}); SAC: p-value ${IT.pval(u.pValue)}${E.pooled ? '' : `, ${IT.pval(u.xCorrected.pValue)} per le colonne x corrette per la simmetria e ${IT.pval(u.y.pValue)} per le colonne y`}.`;
+        const a = E.avalanche;
+        return `Con p = ${E.p} cambia in media il ${IT.pct(a.meanFraction)} dei bit (ideale ${IT.pct(a.idealMeanFraction)}); matrice di valanga: test esatto p-value ${IT.pval(a.exact.pValue)}, contro ${IT.pval(a.naive.pValue)} del test ingenuo, che ignora la dipendenza fra le misure.`;
       },
     },
     propertiesAfter: [
@@ -582,7 +609,7 @@ const it = {
     inversionInfinity: 'Q = O: non c’è nulla da invertire, k è un multiplo dell’ordine di G.',
     conclusion: [
       'La moltiplicazione scalare su curva ellittica è una funzione a senso unico candidata, non una funzione di hash. Condivide con le funzioni di hash il determinismo, la facilità del calcolo diretto e la difficoltà dell’inversione, ed è questo che la consegna intende con "shares some properties". Ma è una biiezione strutturata: un omomorfismo di gruppi, i cui punti sono circa p fra le p² coppie (x, y) possibili, le cui x coprono circa metà di [0, p) e collidono a coppie. Proprio quella struttura la rende utile: le firme ECDSA e lo scambio di chiavi Diffie-Hellman si reggono sull’omomorfismo. Una funzione di hash con la stessa proprietà sarebbe rotta, perché da H(a) e H(b) si calcolerebbe H(a + b).',
-      'Le statistiche lo confermano senza poterlo dimostrare. A grana grossa i valori distinti di x e di y sono indistinguibili da un sottoinsieme casuale della stessa dimensione, i bit sono bilanciati e la matrice di valanga, tolta la dipendenza dovuta alla simmetria, è compatibile con quella ideale. La struttura sta altrove: quali valori sono possibili, quante volte compaiono (coppie e terne), la simmetria y ↔ p - y e l’omomorfismo, vero in ogni prova. Nessuna di queste misure dice quanto sia difficile invertire la funzione: è una proprietà computazionale, non statistica, e sulle curve giocattolo è falsa.',
+      'Le statistiche lo confermano senza poterlo dimostrare. Con i test esatti, i valori distinti di x e di y sono indistinguibili da insiemi casuali con le stesse simmetrie, i bit sono quelli attesi, la correlazione bit a bit è compatibile con zero e la matrice di valanga è tipica di una funzione casuale con la stessa simmetria. La struttura sta altrove: quali valori sono possibili, quante volte compaiono (coppie e terne), le simmetrie y ↔ p - y e x → βx e l’omomorfismo, vero in ogni prova; e i test ingenui, che ignorano queste dipendenze, la scambiano per mancanza di casualità. Nessuna di queste misure dice quanto sia difficile invertire la funzione: è una proprietà computazionale, non statistica, e sulle curve giocattolo è falsa.',
       'Per questo Ethereum compone le due cose. La chiave pubblica Q = kG viene dalla funzione a senso unico; l’indirizzo sono gli ultimi 20 byte di Keccak-256(x ‖ y), cioè un hash applicato al punto strutturato per ottenere un identificativo corto e uniforme. E la collisione delle x si ritrova nelle firme: ECDSA usa solo r = x(R) mod n, e R e -R hanno la stessa x, quindi (r, s) e (r, n - s) sono entrambe valide. Ethereum blocca questa malleabilità con EIP-2, che accetta solo s ≤ n/2, e aggiunge alla firma il recovery id v, il bit che dice quale dei due punti con quella x usare per ricostruire la chiave pubblica. Allo stesso modo il segreto di uno scambio Diffie-Hellman su curva ellittica passa da una funzione di derivazione di chiave prima di diventare una chiave.',
     ],
   },
@@ -765,6 +792,7 @@ const en = {
     intro: (task, facts) => [
       'The assignment asks to repeat the experiment with different values of k and, if useful, different valid base points, and to explore the statistical properties of the resulting points. For a base point G every k from 1 to n - 1 is used, n being the order of G: beyond n the points repeat, because kG depends only on k modulo n.',
       `Two caveats hold for the whole section. First, the data are not a random sample but the whole population of multiples: the tests are descriptive, and a p-value measures how far the population is from a model, it is not an inference about something larger. Second, the assignment’s curve has ${facts.order} points in total, and even with all base points together there are ${facts.pooledN} observations. This is why section 3.2 repeats the same analyses on curves with the same equation but larger.`,
+      'Each analysis has two tests: the one you would run instinctively, which assumes independent observations and is not valid here, and an exact one, which compares the data with random sets or functions that respect the same symmetries (simulations and permutations). The random choices come from a generator with a fixed seed: the page, the downloadable program and the terminal give the same numbers.',
     ],
     taskIntro: (task, n) =>
       `The default base point here is all valid points together: with the assignment’s G = ${fmtPoint(task.G)} alone, of order ${n}, there would be ${n - 1} values of k, too few for any statistic. The selector lets you choose G or any other point of the curve.`,
@@ -849,31 +877,33 @@ const en = {
       },
     },
     bits: {
-      intro: 'For each bit position, the share of ones among the distinct values of x and of y. The dashed line is the share expected for uniform values in [0, p): for the top bits it is below 1/2 because p is not a power of 2.',
+      intro: 'For each bit position, the share of ones among the distinct values of x and of y. The dashed line is the share expected for a random set of the same size and with the same symmetries as the observed values: for the top bits it is below 1/2 because p is not a power of 2.',
       chartX: 'Bits of x: share of ones per position',
       chartY: 'Bits of y: share of ones per position',
       explain: (s) => {
         const Dx = s.bits.x[0].distinct;
         const Dy = s.bits.y[0].distinct;
         const out = [
-          `The shares are computed on the distinct values (${Dx} for x, ${Dy} for y): repeated values carry no new information, they repeat for algebraic reasons. The reference is a set of as many values drawn at random from [0, p) without replacement, so the z-score uses the hypergeometric distribution, with the finite population correction.`,
+          `The shares are computed on the distinct values (${Dx} for x, ${Dy} for y): repeated values carry no new information, they repeat for algebraic reasons. The reference is the same as for the exact uniformity test (section d): sets chosen at random among those with the same symmetries, for which the mean and variance of every share are computed exactly. The z-score therefore assumes no independent observations.`,
         ];
         const describe = (b, c) => (b ? `bit ${b.bit} of ${c} (z = ${EN.num(b.z, 2)})` : `no bit of ${c}`);
         out.push(`The largest deviations from the expectation are ${describe(worstBit(s.bits.x), 'x')} and ${describe(worstBit(s.bits.y), 'y')}; ${count(bitsBeyond(s), 'bit', 'bits')} out of ${2 * s.bitLength} ${bitsBeyond(s) === 1 ? 'is' : 'are'} beyond |z| = 3.`);
+        const fixedY = s.bits.y.filter((b) => b.fixed).map((b) => b.bit);
         if (Dy === s.p) {
-          out.push('For y all p values occur: the shares necessarily match the expected ones and the z-score is not defined.');
-        } else if (s.uniformity.y.distinct.folded) {
+          out.push('For y all p values occur: the shares are necessarily those of the whole [0, p), and there is nothing to measure.');
+        } else if (fixedY.length && s.uniformity.y.symmetry === 'pairs') {
           const t = trailingOnes(s.p);
-          out.push(`${t > 1 ? `Bits 0 to ${t - 1} of y are` : 'Bit 0 of y is'} balanced by construction: y and p - y always occur together, and p = ${s.p} is ${s.p.toString(2)} in binary, which ends with ${t === 1 ? 'a 1' : `${t} ones`}, so ${t === 1 ? 'the last digit' : `the last ${t} digits`} of p - y are the complement of those of y. For the same reason the z-score of y is only indicative: the values come in pairs.`);
+          const which = fixedY.length === 1 ? `Bit ${fixedY[0]} of y is fixed` : `Bits ${fixedY[0]} to ${fixedY[fixedY.length - 1]} of y are fixed`;
+          out.push(`${which} by the symmetry: y and p - y always occur together, and p = ${s.p} is ${s.p.toString(2)} in binary, which ends with ${t === 1 ? 'a 1' : `${t} ones`}, so ${t === 1 ? 'the last digit' : `the last ${t} digits`} of p - y are the complement of those of y. Any set with this symmetry has exactly half ones there: for those bits there is no z-score.`);
         }
         return out;
       },
     },
     uniformity: {
-      intro: 'The χ² test compares the counts with those of uniform values in [0, p). Classes are groups of consecutive values, as many as possible (one per value on small curves, at most 32 on large ones) provided each expects at least 5 observations: Cochran’s rule. The test is run twice: on every observation, as one would instinctively do, and on the distinct values only, which is the correct way when values repeat for algebraic reasons.',
+      intro: 'The χ² test compares the counts with those of uniform values in [0, p), over classes of consecutive values: as many as possible (one per value on small curves, at most 32 on large ones) provided each expects at least 5 observations. Two versions, side by side: the one you would run instinctively, on every observation with the χ² distribution as reference, and the exact one, on the distinct values compared with random sets that have the same symmetries.',
       coordTitle: (c) => `Coordinate ${c}`,
-      naiveLabel: 'On every observation',
-      distinctLabel: 'On the distinct values',
+      naiveLabel: 'Naive test: every observation',
+      distinctLabel: 'Exact test: distinct values',
       status: {
         valid: 'VALID',
         descriptive: 'DESCRIPTIVE',
@@ -882,52 +912,54 @@ const en = {
       },
       statusHelp: {
         valid: 'The assumptions of the test hold.',
-        descriptive: 'Assumptions hold, but the data are the whole population: the result describes, it does not generalise.',
+        descriptive: 'Exact test, but the data are the whole population: the result describes, it does not generalise.',
         invalid: 'The number is computed, but the assumptions of the test fail: it must not be used to conclude anything.',
         na: 'The test cannot be computed.',
       },
-      line: (t) => {
-        const where = t.folded ? ` on the values min(y, p - y), in [0, ${t.population - 1}]` : '';
-        const fpc = t.fpc < 1 ? ` (Pearson ${EN.num(t.pearsonChi2, 2)} divided by the correction ${EN.num(t.fpc, 3)})` : '';
-        return `χ² = ${EN.num(t.chi2, 2)}${fpc} with ${count(t.df, 'degree', 'degrees')} of freedom over ${t.bins} classes${t.perValue ? ', one per value' : ''}${where}; smallest expected count per class ${EN.num(t.minExpected, 2)}; p-value ${EN.pval(t.pValue)}.`;
-      },
+      line: (t) =>
+        t.exact
+          ? `χ² = ${EN.num(t.chi2, 2)} over ${t.bins} classes${t.perValue ? ', one per value' : ''}; exact p-value ${EN.pval(t.pValue)}, from the comparison with ${t.sims} random sets.`
+          : `χ² = ${EN.num(t.chi2, 2)} with ${count(t.df, 'degree', 'degrees')} of freedom over ${t.bins} classes${t.perValue ? ', one per value' : ''}; smallest expected count per class ${EN.num(t.minExpected, 2)}; p-value ${EN.pval(t.pValue)} from the χ² distribution.`,
       reasons: {
         'small-sample': (t) =>
           t.computable
-            ? `With N = ${t.N} observations not even two classes reach 5 expected observations: the value is computed on 2 classes, but the χ² approximation does not hold.`
+            ? `With N = ${t.N} observations not even two classes reach 5 expected observations: the χ² approximation does not hold.`
             : `With N = ${t.N} there is nothing to compare.`,
-        'low-expected': (t) => `The smallest expected count per class is ${EN.num(t.minExpected, 2)}, below 5: the statistic does not follow the χ² distribution well.`,
         duplicates: (t, u) =>
           `The observations are not independent: each value occurs ${u.sameMultiplicity ? `exactly ${u.maxMult} times` : `${u.minMult} to ${u.maxMult} times`} for algebraic reasons, so the counts are fixed multiples and the statistic is inflated roughly by that factor.`,
         exhaustive: (t) =>
-          t.fpc < 1
-            ? 'The data are the whole population, not a random sample. The model they are compared with is a set of as many values drawn at random from [0, p) without replacement, so Pearson’s statistic is divided by the finite population correction (p - D)/(p - 1): without it, a set covering half of [0, p) would always look too regular.'
+          t.exact
+            ? 'The data are the whole population, not a sample. The reference is the same construction done at random: sets with the same number of values and the same symmetries, drawn without replacement. The p-value is the share of these sets whose statistic is at least as far from uniform: exact up to the Monte Carlo error, with no χ² approximation and no assumption of independence.'
             : 'The data are the whole population of multiples, not a random sample: the p-value describes how far the population is from uniform, it is not an inference about something larger.',
-        symmetric: () => 'The y are symmetric: the subgroup contains -P with every P, so y and p - y always occur together and the classes mirror each other in pairs. The test therefore uses min(y, p - y), otherwise every deviation would be counted twice.',
-        'all-values': (t, u, s) => `All ${t.population === s.p ? `${s.p} values of [0, p)` : `${t.population} values of [0, (p - 1)/2]`} occur: the set of distinct values is uniform by construction and there is nothing left to test.`,
+        orbits: (t) =>
+          t.symmetry === 'pairs'
+            ? 'The y come in pairs: the subgroup contains -P with every P, so y and p - y always occur together. The random reference sets are made of pairs {y, p - y} too.'
+            : 'The x come in triples: for p ≡ 1 (mod 3), with (x, y) the point (βx, y) is on the curve too, β being a cube root of unity, so x, βx and β²x occur together. The random reference sets are made of triples too.',
+        'low-power': (t) => `With only ${t.N} distinct values the test is exact but has no power: it could not reject even a clearly non-uniform set.`,
+        'all-values': (t, u, s) => `All ${s.p} values of [0, p) occur: the set of distinct values is uniform by construction and there is nothing left to test.`,
       },
       verdict: (t) => {
-        if (t.tooRegular) return `Reading: the statistic is smaller than almost any random set of the same size would give (left tail ${EN.pval(t.leftTail)}): the values are spread over the classes more regularly than chance. Among several tests such a value can happen: compare it with the other curves.`;
-        if (t.verdict === 'reject') return `Reading: such a large deviation is rare for a random set of the same size (p-value ${EN.pval(t.pValue)}): at class level the values do not look uniform.`;
-        return `Reading: such a deviation is entirely normal for a random set of the same size (p-value ${EN.pval(t.pValue)}): at class level the values look uniform.`;
+        if (t.tooRegular) return `Reading: the statistic is smaller than almost every reference set would give (left tail ${EN.pval(t.leftTail)}): the values are spread over the classes more regularly than chance. Among several tests such a value can happen: compare it with the other curves.`;
+        if (t.verdict === 'reject') return `Reading: such a large deviation is rare among the reference sets (p-value ${EN.pval(t.pValue)}): at class level the values do not look uniform.`;
+        return `Reading: such a deviation is entirely normal among the reference sets (p-value ${EN.pval(t.pValue)}): at class level the values look uniform.`;
       },
       noVerdict: 'Reading: no conclusion, the test is not valid for the reasons above.',
       why: (s, coord) => {
         const u = s.uniformity[coord];
         const d = u.distinct;
         if (!d.computable) return null;
-        if (d.reasons.includes('small-sample') || d.reasons.includes('low-expected')) {
+        if (d.reasons.includes('low-power')) {
           return `The real limit is size: ${u.observedValues} distinct values are too few for any uniformity test. The result says neither that the function is uniform nor that it is not.`;
         }
         if (d.verdict === 'reject') {
           return `The possible values are constrained by the curve (${u.attainable} out of ${s.p}) and the subgroup covers a part of them that is not evenly spread.`;
         }
         const share = coord === 'x' ? 'about half' : s.p % 3 === 2 ? 'all' : 'about a third';
-        return `Why it looks uniform: the reachable values, ${share} of [0, p), are spread over the interval like a random subset. The structure is not in where they fall but in which ones are possible, in how many times they occur (pairs and triples) and in the symmetry y ↔ p - y: things a class-based test does not see.`;
+        return `Why it looks uniform: the reachable values, ${share} of [0, p), are spread over the interval like a random set with the same symmetries. The structure is not in where they fall but in which ones are possible, in how many times they occur (pairs and triples) and in the symmetries themselves: things a class-based test does not see, and that the naive test mistakes for a lack of uniformity.`;
       },
     },
     correlation: {
-      intro: 'Two levels. On values: the Pearson (linear) and Spearman (rank) correlation between k and the coordinates of the point. On bits: for each bit of k and each bit of x and of y, the φ coefficient, that is Pearson on 0/1 variables. If the bits were independent, φ·√N would be about a standard normal: |φ| > 3/√N is unusual, but over many cells a few cross it by chance, 0.27% of them.',
+      intro: 'Two levels. On values: the Pearson (linear) and Spearman (rank) correlation between k and the coordinates of the point. On bits: for each bit of k and each bit of x and of y, the φ coefficient, that is Pearson on 0/1 variables. If the output did not depend on k, every φ would have standard deviation exactly 1/√(N - 1): |φ| > 3/√(N - 1) is unusual, but over many cells a few cross it by chance.',
       colMeasure: 'Measure',
       colValue: 'Value',
       rows: {
@@ -955,44 +987,65 @@ const en = {
           out.push('No cell of the matrix is defined: with so few values every bit is constant.');
           return out;
         }
-        out.push(`Bit matrix: largest |φ| ${EN.num(b.maxAbs)}, mean ${EN.num(b.meanAbs)}, threshold 3/√N = ${EN.num(b.threshold)}. Cells beyond the threshold: ${b.above} out of ${b.defined}, against about ${EN.num(b.expectedAbove, 1)} expected by pure chance. Global test: Σ N·φ² compared with a χ² with ${count(b.defined, 'degree', 'degrees')} of freedom, treating the cells as independent, which is an approximation; p-value ${EN.pval(b.globalP)}.`);
+        out.push(`Bit matrix: largest |φ| ${EN.num(b.maxAbs)}, mean ${EN.num(b.meanAbs)}, threshold 3/√(N - 1) = ${EN.num(b.threshold)}. Cells beyond the threshold: ${b.above} out of ${b.defined}, against ${EN.num(b.expectedAbove, 1)} on average over the permutations of the test.`);
+        if (b.pValue !== null) {
+          out.push(`Global permutation test: the statistic N·Σφ² = ${EN.num(b.statistic, 1)} is compared with that of ${b.sims} random reassignments of the outputs to the values of k, which break any link between input and output and leave every other property of the data unchanged. Exact p-value, up to the Monte Carlo error: ${EN.pval(b.pValue)}.`);
+        }
         if (s.pooled && b.maxAbs === 0) {
           out.push('Every φ is exactly zero, by construction: on a curve of prime order, pooling all base points, for each k the points kG run over the whole group, so the distribution of the output does not depend on k at all. This independence comes from averaging over every G, not from the map k → kG for a fixed G.');
-        } else if (s.pooled && b.globalP !== null && b.globalP < 0.05) {
-          out.push('The global test rejects independence, but for a reason that concerns the pooling and not k → kG: with subgroups of different orders, large values of k exist only in the large subgroups, which contain different points, so the high bits of k tell which subgroup the point comes from.');
-        } else if (b.globalP !== null && b.globalP < 0.05) {
-          out.push('The global test rejects independence: on such a small group the structure of the multiples shows even at the level of single bits.');
-        } else {
-          out.push('The global test finds no link between single bits: at bit level k and kG look independent, even though kG is a deterministic and strongly structured function of k. This is the limit of such tests: they only see linear dependences between pairs of bits.');
+        } else if (s.pooled && b.pValue !== null && b.pValue < 0.05) {
+          out.push('The test rejects independence, but for a reason that concerns the pooling and not k → kG: with subgroups of different orders, large values of k exist only in the large subgroups, which contain different points, so the high bits of k tell which subgroup the point comes from.');
+        } else if (b.pValue !== null && b.pValue < 0.05) {
+          out.push('The test rejects independence: on such a small group the structure of the multiples shows even at the level of single bits.');
+        } else if (b.pValue !== null) {
+          out.push('The test finds no link between single bits: at bit level k and kG look independent, even though kG is a deterministic and strongly structured function of k. This is the limit of such measures: they only see linear dependences between pairs of bits.');
         }
         if (s.smallSample) out.push(`With N = ${s.N} these estimates are very unstable.`);
         return out;
       },
     },
     avalanche: {
-      intro: 'Flip one bit of k and count how many bits of x and y change. Every pair {k, k with the bit flipped} is counted once, and only if both values lie between 1 and n - 1. For an ideal hash function each output bit would change with probability 1/2; here the output is a value in [0, p), so the reference for each bit is 2q(1 - q), q being the share of ones expected for that bit among uniform values in [0, p).',
+      intro: 'Flip one bit of k and count how many bits of x and y change. Every pair {k, k with the bit flipped} is counted once, and only if both values lie between 1 and n - 1. For an ideal hash function each output bit would change with probability 1/2; here the output is a value in [0, p), so the ideal reference for each bit is 2q(1 - q), q being the share of ones expected for that bit among uniform values in [0, p).',
       chartTitle: 'Output bits changed by flipping one bit of k: how many pairs for each number of bits (dashed: ideal reference)',
-      heatmapTitle: (range) => `Avalanche matrix: for each flipped bit of k (rows) and each bit of x and of y (columns), how far the probability of change is from the reference. The scale goes from -${EN.short(range)} to +${EN.short(range)}.`,
+      heatmapTitle: () => 'Avalanche matrix: for each flipped bit of k (rows) and each bit of x and of y (columns), how far the rate of change is from that of the reference functions of the exact test, in standard deviations. Red: changes more often; blue: less often. The scale goes from -4 to +4.',
       kBits: 'flipped bit of k',
       none: 'Inside the subgroup no two values of k differ by a single bit: the avalanche effect cannot be measured.',
+      naiveLabel: 'Naive test: independent measurements',
+      exactLabel: 'Exact test: functions with the same symmetry',
+      naiveLine: (a) =>
+        `Σz² = ${EN.num(a.naive.z2, 1)} over ${count(a.naive.cells, 'cell', 'cells')} against the ideal reference; cells beyond 3σ: ${a.naive.above}, expected ${EN.num(a.naive.expectedAbove, 1)}; p-value ${EN.pval(a.naive.pValue)} from the χ² distribution.`,
+      naiveReasons: (s) => [
+        `The measurements are not independent. The pair {kG, (k + 2^i)G} and its mirror {(n - k - 2^i)G, (n - k)G} = {-(k + 2^i)G, -kG} have the same x, and in ${EN.pct(s.avalanche.mirrorShareAll)} of the cases both are counted: the same measurement enters twice. Moreover, different pairs share a point.`,
+        'The reference 2q(1 - q) holds for uniform values in [0, p), while the outputs are points of the curve: not every value is possible.',
+        s.pooled ? 'Pooling the base points, the same pairs of points come back for many different G.' : null,
+      ].filter(Boolean),
+      exactLine: (a) =>
+        `Σz² = ${EN.num(a.exact.statistic, 1)} over ${count(a.exact.cells, 'cell', 'cells')}, standardised with the mean and standard deviation of ${a.exact.sims} reference functions; cells beyond 3σ: ${a.exact.above}, ${EN.num(a.exact.expectedAbove, 1)} on average for the reference functions; exact p-value ${EN.pval(a.exact.pValue)}.`,
+      exactReasons: (s) => [
+        `The reference functions have the same image, the same symmetry f(n - k) = -f(k) and the same pairs of k as k → kG: only which pair of opposite points {P, -P} goes to which pair {k, n - k}, and with which sign, changes at random${s.pooled ? ', subgroup by subgroup' : ''}. The dependence between the measurements is in the reference too, so no correction is needed.`,
+        'The data are the whole population of pairs: the p-value describes how typical the observed matrix is among the functions with the same structure.',
+      ],
+      exactVerdict: (s) => {
+        const e = s.avalanche.exact;
+        return e.pValue < 0.05
+          ? `Reading: the observed matrix is farther from the reference than almost every function with the same structure (p-value ${EN.pval(e.pValue)}): there is structure beyond the symmetry.`
+          : `Reading: the matrix is typical of a random function with the same symmetry (p-value ${EN.pval(e.pValue)}): at bit level, k → kG behaves as if it had an avalanche effect.`;
+      },
       explain: (s) => {
         const a = s.avalanche;
         if (!a.measurements) return [en.stats.avalanche.none];
-        const u = a.vsUniform;
-        const c = a.vsCurve;
         const out = [
-          `Over ${a.measurements} pairs, on average ${EN.pct(a.meanFraction)} of the ${a.outputBits} output bits change, against ${EN.pct(a.idealMeanFraction)} for the reference.`,
-          `Avalanche matrix (Strict Avalanche Criterion): largest deviation from the reference ${EN.num(a.maxDev)}, mean ${EN.num(a.meanDev)}. Cells beyond 3σ: ${u.above} out of ${u.cells}, against about ${EN.num(u.expectedAbove, 1)} expected by chance; global Σz² test with ${count(u.cells, 'degree', 'degrees')} of freedom, p-value ${EN.pval(u.pValue)}. With another reference, two distinct random points of the curve (${a.curveIdealExact ? 'computed exactly over every pair of points' : 'estimated over 200,000 pairs'}), p-value ${EN.pval(c.pValue)}.`,
+          `Over ${a.measurements} pairs, on average ${EN.pct(a.meanFraction)} of the ${a.outputBits} output bits change, against ${EN.pct(a.idealMeanFraction)} for the ideal reference; the deviation of a cell from the ideal is at most ${EN.num(a.maxDev)}, ${EN.num(a.meanDev)} on average.`,
         ];
-        const rejects = u.pValue !== null && u.pValue < 0.05;
-        if (s.pooled && rejects) {
-          out.push(`The deviation comes from the pooling. For fixed k and i, as G varies the pair (kG, (k + 2^i)G) is (P, rP) with r = (k + 2^i)/k modulo n: different combinations of k and i with the same r give exactly the same pairs of points. The same measurements enter many times, the observations are not independent and the 3σ bands are too narrow.${s.orders && s.orders.length > 1 ? ' With subgroups of different orders, moreover, each row mixes groups of different sizes.' : ''}`);
-        } else if (rejects && u.y.pValue >= 0.05 && u.xCorrected.pValue >= 0.05) {
-          out.push(`The deviation lies entirely in the x columns (p-value ${EN.pval(u.x.pValue)}), while the y columns are compatible with chance (p-value ${EN.pval(u.y.pValue)}). The reason is the symmetry x(P) = x(-P): the pair {kG, (k + 2^i)G} and its mirror pair {(n - k - 2^i)G, (n - k)G} = {-(k + 2^i)G, -kG} have the same x, and in ${EN.pct(a.mirrorShareAll)} of the cases both are counted. The same measurement enters twice, and the variance of each rate grows by the factor 1 + d, d being the share of doubled pairs (the design effect). Correcting the x columns for this factor the test gives p-value ${EN.pval(u.xCorrected.pValue)}, with ${count(u.xCorrected.above, 'cell', 'cells')} beyond 3σ: once the dependence is removed, the avalanche matrix is compatible with the ideal one.`);
-        } else if (rejects) {
-          out.push(`A deviation remains that the symmetry x(P) = x(-P) alone does not explain: corrected x columns p-value ${EN.pval(u.xCorrected.pValue)}, y columns p-value ${EN.pval(u.y.pValue)}. On small groups flipping bit i of k always means adding the same point 2^i·G, and the structure of the group shows in the bits too.`);
-        } else {
-          out.push('The deviation is compatible with chance: at the level of single bits the function behaves as if it had an avalanche effect, although it was not designed to have one.');
+        const naive = a.naive.pValue;
+        const exact = a.exact.pValue;
+        if (exact === null) return out;
+        if (naive !== null && naive < 0.05 && exact >= 0.05) {
+          out.push(`The comparison between the two tests is the result: the naive one rejects (p-value ${EN.pval(naive)}), the exact one does not (p-value ${EN.pval(exact)}). What the naive test sees is not a lack of avalanche but dependence between the measurements: taking it into account, the matrix is that of a random function with the same symmetry.`);
+        } else if (s.pooled && exact < 0.05) {
+          out.push(`The exact test rejects too, for a reason that concerns the pooling: for fixed k and i, as G varies the pair (kG, (k + 2^i)G) is (P, rP) with r = (k + 2^i)/k modulo n, and different combinations of k and i with the same r give the same pairs of points in every subgroup. The reference functions, shuffled subgroup by subgroup, do not have this repetition.${s.orders && s.orders.length > 1 ? ' With subgroups of different orders, moreover, each row mixes groups of different sizes.' : ''}`);
+        } else if (exact < 0.05) {
+          out.push('The exact test rejects too: on such a small group the structure shows in the bits as well, because flipping bit i of k (from 0 to 1) always means adding the same point 2^i·G.');
         }
         if (s.smallSample) out.push(`With N = ${s.N} these estimates are very unstable.`);
         return out;
@@ -1068,18 +1121,18 @@ const en = {
       frequency: (T, E) =>
         `The x collide in pairs (${E.correlation.mirror.matches} pairs out of ${E.correlation.mirror.pairs} with p = ${E.p}), the y ${E.p % 3 === 1 ? 'in triples' : 'never'}. The whole point never repeats for k in [1, n - 1].`,
       bits: (T, E) =>
-        `With p = ${E.p}, ${count(bitsBeyond(E), 'bit', 'bits')} out of ${2 * E.bitLength} beyond |z| = 3 on the distinct values; bit 0 of y is balanced by construction.`,
+        `With p = ${E.p}, ${count(bitsBeyond(E), 'bit', 'bits')} out of ${2 * E.bitLength} beyond |z| = 3 against random sets with the same symmetries; the low bits of y are fixed by the symmetry y ↔ p - y.`,
       uniformity: (T, E) => {
         const d = E.uniformity.x.distinct;
         const dy = E.uniformity.y.distinct;
         if (!d.computable) return EN.na;
-        return `Distinct values with p = ${E.p}: p-value ${EN.pval(d.pValue)} for x and ${EN.pval(dy.pValue)} for y, against a random subset of the same size. On the assignment’s curve the values are too few for a valid test.`;
+        return `Exact test on the distinct values with p = ${E.p}: p-value ${EN.pval(d.pValue)} for x and ${EN.pval(dy.pValue)} for y, against random sets with the same symmetries; the naive test, which ignores the repeated values, is not valid. On the assignment’s curve the values are too few for a test to have power.`;
       },
       correlation: (T, E) =>
-        `r(k, x) = ${EN.num(E.correlation.pearsonKX)} by symmetry; bitwise φ with p = ${E.p}: ${count(E.correlation.bits.above, 'cell', 'cells')} beyond 3/√N out of ${E.correlation.bits.defined} (${EN.num(E.correlation.bits.expectedAbove, 1)} expected), global p-value ${EN.pval(E.correlation.bits.globalP)}. Homomorphism true in ${E.homomorphism.holds} trials out of ${E.homomorphism.trials}.`,
+        `r(k, x) = ${EN.num(E.correlation.pearsonKX)} by symmetry; bitwise φ with p = ${E.p}: ${count(E.correlation.bits.above, 'cell', 'cells')} beyond 3/√(N - 1) out of ${E.correlation.bits.defined} (${EN.num(E.correlation.bits.expectedAbove, 1)} on average by chance), permutation test p-value ${EN.pval(E.correlation.bits.pValue)}. Homomorphism true in ${E.homomorphism.holds} trials out of ${E.homomorphism.trials}.`,
       avalanche: (T, E) => {
-        const u = E.avalanche.vsUniform;
-        return `With p = ${E.p} on average ${EN.pct(E.avalanche.meanFraction)} of the bits change (reference ${EN.pct(E.avalanche.idealMeanFraction)}); SAC: p-value ${EN.pval(u.pValue)}${E.pooled ? '' : `, ${EN.pval(u.xCorrected.pValue)} for the x columns corrected for the symmetry and ${EN.pval(u.y.pValue)} for the y columns`}.`;
+        const a = E.avalanche;
+        return `With p = ${E.p} on average ${EN.pct(a.meanFraction)} of the bits change (ideal ${EN.pct(a.idealMeanFraction)}); avalanche matrix: exact test p-value ${EN.pval(a.exact.pValue)}, against ${EN.pval(a.naive.pValue)} for the naive test, which ignores the dependence between the measurements.`;
       },
     },
     propertiesAfter: [
@@ -1101,7 +1154,7 @@ const en = {
     inversionInfinity: 'Q = O: there is nothing to invert, k is a multiple of the order of G.',
     conclusion: [
       'Elliptic-curve scalar multiplication is a candidate one-way function, not a hash function. It shares with hash functions determinism, easy forward computation and hard inversion, which is what the assignment means by "shares some properties". But it is a structured bijection: a group homomorphism, whose points are about p of the p² possible pairs (x, y), whose x cover about half of [0, p) and collide in pairs. That very structure is what makes it useful: ECDSA signatures and Diffie-Hellman key exchange rest on the homomorphism. A hash function with the same property would be broken, since from H(a) and H(b) one could compute H(a + b).',
-      'The statistics confirm this without being able to prove it. At a coarse level the distinct values of x and y are indistinguishable from a random subset of the same size, the bits are balanced and the avalanche matrix, once the dependence due to the symmetry is removed, is compatible with the ideal one. The structure lies elsewhere: which values are possible, how many times they occur (pairs and triples), the symmetry y ↔ p - y and the homomorphism, true in every trial. None of these measures says how hard the function is to invert: that is a computational property, not a statistical one, and on toy curves it is false.',
+      'The statistics confirm this without being able to prove it. With the exact tests, the distinct values of x and y are indistinguishable from random sets with the same symmetries, the bits are as expected, the bitwise correlation is compatible with zero and the avalanche matrix is typical of a random function with the same symmetry. The structure lies elsewhere: which values are possible, how many times they occur (pairs and triples), the symmetries y ↔ p - y and x → βx and the homomorphism, true in every trial; and the naive tests, which ignore these dependences, mistake it for a lack of randomness. None of these measures says how hard the function is to invert: that is a computational property, not a statistical one, and on toy curves it is false.',
       'This is why Ethereum combines the two. The public key Q = kG comes from the one-way function; the address is the last 20 bytes of Keccak-256(x ‖ y), a hash applied to the structured point to get a short, uniform identifier. And the collision of the x shows up in signatures: ECDSA only uses r = x(R) mod n, and R and -R share their x, so (r, s) and (r, n - s) are both valid. Ethereum blocks this malleability with EIP-2, which only accepts s ≤ n/2, and adds to the signature the recovery id v, the bit that says which of the two points with that x to use to rebuild the public key. In the same way the secret of an elliptic-curve Diffie-Hellman exchange goes through a key-derivation function before it becomes a key.',
     ],
   },

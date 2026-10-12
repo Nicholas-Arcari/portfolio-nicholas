@@ -3,9 +3,10 @@
 // tenute in memoria: la stessa richiesta (la curva della consegna serve sia
 // alla sezione 3.1 sia alla discussione) si calcola una volta sola. Se il
 // worker non parte (browser vecchio, politica di sicurezza), il calcolo torna
-// sul thread principale, rimandato di un giro per lasciar disegnare la pagina.
-import { useEffect, useState } from 'react';
-import { defaultBasePoint, explorationCurve, explore } from './homework1.js';
+// sul thread principale, a fette di pochi millisecondi (exploreAsync), cosi'
+// la pagina non si blocca comunque.
+import { startTransition, useEffect, useState } from 'react';
+import { defaultBasePoint, explorationCurve, exploreAsync } from './homework1.js';
 
 const results = new Map(); // key -> { stats } | { error }
 const inflight = new Map(); // key -> Promise
@@ -25,11 +26,12 @@ function parseKey(key) {
 
 function computeHere(key) {
   const { p, base } = parseKey(key);
+  const message = (error) => ({ error: error instanceof Error ? error.message : String(error) });
   try {
     const curve = explorationCurve(p);
-    return { stats: explore(curve, base === 'default' ? defaultBasePoint(curve) : base) };
+    return exploreAsync(curve, base === 'default' ? defaultBasePoint(curve) : base).then((stats) => ({ stats }), message);
   } catch (error) {
-    return { error: error instanceof Error ? error.message : String(error) };
+    return Promise.resolve(message(error));
   }
 }
 
@@ -37,7 +39,7 @@ function fallBack() {
   worker = null;
   for (const [id, job] of jobs) {
     jobs.delete(id);
-    setTimeout(() => job.resolve(computeHere(job.key)), 0);
+    computeHere(job.key).then(job.resolve);
   }
 }
 
@@ -68,7 +70,7 @@ function request(key) {
   const promise = new Promise((resolve) => {
     const w = getWorker();
     if (!w) {
-      setTimeout(() => resolve(computeHere(key)), 0);
+      computeHere(key).then(resolve);
       return;
     }
     const id = ++nextId;
@@ -91,7 +93,8 @@ export function useExplore(key) {
     if (results.has(key)) return undefined;
     let alive = true;
     request(key).then(() => {
-      if (alive) setVersion((v) => v + 1);
+      // a transition: React draws the new sections in slices, keeping the page responsive
+      if (alive) startTransition(() => setVersion((v) => v + 1));
     });
     return () => {
       alive = false;

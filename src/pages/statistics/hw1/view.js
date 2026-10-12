@@ -62,21 +62,68 @@ export function parseK(text) {
 }
 
 /**
- * Status of a chi-square test result:
+ * Status of a test result:
  *   'na'          not computable (fewer than two observations, or every
  *                 possible value present, so nothing left to test)
  *   'invalid'     computed, but its assumptions fail (too few expected
  *                 observations per class, or repeated, dependent values)
- *   'descriptive' assumptions met except that the data are the whole
- *                 population, not a random sample: the p-value describes
+ *   'descriptive' exact, but the data are the whole population, not a
+ *                 random sample: the p-value describes
  *   'valid'       a proper test
  */
 export function testStatus(test) {
   if (!test || !test.computable) return 'na';
   const r = test.reasons;
-  if (r.includes('small-sample') || r.includes('low-expected') || r.includes('duplicates')) return 'invalid';
+  if (r.includes('small-sample') || r.includes('duplicates')) return 'invalid';
   if (r.includes('exhaustive')) return 'descriptive';
   return 'valid';
+}
+
+/**
+ * What the page shows for one uniformity test: its status, the numbers, the
+ * reasons behind the status and the reading. U is the uniformity part of
+ * the texts in the chosen language.
+ */
+export function uniformityBlock(test, u, s, label, U) {
+  const status = testStatus(test);
+  let verdict = null;
+  if (test.computable) verdict = status === 'invalid' ? U.noVerdict : U.verdict(test);
+  return {
+    label,
+    status,
+    statusLabel: U.status[status],
+    help: U.statusHelp[status],
+    line: test.computable ? U.line(test) : null,
+    reasons: test.reasons.map((r) => U.reasons[r](test, u, s)),
+    verdict,
+  };
+}
+
+/** The two avalanche tests, naive and exact, in the same form; A and U are the avalanche and uniformity texts. */
+export function avalancheBlocks(s, A, U) {
+  const a = s.avalanche;
+  if (!a.measurements) return [];
+  const exactStatus = a.exact.pValue === null ? 'na' : 'descriptive';
+  return [
+    {
+      label: A.naiveLabel,
+      status: 'invalid',
+      statusLabel: U.status.invalid,
+      help: U.statusHelp.invalid,
+      line: A.naiveLine(a),
+      reasons: A.naiveReasons(s),
+      verdict: U.noVerdict,
+    },
+    {
+      label: A.exactLabel,
+      status: exactStatus,
+      statusLabel: U.status[exactStatus],
+      help: U.statusHelp[exactStatus],
+      line: a.exact.pValue === null ? null : A.exactLine(a),
+      reasons: A.exactReasons(s),
+      verdict: a.exact.pValue === null ? null : A.exactVerdict(s),
+    },
+  ];
 }
 
 /** Prime factorization: 18 -> [[2, 1], [3, 2]]. */
@@ -149,9 +196,6 @@ export const bitsBeyond = (s) => [...s.bits.x, ...s.bits.y].filter((b) => b.z !=
 export const worstBit = (bits) =>
   bits.reduce((m, b) => (b.z !== null && (m === null || Math.abs(b.z) > Math.abs(m.z)) ? b : m), null);
 
-/** Signed deviation of a SAC matrix from a reference rate per output bit (null cells stay null). */
-export const sacDeviation = (sac, reference) => sac.map((row) => row.map((v, j) => (v === null ? null : v - reference[j])));
-
 /** Labels of the histogram classes: the first value of each class. */
 export const binLabels = (p, bins) => Array.from({ length: bins }, (_, j) => String(Math.ceil((j * p) / bins)));
 
@@ -164,46 +208,71 @@ const round2 = (v) => Number(v.toPrecision(2));
  */
 export const correlationRange = (N) => round2(Math.min(1, 4 / Math.sqrt(Math.max(1, N))));
 
-/** Same idea for the avalanche matrix: 4 standard errors of a flip rate measured on the fewest pairs. */
-export function sacRange(pairsPerBit) {
-  const fewest = Math.min(...pairsPerBit.filter((m) => m > 0));
-  return Number.isFinite(fewest) ? round2(Math.min(0.5, 2 / Math.sqrt(fewest))) : 0.5;
-}
-
 /** One row per value of [0, p): how many times it occurs as x and as y. */
 export const frequencyRows = (s) => s.freqX.map((x, v) => ({ v, x, y: s.freqY[v] }));
 
 /** Largest p for which the page lists the frequency of every value in a table. */
 export const FREQUENCY_TABLE_MAX_P = 97;
 
-/** The data of every chart and heatmap of one statistical exploration. */
-export function chartData(s, { kBits = 'k', flipBits = 'k' } = {}) {
+/**
+ * The data of every chart and heatmap of one statistical exploration.
+ * `decimal` is the decimal separator of the axis labels and legends.
+ */
+export function chartData(s, { kBits = 'k', flipBits = 'k', decimal = '.' } = {}) {
   const labels = binLabels(s.p, s.histogram.bins);
   const values = Array.from({ length: s.p }, (_, v) => String(v));
   const bitLabels = Array.from({ length: s.bitLength }, (_, i) => String(i));
-  const bits = (list) => ({ values: list.map((b) => b.fraction ?? 0), expected: list.map((b) => b.expected), labels: bitLabels, max: 1 });
+  const bits = (list) => ({ values: list.map((b) => b.fraction ?? 0), expected: list.map((b) => b.expected), labels: bitLabels, max: 1, decimal });
   const a = s.avalanche;
   return {
-    histX: { values: s.histogram.x, expected: s.histogram.expected, labels },
-    histY: { values: s.histogram.y, expected: s.histogram.expected, labels },
-    freqX: { values: s.freqX, expected: s.N / s.p, labels: values },
-    freqY: { values: s.freqY, expected: s.N / s.p, labels: values },
+    histX: { values: s.histogram.x, expected: s.histogram.expected, labels, decimal },
+    histY: { values: s.histogram.y, expected: s.histogram.expected, labels, decimal },
+    freqX: { values: s.freqX, expected: s.N / s.p, labels: values, decimal },
+    freqY: { values: s.freqY, expected: s.N / s.p, labels: values, decimal },
     bitsX: bits(s.bits.x),
     bitsY: bits(s.bits.y),
-    distances: { values: a.distances, expected: a.expectedDistances, labels: a.distances.map((_, d) => String(d)) },
+    distances: { values: a.distances, expected: a.expectedDistances, labels: a.distances.map((_, d) => String(d)), decimal },
     correlation: {
       values: s.correlation.bits.values,
       range: correlationRange(s.N),
       split: s.bitLength,
       rowLabel: kBits,
       colLabels: ['x', 'y'],
+      decimal,
     },
+    // the avalanche matrix as z-scores against the reference functions of the exact test
     sac: {
-      values: sacDeviation(a.sac, a.ideal),
-      range: sacRange(a.pairsPerBit),
+      values: a.exact.z,
+      range: 4,
       split: s.bitLength,
       rowLabel: flipBits,
       colLabels: ['x', 'y'],
+      decimal,
     },
   };
+}
+
+// --- Drawing many charts without freezing the page ---------------------------
+
+const frameJobs = [];
+let frameRequested = false;
+
+function runFrameJobs() {
+  const start = Date.now();
+  while (frameJobs.length && Date.now() - start < 8) frameJobs.shift()();
+  frameRequested = frameJobs.length > 0;
+  if (frameRequested) requestAnimationFrame(runFrameJobs);
+}
+
+/**
+ * Runs drawing work a few milliseconds per frame: a page with twenty charts
+ * would otherwise draw them all in one long task, and on a slow phone the
+ * page would stop responding for a moment.
+ */
+export function scheduleFrameJob(job) {
+  frameJobs.push(job);
+  if (!frameRequested) {
+    frameRequested = true;
+    requestAnimationFrame(runFrameJobs);
+  }
 }

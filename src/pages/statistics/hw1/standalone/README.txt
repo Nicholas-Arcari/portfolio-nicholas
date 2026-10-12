@@ -14,6 +14,7 @@ CONTENUTO
                  double-and-add, TOY PUBLIC KEY, ricerca esaustiva di k,
                  esplorazione statistica, animazione e riga di comando
   app.js         l'interfaccia e i testi, in italiano e in inglese
+  package.json   dice a Node che homework1.js è uno script CommonJS
   README.txt     questo file
 
 
@@ -31,13 +32,21 @@ COME SI USA
   TOY PUBLIC KEY, la ricerca esaustiva di k e una sintesi dell'esplorazione
   statistica. k deve essere un intero positivo scritto in cifre decimali,
   p uno fra 17, 97, 991 e 10477: qualunque altro valore viene rifiutato.
+  npm start equivale a node homework1.js.
+
+  Da un altro script Node: const hw = require('./homework1.js'), poi per
+  esempio hw.scalarMultiply(6, { x: 1, y: 5 }, hw.makeCurve(17)). Se il file
+  viene copiato da solo in un progetto che usa i moduli ES, la libreria è
+  globalThis.Homework1 dopo import './homework1.js'.
 
 
 NOTE
 
   Nessuna dipendenza, nessuna connessione di rete, nessun dato salvato
-  tranne la lingua scelta. homework1.js e app.js sono generati dagli stessi
-  sorgenti della pagina online, quindi i numeri e i testi coincidono:
+  tranne la lingua scelta. I test statistici esatti usano simulazioni con
+  un generatore a seme fisso, e la pagina li calcola a fette di pochi
+  millisecondi, senza bloccarsi. homework1.js e app.js sono generati dagli
+  stessi sorgenti della pagina online, quindi i numeri e i testi coincidono:
   https://nicholas-arcari.github.io/portfolio-nicholas/#/statistics/homework-1
 
 
@@ -52,6 +61,7 @@ CONTENTS
                  double-and-add, TOY PUBLIC KEY, brute-force search for k,
                  statistical exploration, animation and command line
   app.js         the interface and the texts, in Italian and English
+  package.json   tells Node that homework1.js is a CommonJS script
   README.txt     this file
 
 
@@ -69,11 +79,19 @@ HOW TO USE IT
   TOY PUBLIC KEY, the brute-force search for k and a summary of the
   statistical exploration. k must be a positive integer written in decimal
   digits, p one of 17, 97, 991 and 10477: any other value is refused.
+  npm start is the same as node homework1.js.
+
+  From another Node script: const hw = require('./homework1.js'), then for
+  example hw.scalarMultiply(6, { x: 1, y: 5 }, hw.makeCurve(17)). If the file
+  is copied alone into a project that uses ES modules, the library is
+  globalThis.Homework1 after import './homework1.js'.
 
 
 NOTES
 
   No dependencies, no network connection, nothing stored except the chosen
-  language. homework1.js and app.js are generated from the same sources as
-  the online page, so numbers and texts match:
+  language. The exact statistical tests use simulations with a fixed-seed
+  generator, and the page computes them in slices of a few milliseconds,
+  without freezing. homework1.js and app.js are generated from the same
+  sources as the online page, so numbers and texts match:
   https://nicholas-arcari.github.io/portfolio-nicholas/#/statistics/homework-1

@@ -59,21 +59,30 @@ const Paras = ({ list }) => list.filter(Boolean).map((t, i) => <p key={i}>{t}</p
 const Pending = ({ text }) => <p className="hw1-note hw1-pending" role="status">{text.ui.computing}</p>;
 
 // Un grafico su canvas (barre o mappa di calore), ridisegnato quando cambia
-// la larghezza: il disegno vero e' in homework1.js.
+// la larghezza: il disegno vero e' in homework1.js. La larghezza arriva dal
+// ResizeObserver, che la misura dopo il layout: leggerla da clientWidth dopo
+// che un altro grafico si e' appena ridimensionato costringerebbe il browser
+// a ricalcolare l'intera pagina, una volta per grafico. L'altezza e' fissata
+// subito, il disegno avviene qualche millisecondo per fotogramma.
 const Figure = ({ title, draw, data, palette, wide = false }) => {
   const ref = useRef(null);
   useEffect(() => {
     const canvas = ref.current;
-    let width = -1;
-    const redraw = () => {
-      if (canvas.clientWidth === width) return;
-      width = canvas.clientWidth;
-      draw(canvas, data, palette);
-    };
-    redraw();
-    const observer = new ResizeObserver(redraw);
+    let drawn = -1;
+    const observer = new ResizeObserver((entries) => {
+      const width = Math.round(entries[entries.length - 1].contentRect.width);
+      if (width <= 0 || width === drawn) return;
+      drawn = width;
+      canvas.style.height = `${hw.chartHeight(draw, data, width)}px`;
+      view.scheduleFrameJob(() => {
+        if (canvas.isConnected && drawn === width) draw(canvas, { ...data, width }, palette);
+      });
+    });
     observer.observe(canvas);
-    return () => observer.disconnect();
+    return () => {
+      drawn = -2;
+      observer.disconnect();
+    };
   }, [draw, data, palette]);
   return (
     <figure className={wide ? 'hw1-figure hw1-figure-wide' : 'hw1-figure'}>
@@ -171,26 +180,22 @@ const Animation = ({ curve, G, k, Q, text, palette }) => {
   );
 };
 
-// Il risultato di un test chi quadro, con la sua validita' e i motivi
-const TestResult = ({ label, test, u, s, text }) => {
-  const U = text.stats.uniformity;
-  const status = view.testStatus(test);
-  return (
-    <div className={`hw1-test is-${status}`}>
-      <p className="hw1-test-head">
-        <strong>{label}</strong> <span className={`hw1-badge is-${status}`}>{U.status[status]}</span>
-      </p>
-      <p className="hw1-note">{U.statusHelp[status]}</p>
-      {test.computable && <p>{U.line(test)}</p>}
-      {test.reasons.length > 0 && (
-        <ul className="hw1-reasons">
-          {test.reasons.map((r) => <li key={r}>{U.reasons[r](test, u, s)}</li>)}
-        </ul>
-      )}
-      {test.computable && <p>{status === 'invalid' ? U.noVerdict : U.verdict(test)}</p>}
-    </div>
-  );
-};
+// Il risultato di un test (uniformita' o valanga): stato, numeri, motivi e lettura
+const TestResult = ({ block }) => (
+  <div className={`hw1-test is-${block.status}`}>
+    <p className="hw1-test-head">
+      <strong>{block.label}</strong> <span className={`hw1-badge is-${block.status}`}>{block.statusLabel}</span>
+    </p>
+    <p className="hw1-note">{block.help}</p>
+    {block.line && <p>{block.line}</p>}
+    {block.reasons.length > 0 && (
+      <ul className="hw1-reasons">
+        {block.reasons.map((r) => <li key={r}>{r}</li>)}
+      </ul>
+    )}
+    {block.verdict && <p>{block.verdict}</p>}
+  </div>
+);
 
 // Le sei analisi della consegna (a-f) su una curva e un punto base
 const Analyses = ({ prefix, result, text, palette }) => {
@@ -198,8 +203,8 @@ const Analyses = ({ prefix, result, text, palette }) => {
   const T = text.stats;
   const F = text.fmt;
   const charts = useMemo(
-    () => (s ? view.chartData(s, { kBits: T.correlation.kBits, flipBits: T.avalanche.kBits }) : null),
-    [s, T],
+    () => (s ? view.chartData(s, { kBits: T.correlation.kBits, flipBits: T.avalanche.kBits, decimal: F.decimal }) : null),
+    [s, T, F],
   );
   const titles = view.ANALYSES.map((key) => (
     <Title key={key} id={`${prefix}-${key}`} level={2}>{text.sections[key]}</Title>
@@ -277,8 +282,8 @@ const Analyses = ({ prefix, result, text, palette }) => {
           return (
             <section key={coord} className="hw1-coord">
               <h6>{T.uniformity.coordTitle(coord)}</h6>
-              <TestResult label={T.uniformity.naiveLabel} test={u.naive} u={u} s={s} text={text} />
-              <TestResult label={T.uniformity.distinctLabel} test={u.distinct} u={u} s={s} text={text} />
+              <TestResult block={view.uniformityBlock(u.naive, u, s, T.uniformity.naiveLabel, T.uniformity)} />
+              <TestResult block={view.uniformityBlock(u.distinct, u, s, T.uniformity.distinctLabel, T.uniformity)} />
               {why && <p>{why}</p>}
             </section>
           );
@@ -308,7 +313,14 @@ const Analyses = ({ prefix, result, text, palette }) => {
       {s.avalanche.measurements > 0 && (
         <>
           <Figure title={A.chartTitle} draw={hw.drawBarChart} data={charts.distances} palette={palette} />
-          <Figure wide title={A.heatmapTitle(charts.sac.range)} draw={hw.drawHeatmap} data={charts.sac} palette={palette} />
+          <Figure wide title={A.heatmapTitle()} draw={hw.drawHeatmap} data={charts.sac} palette={palette} />
+          <div className="hw1-uniformity">
+            {view.avalancheBlocks(s, A, T.uniformity).map((block) => (
+              <section key={block.label} className="hw1-coord">
+                <TestResult block={block} />
+              </section>
+            ))}
+          </div>
         </>
       )}
       <Paras list={A.explain(s)} />

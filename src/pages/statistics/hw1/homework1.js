@@ -170,8 +170,15 @@ export function addDetailed(P, Q, curve) {
 
 export const add = (P, Q, curve) => addDetailed(P, Q, curve).result;
 
-/** Every affine point of the curve, sorted by x and then y (O excluded). */
+const pointLists = new Map();
+
+/**
+ * Every affine point of the curve, sorted by x and then y (O excluded). The
+ * list is computed once per curve and frozen: the page asks for it often.
+ */
 export function curvePoints(curve) {
+  const key = `${curve.p},${curve.a},${curve.b}`;
+  if (pointLists.has(key)) return pointLists.get(key);
   const { p, a, b } = curve;
   const roots = new Map();
   for (let y = 0; y < p; y++) {
@@ -181,9 +188,10 @@ export function curvePoints(curve) {
   }
   const points = [];
   for (let x = 0; x < p; x++) {
-    for (const y of roots.get(mod(x * x * x + a * x + b, p)) || []) points.push({ x, y });
+    for (const y of roots.get(mod(x * x * x + a * x + b, p)) || []) points.push(Object.freeze({ x, y }));
   }
-  return points;
+  pointLists.set(key, Object.freeze(points));
+  return pointLists.get(key);
 }
 
 const groupOrders = new Map();
@@ -449,22 +457,164 @@ const SIGNIFICANCE = 0.05;
 const MIN_EXPECTED = 5;
 
 /**
- * Chi-square test of `counts` (one count per value in [0, p)) against the
- * uniform distribution on [0, p). Values are grouped into B consecutive
- * classes, B being the largest number up to maxBins that leaves at least
- * MIN_EXPECTED expected observations in every class (Cochran's rule). When
- * even two classes cannot reach it, the test is still computed on two
- * classes and marked as not valid, so that the number can be shown together
- * with the reason it does not mean much.
- *
- * `fpc` is the finite population correction for observations drawn without
- * replacement: D distinct values out of p have class counts with variance
- * (p - D) / (p - 1) times the multinomial one, and Pearson's statistic must
- * be divided by that factor to follow the chi-square distribution.
+ * Below this many distinct values a uniformity test is still exact, but has
+ * almost no power: it could not reject even a clearly non-uniform set.
  */
-function chiSquareUniform(counts, p, maxBins, fpc = 1) {
-  const N = counts.reduce((s, c) => s + c, 0);
-  if (N < 2) return { computable: false, N, reasons: ['small-sample'] };
+const LOW_POWER = 20;
+
+/** Random sets, permutations and random reassignments used by the exact tests. */
+export const SIMULATIONS = Object.freeze({ uniformity: 1000, correlation: 200, avalanche: 200 });
+
+/** Monte Carlo p-value: the observed data count as one of the simulations, so it is never 0. */
+const monteCarloP = (asExtreme, sims) => (1 + asExtreme) / (1 + sims);
+
+/** Statistics equal up to rounding count as ties. */
+const tie = (a, b) => Math.abs(a - b) <= 1e-9 * Math.max(1, Math.abs(a), Math.abs(b));
+
+// --- Counting bits by position ---------------------------------------------
+
+/**
+ * Positional population count (Harley-Seal): adds to out[offset + j] how
+ * many of words[0 .. length-1] have bit j set. Carry-save adders sum the
+ * words sixteen at a time, so the cost is a few bitwise operations per word
+ * instead of one per bit. The exact tests below count millions of words, and
+ * this is what keeps them fast.
+ */
+function positionalCount(words, length, out, offset = 0, weight = 1) {
+  const addBits = (word, w) => {
+    for (let bits = word; bits !== 0; bits &= bits - 1) out[offset + 31 - Math.clz32(bits & -bits)] += w;
+  };
+  // every block of sixteen words leaves one word of "sixteens", counted the
+  // same way at the next level, with weight 16
+  const sixteensOf = new Int32Array(length >>> 4);
+  let blocks = 0;
+  let ones = 0;
+  let twos = 0;
+  let fours = 0;
+  let eights = 0;
+  let m = 0;
+  for (; m + 16 <= length; m += 16) {
+    let a;
+    let b;
+    let u;
+    // each line is a carry-save adder: (high, low) = majority and parity of three words
+    a = words[m]; b = words[m + 1]; u = ones ^ a; let twosA = (ones & a) | (u & b); ones = u ^ b;
+    a = words[m + 2]; b = words[m + 3]; u = ones ^ a; let twosB = (ones & a) | (u & b); ones = u ^ b;
+    u = twos ^ twosA; let foursA = (twos & twosA) | (u & twosB); twos = u ^ twosB;
+    a = words[m + 4]; b = words[m + 5]; u = ones ^ a; twosA = (ones & a) | (u & b); ones = u ^ b;
+    a = words[m + 6]; b = words[m + 7]; u = ones ^ a; twosB = (ones & a) | (u & b); ones = u ^ b;
+    u = twos ^ twosA; let foursB = (twos & twosA) | (u & twosB); twos = u ^ twosB;
+    u = fours ^ foursA; const eightsA = (fours & foursA) | (u & foursB); fours = u ^ foursB;
+    a = words[m + 8]; b = words[m + 9]; u = ones ^ a; twosA = (ones & a) | (u & b); ones = u ^ b;
+    a = words[m + 10]; b = words[m + 11]; u = ones ^ a; twosB = (ones & a) | (u & b); ones = u ^ b;
+    u = twos ^ twosA; foursA = (twos & twosA) | (u & twosB); twos = u ^ twosB;
+    a = words[m + 12]; b = words[m + 13]; u = ones ^ a; twosA = (ones & a) | (u & b); ones = u ^ b;
+    a = words[m + 14]; b = words[m + 15]; u = ones ^ a; twosB = (ones & a) | (u & b); ones = u ^ b;
+    u = twos ^ twosA; foursB = (twos & twosA) | (u & twosB); twos = u ^ twosB;
+    u = fours ^ foursA; const eightsB = (fours & foursA) | (u & foursB); fours = u ^ foursB;
+    u = eights ^ eightsA;
+    sixteensOf[blocks++] = (eights & eightsA) | (u & eightsB);
+    eights = u ^ eightsB;
+  }
+  for (; m < length; m++) addBits(words[m], weight);
+  addBits(ones, weight);
+  addBits(twos, 2 * weight);
+  addBits(fours, 4 * weight);
+  addBits(eights, 8 * weight);
+  if (blocks > 0) positionalCount(sixteensOf, blocks, out, offset, 16 * weight);
+}
+
+/** Number of bits set in a 32-bit integer. */
+function popcount(v) {
+  let x = v - ((v >>> 1) & 0x55555555);
+  x = (x & 0x33333333) + ((x >>> 2) & 0x33333333);
+  return Math.imul((x + (x >>> 4)) & 0x0f0f0f0f, 0x01010101) >>> 24;
+}
+
+/** Fisher-Yates shuffle, in place, with the given random generator. */
+function shuffle(array, rand) {
+  for (let t = array.length - 1; t > 0; t--) {
+    const r = Math.floor(rand() * (t + 1));
+    const tmp = array[t];
+    array[t] = array[r];
+    array[r] = tmp;
+  }
+}
+
+// --- Uniformity and bits of the values -------------------------------------
+
+/** a^e mod p by repeated squaring: every product stays below 2^53 for p <= P_MAX. */
+function modPow(a, e, p) {
+  let result = 1;
+  let base = mod(a, p);
+  let exp = e;
+  while (exp > 0) {
+    if (exp % 2 === 1) result = (result * base) % p;
+    base = (base * base) % p;
+    exp = Math.floor(exp / 2);
+  }
+  return result;
+}
+
+/** A cube root of unity other than 1 modulo p: it exists exactly when p = 1 (mod 3). */
+function cubeRootOfUnity(p) {
+  if (p % 3 !== 1) return null;
+  for (let h = 2; h < p; h++) {
+    const beta = modPow(h, (p - 1) / 3, p);
+    if (beta !== 1) return beta;
+  }
+  return null;
+}
+
+/**
+ * The symmetry the set of observed x or y values inherits from the curve,
+ * as a partition of [0, p) into orbits:
+ *   y: {y, p - y}, because a subgroup contains -P = (x, -y) with every P;
+ *   x: {x, beta x, beta^2 x} when p = 1 (mod 3), because (beta x, y) is a
+ *      point whenever (x, y) is (beta^3 = 1);
+ * with {0} on its own. If the set is not a union of these orbits, or there
+ * is no symmetry, every value is an orbit of its own.
+ */
+function symmetryOrbits(present, p, coord) {
+  const beta = coord === 'x' ? cubeRootOfUnity(p) : null;
+  const kind = coord === 'y' ? 'pairs' : beta === null ? 'none' : 'triples';
+  if (kind !== 'none') {
+    const seen = new Uint8Array(p);
+    const orbits = [];
+    let closed = true;
+    for (let v = 0; v < p && closed; v++) {
+      if (seen[v]) continue;
+      let orbit = [v];
+      if (v !== 0 && kind === 'pairs') orbit = [v, p - v];
+      if (v !== 0 && kind === 'triples') orbit = [v, (v * beta) % p, (((v * beta) % p) * beta) % p];
+      for (const w of orbit) seen[w] = 1;
+      if (orbit.some((w) => present[w] !== present[v])) closed = false;
+      orbits.push(orbit);
+    }
+    if (closed) return { kind, orbits };
+  }
+  return { kind: 'none', orbits: Array.from({ length: p }, (_, v) => [v]) };
+}
+
+/** Orbits grouped by size, each group with the number of its orbits the observed set contains. */
+function strataOf(orbits, present) {
+  const bySize = new Map();
+  for (const orbit of orbits) {
+    if (!bySize.has(orbit.length)) bySize.set(orbit.length, { orbits: [], chosen: 0 });
+    const stratum = bySize.get(orbit.length);
+    stratum.orbits.push(orbit);
+    if (present[orbit[0]]) stratum.chosen++;
+  }
+  return [...bySize.values()];
+}
+
+/**
+ * Classes for a test on N observations: B groups of consecutive values, B
+ * the largest number up to maxBins that leaves at least MIN_EXPECTED
+ * expected observations in every class (Cochran's rule), or 2 if even two
+ * classes cannot reach it.
+ */
+function uniformClasses(N, p, maxBins) {
   let B = null;
   for (let b = Math.min(maxBins, p); b >= 2; b--) {
     if ((Math.floor(p / b) * N) / p >= MIN_EXPECTED) {
@@ -472,42 +622,165 @@ function chiSquareUniform(counts, p, maxBins, fpc = 1) {
       break;
     }
   }
-  const reasons = [];
-  if (B === null) reasons.push('small-sample');
   const bins = B ?? 2;
-  const observed = new Array(bins).fill(0);
   const width = new Array(bins).fill(0);
-  for (let v = 0; v < p; v++) {
-    const j = Math.floor((v * bins) / p);
-    observed[j] += counts[v];
-    width[j]++;
-  }
-  const expected = width.map((w) => (w * N) / p);
-  const minExpected = Math.min(...expected);
-  if (minExpected < MIN_EXPECTED && !reasons.includes('small-sample')) reasons.push('low-expected');
-  const pearsonChi2 = observed.reduce((s, o, j) => s + (o - expected[j]) ** 2 / expected[j], 0);
-  const chi2 = pearsonChi2 / fpc;
-  const df = bins - 1;
-  const pValue = chiSquarePValue(chi2, df);
+  for (let v = 0; v < p; v++) width[Math.floor((v * bins) / p)]++;
+  return {
+    bins,
+    cochran: B !== null,
+    classOf: (v) => Math.floor((v * bins) / p),
+    expected: width.map((w) => (w * N) / p),
+  };
+}
+
+const pearsonChi2 = (observed, expected) => observed.reduce((s, o, j) => s + (o - expected[j]) ** 2 / expected[j], 0);
+
+/**
+ * The instinctive test: Pearson's chi-square of every observation against
+ * uniform values in [0, p), with the chi-square distribution as reference.
+ * It is kept on purpose, together with the reasons it does not hold here.
+ */
+function naiveUniformityTest(counts, p, maxBins, maxMult) {
+  const N = counts.reduce((s, c) => s + c, 0);
+  if (N < 2) return { computable: false, exact: false, N, reasons: ['small-sample'] };
+  const classes = uniformClasses(N, p, maxBins);
+  const observed = new Array(classes.bins).fill(0);
+  counts.forEach((c, v) => {
+    observed[classes.classOf(v)] += c;
+  });
+  const chi2 = pearsonChi2(observed, classes.expected);
+  const pValue = chiSquarePValue(chi2, classes.bins - 1);
+  const minExpected = Math.min(...classes.expected);
+  const reasons = [];
+  if (!classes.cochran) reasons.push('small-sample');
+  reasons.push('exhaustive');
+  if (maxMult > 1) reasons.push('duplicates');
   return {
     computable: true,
+    exact: false,
     N,
-    bins,
-    perValue: bins === p,
-    df,
-    pearsonChi2,
-    fpc,
+    bins: classes.bins,
+    perValue: classes.bins === p,
+    df: classes.bins - 1,
     chi2,
     pValue,
     minExpected,
     reasons,
-    expectedOk: minExpected >= MIN_EXPECTED,
     verdict: pValue < SIGNIFICANCE ? 'reject' : 'notReject',
-    // P(X <= chi2): close to 0 means "more regular than chance would allow"
     leftTail: 1 - pValue,
     tooRegular: 1 - pValue < SIGNIFICANCE,
     alpha: SIGNIFICANCE,
   };
+}
+
+/**
+ * The exact test on the distinct values. The reference is the same
+ * construction done at random: sets with as many orbits of each size as the
+ * observed one, drawn without replacement, so that they respect the same
+ * symmetry. Pearson's statistic of the observed set is compared with its
+ * distribution over `sims` random sets: the p-value is exact up to the
+ * Monte Carlo error, with no chi-square approximation and no assumption of
+ * independent values.
+ */
+function* exactUniformityTest(present, p, maxBins, symmetry, sims, rand) {
+  const D = present.reduce((s, c) => s + c, 0);
+  if (D === p) return { computable: false, exact: true, N: D, symmetry: symmetry.kind, reasons: ['all-values'] };
+  if (D < 2) return { computable: false, exact: true, N: D, symmetry: symmetry.kind, reasons: ['small-sample'] };
+  const classes = uniformClasses(D, p, maxBins);
+  const observed = new Array(classes.bins).fill(0);
+  for (let v = 0; v < p; v++) if (present[v]) observed[classes.classOf(v)]++;
+  const chi2 = pearsonChi2(observed, classes.expected);
+  // per stratum, the classes of the members of every orbit, flattened
+  const strata = strataOf(symmetry.orbits, present).map((stratum) => {
+    const size = stratum.orbits[0].length;
+    const flat = new Int32Array(stratum.orbits.length * size);
+    stratum.orbits.forEach((orbit, o) => orbit.forEach((v, m) => {
+      flat[o * size + m] = classes.classOf(v);
+    }));
+    return { size, flat, order: Int32Array.from(stratum.orbits, (_, i) => i), chosen: stratum.chosen };
+  });
+  const counts = new Float64Array(classes.bins);
+  let upper = 0;
+  let lower = 0;
+  for (let s = 0; s < sims; s++) {
+    counts.fill(0);
+    for (const { size, flat, order, chosen } of strata) {
+      // partial Fisher-Yates: the first `chosen` orbits form a random subset
+      for (let i = 0; i < chosen; i++) {
+        const j = i + Math.floor(rand() * (order.length - i));
+        const pick = order[j];
+        order[j] = order[i];
+        order[i] = pick;
+        for (let m = pick * size, end = m + size; m < end; m++) counts[flat[m]]++;
+      }
+    }
+    const stat = pearsonChi2(counts, classes.expected);
+    if (stat >= chi2 || tie(stat, chi2)) upper++;
+    if (stat <= chi2 || tie(stat, chi2)) lower++;
+    yield;
+  }
+  const pValue = monteCarloP(upper, sims);
+  const leftTail = monteCarloP(lower, sims);
+  const reasons = ['exhaustive'];
+  if (symmetry.kind !== 'none') reasons.push('orbits');
+  if (D < LOW_POWER) reasons.push('low-power');
+  return {
+    computable: true,
+    exact: true,
+    N: D,
+    bins: classes.bins,
+    perValue: classes.bins === p,
+    df: classes.bins - 1,
+    chi2,
+    pValue,
+    leftTail,
+    sims,
+    symmetry: symmetry.kind,
+    minExpected: Math.min(...classes.expected),
+    reasons,
+    verdict: pValue < SIGNIFICANCE ? 'reject' : 'notReject',
+    tooRegular: leftTail < SIGNIFICANCE,
+    alpha: SIGNIFICANCE,
+  };
+}
+
+/**
+ * Share of ones per bit position among the distinct values, with its exact
+ * mean and variance under the same random model as the uniformity test
+ * (orbits of each size drawn without replacement): the z-score needs no
+ * assumption of independent values. A bit that the symmetry fixes has
+ * variance 0 and no z-score.
+ */
+function orbitBitStats(present, p, symmetry) {
+  const L = bitLength(p - 1);
+  const D = present.reduce((s, c) => s + c, 0);
+  const strata = strataOf(symmetry.orbits, present);
+  return Array.from({ length: L }, (_, i) => {
+    let ones = 0;
+    for (let v = 0; v < p; v++) if (present[v]) ones += (v >>> i) & 1;
+    let mean = 0;
+    let variance = 0;
+    for (const stratum of strata) {
+      const M = stratum.orbits.length;
+      const m = stratum.chosen;
+      if (m === 0) continue;
+      const c = stratum.orbits.map((orbit) => orbit.reduce((s, v) => s + ((v >>> i) & 1), 0));
+      const mu = c.reduce((s, x) => s + x, 0) / M;
+      const s2 = c.reduce((s, x) => s + (x - mu) ** 2, 0) / M;
+      mean += m * mu;
+      if (M > 1) variance += m * s2 * ((M - m) / (M - 1));
+    }
+    const sd = Math.sqrt(variance);
+    const fixed = sd < 1e-9;
+    return {
+      bit: i,
+      fraction: D ? ones / D : null,
+      expected: D ? mean / D : expectedBitFraction(i, p),
+      z: D && !fixed ? (ones - mean) / sd : null,
+      fixed: D > 0 && fixed,
+      distinct: D,
+    };
+  });
 }
 
 /** How many values occur 0, 1, 2, ... times, from per-value counts. */
@@ -518,228 +791,155 @@ function multiplicityTable(counts) {
 }
 
 /**
- * Uniformity of one coordinate, studied twice. The naive test uses every
+ * Uniformity and bits of one coordinate. The naive test uses every
  * observation; but on these curves the observations come in fixed groups
  * (x(kG) = x((n - k)G), and y repeats in triples when p = 1 mod 3), so they
- * are not independent and the naive statistic is inflated by the group
- * size. The second test keeps each distinct value once and compares the set
- * with D values drawn at random without replacement from [0, p): hence the
- * finite population correction. Without it a set covering half of [0, p)
- * would always look "too regular". When every value of [0, p) occurs, the
- * set of distinct values is uniform by construction and there is nothing
- * left to test.
- *
- * The y coordinates have one more constraint: a subgroup contains -P with
- * every P, so the set of y is symmetric (y and p - y occur together) and
- * its class counts mirror each other. A symmetric set is tested folded,
- * through min(y, p - y) on [0, (p - 1) / 2]: otherwise each deviation would
- * be counted twice.
+ * are not independent. The exact test keeps each distinct value once and
+ * compares the set with random sets that have the same symmetry.
  */
-function uniformity(counts, p, maxBins, attainable, { symmetric = false } = {}) {
-  const distinctCounts = counts.map((c) => (c > 0 ? 1 : 0));
-  const observedValues = distinctCounts.reduce((s, c) => s + c, 0);
+function* coordinateStats(counts, p, maxBins, attainable, coord, rand) {
+  const present = counts.map((c) => (c > 0 ? 1 : 0));
+  const observedValues = present.reduce((s, c) => s + c, 0);
   const positive = counts.filter((c) => c > 0);
   const minMult = positive.length ? Math.min(...positive) : 0;
   const maxMult = positive.length ? Math.max(...positive) : 0;
-  const naive = chiSquareUniform(counts, p, maxBins);
-  if (naive.computable) {
-    naive.reasons.push('exhaustive');
-    if (maxMult > 1) naive.reasons.push('duplicates');
-  }
-  const closed = symmetric && distinctCounts.every((c, v) => c === distinctCounts[(p - v) % p]);
-  const population = closed ? (p + 1) / 2 : p;
-  let values = distinctCounts;
-  if (closed) {
-    values = new Array(population).fill(0);
-    distinctCounts.forEach((c, v) => {
-      if (c) values[Math.min(v, p - v)] = 1;
-    });
-  }
-  const D = values.reduce((s, c) => s + c, 0);
-  let distinct;
-  if (D === population) {
-    distinct = { computable: false, N: D, reasons: ['all-values'] };
-  } else {
-    distinct = chiSquareUniform(values, population, Math.min(maxBins, population), (population - D) / (population - 1));
-    if (distinct.computable) {
-      distinct.reasons.push('exhaustive');
-      if (closed) distinct.reasons.push('symmetric');
-    }
-  }
-  distinct.population = population;
-  distinct.folded = closed;
+  const symmetry = symmetryOrbits(present, p, coord);
+  const naive = naiveUniformityTest(counts, p, maxBins, maxMult);
+  const distinct = yield* exactUniformityTest(present, p, maxBins, symmetry, SIMULATIONS.uniformity, rand);
   return {
-    naive,
-    distinct,
-    observedValues,
-    attainable,
-    minMult,
-    maxMult,
-    sameMultiplicity: minMult === maxMult,
+    uniformity: {
+      naive,
+      distinct,
+      observedValues,
+      attainable,
+      minMult,
+      maxMult,
+      sameMultiplicity: minMult === maxMult,
+      symmetry: symmetry.kind,
+    },
+    bits: orbitBitStats(present, p, symmetry),
   };
 }
 
-/**
- * Fraction of ones per bit position among the distinct values, with the
- * uniform reference and a z-score. Repeated values carry no new information
- * (they repeat for algebraic reasons), so the reference model is a set of D
- * values drawn without replacement from [0, p): hypergeometric, with the
- * finite population correction in the standard error. When all p values
- * occur the fraction equals the reference exactly and z is not defined.
- */
-function bitStats(values, p) {
-  const L = bitLength(p - 1);
-  const distinct = [...new Set(values)];
-  const D = distinct.length;
-  const fpc = (p - D) / (p - 1);
-  return Array.from({ length: L }, (_, i) => {
-    let ones = 0;
-    for (const v of distinct) ones += (v >>> i) & 1;
-    const fraction = D ? ones / D : null;
-    const expected = expectedBitFraction(i, p);
-    const se = D ? Math.sqrt(((expected * (1 - expected)) / D) * fpc) : 0;
-    return { bit: i, fraction, expected, distinct: D, z: D && se > 0 ? (fraction - expected) / se : null };
-  });
-}
+// --- Correlation between the bits of k and of the point --------------------
 
 /**
- * Correlation between every bit of the input k and every bit of the output
- * point (the bits of x, then the bits of y): the phi coefficient, that is
- * Pearson on 0/1 variables. Under independence phi * sqrt(N) is roughly
- * standard normal, so |phi| above 3 / sqrt(N) is unusual: with many cells a
- * few still cross it by chance, about 0.27% of them.
+ * Correlation phi (Pearson on 0/1 variables) between every bit of k and
+ * every bit of the point, x first and then y, with an exact global test by
+ * permutation: the statistic N sum(phi^2) is recomputed after reassigning
+ * the outputs to the values of k at random, `sims` times. Under that
+ * reference each phi has standard deviation exactly 1/sqrt(N - 1), hence the
+ * threshold 3/sqrt(N - 1) for a single cell; how many cells cross it by
+ * chance is counted on the permutations too.
  */
-function bitCorrelation(ks, xs, ys, L) {
+function* bitCorrelationTest(ks, xs, ys, L, sims, rand) {
   const N = ks.length;
   const inputBits = bitLength(Math.max(1, ...ks));
-  const outputs = [...Array.from({ length: L }, (_, j) => ['x', j]), ...Array.from({ length: L }, (_, j) => ['y', j])];
+  const outputBits = 2 * L;
+  const combined = outputBits <= 31;
+  const n1 = new Array(inputBits).fill(0);
+  const m1 = new Array(outputBits).fill(0);
+  for (let t = 0; t < N; t++) {
+    for (let i = 0; i < inputBits; i++) n1[i] += (ks[t] >>> i) & 1;
+    for (let j = 0; j < L; j++) {
+      m1[j] += (xs[t] >>> j) & 1;
+      m1[L + j] += (ys[t] >>> j) & 1;
+    }
+  }
+  const den = n1.map((a) => m1.map((b) => Math.sqrt(a * (N - a) * b * (N - b))));
+  // both[i][j]: values of k with bit i set whose output has bit j set. For
+  // each bit i the outputs of the values of k that have it are copied into a
+  // buffer and counted by position; a permutation only changes the outputs.
+  const K = Int32Array.from(ks);
+  const X = Int32Array.from(xs);
+  const Y = Int32Array.from(ys);
+  const withBit = Array.from({ length: inputBits }, (_, i) => {
+    const list = [];
+    for (let t = 0; t < N; t++) if ((K[t] >>> i) & 1) list.push(t);
+    return Int32Array.from(list);
+  });
+  const outX = new Int32Array(N);
+  const outY = new Int32Array(N);
+  const buffer = new Int32Array(N);
+  const both = Array.from({ length: inputBits }, () => new Array(outputBits).fill(0));
+  const countBoth = (order) => {
+    for (let t = 0; t < N; t++) {
+      const u = order === null ? t : order[t];
+      outX[t] = combined ? X[u] | (Y[u] << L) : X[u];
+      outY[t] = Y[u];
+    }
+    for (let i = 0; i < inputBits; i++) {
+      both[i].fill(0);
+      const rows = withBit[i];
+      for (let m = 0; m < rows.length; m++) buffer[m] = outX[rows[m]];
+      positionalCount(buffer, rows.length, both[i], 0);
+      if (!combined) {
+        for (let m = 0; m < rows.length; m++) buffer[m] = outY[rows[m]];
+        positionalCount(buffer, rows.length, both[i], L);
+      }
+    }
+  };
+  const phi = (i, j) => (den[i][j] === 0 ? null : (N * both[i][j] - n1[i] * m1[j]) / den[i][j]);
+  const threshold = N > 1 ? 3 / Math.sqrt(N - 1) : null;
+
+  countBoth(null);
   const values = [];
+  let statistic = 0;
   let maxAbs = 0;
   let sumAbs = 0;
   let defined = 0;
   let above = 0;
-  const threshold = N > 0 ? 3 / Math.sqrt(N) : null;
   for (let i = 0; i < inputBits; i++) {
     const row = [];
-    for (const [coord, j] of outputs) {
-      const out = coord === 'x' ? xs : ys;
-      let n1 = 0;
-      let m1 = 0;
-      let both = 0;
-      for (let t = 0; t < N; t++) {
-        const a = (ks[t] >>> i) & 1;
-        const b = (out[t] >>> j) & 1;
-        n1 += a;
-        m1 += b;
-        both += a & b;
-      }
-      const den = Math.sqrt(n1 * (N - n1) * m1 * (N - m1));
-      const phi = den === 0 ? null : (N * both - n1 * m1) / den;
-      row.push(phi);
-      if (phi !== null) {
-        defined++;
-        sumAbs += Math.abs(phi);
-        maxAbs = Math.max(maxAbs, Math.abs(phi));
-        if (Math.abs(phi) > threshold) above++;
-      }
+    for (let j = 0; j < outputBits; j++) {
+      const r = phi(i, j);
+      row.push(r);
+      if (r === null) continue;
+      defined++;
+      sumAbs += Math.abs(r);
+      maxAbs = Math.max(maxAbs, Math.abs(r));
+      statistic += N * r * r;
+      if (Math.abs(r) > threshold) above++;
     }
     values.push(row);
   }
-  // global test: under independence N * phi^2 is about chi-square with 1
-  // degree of freedom, so the sum over the cells is about chi-square(cells)
-  let globalChi2 = 0;
-  for (const row of values) for (const phi of row) if (phi !== null) globalChi2 += N * phi * phi;
+
+  let asExtreme = 0;
+  let aboveTotal = 0;
+  const runs = defined && N > 2 ? sims : 0;
+  const order = Int32Array.from({ length: N }, (_, t) => t);
+  for (let s = 0; s < runs; s++) {
+    shuffle(order, rand);
+    countBoth(order);
+    let stat = 0;
+    for (let i = 0; i < inputBits; i++) {
+      for (let j = 0; j < outputBits; j++) {
+        const r = phi(i, j);
+        if (r === null) continue;
+        stat += N * r * r;
+        if (Math.abs(r) > threshold) aboveTotal++;
+      }
+    }
+    if (stat >= statistic || tie(stat, statistic)) asExtreme++;
+    yield;
+  }
   return {
     inputBits,
-    outputBits: 2 * L,
+    outputBits,
     values,
     threshold,
     maxAbs: defined ? maxAbs : null,
     meanAbs: defined ? sumAbs / defined : null,
     defined,
     above,
-    expectedAbove: defined * twoSidedNormalTail(3),
-    globalChi2: defined ? globalChi2 : null,
-    globalP: defined ? chiSquarePValue(globalChi2, defined) : null,
+    expectedAbove: runs ? aboveTotal / runs : null,
+    statistic: defined ? statistic : null,
+    pValue: runs ? monteCarloP(asExtreme, runs) : null,
+    sims: runs,
   };
 }
 
-/**
- * Flip rate of each output bit between two distinct random points of the
- * curve: the reference for a "random function into the curve", as opposed
- * to the one for uniform values in [0, p). Exact on small curves (every
- * pair of points), estimated from seeded random pairs on large ones.
- */
-function curveFlipReference(curve, L, seed) {
-  const pts = curvePoints(curve);
-  const counts = new Array(2 * L).fill(0);
-  let pairs = 0;
-  const measure = (A, B) => {
-    const dx = A.x ^ B.x;
-    const dy = A.y ^ B.y;
-    for (let j = 0; j < L; j++) {
-      counts[j] += (dx >>> j) & 1;
-      counts[L + j] += (dy >>> j) & 1;
-    }
-    pairs++;
-  };
-  if (pts.length <= 200) {
-    for (let a = 0; a < pts.length; a++) for (let b = a + 1; b < pts.length; b++) measure(pts[a], pts[b]);
-  } else {
-    const rand = prng(seed + 1);
-    while (pairs < 200000) {
-      const a = Math.floor(rand() * pts.length);
-      const b = Math.floor(rand() * pts.length);
-      if (a !== b) measure(pts[a], pts[b]);
-    }
-  }
-  return { values: counts.map((c) => c / pairs), exact: pts.length <= 200 };
-}
-
-/**
- * How far a SAC matrix is from a reference flip rate per output bit: cells
- * beyond 3 sigma and the global test sum(z^2) ~ chi-square(cells), on all
- * the columns and separately on the x and on the y columns.
- *
- * The x columns have a known dependence. The pair {kG, (k + 2^i)G} and its
- * mirror {-(k + 2^i)G, -kG} = {(n - k - 2^i)G, (n - k)G} have the same x
- * coordinates, so when both pairs are counted the same x measurement is
- * counted twice. With a share d of duplicated pairs the variance of a flip
- * rate grows by the factor 1 + d (the design effect): `xCorrected` divides
- * it out. The y columns have no exact mirror (y becomes p - y) and are left
- * as they are.
- */
-function sacAgainst(sac, pairsPerBit, reference, L, mirrorShare) {
-  const parts = { all: [0, 0, 0], x: [0, 0, 0], y: [0, 0, 0], xCorrected: [0, 0, 0] };
-  const addTo = (part, z) => {
-    part[0]++;
-    part[1] += z * z;
-    if (Math.abs(z) > 3) part[2]++;
-  };
-  sac.forEach((row, i) =>
-    row.forEach((v, j) => {
-      if (v === null) return;
-      const sigma = Math.sqrt((reference[j] * (1 - reference[j])) / pairsPerBit[i]);
-      if (!(sigma > 0)) return;
-      const z = (v - reference[j]) / sigma;
-      addTo(parts.all, z);
-      if (j < L) {
-        addTo(parts.x, z);
-        addTo(parts.xCorrected, z / Math.sqrt(1 + mirrorShare[i]));
-      } else {
-        addTo(parts.y, z);
-      }
-    }),
-  );
-  const summary = ([cells, z2, above]) => ({
-    cells,
-    above,
-    expectedAbove: cells * twoSidedNormalTail(3),
-    z2,
-    pValue: cells ? chiSquarePValue(z2, cells) : null,
-  });
-  return { ...summary(parts.all), x: summary(parts.x), y: summary(parts.y), xCorrected: summary(parts.xCorrected) };
-}
+// --- Avalanche ---------------------------------------------------------------
 
 /** Distribution of a sum of independent Bernoulli(probs[j]) variables. */
 function poissonBinomial(probs) {
@@ -756,32 +956,229 @@ function poissonBinomial(probs) {
 }
 
 /**
- * Statistical exploration of the map k -> kG.
+ * The pairs {k, k xor 2^i} of one subgroup, row by row: each unordered pair
+ * once, from the k whose bit i is 0, and only if both values are in
+ * [1, n - 1].
+ */
+function avalanchePairs(n, inputBits) {
+  return Array.from({ length: inputBits }, (_, i) => {
+    const low = [];
+    const high = [];
+    for (let k = 1; k < n; k++) {
+      if ((k >>> i) & 1) continue;
+      const k2 = k ^ (1 << i);
+      if (k2 < n) {
+        low.push(k);
+        high.push(k2);
+      }
+    }
+    return { low: Int32Array.from(low), high: Int32Array.from(high) };
+  });
+}
+
+/**
+ * Flip counts of every cell (bit of k, bit of x then y) for the values X[k],
+ * Y[k] of each group: for every row, the masks of the flipped bits of all its
+ * pairs, counted by position.
+ */
+function countFlips(tables, pairsOf, inputBits, L, flips, buffer) {
+  const combined = 2 * L <= 31;
+  for (let i = 0; i < inputBits; i++) flips[i].fill(0);
+  for (let g = 0; g < tables.length; g++) {
+    const { X, Y } = tables[g];
+    const rows = pairsOf[g];
+    for (let i = 0; i < rows.length; i++) {
+      const { low, high } = rows[i];
+      for (let t = 0; t < low.length; t++) {
+        const dx = X[low[t]] ^ X[high[t]];
+        buffer[t] = combined ? dx | ((Y[low[t]] ^ Y[high[t]]) << L) : dx;
+      }
+      positionalCount(buffer, low.length, flips[i], 0);
+      if (!combined) {
+        for (let t = 0; t < low.length; t++) buffer[t] = Y[low[t]] ^ Y[high[t]];
+        positionalCount(buffer, low.length, flips[i], L);
+      }
+    }
+  }
+}
+
+/**
+ * Exact test of the avalanche matrix by random relabeling. In each subgroup
+ * the map k -> kG sends the pair {k, n - k} to a pair of opposite points
+ * {P, -P}. The reference functions keep exactly this structure (the same
+ * image, the same symmetry f(n - k) = -f(k), the same pairs of k) and only
+ * reassign at random which pair {P, -P} goes to which pair {k, n - k}, and
+ * with which sign. Every cell is standardized with the mean and standard
+ * deviation it has over `sims` such functions, and sum(z^2) of the observed
+ * matrix is compared with the same statistic of each function: the
+ * dependence between measurements (mirror pairs with the same x, pairs that
+ * share a point) is in the reference too, and needs no correction.
+ */
+function* avalancheTest(groups, p, L, inputBits, pairsOf, observedRates, pairsPerBit, sims, rand) {
+  const outputBits = 2 * L;
+  const cells = inputBits * outputBits;
+  const buffer = new Int32Array(Math.max(1, ...groups.map((g) => g.n)));
+  const flips = Array.from({ length: inputBits }, () => new Array(outputBits).fill(0));
+  const tables = groups.map((g) => ({ X: new Int32Array(g.n), Y: new Int32Array(g.n) }));
+  const orbitOrder = groups.map((g) => Int32Array.from({ length: Math.floor((g.n - 1) / 2) }, (_, o) => o));
+  const opposite = groups.map((g) => Int32Array.from(g.ys, (y) => (y === 0 ? 0 : p - y)));
+  const rates = new Float64Array(sims * cells);
+
+  for (let s = 0; s < sims; s++) {
+    for (let gi = 0; gi < groups.length; gi++) {
+      const { n, xs, ys } = groups[gi];
+      const { X, Y } = tables[gi];
+      const order = orbitOrder[gi];
+      const negative = opposite[gi];
+      shuffle(order, rand);
+      let signs = 0;
+      for (let o = 0; o < order.length; o++) {
+        if ((o & 31) === 0) signs = Math.floor(rand() * 4294967296); // 32 random signs at a time
+        const r = order[o];
+        const k = o + 1;
+        X[k] = xs[r];
+        X[n - k] = xs[r];
+        if ((signs >>> (o & 31)) & 1) {
+          Y[k] = negative[r];
+          Y[n - k] = ys[r];
+        } else {
+          Y[k] = ys[r];
+          Y[n - k] = negative[r];
+        }
+      }
+      if (n % 2 === 0) {
+        // the point of order 2 is its own opposite: f(n/2) is fixed
+        X[n / 2] = xs[n / 2 - 1];
+        Y[n / 2] = ys[n / 2 - 1];
+      }
+    }
+    countFlips(tables, pairsOf, inputBits, L, flips, buffer);
+    for (let i = 0; i < inputBits; i++) {
+      for (let j = 0; j < outputBits; j++) rates[s * cells + i * outputBits + j] = pairsPerBit[i] ? flips[i][j] / pairsPerBit[i] : NaN;
+    }
+    yield;
+  }
+
+  const mean = new Float64Array(cells);
+  const sd = new Float64Array(cells);
+  for (let c = 0; c < cells; c++) {
+    let sum1 = 0;
+    let sum2 = 0;
+    for (let s = 0; s < sims; s++) {
+      const v = rates[s * cells + c];
+      sum1 += v;
+      sum2 += v * v;
+    }
+    mean[c] = sum1 / sims;
+    sd[c] = Math.sqrt(Math.max(0, sum2 / sims - mean[c] * mean[c]));
+  }
+  const usable = (c) => sims > 1 && Number.isFinite(mean[c]) && sd[c] > 1e-12;
+  const z = Array.from({ length: inputBits }, (_, i) =>
+    Array.from({ length: outputBits }, (_, j) => {
+      const c = i * outputBits + j;
+      return usable(c) && observedRates[i][j] !== null ? (observedRates[i][j] - mean[c]) / sd[c] : null;
+    }),
+  );
+  let statistic = 0;
+  let above = 0;
+  let used = 0;
+  z.forEach((row) =>
+    row.forEach((v) => {
+      if (v === null) return;
+      used++;
+      statistic += v * v;
+      if (Math.abs(v) > 3) above++;
+    }),
+  );
+  let asExtreme = 0;
+  let aboveTotal = 0;
+  for (let s = 0; s < sims; s++) {
+    let stat = 0;
+    for (let c = 0; c < cells; c++) {
+      if (!usable(c)) continue;
+      const v = (rates[s * cells + c] - mean[c]) / sd[c];
+      stat += v * v;
+      if (Math.abs(v) > 3) aboveTotal++;
+    }
+    if (stat >= statistic || tie(stat, statistic)) asExtreme++;
+  }
+  return {
+    sims,
+    cells: used,
+    z,
+    statistic: used ? statistic : null,
+    pValue: used ? monteCarloP(asExtreme, sims) : null,
+    above,
+    expectedAbove: used ? aboveTotal / sims : null,
+  };
+}
+
+/**
+ * The instinctive avalanche test: every cell against the ideal flip rate of
+ * uniform values, as if every measurement were independent, and
+ * sum(z^2) ~ chi-square(cells). Kept on purpose, with the reasons it fails.
+ */
+function naiveAvalancheTest(sac, pairsPerBit, ideal) {
+  let above = 0;
+  let z2 = 0;
+  let cells = 0;
+  sac.forEach((row, i) =>
+    row.forEach((v, j) => {
+      if (v === null) return;
+      const sigma = Math.sqrt((ideal[j] * (1 - ideal[j])) / pairsPerBit[i]);
+      if (!(sigma > 0)) return;
+      const z = (v - ideal[j]) / sigma;
+      cells++;
+      z2 += z * z;
+      if (Math.abs(z) > 3) above++;
+    }),
+  );
+  return {
+    cells,
+    above,
+    expectedAbove: cells * twoSidedNormalTail(3),
+    z2,
+    pValue: cells ? chiSquarePValue(z2, cells) : null,
+  };
+}
+
+// --- The exploration -----------------------------------------------------
+
+/**
+ * Statistical exploration of the map k -> kG, as a generator that yields
+ * between units of work, so that a page can run it in slices without ever
+ * blocking (exploreAsync) and a worker or the command line can run it in
+ * one go (explore).
  *
  * base is a point (one base point G: k runs over 1, ..., n - 1, the whole
  * subgroup generated by G) or 'pooled' (every affine point of the curve in
  * turn as base point, each with its own k = 1, ..., ord - 1). Every value of
  * k is used, so the "sample" is in fact the whole population: the tests
- * below are descriptive, and the texts say so.
+ * below are descriptive, and the texts say so. All the random choices of the
+ * exact tests come from a seeded generator, so the page, the downloadable
+ * program and the command line print the same numbers.
  */
-export function explore(curve, base, { homomorphismTrials = 200, seed = 2026 } = {}) {
+export function* exploreSteps(curve, base, { homomorphismTrials = 200, seed = 2026 } = {}) {
   const { p } = curve;
   const pooled = base === 'pooled';
   if (pooled && p > POOLED_MAX_P) fail(`pooling every base point is limited to p <= ${POOLED_MAX_P}`);
   if (!pooled) assertPoint(base, curve);
   const bases = pooled ? curvePoints(curve) : [base];
   const L = bitLength(p - 1);
+  const rand = prng(seed);
 
   // enumerate the subgroups: one table of multiples per base point
-  const groups = bases.map((G) => {
+  const groups = [];
+  for (const G of bases) {
     const gx = [];
     const gy = [];
     for (let R = G; R !== null; R = sum(R, G, curve)) {
       gx.push(R.x);
       gy.push(R.y);
     }
-    return { G, n: gx.length + 1, xs: gx, ys: gy };
-  });
+    groups.push({ G, n: gx.length + 1, xs: Int32Array.from(gx), ys: Int32Array.from(gy) });
+    yield;
+  }
   const ks = [];
   const xs = [];
   const ys = [];
@@ -818,6 +1215,10 @@ export function explore(curve, base, { homomorphismTrials = 200, seed = 2026 } =
   const widths = new Array(bins).fill(0);
   for (let v = 0; v < p; v++) widths[Math.floor((v * bins) / p)]++;
 
+  // uniformity and bits, with the exact tests
+  const statsX = yield* coordinateStats(freqX, p, bins, curveXs.size, 'x', rand);
+  const statsY = yield* coordinateStats(freqY, p, bins, curveYs.size, 'y', rand);
+
   // a structural fact: kG and (n - k)G are opposite points, with the same x
   const mirror = { pairs: 0, matches: 0 };
   for (const g of groups) {
@@ -827,53 +1228,41 @@ export function explore(curve, base, { homomorphismTrials = 200, seed = 2026 } =
     }
   }
 
-  // avalanche: flip each bit of k, for every k of every subgroup, counting
-  // each pair of inputs once (counted from both ends, every measurement
-  // would appear twice and the 3-sigma bands would be too narrow). The ideal
+  // correlation between the bits of k and of the point, exact test by permutation
+  const bitCorrelation = yield* bitCorrelationTest(ks, xs, ys, L, SIMULATIONS.correlation, rand);
+
+  // avalanche: flip each bit of k, for every k of every subgroup. The ideal
   // flip rate of an output bit is that of two independent uniform values in
-  // [0, p): 2q(1 - q), which is below 1/2 for the top bits when p is not a
-  // power of two.
+  // [0, p): 2q(1 - q), below 1/2 for the top bits when p is not a power of 2.
   const outputBits = 2 * L;
   const ideal = Array.from({ length: outputBits }, (_, j) => {
     const q = expectedBitFraction(j % L, p);
     return 2 * q * (1 - q);
   });
   const inputBits = Math.max(1, ...groups.map((g) => bitLength(g.n - 1)));
-  const flips = Array.from({ length: inputBits }, () => new Array(outputBits).fill(0));
+  const pairsOf = groups.map((g) => avalanchePairs(g.n, inputBits));
   const pairsPerBit = new Array(inputBits).fill(0);
   const mirroredPerBit = new Array(inputBits).fill(0);
   const distances = new Array(outputBits + 1).fill(0);
   let flipTotal = 0;
-  for (const g of groups) {
-    const bitsHere = bitLength(g.n - 1);
-    for (let k = 1; k < g.n; k++) {
-      for (let i = 0; i < bitsHere; i++) {
-        // each unordered pair {k, k xor 2^i} once: from the k whose bit i is 0
-        if ((k >>> i) & 1) continue;
-        const k2 = k ^ (1 << i);
-        if (k2 >= g.n) continue;
+  groups.forEach((g, gi) => {
+    pairsOf[gi].forEach(({ low, high }, i) => {
+      for (let t = 0; t < low.length; t++) {
+        const k = low[t];
+        const k2 = high[t];
         // its mirror {n - k2, n - k} has the same x values: is it counted too?
-        const low = g.n - k2;
-        if (low !== k && !((low >>> i) & 1)) mirroredPerBit[i]++;
-        const dx = g.xs[k - 1] ^ g.xs[k2 - 1];
-        const dy = g.ys[k - 1] ^ g.ys[k2 - 1];
-        let d = 0;
-        for (let j = 0; j < L; j++) {
-          if ((dx >>> j) & 1) {
-            flips[i][j]++;
-            d++;
-          }
-          if ((dy >>> j) & 1) {
-            flips[i][L + j]++;
-            d++;
-          }
-        }
+        const mirrorLow = g.n - k2;
+        if (mirrorLow !== k && !((mirrorLow >>> i) & 1)) mirroredPerBit[i]++;
+        const d = popcount(g.xs[k - 1] ^ g.xs[k2 - 1]) + popcount(g.ys[k - 1] ^ g.ys[k2 - 1]);
         pairsPerBit[i]++;
         distances[d]++;
         flipTotal += d;
       }
-    }
-  }
+    });
+  });
+  const observedTables = groups.map((g) => ({ X: Int32Array.from([0, ...g.xs, 0]), Y: Int32Array.from([0, ...g.ys, 0]) }));
+  const flips = Array.from({ length: inputBits }, () => new Array(outputBits).fill(0));
+  countFlips(observedTables, pairsOf, inputBits, L, flips, new Int32Array(Math.max(1, ...groups.map((g) => g.n))));
   const measurements = pairsPerBit.reduce((s, m) => s + m, 0);
   let maxDev = 0;
   let sumDev = 0;
@@ -888,11 +1277,12 @@ export function explore(curve, base, { homomorphismTrials = 200, seed = 2026 } =
       return s;
     }),
   );
-  const curveReference = curveFlipReference(curve, L, seed);
-  const mirrorShare = pairsPerBit.map((m, i) => (m ? mirroredPerBit[i] / m : 0));
+  yield;
+  const exactAvalanche = measurements
+    ? yield* avalancheTest(groups, p, L, inputBits, pairsOf, sac, pairsPerBit, SIMULATIONS.avalanche, rand)
+    : { sims: 0, cells: 0, z: sac.map((row) => row.map(() => null)), statistic: null, pValue: null, above: 0, expectedAbove: null };
 
   // the homomorphism (k1 + k2)G = k1G + k2G, on random pairs
-  const rand = prng(seed);
   let holds = 0;
   const usable = groups.filter((g) => g.n > 1);
   for (let t = 0; t < homomorphismTrials && usable.length; t++) {
@@ -920,18 +1310,15 @@ export function explore(curve, base, { homomorphismTrials = 200, seed = 2026 } =
     multiplicityX: multiplicityTable(freqX),
     multiplicityY: multiplicityTable(freqY),
     histogram: { bins, x: histogram(freqX), y: histogram(freqY), expected: widths.map((w) => (w * N) / p) },
-    uniformity: {
-      x: uniformity(freqX, p, bins, curveXs.size),
-      y: uniformity(freqY, p, bins, curveYs.size, { symmetric: true }),
-    },
-    bits: { x: bitStats(xs, p), y: bitStats(ys, p) },
+    uniformity: { x: statsX.uniformity, y: statsY.uniformity },
+    bits: { x: statsX.bits, y: statsY.bits },
     correlation: {
       pearsonKX: pearson(ks, xs),
       pearsonKY: pearson(ks, ys),
       spearmanKX: spearman(ks, xs),
       spearmanKY: spearman(ks, ys),
       mirror,
-      bits: bitCorrelation(ks, xs, ys, L),
+      bits: bitCorrelation,
     },
     avalanche: {
       inputBits,
@@ -943,19 +1330,53 @@ export function explore(curve, base, { homomorphismTrials = 200, seed = 2026 } =
       expectedDistances: poissonBinomial(ideal).map((q) => q * measurements),
       sac,
       ideal,
-      curveIdeal: curveReference.values,
-      curveIdealExact: curveReference.exact,
       pairsPerBit,
-      mirrorShare,
       mirrorShareAll: measurements ? mirroredPerBit.reduce((s, m) => s + m, 0) / measurements : 0,
       maxDev: cells ? maxDev : null,
       meanDev: cells ? sumDev / cells : null,
       cells,
-      vsUniform: sacAgainst(sac, pairsPerBit, ideal, L, mirrorShare),
-      vsCurve: sacAgainst(sac, pairsPerBit, curveReference.values, L, mirrorShare),
+      naive: naiveAvalancheTest(sac, pairsPerBit, ideal),
+      exact: exactAvalanche,
     },
     homomorphism: { trials: usable.length ? homomorphismTrials : 0, holds },
   };
+}
+
+/** The whole exploration in one go: for a worker, the command line and the tests. */
+export function explore(curve, base, options) {
+  const steps = exploreSteps(curve, base, options);
+  let step = steps.next();
+  while (!step.done) step = steps.next();
+  return step.value;
+}
+
+/**
+ * The exploration in slices of a few milliseconds, with the browser free to
+ * draw and react in between: the downloadable page uses it, because a page
+ * opened from file:// cannot start a worker.
+ */
+export function exploreAsync(curve, base, options, { sliceMs = 12, schedule = (run) => setTimeout(run, 0) } = {}) {
+  return new Promise((resolve, reject) => {
+    let steps;
+    try {
+      steps = exploreSteps(curve, base, options);
+    } catch (error) {
+      reject(error);
+      return;
+    }
+    const run = () => {
+      const end = Date.now() + sliceMs;
+      try {
+        let step = steps.next();
+        while (!step.done && Date.now() < end) step = steps.next();
+        if (step.done) resolve(step.value);
+        else schedule(run);
+      } catch (error) {
+        reject(error);
+      }
+    };
+    schedule(run);
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -1059,9 +1480,15 @@ function wrappedSegments(op, p) {
   return segments;
 }
 
-function setupCanvas(canvas, aspect) {
+/**
+ * Sizes a canvas for drawing at the device's pixel density. `knownWidth`,
+ * when given (for example by a ResizeObserver), avoids reading clientWidth:
+ * reading it after another canvas has just been resized would force the
+ * browser to lay out the whole page again, once per chart.
+ */
+function setupCanvas(canvas, aspect, knownWidth = 0) {
   const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
-  const width = canvas.clientWidth || 480;
+  const width = knownWidth > 0 ? knownWidth : canvas.clientWidth || 480;
   const height = Math.round(width * aspect);
   canvas.width = Math.round(width * dpr);
   canvas.height = Math.round(height * dpr);
@@ -1347,14 +1774,18 @@ export function createAnimation(canvas, options) {
 // 6. Charts and heatmaps (browser, <canvas>)
 // ---------------------------------------------------------------------------
 
+/** A number for a chart label, with the decimal separator of the page's language. */
+const chartNumber = (text, decimal) => (decimal === '.' ? text : text.replace('.', decimal));
+
 /**
  * Bar chart of `values`, with an optional dashed reference (`expected`, one
  * value per bar or a single number) and labels under the first, the middle
  * and the last bar. With more bars than pixels, each pixel column shows the
- * largest of its bars, so that no value disappears.
+ * largest of its bars, so that no value disappears. `decimal` is the decimal
+ * separator of the axis labels ("," in Italian).
  */
-export function drawBarChart(canvas, { values, expected = null, labels = null, max = null }, palette = DEFAULT_PALETTE) {
-  const { ctx, width, height } = setupCanvas(canvas, 0.42);
+export function drawBarChart(canvas, { values, expected = null, labels = null, max = null, decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
+  const { ctx, width, height } = setupCanvas(canvas, BAR_ASPECT, knownWidth);
   const pal = { ...DEFAULT_PALETTE, ...palette };
   const margin = { left: 34, right: 8, top: 10, bottom: 22 };
   const w = width - margin.left - margin.right;
@@ -1396,7 +1827,7 @@ export function drawBarChart(canvas, { values, expected = null, labels = null, m
   ctx.fillStyle = pal.text;
   ctx.font = '11px sans-serif';
   ctx.textAlign = 'right';
-  const fmt = (v) => (top <= 1.5 ? v.toFixed(2) : String(Math.round(v)));
+  const fmt = (v) => chartNumber(top <= 1.5 ? v.toFixed(2) : String(Math.round(v)), decimal);
   ctx.fillText(fmt(top), margin.left - 4, margin.top + 9);
   ctx.fillText(fmt(0), margin.left - 4, margin.top + h);
   if (labels) {
@@ -1406,6 +1837,24 @@ export function drawBarChart(canvas, { values, expected = null, labels = null, m
       ctx.fillText(labels[i], margin.left + (i + 0.5) * barW, margin.top + h + 15);
     }
   }
+}
+
+const BAR_ASPECT = 0.42;
+const HEATMAP_MARGIN = { left: 34, right: 8, top: 18, bottom: 34 };
+
+/**
+ * The height, in CSS pixels, that drawBarChart or drawHeatmap gives a canvas
+ * of this width: a page can reserve the space before drawing, so that the
+ * layout does not move when the chart appears.
+ */
+export function chartHeight(draw, data, width) {
+  if (draw === drawHeatmap) {
+    const rows = data.values.length;
+    const cols = rows ? data.values[0].length : 0;
+    const cell = Math.max(4, (width - HEATMAP_MARGIN.left - HEATMAP_MARGIN.right) / Math.max(1, cols));
+    return Math.round(HEATMAP_MARGIN.top + HEATMAP_MARGIN.bottom + rows * cell);
+  }
+  return Math.round(width * BAR_ASPECT);
 }
 
 const hexToRgb = (hex) => [1, 3, 5].map((i) => Number.parseInt(hex.slice(i, i + 2), 16));
@@ -1418,16 +1867,17 @@ const mix = (a, b, f) => {
 /**
  * Heatmap of a matrix of numbers in [-range, range] around 0 (negative in
  * blue, positive in red, null cells in grey), with a legend. Rows are the
- * bits of k, columns the bits of x and then of y, split by a line.
+ * bits of k, columns the bits of x and then of y, split by a line. `decimal`
+ * is the decimal separator of the legend.
  */
-export function drawHeatmap(canvas, { values, range = 1, split = null, rowLabel = '', colLabels = ['', ''] }, palette = DEFAULT_PALETTE) {
+export function drawHeatmap(canvas, { values, range = 1, split = null, rowLabel = '', colLabels = ['', ''], decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
   const pal = { ...DEFAULT_PALETTE, ...palette };
   const rows = values.length;
   const cols = rows ? values[0].length : 0;
-  const width = canvas.clientWidth || 480;
-  const margin = { left: 34, right: 8, top: 18, bottom: 34 };
+  const width = knownWidth > 0 ? knownWidth : canvas.clientWidth || 480;
+  const margin = HEATMAP_MARGIN;
   const cell = Math.max(4, (width - margin.left - margin.right) / Math.max(1, cols));
-  const { ctx, height } = setupCanvas(canvas, (margin.top + margin.bottom + rows * cell) / width);
+  const { ctx, height } = setupCanvas(canvas, (margin.top + margin.bottom + rows * cell) / width, width);
   ctx.fillStyle = pal.background;
   ctx.fillRect(0, 0, width, height);
   const color = (v) => {
@@ -1473,11 +1923,11 @@ export function drawHeatmap(canvas, { values, range = 1, split = null, rowLabel 
   }
   ctx.fillStyle = pal.text;
   ctx.textAlign = 'left';
-  ctx.fillText(`-${range}`, margin.left, ly + 19);
+  ctx.fillText(`-${chartNumber(String(range), decimal)}`, margin.left, ly + 19);
   ctx.textAlign = 'center';
   ctx.fillText('0', margin.left + lw / 2, ly + 19);
   ctx.textAlign = 'right';
-  ctx.fillText(`+${range}`, margin.left + lw, ly + 19);
+  ctx.fillText(`+${chartNumber(String(range), decimal)}`, margin.left + lw, ly + 19);
 }
 
 // ---------------------------------------------------------------------------
@@ -1535,19 +1985,20 @@ export function runCli(argv, print = console.log) {
     print(`Brute force: Q = ${bf.k}G found after ${bf.tries} ${bf.tries === 1 ? 'try' : 'tries'} (k mod ${n} = ${k % n})`);
   }
   print('');
-  print('Statistical exploration of k -> kG (every k of every subgroup):');
-  print('  curve      base             N  chi2 distinct x (p)   r(k,x)  max|phi|  avalanche  SAC>3s     (k1+k2)G');
+  print('Statistical exploration of k -> kG (every k of every subgroup; exact p-values,');
+  print(`random sets: ${SIMULATIONS.uniformity}, permutations: ${SIMULATIONS.correlation}, relabelings: ${SIMULATIONS.avalanche}):`);
+  print('  curve     base              N  uniform x  uniform y   r(k,x)  bits phi  avalanche  SAC p   (k1+k2)G');
   const rows = [[explorationCurve(TASK.p), 'pooled'], ...EXTENSION_PRIMES.map((q) => [explorationCurve(q), null])];
-  const f = (v, d = 3) => (v === null ? 'n/a' : v.toFixed(d));
+  const f = (v, d = 3) => (v === null || v === undefined ? 'n/a' : v.toFixed(d));
+  const test = (t) => (t.computable ? `p=${t.pValue.toFixed(3)}` : 'n/a');
   for (const [c, b] of rows) {
     const s = explore(c, b ?? defaultBasePoint(c));
-    const u = s.uniformity.x.distinct;
     print(
       `  p=${String(c.p).padEnd(7)} ${(s.pooled ? 'all points' : formatPoint(s.G)).padEnd(12)} ${String(s.N).padStart(6)}` +
-        `  ${(u.computable ? `${u.chi2.toFixed(1)} (${u.pValue.toFixed(2)})` : 'n/a').padEnd(19)}` +
-        ` ${f(s.correlation.pearsonKX).padStart(7)}  ${f(s.correlation.bits.maxAbs).padStart(8)}` +
+        `  ${test(s.uniformity.x.distinct).padEnd(9)}  ${test(s.uniformity.y.distinct).padEnd(9)}` +
+        ` ${f(s.correlation.pearsonKX).padStart(7)}  ${`p=${f(s.correlation.bits.pValue)}`.padEnd(8)}` +
         `  ${(s.avalanche.meanFraction === null ? 'n/a' : `${(100 * s.avalanche.meanFraction).toFixed(1)}%`).padStart(9)}` +
-        `  ${`${s.avalanche.vsUniform.above}/${s.avalanche.vsUniform.cells}`.padEnd(9)}  ${s.homomorphism.holds}/${s.homomorphism.trials}`,
+        `  ${f(s.avalanche.exact.pValue).padEnd(6)}  ${s.homomorphism.holds}/${s.homomorphism.trials}`,
     );
   }
   return 0;
