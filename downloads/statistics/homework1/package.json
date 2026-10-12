@@ -1,0 +1,15 @@
+{
+  "name": "homework1-statistics",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Homework #1 - Statistics: from a private key to a public key with elliptic-curve scalar multiplication, as in Ethereum.",
+  "author": "Nicholas Arcari",
+  "type": "commonjs",
+  "main": "homework1.js",
+  "scripts": {
+    "start": "node homework1.js"
+  },
+  "engines": {
+    "node": ">=14"
+  }
+}
