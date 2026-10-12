@@ -10,13 +10,13 @@ import { STATISTICS_HOMEWORK } from '../../config/homework';
 import { formatRomeDateTime } from '../../utils/romeDate';
 import StatisticsLayout from './StatisticsLayout';
 
-const HomeworkShell = ({ slug, children }) => {
+const HomeworkShell = ({ slug, sidebar = null, children }) => {
   const { t, language } = useLanguage();
   const hw = STATISTICS_HOMEWORK.find((h) => h.slug === slug);
   const description = hw.description[language];
 
   return (
-    <StatisticsLayout terminal={[`> ./open_homework.sh --${slug}`, ...t('statistics.homeworkTerminal')]}>
+    <StatisticsLayout terminal={[`> ./open_homework.sh --${slug}`, ...t('statistics.homeworkTerminal')]} sidebar={sidebar}>
       <article className="box post">
         <header><h2>{hw.name}</h2></header>
 

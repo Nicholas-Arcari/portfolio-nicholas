@@ -8,7 +8,9 @@ import TerminalText from '../../components/TerminalText';
 import { useLanguage } from '../../contexts/languageContext';
 import Footer from '../../components/Footer';
 
-const StatisticsLayout = ({ terminal, children }) => {
+// `sidebar`: riquadri in piu' in cima alla colonna destra (es. il download
+// del codice di un homework).
+const StatisticsLayout = ({ terminal, sidebar = null, children }) => {
   const { t } = useLanguage();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
@@ -74,6 +76,7 @@ const StatisticsLayout = ({ terminal, children }) => {
 
             {/* SIDEBAR */}
             <div id="sidebar" className="col-4 col-12-medium">
+              {sidebar}
               <section>
                 <ul className="divided">
                   <li>
