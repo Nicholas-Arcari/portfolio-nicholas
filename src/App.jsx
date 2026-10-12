@@ -22,6 +22,9 @@ import CitizenShield from './pages/CitizenShield';
 import FinanzMe from './pages/FinanzMe';
 import ByteBulk from './pages/ByteBulk';
 import SeedCast from './pages/SeedCast';
+import StatisticsHomework from './pages/statistics/StatisticsHomework';
+import Homework1 from './pages/statistics/Homework1';
+import Homework2 from './pages/statistics/Homework2';
 import './HackerTheme.css';
 
 function App() {
@@ -48,6 +51,9 @@ function App() {
             <Route path="/finanzme" element={<FinanzMe />} />
             <Route path="/bytebulk" element={<ByteBulk />} />
             <Route path="/seedcast" element={<SeedCast />} />
+            <Route path="/statistics" element={<StatisticsHomework />} />
+            <Route path="/statistics/homework-1" element={<Homework1 />} />
+            <Route path="/statistics/homework-2" element={<Homework2 />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </PageTransition>

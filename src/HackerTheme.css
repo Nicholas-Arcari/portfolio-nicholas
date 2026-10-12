@@ -638,3 +638,45 @@ body.dark-mode ::-webkit-scrollbar-thumb {
     background: #3a3a3a;
     border-radius: 4px;
 }
+
+/* ===== HOMEWORK (Statistics) ===== */
+/* La tabella non deve mai superare lo schermo: colonne a larghezza fissa e
+   testo che va a capo anche dentro parole lunghe (un URL nella descrizione). */
+.hw-table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    margin: 1.5em 0 0.5em;
+}
+.hw-table th,
+.hw-table td {
+    padding: 0.7em 0.6em;
+    text-align: left;
+    vertical-align: top;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    border-bottom: 1px solid #e5e5e5;
+}
+.hw-table th { font-weight: 600; }
+.hw-table th:nth-child(1) { width: 22%; }
+.hw-table th:nth-child(3),
+.hw-table th:nth-child(4) { width: 20%; }
+.hw-row { cursor: pointer; }
+.hw-row:hover { background: rgba(213, 35, 73, 0.06); }
+body.dark-mode .hw-table th,
+body.dark-mode .hw-table td { border-bottom-color: #2a2a2a; }
+.hw-note { font-size: 0.85em; color: #888; }
+.hw-dates { display: flex; flex-wrap: wrap; gap: 0.4em 1.5em; }
+
+/* Telefono: ogni riga diventa una scheda, con l'intestazione accanto al valore */
+@media screen and (max-width: 736px) {
+    .hw-table thead { display: none; }
+    .hw-table, .hw-table tbody, .hw-table tr, .hw-table td { display: block; width: 100%; }
+    .hw-table tr { border-bottom: 1px solid #e5e5e5; padding: 0.6em 0; }
+    body.dark-mode .hw-table tr { border-bottom-color: #2a2a2a; }
+    .hw-table td { border: 0; padding: 0.25em 0; }
+    .hw-table td::before {
+        content: attr(data-label) ": ";
+        font-weight: 600;
+    }
+}
