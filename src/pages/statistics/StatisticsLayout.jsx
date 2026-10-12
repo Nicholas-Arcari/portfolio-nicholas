@@ -8,8 +8,8 @@ import TerminalText from '../../components/TerminalText';
 import { useLanguage } from '../../contexts/languageContext';
 import Footer from '../../components/Footer';
 
-// `sidebar`: riquadri in piu' in cima alla colonna destra (es. il download
-// del codice di un homework).
+// `sidebar`: riquadri in piu' nella colonna destra, subito dopo il riepilogo
+// (es. il download del codice di un homework).
 const StatisticsLayout = ({ terminal, sidebar = null, children }) => {
   const { t } = useLanguage();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -76,7 +76,6 @@ const StatisticsLayout = ({ terminal, sidebar = null, children }) => {
 
             {/* SIDEBAR */}
             <div id="sidebar" className="col-4 col-12-medium">
-              {sidebar}
               <section>
                 <ul className="divided">
                   <li>
@@ -84,13 +83,14 @@ const StatisticsLayout = ({ terminal, sidebar = null, children }) => {
                       <header><h3>{t('statistics.sidebarTitle')}</h3></header>
                       <p>
                         <strong>{t('statistics.sidebarCoursel')}</strong> Statistics<br />
-                        <strong>{t('statistics.sidebarDegreel')}</strong> {t('masterDetails.sidebarCourse')}<br />
-                        <strong>{t('statistics.sidebarTimezonel')}</strong> {t('statistics.sidebarTimezone')}
+                        <strong>{t('statistics.sidebarDegreel')}</strong> {t('masterDetails.sidebarCourse')}
                       </p>
                     </article>
                   </li>
                 </ul>
               </section>
+
+              {sidebar}
 
               <section>
                 <ul className="divided">
