@@ -1486,9 +1486,9 @@ return { originalAssignment, HW1_TEXTS };
 // L'interfaccia del programma scaricabile, in JavaScript puro: niente React,
 // niente dipendenze. Disegna le stesse sezioni della pagina del sito con gli
 // stessi testi (texts.js), la stessa logica di presentazione (view.js) e gli
-// stessi calcoli (homework1.js). La build (build/hw1-standalone.js) lo unisce
-// a view.js e texts.js in un unico app.js, uno script classico che si apre
-// anche da file:// con un doppio clic su index.html.
+// stessi calcoli (homework1.js). La build (build/homework-standalone.js) lo
+// unisce a view.js e texts.js in un unico app.js, uno script classico che si
+// apre anche da file:// con un doppio clic su index.html.
 //
 // Ogni testo entra nella pagina con textContent, mai come HTML: nemmeno
 // quello che si scrive nel campo k puo' diventare markup.
