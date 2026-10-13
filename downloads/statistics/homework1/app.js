@@ -268,6 +268,38 @@ function chartData(s, { kBits = 'k', flipBits = 'k', decimal = '.' } = {}) {
   };
 }
 
+/**
+ * What the label over each chart of chartData says for the bar or the cell
+ * under the pointer (hw.attachChartTooltip), from the same statistics. P is
+ * the `tips` part of the texts. A bar may stand for several values when
+ * the chart has more of them than pixels: then the label gives the range.
+ */
+function chartTips(s, P) {
+  const sum = (list, from, to) => list.slice(from, to).reduce((a, b) => a + b, 0);
+  const classStart = (j) => Math.ceil((j * s.p) / s.histogram.bins);
+  const hist = (coord, counts) => ({ from, to }) => P.hist(coord, classStart(from), classStart(to) - 1, sum(counts, from, to), sum(s.histogram.expected, from, to));
+  const freq = (coord, counts) => ({ from, to }) => {
+    const part = counts.slice(from, to);
+    return P.freq(coord, from, to - 1, Math.min(...part), Math.max(...part), s.N / s.p);
+  };
+  const bit = (coord, list) => ({ from }) => P.bit(coord, list[from]);
+  const L = s.bitLength;
+  // the heatmaps have the bits of x in the first L columns, those of y after
+  const cell = (values, describe) => ({ row, col }) => (col < L ? describe(row, 'x', col, values[row][col]) : describe(row, 'y', col - L, values[row][col]));
+  const a = s.avalanche;
+  return {
+    histX: hist('x', s.histogram.x),
+    histY: hist('y', s.histogram.y),
+    freqX: freq('x', s.freqX),
+    freqY: freq('y', s.freqY),
+    bitsX: bit('x', s.bits.x),
+    bitsY: bit('y', s.bits.y),
+    distances: ({ from }) => P.distance(from, a.distances[from], a.expectedDistances[from]),
+    correlation: cell(s.correlation.bits.values, P.correlation),
+    sac: cell(a.exact.z, P.sac),
+  };
+}
+
 // --- Drawing many charts without freezing the page ---------------------------
 
 const frameJobs = [];
@@ -293,7 +325,7 @@ function scheduleFrameJob(job) {
   }
 }
 
-return { ANALYSES, SECTIONS, tocEntries, VIZ_PRIMES, LIST_LIMIT, K_MAX, K_INPUT_MAX_LENGTH, parseK, testStatus, uniformityBlock, avalancheBlocks, factorize, formatFactors, curveFacts, pooledSize, basePointOptions, parseBase, bitsBeyond, worstBit, binLabels, correlationRange, frequencyRows, FREQUENCY_TABLE_MAX_P, chartData, scheduleFrameJob };
+return { ANALYSES, SECTIONS, tocEntries, VIZ_PRIMES, LIST_LIMIT, K_MAX, K_INPUT_MAX_LENGTH, parseK, testStatus, uniformityBlock, avalancheBlocks, factorize, formatFactors, curveFacts, pooledSize, basePointOptions, parseBase, bitsBeyond, worstBit, binLabels, correlationRange, frequencyRows, FREQUENCY_TABLE_MAX_P, chartData, chartTips, scheduleFrameJob };
 })();
 
 var texts$ = (function () {
@@ -319,6 +351,14 @@ function formatters(decimal, na) {
     decimal,
     num: (v, digits = 3) => (missing(v) ? na : local((Math.abs(v) < 0.5 * 10 ** -digits ? 0 : v).toFixed(digits))),
     pval: (v) => (missing(v) ? na : v === 0 ? '0' : v < 0.001 ? local(v.toExponential(1)) : local(v.toFixed(3))),
+    // an expected count: a decimal when it is large, two significant digits when it is small
+    approx: (v) => {
+      if (missing(v)) return na;
+      if (v === 0) return '0';
+      if (v >= 100) return local(v.toFixed(0));
+      if (v >= 1) return local(v.toFixed(1));
+      return v >= 1e-4 ? local(String(Number(v.toPrecision(2)))) : `< ${local('0.0001')}`;
+    },
     pct: (v) => (missing(v) ? na : `${local((100 * v).toFixed(1))}%`),
     short: (v) => (missing(v) ? na : local(String(v))),
   };
@@ -394,6 +434,7 @@ const it = {
     index: 'Indice',
     indexTitle: 'Indice dell’homework',
     close: 'Chiudi',
+    backToTop: 'Torna su',
     computing: 'Calcolo in corso...',
     language: 'Lingua',
     error: (m) => `Errore: ${m}`,
@@ -576,6 +617,23 @@ const it = {
         : `G = ${fmtPoint(s.G)}, di ordine n = ${s.n}: N = ${s.N} osservazioni, una per ogni k da 1 a ${s.n - 1}.`,
     ordersLine: (orders) => `Ordini dei punti base: ${orders.map(([o, c]) => `${c} di ordine ${o}`).join(', ')}.`,
     smallSample: (N) => `Con N = ${N} le analisi che seguono hanno pochissima potenza statistica: i numeri sono riportati per completezza, ognuno con la sua avvertenza.`,
+    // the label over a chart, for the bar or the cell under the pointer
+    tips: {
+      hist: (coord, from, to, count, expected) =>
+        `${from === to ? `${coord} = ${from}` : `${coord} da ${from} a ${to}`}: ${count} ${count === 1 ? 'osservazione' : 'osservazioni'} (attese ${IT.approx(expected)})`,
+      freq: (coord, from, to, min, max, expected) => {
+        const times = (n) => (n === 0 ? 'mai' : n === 1 ? 'una volta' : `${n} volte`);
+        const what = from === to ? `${coord} = ${from}: ${times(max)}` : `${coord} da ${from} a ${to}: ${min === max ? times(max) : `da ${min} a ${max} volte`} ciascuno`;
+        return `${what} (attese ${IT.approx(expected)})`;
+      },
+      bit: (coord, b) =>
+        b.fraction === null
+          ? `bit ${b.bit} di ${coord}: nessun valore osservato`
+          : `bit ${b.bit} di ${coord}: quota di 1 = ${IT.num(b.fraction, 3)} su ${b.distinct} valori distinti (attesa ${IT.num(b.expected, 3)})${b.z === null ? '' : `, z = ${IT.num(b.z, 2)}`}`,
+      distance: (d, count, expected) => `${d} ${d === 1 ? 'bit cambiato' : 'bit cambiati'}: ${count} ${count === 1 ? 'coppia' : 'coppie'} (attese ${IT.approx(expected)})`,
+      correlation: (kBit, coord, bit, phi) => `bit ${kBit} di k, bit ${bit} di ${coord}: ${phi === null ? 'φ non definito (bit costante)' : `φ = ${IT.num(phi, 3)}`}`,
+      sac: (kBit, coord, bit, z) => `bit ${kBit} di k invertito, bit ${bit} di ${coord}: ${z === null ? 'non definito' : `z = ${IT.num(z, 2)}`}`,
+    },
     distribution: {
       intro: 'Quante volte cade ciascun valore di x e di y. Sulle curve piccole una barra per valore, su quelle grandi una barra per classe di valori consecutivi; la linea tratteggiata è ciò che darebbero valori uniformi in [0, p).',
       chartX: 'Distribuzione di x',
@@ -592,7 +650,7 @@ const it = {
       },
     },
     frequency: {
-      intro: 'La frequenza di ogni singolo valore di x e di y, poi un riepilogo: quanti valori compaiono 0, 1, 2, ... volte.',
+      intro: 'La frequenza di ogni singolo valore di x e di y: nel grafico per tutte le curve, e in una tabella per quelle piccole.',
       chartX: 'Frequenza per valore di x (tratteggio: N/p)',
       chartY: 'Frequenza per valore di y (tratteggio: N/p)',
       tableTitle: 'Frequenze per valore',
@@ -601,18 +659,6 @@ const it = {
       colY: 'volte come y',
       tableNote: (p) => `Tutti i ${p} valori di [0, p).`,
       bigNote: (p) => `Con p = ${p} una tabella di ${p} righe non sarebbe leggibile: il grafico mostra ogni valore, e dove una colonna di pixel raccoglie più valori ne mostra il massimo.`,
-      summaryTitle: 'Riepilogo delle molteplicità',
-      summary: (coord, table) => {
-        const parts = table
-          .map((count, times) => {
-            if (!count) return null;
-            const what = count === 1 ? '1 valore' : `${count} valori`;
-            const how = times === 0 ? 'mai' : times === 1 ? 'una volta' : `${times} volte`;
-            return `${what} ${how}`;
-          })
-          .filter(Boolean);
-        return `${coord}: ${parts.join(', ')}.`;
-      },
       explain: (s) => {
         const ux = s.uniformity.x;
         const uy = s.uniformity.y;
@@ -941,6 +987,7 @@ const en = {
     index: 'Contents',
     indexTitle: 'Homework contents',
     close: 'Close',
+    backToTop: 'Back to top',
     computing: 'Computing...',
     language: 'Language',
     error: (m) => `Error: ${m}`,
@@ -1121,6 +1168,23 @@ const en = {
         : `G = ${fmtPoint(s.G)}, of order n = ${s.n}: N = ${s.N} observations, one for each k from 1 to ${s.n - 1}.`,
     ordersLine: (orders) => `Orders of the base points: ${orders.map(([o, c]) => `${c} of order ${o}`).join(', ')}.`,
     smallSample: (N) => `With N = ${N} the analyses below have very little statistical power: the numbers are reported for completeness, each with its caveat.`,
+    // the label over a chart, for the bar or the cell under the pointer
+    tips: {
+      hist: (coord, from, to, count, expected) =>
+        `${from === to ? `${coord} = ${from}` : `${coord} from ${from} to ${to}`}: ${count} ${count === 1 ? 'observation' : 'observations'} (expected ${EN.approx(expected)})`,
+      freq: (coord, from, to, min, max, expected) => {
+        const times = (n) => (n === 0 ? 'never' : n === 1 ? 'once' : n === 2 ? 'twice' : `${n} times`);
+        const what = from === to ? `${coord} = ${from}: ${times(max)}` : `${coord} from ${from} to ${to}: ${min === max ? times(max) : `from ${min} to ${max} times`} each`;
+        return `${what} (expected ${EN.approx(expected)})`;
+      },
+      bit: (coord, b) =>
+        b.fraction === null
+          ? `bit ${b.bit} of ${coord}: no value observed`
+          : `bit ${b.bit} of ${coord}: share of ones = ${EN.num(b.fraction, 3)} over ${b.distinct} distinct values (expected ${EN.num(b.expected, 3)})${b.z === null ? '' : `, z = ${EN.num(b.z, 2)}`}`,
+      distance: (d, count, expected) => `${d} ${d === 1 ? 'bit changed' : 'bits changed'}: ${count} ${count === 1 ? 'pair' : 'pairs'} (expected ${EN.approx(expected)})`,
+      correlation: (kBit, coord, bit, phi) => `bit ${kBit} of k, bit ${bit} of ${coord}: ${phi === null ? 'φ not defined (constant bit)' : `φ = ${EN.num(phi, 3)}`}`,
+      sac: (kBit, coord, bit, z) => `bit ${kBit} of k flipped, bit ${bit} of ${coord}: ${z === null ? 'not defined' : `z = ${EN.num(z, 2)}`}`,
+    },
     distribution: {
       intro: 'How often each value of x and of y occurs. On small curves one bar per value, on large ones one bar per class of consecutive values; the dashed line is what uniform values in [0, p) would give.',
       chartX: 'Distribution of x',
@@ -1137,7 +1201,7 @@ const en = {
       },
     },
     frequency: {
-      intro: 'The frequency of each individual value of x and of y, then a summary: how many values occur 0, 1, 2, ... times.',
+      intro: 'The frequency of each individual value of x and of y: in the chart for every curve, and in a table for the small ones.',
       chartX: 'Frequency per value of x (dashed: N/p)',
       chartY: 'Frequency per value of y (dashed: N/p)',
       tableTitle: 'Frequencies per value',
@@ -1146,18 +1210,6 @@ const en = {
       colY: 'times as y',
       tableNote: (p) => `All ${p} values of [0, p).`,
       bigNote: (p) => `With p = ${p} a table of ${p} rows would be unreadable: the chart shows every value, and where a pixel column gathers several values it shows their maximum.`,
-      summaryTitle: 'Multiplicity summary',
-      summary: (coord, table) => {
-        const parts = table
-          .map((count, times) => {
-            if (!count) return null;
-            const what = count === 1 ? '1 value' : `${count} values`;
-            const how = times === 0 ? 'never' : times === 1 ? 'once' : times === 2 ? 'twice' : `${times} times`;
-            return `${what} ${how}`;
-          })
-          .filter(Boolean);
-        return `${coord}: ${parts.join(', ')}.`;
-      },
       explain: (s) => {
         const ux = s.uniformity.x;
         const uy = s.uniformity.y;
@@ -1597,7 +1649,7 @@ const pending = () => h('p', { class: 'note pending', role: 'status', text: text
 // layout: reading clientWidth right after another chart has been resized
 // would make the browser lay out the whole page again, once per chart. The
 // height is set at once, the drawing happens a few milliseconds per frame.
-const charts = new Map(); // canvas -> { draw, data, width }
+const charts = new Map(); // canvas -> { draw, data, width, detach }
 const resizer = new ResizeObserver((entries) => {
   for (const entry of entries) {
     const canvas = entry.target;
@@ -1612,17 +1664,22 @@ const resizer = new ResizeObserver((entries) => {
   }
 });
 
-function figure(caption, draw, data, wide = false) {
+function figure(caption, draw, data, wide = false, tip = null) {
   const canvas = h('canvas', { class: 'chart', role: 'img', 'aria-label': caption });
-  charts.set(canvas, { draw, data, width: -1 });
+  const fig = h('figure', { class: wide ? 'figure wide' : 'figure' }, canvas, h('figcaption', { text: caption }));
+  // the label with the values of the bar or the cell under the pointer
+  const detach = tip ? hw.attachChartTooltip(canvas, { draw, data, describe: tip }) : null;
+  charts.set(canvas, { draw, data, width: -1, detach });
   resizer.observe(canvas);
-  return h('figure', { class: wide ? 'figure wide' : 'figure' }, canvas, h('figcaption', { text: caption }));
+  return fig;
 }
 
-/** Replaces the content of a region, releasing the charts it contained. */
+/** Replaces the content of a region, releasing the charts it contained and their labels. */
 function fill(region, ...nodes) {
   for (const canvas of region.querySelectorAll('canvas.chart')) {
     resizer.unobserve(canvas);
+    const chart = charts.get(canvas);
+    if (chart && chart.detach) chart.detach();
     charts.delete(canvas);
   }
   region.replaceChildren(...nodes.flat(Infinity).filter((n) => n !== null && n !== undefined && n !== false));
@@ -2043,18 +2100,19 @@ function analyses(prefix, result) {
     return view.ANALYSES.map((key, i) => [titles[i], result.error ? h('p', { class: 'note', text: text.ui.error(result.error) }) : pending()]);
   }
   const data = view.chartData(s, { kBits: T.correlation.kBits, flipBits: T.avalanche.kBits, decimal: F.decimal });
+  const tips = view.chartTips(s, T.tips);
   const C = T.correlation;
   const A = T.avalanche;
   const valueRows = ['pearsonKX', 'pearsonKY', 'spearmanKX', 'spearmanKY'];
   return [
     titles[0],
     h('p', { text: T.distribution.intro }),
-    h('div', { class: 'charts' }, figure(T.distribution.chartX, hw.drawBarChart, data.histX), figure(T.distribution.chartY, hw.drawBarChart, data.histY)),
+    h('div', { class: 'charts' }, figure(T.distribution.chartX, hw.drawBarChart, data.histX, false, tips.histX), figure(T.distribution.chartY, hw.drawBarChart, data.histY, false, tips.histY)),
     paras(T.distribution.explain(s)),
 
     titles[1],
     h('p', { text: T.frequency.intro }),
-    h('div', { class: 'charts' }, figure(T.frequency.chartX, hw.drawBarChart, data.freqX), figure(T.frequency.chartY, hw.drawBarChart, data.freqY)),
+    h('div', { class: 'charts' }, figure(T.frequency.chartX, hw.drawBarChart, data.freqX, false, tips.freqX), figure(T.frequency.chartY, hw.drawBarChart, data.freqY, false, tips.freqY)),
     s.p <= view.FREQUENCY_TABLE_MAX_P
       ? [
         h('p', { class: 'table-title' }, h('strong', { text: T.frequency.tableTitle }), ' ', h('span', { class: 'note', text: T.frequency.tableNote(s.p) })),
@@ -2070,12 +2128,11 @@ function analyses(prefix, result) {
         ),
       ]
       : h('p', { class: 'note', text: T.frequency.bigNote(s.p) }),
-    h('p', null, h('strong', { text: T.frequency.summaryTitle }), h('br'), T.frequency.summary('x', s.multiplicityX), h('br'), T.frequency.summary('y', s.multiplicityY)),
     paras(T.frequency.explain(s)),
 
     titles[2],
     h('p', { text: T.bits.intro }),
-    h('div', { class: 'charts' }, figure(T.bits.chartX, hw.drawBarChart, data.bitsX), figure(T.bits.chartY, hw.drawBarChart, data.bitsY)),
+    h('div', { class: 'charts' }, figure(T.bits.chartX, hw.drawBarChart, data.bitsX, false, tips.bitsX), figure(T.bits.chartY, hw.drawBarChart, data.bitsY, false, tips.bitsY)),
     paras(T.bits.explain(s)),
 
     titles[3],
@@ -2112,15 +2169,15 @@ function analyses(prefix, result) {
       ),
     ),
     valueRows.some((key) => s.correlation[key] === null) ? h('p', { class: 'note', text: C.undefinedWhy }) : null,
-    figure(C.heatmapTitle(data.correlation.range), hw.drawHeatmap, data.correlation, true),
+    figure(C.heatmapTitle(data.correlation.range), hw.drawHeatmap, data.correlation, true, tips.correlation),
     paras(C.explain(s)),
 
     titles[5],
     h('p', { text: A.intro }),
     s.avalanche.measurements > 0
       ? [
-        figure(A.chartTitle, hw.drawBarChart, data.distances),
-        figure(A.heatmapTitle(), hw.drawHeatmap, data.sac, true),
+        figure(A.chartTitle, hw.drawBarChart, data.distances, false, tips.distances),
+        figure(A.heatmapTitle(), hw.drawHeatmap, data.sac, true, tips.sac),
         h('div', { class: 'uniformity' }, view.avalancheBlocks(s, A, T.uniformity).map((block) => h('section', { class: 'coord' }, testResult(block)))),
       ]
       : null,
@@ -2298,6 +2355,16 @@ function goTo(id) {
   target.addEventListener('animationend', () => target.classList.remove('flash'), { once: true });
 }
 
+// In cima alla pagina, con il focus sul titolo: chi usa la tastiera riparte
+// da li', non dal pulsante in fondo
+function backToTop() {
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
+  document.getElementById('page-title').focus({ preventScroll: true });
+}
+
+const toTopButton = () => h('p', { class: 'to-top' }, h('button', { type: 'button', class: 'btn alt', text: text.ui.backToTop, onclick: backToTop }));
+
 function renderChrome() {
   const t = text;
   document.documentElement.lang = state.lang;
@@ -2321,7 +2388,7 @@ function render() {
   text = HW1_TEXTS[state.lang];
   renderChrome();
   const app = document.getElementById('app');
-  fill(app, assignmentSection(), taskSection(), guruSection(), statsSection(), discussionSection());
+  fill(app, assignmentSection(), taskSection(), guruSection(), statsSection(), discussionSection(), toTopButton());
   syncTaskControls();
   updateTask();
   updateStats('task');

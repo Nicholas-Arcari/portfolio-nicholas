@@ -45,8 +45,9 @@ COME SI USA
   Il programma stampa ogni passaggio della pipeline (parole, entropia,
   checksum, seed, chiave master, percorso, chiave privata, chiave pubblica,
   Keccak-256, indirizzo ed EIP-55), il risultato dei 45 vettori di test
-  ufficiali e una sintesi dei test statistici. Le opzioni sono controllate
-  in modo stretto: qualunque valore non valido viene rifiutato.
+  ufficiali e i 28 test statistici, con ipotesi nulla e p-value. Le opzioni
+  sono controllate in modo stretto: qualunque valore non valido viene
+  rifiutato.
   npm start equivale a node homework2.js.
 
   Da un altro script Node: const hw = require('./homework2.js'), poi per
@@ -106,9 +107,10 @@ HOW TO USE IT
 
   The program prints every step of the pipeline (words, entropy, checksum,
   seed, master key, path, private key, public key, Keccak-256, address and
-  EIP-55), the result of the 45 official test vectors and a summary of the
-  statistical tests. Options are checked strictly: any invalid value is
-  refused. npm start is the same as node homework2.js.
+  EIP-55), the result of the 45 official test vectors and the 28
+  statistical tests, with null hypothesis and p-value. Options are checked
+  strictly: any invalid value is refused. npm start is the same as
+  node homework2.js.
 
   From another Node script: const hw = require('./homework2.js'), then for
   example hw.walletPipeline({ path: "m/44'/60'/0'/0/1" }).checksum.address.
