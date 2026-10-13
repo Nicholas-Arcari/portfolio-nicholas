@@ -1583,16 +1583,12 @@ const palette = () => (darkQuery.matches ? PALETTES.dark : PALETTES.light);
 // Stato e preferenze
 // ---------------------------------------------------------------------------
 
+// Si apre sempre in inglese, come la pagina sul sito; IT / EN cambia lingua
+// finche' la pagina resta aperta, senza salvare la scelta. Il sito, aprendo
+// la versione online, passa nell'indirizzo la lingua che si stava leggendo.
 function initialLanguage() {
   const fromUrl = new URLSearchParams(window.location.search).get('lang');
-  if (LANGUAGES.includes(fromUrl)) return fromUrl;
-  try {
-    const saved = window.localStorage.getItem('hw1-lang');
-    if (LANGUAGES.includes(saved)) return saved;
-  } catch {
-    // file:// o navigazione privata: nessuna preferenza salvata
-  }
-  return 'it';
+  return LANGUAGES.includes(fromUrl) ? fromUrl : 'en';
 }
 
 const state = {
@@ -2399,12 +2395,7 @@ function boot() {
   for (const button of document.querySelectorAll('[data-lang]')) {
     button.addEventListener('click', () => {
       if (button.dataset.lang === state.lang) return;
-      state.lang = LANGUAGES.includes(button.dataset.lang) ? button.dataset.lang : 'it';
-      try {
-        window.localStorage.setItem('hw1-lang', state.lang);
-      } catch {
-        // la scelta vale solo per questa visita
-      }
+      state.lang = LANGUAGES.includes(button.dataset.lang) ? button.dataset.lang : 'en';
       render();
     });
   }

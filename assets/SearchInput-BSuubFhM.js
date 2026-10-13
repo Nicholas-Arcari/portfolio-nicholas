@@ -1,1 +1,0 @@
-import{j as p}from"./react-BRWA4vnR.js";const e=100,r=({value:a,onChange:s,placeholder:t,style:o})=>p.jsx("input",{type:"text",value:a,onChange:n=>s(n.target.value.slice(0,e)),placeholder:t,"aria-label":t,maxLength:e,autoComplete:"off",spellCheck:!1,style:o});export{r as S};
