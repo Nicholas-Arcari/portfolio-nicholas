@@ -771,11 +771,6 @@ const it = {
     stale: 'Valori dell’ultimo input valido: i campi in 1.1 contengono un errore.',
   },
   input: {
-    warningTitle: 'Mai la frase di un wallet vero',
-    warning: [
-      'Questa pagina serve a studiare la pipeline, non a custodire fondi. Non scrivere qui, né in nessun’altra pagina web, la frase di un wallet vero: chi la conosce controlla ogni indirizzo che ne deriva, per sempre.',
-      'Tutto è calcolato nel browser: la pagina non invia nulla in rete e non salva la frase. Il controllo ortografico del campo è disattivato, perché alcuni browser mandano il testo da correggere ai propri server.',
-    ],
     intro: 'La frase predefinita è quella pubblica di prova di Hardhat e Foundry: i suoi account sono noti a tutti, e proprio per questo serve ai confronti. Si può generare una frase casuale, aggiungere una passphrase e scegliere il percorso di un wallet.',
     mnemonicLabel: 'Frase mnemonica (BIP-39, lista inglese)',
     useTest: 'Frase di prova',
@@ -1008,7 +1003,6 @@ const it = {
     cols: { account: 'Account', path: 'Percorso', address: 'Indirizzo', check: 'Calcolato qui' },
     accountName: (i) => `Account ${i + 1}`,
     verified: 'Verifica del 13 ottobre 2026: MetaMask 13.50.0 mostra 0xf39Fd...92266, 0x70997...c79C8 e 0x3C44C...293BC; Rabby 0.94.11 elenca per esteso 0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266, 0x70997970c51812dc3a010c7d01b50e0d17dc79c8 e 0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc. Sono gli indirizzi della tabella.',
-    warning: 'La frase di prova è nota a tutti: chiunque può spostare i fondi dei suoi indirizzi, e dei programmi automatici lo fanno in pochi secondi su ogni rete in cui hanno valore. Non mandarci mai fondi veri, nemmeno per prova, e non importare mai una frase vera in un profilo di prova o in una pagina web.',
   },
   categories: {
     intro: 'La consegna chiede di distinguere cinque cose che nella pipeline convivono, a volte nella stessa funzione. Il criterio è lo scopo, non l’algoritmo: SHA-256 è una funzione di hash, ma in BIP-39 fa da checksum; Keccak-256 dà l’indirizzo e, in EIP-55, anche il checksum.',
@@ -1327,7 +1321,7 @@ const it = {
   },
   download: {
     title: 'Scarica il codice',
-    text: 'Il programma completo in HTML, CSS e JavaScript, senza dipendenze, in italiano e in inglese: si apre con un doppio clic su index.html, anche offline. Con node homework2.js stampa nel terminale la pipeline, i vettori di test e le statistiche; --mnemonic, --passphrase, --index e --path cambiano l’input.',
+    text: 'Il programma completo in HTML, CSS e JavaScript, senza dipendenze, in italiano e in inglese: dopo aver estratto l’archivio si apre con un doppio clic su index.html, anche offline. Con node homework2.js stampa nel terminale la pipeline, i vettori di test e le statistiche; --mnemonic, --passphrase, --index e --path cambiano l’input.',
     contents: 'Contenuto: index.html, style.css, homework2.js (pipeline, verifiche e statistiche), app.js (interfaccia e testi), README.txt.',
     zip: 'Scarica homework2.zip',
     online: 'Apri il programma online',
@@ -1441,11 +1435,6 @@ const en = {
     stale: 'Values of the last valid input: the fields in 1.1 contain an error.',
   },
   input: {
-    warningTitle: 'Never the sentence of a real wallet',
-    warning: [
-      'This page is for studying the pipeline, not for holding funds. Never type here, or on any other web page, the sentence of a real wallet: whoever knows it controls every address derived from it, forever.',
-      'Everything is computed in the browser: the page sends nothing over the network and does not store the sentence. Spell checking is off in the field, because some browsers send the text to be corrected to their own servers.',
-    ],
     intro: 'The default sentence is the public test sentence of Hardhat and Foundry: its accounts are known to everybody, which is exactly why it is useful for comparisons. A random sentence can be generated, a passphrase added and the path of a wallet chosen.',
     mnemonicLabel: 'Mnemonic sentence (BIP-39, English list)',
     useTest: 'Test sentence',
@@ -1678,7 +1667,6 @@ const en = {
     cols: { account: 'Account', path: 'Path', address: 'Address', check: 'Computed here' },
     accountName: (i) => `Account ${i + 1}`,
     verified: 'Checked on 13 October 2026: MetaMask 13.50.0 shows 0xf39Fd...92266, 0x70997...c79C8 and 0x3C44C...293BC; Rabby 0.94.11 lists in full 0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266, 0x70997970c51812dc3a010c7d01b50e0d17dc79c8 and 0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc. They are the addresses of the table.',
-    warning: 'The test sentence is known to everybody: anyone can move the funds of its addresses, and automated programs do it within seconds on every network where they have value. Never send real funds to it, not even as a test, and never import a real sentence into a test profile or a web page.',
   },
   categories: {
     intro: 'The assignment asks to distinguish five things that live together in the pipeline, sometimes in the same function. The criterion is the purpose, not the algorithm: SHA-256 is a hash function, but in BIP-39 it acts as a checksum; Keccak-256 gives the address and, in EIP-55, the checksum too.',
@@ -1956,7 +1944,7 @@ const en = {
   },
   download: {
     title: 'Download the code',
-    text: 'The complete program in HTML, CSS and JavaScript, with no dependencies, in Italian and English: it opens with a double click on index.html, even offline. With node homework2.js it prints the pipeline, the test vectors and the statistics in a terminal; --mnemonic, --passphrase, --index and --path change the input.',
+    text: 'The complete program in HTML, CSS and JavaScript, with no dependencies, in Italian and English: once the archive is extracted, it opens with a double click on index.html, even offline. With node homework2.js it prints the pipeline, the test vectors and the statistics in a terminal; --mnemonic, --passphrase, --index and --path change the input.',
     contents: 'Contents: index.html, style.css, homework2.js (pipeline, checks and statistics), app.js (interface and texts), README.txt.',
     zip: 'Download homework2.zip',
     online: 'Open the program online',
@@ -2254,7 +2242,6 @@ function pipelineSection() {
 
     title('hw2-wallets', 1, S.wallets),
     h('p', { text: text.wallets.intro }),
-    h('p', { class: 'warning', role: 'note', text: text.wallets.warning }),
     h('ol', { class: 'steps' }, text.wallets.steps.map((step) => h('li', { text: step }))),
     regions.wallets,
   );
@@ -2327,7 +2314,6 @@ function inputBlock() {
   controls.pathLabel = h('label', null, h('span', { text: I.pathLabel }), controls.path);
 
   return [
-    h('div', { class: 'warning', role: 'note' }, h('strong', { text: I.warningTitle }), paras(I.warning)),
     h('p', { text: I.intro }),
     h(
       'div',
