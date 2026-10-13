@@ -31,8 +31,9 @@ COME SI USA
 
   Nel browser: estrarre prima tutto l'archivio in una cartella, poi aprire
   index.html da lì (aperto dentro il gestore di archivi resta vuoto, perché
-  vengono estratti solo i file cliccati). La lingua si cambia con IT / EN in alto,
-  e il pulsante Indice porta a qualunque sezione della consegna.
+  vengono estratti solo i file cliccati). La pagina si apre in inglese:
+  IT / EN in alto cambia lingua, e il pulsante Contents (Indice, in
+  italiano) porta a qualunque sezione della consegna.
 
   Da terminale, con Node.js 14 o successivo:
 
@@ -60,11 +61,11 @@ COME SI USA
 
 NOTE
 
-  Nessuna dipendenza, nessuna connessione di rete, nessun dato salvato
-  tranne la lingua scelta. I test statistici usano ingressi casuali da un
-  generatore a seme fisso, e la pagina li calcola a fette di pochi
-  millisecondi, senza bloccarsi. homework2.js e app.js sono generati dagli
-  stessi sorgenti della pagina online, quindi i numeri e i testi coincidono:
+  Nessuna dipendenza, nessuna connessione di rete, nessun dato salvato. I
+  test statistici usano ingressi casuali da un generatore a seme fisso, e
+  la pagina li calcola a fette di pochi millisecondi, senza bloccarsi.
+  homework2.js e app.js sono generati dagli stessi sorgenti della pagina
+  online, quindi i numeri e i testi coincidono:
   https://nicholas-arcari.github.io/portfolio-nicholas/#/statistics/homework-2
 
 
@@ -96,8 +97,9 @@ HOW TO USE IT
 
   In a browser: first extract the whole archive into a folder, then open
   index.html from there (opened inside the archive manager it stays empty,
-  because only the clicked file gets extracted). IT / EN at the top switches language, and
-  the Contents button jumps to any section of the assignment.
+  because only the clicked file gets extracted). The page opens in English:
+  IT / EN at the top switches language, and the Contents button jumps to
+  any section of the assignment.
 
   From a terminal, with Node.js 14 or later:
 
@@ -124,9 +126,9 @@ HOW TO USE IT
 
 NOTES
 
-  No dependencies, no network connection, nothing stored except the chosen
-  language. The statistical tests use random inputs from a fixed-seed
-  generator, and the page computes them in slices of a few milliseconds,
-  without freezing. homework2.js and app.js are generated from the same
-  sources as the online page, so numbers and texts match:
+  No dependencies, no network connection, nothing stored. The statistical
+  tests use random inputs from a fixed-seed generator, and the page
+  computes them in slices of a few milliseconds, without freezing.
+  homework2.js and app.js are generated from the same sources as the online
+  page, so numbers and texts match:
   https://nicholas-arcari.github.io/portfolio-nicholas/#/statistics/homework-2

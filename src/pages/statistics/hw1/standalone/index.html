@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="it">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
   <meta name="author" content="Nicholas Arcari">
-  <meta name="description" content="Homework #1 di Statistics: dalla chiave privata alla chiave pubblica con la moltiplicazione scalare su curva ellittica, come in Ethereum.">
+  <meta name="description" content="Homework #1 of Statistics: from a private key to a public key with elliptic-curve scalar multiplication, as in Ethereum.">
   <title>Homework #1 - Statistics</title>
   <link rel="stylesheet" href="style.css">
   <style>#not-extracted { animation: show-late 1s; } @keyframes show-late { from, to { visibility: hidden; } }</style>
@@ -13,42 +13,43 @@
 <body>
   <!--
     Homework #1 - Statistics, Nicholas Arcari.
-    La pagina e' uno scheletro: i testi (italiano e inglese) e i calcoli
-    arrivano da app.js e homework1.js, due script classici, cosi' il file si
-    apre anche con un doppio clic, senza server e senza connessione.
+    La pagina e' uno scheletro, in inglese come la lingua con cui si apre:
+    i testi (inglese e italiano) e i calcoli arrivano da app.js e
+    homework1.js, due script classici, cosi' il file si apre anche con un
+    doppio clic, senza server e senza connessione.
   -->
   <header class="page-header">
     <div class="wrap">
-      <p class="eyebrow" id="course">Statistics, laurea magistrale in Cybersecurity, Sapienza Università di Roma</p>
+      <p class="eyebrow" id="course">Statistics, MSc in Cybersecurity, Sapienza University of Rome</p>
       <div class="title-row">
         <h1 id="page-title" tabindex="-1">Homework #1</h1>
-        <button type="button" id="open-index" class="btn alt" aria-haspopup="dialog">Indice</button>
-        <div class="lang" id="language" role="group" aria-label="Lingua">
-          <button type="button" data-lang="it" aria-pressed="true">IT</button>
-          <button type="button" data-lang="en" aria-pressed="false">EN</button>
+        <button type="button" id="open-index" class="btn alt" aria-haspopup="dialog">Contents</button>
+        <div class="lang" id="language" role="group" aria-label="Language">
+          <button type="button" data-lang="it" aria-pressed="false">IT</button>
+          <button type="button" data-lang="en" aria-pressed="true">EN</button>
         </div>
       </div>
-      <p class="subtitle" id="subtitle">Dalla chiave privata alla chiave pubblica: moltiplicazione scalare su curva ellittica, come in Ethereum.</p>
+      <p class="subtitle" id="subtitle">From a private key to a public key: elliptic-curve scalar multiplication, as in Ethereum.</p>
       <p class="author">Nicholas Arcari</p>
     </div>
   </header>
 
   <main id="app" class="wrap">
     <noscript>
-      <p class="note">Questo programma ha bisogno di JavaScript. / This program needs JavaScript.</p>
+      <p class="note">This program needs JavaScript. / Questo programma ha bisogno di JavaScript.</p>
     </noscript>
     <!-- Resta visibile solo se app.js non parte: di solito perché la pagina è stata aperta dentro il gestore di archivi, che estrae soltanto index.html. -->
     <div id="not-extracted" style="margin: 1.5rem 0; padding: 0.8rem 1rem; border: 2px solid #c62828; border-radius: 6px; max-width: 46rem;">
-      <p style="margin: 0 0 0.6rem;"><strong>Estrai prima tutto l’archivio.</strong> Aperta da sola, dentro il gestore di archivi, questa pagina resta vuota: le servono i file accanto a lei (app.js, homework1.js, style.css). Estrai homework1.zip in una cartella e apri index.html da lì.</p>
-      <p style="margin: 0;"><strong>Extract the whole archive first.</strong> Opened on its own, inside the archive manager, this page stays empty: it needs the files next to it (app.js, homework1.js, style.css). Extract homework1.zip into a folder and open index.html from there.</p>
+      <p style="margin: 0 0 0.6rem;"><strong>Extract the whole archive first.</strong> Opened on its own, inside the archive manager, this page stays empty: it needs the files next to it (app.js, homework1.js, style.css). Extract homework1.zip into a folder and open index.html from there.</p>
+      <p style="margin: 0;"><strong>Estrai prima tutto l’archivio.</strong> Aperta da sola, dentro il gestore di archivi, questa pagina resta vuota: le servono i file accanto a lei (app.js, homework1.js, style.css). Estrai homework1.zip in una cartella e apri index.html da lì.</p>
     </div>
   </main>
 
   <dialog id="index-dialog" class="index" aria-labelledby="index-title">
     <div class="index-box">
       <div class="index-head">
-        <h2 id="index-title">Indice dell’homework</h2>
-        <button type="button" class="index-close" aria-label="Chiudi">&times;</button>
+        <h2 id="index-title">Homework contents</h2>
+        <button type="button" class="index-close" aria-label="Close">&times;</button>
       </div>
       <nav class="index-body" aria-labelledby="index-title">
         <ul id="index-list"></ul>
@@ -60,7 +61,7 @@
     <div class="wrap">
       <p>
         Nicholas Arcari ·
-        <span id="online-label">Versione online</span>:
+        <span id="online-label">Online version</span>:
         <a href="https://nicholas-arcari.github.io/portfolio-nicholas/#/statistics/homework-1">nicholas-arcari.github.io/portfolio-nicholas</a>
       </p>
     </div>
