@@ -1040,6 +1040,16 @@ const MNEMONIC_LENGTHS = Object.freeze([12, 15, 18, 21, 24]);
 /** A public test mnemonic (Hardhat, Foundry): every development tool knows its accounts. Never use it for real funds. */
 const TEST_MNEMONIC = 'test test test test test test test test test test test junk';
 
+/**
+ * The sentence the page and the command line start from, drawn once at random with a
+ * cryptographic generator for this homework, so that every reader sees the same values.
+ * Its seed, keys and addresses were checked against ethers 6.13.5. It belongs to no wallet.
+ */
+const DEFAULT_MNEMONIC = 'myself place force amazing chuckle decide choose fold master cloth card coast';
+
+/** The address of DEFAULT_MNEMONIC on m/44'/60'/0'/0/0, as ethers 6.13.5 computes it. */
+const DEFAULT_ADDRESS = '0xf92c424EF6fC99E0253289c51298628cf4cd7A86';
+
 const WORD_INDEX = new Map(WORDLIST.map((w, i) => [w, i]));
 let wordlistChecked = false;
 
@@ -1343,7 +1353,7 @@ function keysFromSeed(seed, path) {
  * intermediate value. If the sentence is not valid the pipeline stops there,
  * as a wallet would.
  */
-function walletPipeline({ mnemonic = TEST_MNEMONIC, passphrase = '', path = DEFAULT_PATH } = {}) {
+function walletPipeline({ mnemonic = DEFAULT_MNEMONIC, passphrase = '', path = DEFAULT_PATH } = {}) {
   const analysis = analyzeMnemonic(mnemonic);
   if (!analysis.valid) return { ok: false, stage: 'mnemonic', analysis };
   try {
@@ -1438,7 +1448,7 @@ function verifyVectors() {
   for (const account of TEST_ACCOUNTS) {
     const path = pathFor('bip44', account.index);
     let pipeline = null;
-    const run = () => pipeline || (pipeline = walletPipeline({ path }));
+    const run = () => pipeline || (pipeline = walletPipeline({ mnemonic: TEST_MNEMONIC, path }));
     add('ethereum', 'address', path, `test mnemonic, ${path}`, account.address, () => run().checksum.address);
     add('ethereum', 'privateKey', path, `test mnemonic, ${path}, private key`, account.privateKey, () => toHex(run().privateKey));
   }
@@ -2508,7 +2518,7 @@ function runCli(argv, print = console.log) {
     print('       Educational code: never type a real seed phrase, here or anywhere else.');
     return 1;
   };
-  const options = { mnemonic: TEST_MNEMONIC, passphrase: '', path: DEFAULT_PATH, stats: true };
+  const options = { mnemonic: DEFAULT_MNEMONIC, passphrase: '', path: DEFAULT_PATH, stats: true };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     const value = argv[i + 1];
@@ -2566,7 +2576,7 @@ function runCli(argv, print = console.log) {
 /** True under Node, where the downloadable program can run runCli. */
 const isNode = typeof process !== 'undefined' && !!(process.versions && process.versions.node);
 
-return { toHex, fromHex, utf8, concat, ser32, ser256, bytesToBigInt, hammingDistance, sha256, sha512, ripemd160, hash160, keccak256, sha3_256, hmacSha512Keyed, hmacSha512, pbkdf2Sha512, base58, base58Check, SECP256K1, multiplyG, addPoints, isOnSecp256k1, encodeUncompressed, encodeCompressed, decodeCompressed, WORDLIST, MNEMONIC_LENGTHS, TEST_MNEMONIC, entropyToMnemonic, normalizeMnemonic, analyzeMnemonic, mnemonicToSeed, secureRandomBytes, generateMnemonic, HARDENED, masterKey, deriveChild, deriveChildPublic, serializeNode, MAX_PATH_DEPTH, parsePath, derivePath, ETHEREUM_COIN_TYPE, PATH_PRESETS, pathFor, DEFAULT_PATH, publicKeyToAddress, toChecksumAddress, checkAddress, keysFromSeed, walletPipeline, TEST_ACCOUNTS, BIP39_VECTORS, BIP32_VECTOR, EIP55_VECTORS, HASH_VECTORS, verifyVectors, SAMPLES, SIGNIFICANCE, EXPLORE_SEED, prng, chiSquarePValue, twoSidedNormalTail, binomialTest, poissonTest, goodnessOfFit, exploreSteps, explore, exploreAsync, statisticalTests, TEST_LABELS, DEFAULT_PALETTE, drawBarChart, drawHeatmap, chartHeight, chartHitTest, attachChartTooltip, reportLines, runCli, isNode };
+return { toHex, fromHex, utf8, concat, ser32, ser256, bytesToBigInt, hammingDistance, sha256, sha512, ripemd160, hash160, keccak256, sha3_256, hmacSha512Keyed, hmacSha512, pbkdf2Sha512, base58, base58Check, SECP256K1, multiplyG, addPoints, isOnSecp256k1, encodeUncompressed, encodeCompressed, decodeCompressed, WORDLIST, MNEMONIC_LENGTHS, TEST_MNEMONIC, DEFAULT_MNEMONIC, DEFAULT_ADDRESS, entropyToMnemonic, normalizeMnemonic, analyzeMnemonic, mnemonicToSeed, secureRandomBytes, generateMnemonic, HARDENED, masterKey, deriveChild, deriveChildPublic, serializeNode, MAX_PATH_DEPTH, parsePath, derivePath, ETHEREUM_COIN_TYPE, PATH_PRESETS, pathFor, DEFAULT_PATH, publicKeyToAddress, toChecksumAddress, checkAddress, keysFromSeed, walletPipeline, TEST_ACCOUNTS, BIP39_VECTORS, BIP32_VECTOR, EIP55_VECTORS, HASH_VECTORS, verifyVectors, SAMPLES, SIGNIFICANCE, EXPLORE_SEED, prng, chiSquarePValue, twoSidedNormalTail, binomialTest, poissonTest, goodnessOfFit, exploreSteps, explore, exploreAsync, statisticalTests, TEST_LABELS, DEFAULT_PALETTE, drawBarChart, drawHeatmap, chartHeight, chartHitTest, attachChartTooltip, reportLines, runCli, isNode };
 })();
 
 // src/pages/statistics/hw2/standalone/cli.js

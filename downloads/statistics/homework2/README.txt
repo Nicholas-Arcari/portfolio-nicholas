@@ -37,11 +37,14 @@ COME SI USA
 
   Da terminale, con Node.js 14 o successivo:
 
-    node homework2.js                       la frase di prova pubblica di
-                                            Hardhat e Foundry, account 0
+    node homework2.js                       la frase iniziale della pagina,
+                                            account 0
     node homework2.js --index 1             l'account 1 (m/44'/60'/0'/0/1)
     node homework2.js --path "m/44'/60'/1'/0/0"
     node homework2.js --random 24           una frase casuale di 24 parole
+    node homework2.js --mnemonic "test test test test test test test test test test test junk"
+                                            la frase di prova di Hardhat e Foundry,
+                                            quella del confronto con i wallet
     node homework2.js --mnemonic "..." --passphrase "..."
     node homework2.js --no-stats            senza l'esplorazione statistica
 
@@ -103,11 +106,14 @@ HOW TO USE IT
 
   From a terminal, with Node.js 14 or later:
 
-    node homework2.js                       the public test sentence of
-                                            Hardhat and Foundry, account 0
+    node homework2.js                       the starting sentence of the
+                                            page, account 0
     node homework2.js --index 1             account 1 (m/44'/60'/0'/0/1)
     node homework2.js --path "m/44'/60'/1'/0/0"
     node homework2.js --random 24           a random 24-word sentence
+    node homework2.js --mnemonic "test test test test test test test test test test test junk"
+                                            the test sentence of Hardhat and Foundry,
+                                            the one compared with the wallets
     node homework2.js --mnemonic "..." --passphrase "..."
     node homework2.js --no-stats            without the statistical exploration
 
