@@ -29,7 +29,9 @@ CONTENUTO
 
 COME SI USA
 
-  Nel browser: aprire index.html. La lingua si cambia con IT / EN in alto,
+  Nel browser: estrarre prima tutto l'archivio in una cartella, poi aprire
+  index.html da lì (aperto dentro il gestore di archivi resta vuoto, perché
+  vengono estratti solo i file cliccati). La lingua si cambia con IT / EN in alto,
   e il pulsante Indice porta a qualunque sezione della consegna.
 
   Da terminale, con Node.js 14 o successivo:
@@ -92,7 +94,9 @@ CONTENTS
 
 HOW TO USE IT
 
-  In a browser: open index.html. IT / EN at the top switches language, and
+  In a browser: first extract the whole archive into a folder, then open
+  index.html from there (opened inside the archive manager it stays empty,
+  because only the clicked file gets extracted). IT / EN at the top switches language, and
   the Contents button jumps to any section of the assignment.
 
   From a terminal, with Node.js 14 or later:

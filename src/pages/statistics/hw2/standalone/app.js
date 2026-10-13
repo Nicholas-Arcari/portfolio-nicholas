@@ -275,7 +275,6 @@ function pipelineSection() {
 
     title('hw2-wallets', 1, S.wallets),
     h('p', { text: text.wallets.intro }),
-    h('p', { class: 'warning', role: 'note', text: text.wallets.warning }),
     h('ol', { class: 'steps' }, text.wallets.steps.map((step) => h('li', { text: step }))),
     regions.wallets,
   );
@@ -348,7 +347,6 @@ function inputBlock() {
   controls.pathLabel = h('label', null, h('span', { text: I.pathLabel }), controls.path);
 
   return [
-    h('div', { class: 'warning', role: 'note' }, h('strong', { text: I.warningTitle }), paras(I.warning)),
     h('p', { text: I.intro }),
     h(
       'div',

@@ -469,7 +469,6 @@ const Wallets = React.memo(function Wallets({ result, text }) {
   return (
     <>
       <p>{W.intro}</p>
-      <p className="hw2-warning" role="note">{W.warning}</p>
       <ol className="hw2-steps">
         {W.steps.map((step) => <li key={step}>{step}</li>)}
       </ol>
@@ -847,10 +846,6 @@ const Homework2 = () => {
         <Flow pipeline={pipeline} text={text} />
 
         <Title id="hw2-input" level={1}>{S.input}</Title>
-        <div className="hw2-warning" role="note">
-          <strong>{I.warningTitle}</strong>
-          <Paras list={I.warning} />
-        </div>
         <p>{I.intro}</p>
         <div className="hw2-fields">
           <label className="hw2-mnemonic">
