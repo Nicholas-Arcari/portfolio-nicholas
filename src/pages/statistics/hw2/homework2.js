@@ -1855,6 +1855,100 @@ export function exploreAsync(options, { sliceMs = 12, schedule = (run) => setTim
   });
 }
 
+/**
+ * Every hypothesis test of the exploration, by step of the pipeline, as
+ * [key, test] pairs: the page, the downloadable program and the command
+ * line list the same 28 tests in the same order.
+ */
+export function statisticalTests(s) {
+  return {
+    bip39: [
+      ['words', s.bip39.words.test],
+      ['nibble', s.bip39.checksumNibble.test],
+      ['random', s.bip39.randomSequences],
+      ['typos', s.bip39.wordTypos],
+    ],
+    seed: [
+      ['bits', s.seed.bits.global],
+      ['avalancheMean', s.seed.avalanche.mean_test],
+      ['avalancheFit', s.seed.avalanche.fit],
+    ],
+    bip32: [
+      ['bits', s.bip32.bits.global],
+      ['siblingsMean', s.bip32.siblings.mean_test],
+      ['siblingsFit', s.bip32.siblings.fit],
+      ['correlation', s.bip32.correlation],
+    ],
+    secp256k1: [
+      ['parity', s.secp256k1.parity],
+      ['bitsX', s.secp256k1.bitsX.global],
+      ['bitsY', s.secp256k1.bitsY.global],
+      ['avalancheMean', s.secp256k1.avalanche.mean_test],
+      ['avalancheFit', s.secp256k1.avalanche.fit],
+    ],
+    keccak: [
+      ['bits', s.keccak.addressBits.global],
+      ['firstHex', s.keccak.firstHex.test],
+      ['bytes', s.keccak.bytes.test],
+      ['avalancheMean', s.keccak.avalanche.mean_test],
+      ['avalancheFit', s.keccak.avalanche.fit],
+      ['sacOutput', s.keccak.avalanche.perOutput.global],
+      ['sacInput', s.keccak.avalanche.perInput.global],
+      ['sha3Mean', s.keccak.versusSha3.mean_test],
+      ['sha3Fit', s.keccak.versusSha3.fit],
+    ],
+    eip55: [
+      ['letters', s.eip55.letters.test],
+      ['uppercase', s.eip55.uppercase],
+      ['typos', s.eip55.typos],
+    ],
+  };
+}
+
+/** The null hypothesis of every test, in English (the page has them in Italian too). */
+export const TEST_LABELS = Object.freeze({
+  bip39: {
+    words: 'The 2048 words are equally likely (chi-square goodness of fit)',
+    nibble: 'The 4 checksum bits are uniform over the 16 values (χ²)',
+    random: '12 random words pass the checksum with probability 1/16 (binomial)',
+    typos: 'A replaced word passes the checksum with the computed probability (binomial)',
+  },
+  seed: {
+    bits: 'Every bit of the seed is a fair coin: Σz² ~ χ²(512)',
+    avalancheMean: 'One changed entropy bit changes 256 seed bits on average (z)',
+    avalancheFit: 'The distances follow Binomial(512, 1/2) (χ²)',
+  },
+  bip32: {
+    bits: 'Every bit of the child keys is a fair coin: Σz² ~ χ²(256)',
+    siblingsMean: 'Keys of consecutive indices are 128 bits apart on average (z)',
+    siblingsFit: 'Their distances follow Binomial(256, 1/2) (χ²)',
+    correlation: 'Index bits and key bits are independent (permutations)',
+  },
+  secp256k1: {
+    parity: 'y is odd with probability 1/2 (binomial)',
+    bitsX: 'The bits of x are fair coins: Σz² ~ χ²(256)',
+    bitsY: 'The bits of y are fair coins: Σz² ~ χ²(256)',
+    avalancheMean: 'One changed bit of k changes 256 bits of x ‖ y on average (z)',
+    avalancheFit: 'The distances follow Binomial(512, 1/2) (χ²)',
+  },
+  keccak: {
+    bits: 'The bits of the addresses are fair coins: Σz² ~ χ²(160)',
+    firstHex: 'The first hexadecimal digit is uniform (χ²)',
+    bytes: 'The bytes of the addresses are uniform over the 256 values (χ²)',
+    avalancheMean: 'One changed input bit changes 128 output bits on average (z)',
+    avalancheFit: 'The distances follow Binomial(256, 1/2) (χ²)',
+    sacOutput: 'Every output bit changes with probability 1/2: Σz² ~ χ²(256)',
+    sacInput: 'Every input bit changes half of the output on average: Σz² ~ χ²(512)',
+    sha3Mean: 'Keccak-256 and SHA3-256 of the same input are 128 bits apart on average (z)',
+    sha3Fit: 'Their distances follow Binomial(256, 1/2) (χ²)',
+  },
+  eip55: {
+    letters: 'Letters per address follow Binomial(40, 3/8) (χ²)',
+    uppercase: 'Half of the letters are upper case (binomial)',
+    typos: 'The accepted typos are those expected for an ideal hash (exact Poisson)',
+  },
+});
+
 // ---------------------------------------------------------------------------
 // 9. Charts (browser, <canvas>)
 // ---------------------------------------------------------------------------
@@ -1891,7 +1985,30 @@ function setupCanvas(canvas, aspect, knownWidth = 0) {
 
 const chartNumber = (text, decimal) => (decimal === '.' ? text : text.replace('.', decimal));
 const BAR_ASPECT = 0.42;
+const BAR_MARGIN = { left: 34, right: 8, top: 10, bottom: 22 };
 const HEATMAP_MARGIN = { left: 34, right: 8, top: 18, bottom: 34 };
+const HEATMAP_MIN_CELL = 2;
+
+/**
+ * Where the bars of drawBarChart lie on a canvas of this width: the plot
+ * area and its pixel columns, each showing perColumn bars (more than one
+ * when there are more bars than pixels).
+ */
+function barLayout(bars, width) {
+  const height = Math.round(width * BAR_ASPECT);
+  const w = width - BAR_MARGIN.left - BAR_MARGIN.right;
+  const h = height - BAR_MARGIN.top - BAR_MARGIN.bottom;
+  const columns = Math.min(bars, Math.max(1, Math.floor(w)));
+  return { margin: BAR_MARGIN, w, h, height, columns, perColumn: bars / columns, colW: w / columns };
+}
+
+/** Where the cells of drawHeatmap lie on a canvas of this width. */
+function heatmapLayout(values, width) {
+  const rows = values.length;
+  const cols = rows ? values[0].length : 0;
+  const cell = Math.max(HEATMAP_MIN_CELL, (width - HEATMAP_MARGIN.left - HEATMAP_MARGIN.right) / Math.max(1, cols));
+  return { margin: HEATMAP_MARGIN, rows, cols, cell, height: Math.round(HEATMAP_MARGIN.top + HEATMAP_MARGIN.bottom + rows * cell) };
+}
 
 /**
  * Bar chart of `values` with an optional dashed reference (`expected`, one
@@ -1902,18 +2019,13 @@ const HEATMAP_MARGIN = { left: 34, right: 8, top: 18, bottom: 34 };
 export function drawBarChart(canvas, { values, expected = null, labels = null, max = null, decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
   const pal = { ...DEFAULT_PALETTE, ...palette };
   const { ctx, width, height } = setupCanvas(canvas, BAR_ASPECT, knownWidth);
-  const margin = { left: 34, right: 8, top: 10, bottom: 22 };
-  const w = width - margin.left - margin.right;
-  const h = height - margin.top - margin.bottom;
+  const { margin, w, h, columns, perColumn, colW } = barLayout(values.length, width);
   const refs = expected === null ? [] : Array.isArray(expected) ? expected : values.map(() => expected);
   const top = max ?? Math.max(1e-9, ...values, ...refs) * 1.1;
   ctx.fillStyle = pal.background;
   ctx.fillRect(0, 0, width, height);
   ctx.strokeStyle = pal.grid;
   ctx.strokeRect(margin.left, margin.top, w, h);
-  const columns = Math.min(values.length, Math.max(1, Math.floor(w)));
-  const perColumn = values.length / columns;
-  const colW = w / columns;
   const gap = columns === values.length ? colW * 0.12 : 0;
   ctx.fillStyle = pal.bars;
   for (let c = 0; c < columns; c++) {
@@ -1965,11 +2077,8 @@ const mix = (a, b, f) => {
  */
 export function drawHeatmap(canvas, { values, range = 4, rowLabel = '', colLabel = '', decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
   const pal = { ...DEFAULT_PALETTE, ...palette };
-  const rows = values.length;
-  const cols = rows ? values[0].length : 0;
   const width = knownWidth > 0 ? knownWidth : canvas.clientWidth || 480;
-  const margin = HEATMAP_MARGIN;
-  const cell = Math.max(2, (width - margin.left - margin.right) / Math.max(1, cols));
+  const { margin, rows, cols, cell } = heatmapLayout(values, width);
   const { ctx, height } = setupCanvas(canvas, (margin.top + margin.bottom + rows * cell) / width, width);
   ctx.fillStyle = pal.background;
   ctx.fillRect(0, 0, width, height);
@@ -2010,13 +2119,122 @@ export function drawHeatmap(canvas, { values, range = 4, rowLabel = '', colLabel
 
 /** The height that drawBarChart or drawHeatmap gives a canvas of this width, to reserve the space before drawing. */
 export function chartHeight(draw, data, width) {
+  return draw === drawHeatmap ? heatmapLayout(data.values, width).height : barLayout(data.values.length, width).height;
+}
+
+/**
+ * The bar or the cell under the point (x, y) of a chart drawn at this
+ * width, in CSS pixels from its top left corner; null outside the plot.
+ * For bars, the values [from, to) of the pixel column (more than one when
+ * there are more bars than pixels); for heatmaps, row and column. `rect` is
+ * the rectangle to outline.
+ */
+export function chartHitTest(draw, data, width, x, y) {
   if (draw === drawHeatmap) {
-    const rows = data.values.length;
-    const cols = rows ? data.values[0].length : 0;
-    const cell = Math.max(2, (width - HEATMAP_MARGIN.left - HEATMAP_MARGIN.right) / Math.max(1, cols));
-    return Math.round(HEATMAP_MARGIN.top + HEATMAP_MARGIN.bottom + rows * cell);
+    const { margin, rows, cols, cell } = heatmapLayout(data.values, width);
+    const col = Math.floor((x - margin.left) / cell);
+    const row = Math.floor((y - margin.top) / cell);
+    if (row < 0 || row >= rows || col < 0 || col >= cols) return null;
+    return { kind: 'cell', row, col, rect: { x: margin.left + col * cell, y: margin.top + row * cell, width: cell, height: cell } };
   }
-  return Math.round(width * BAR_ASPECT);
+  const { margin, w, h, columns, perColumn, colW } = barLayout(data.values.length, width);
+  if (x < margin.left || x >= margin.left + w || y < margin.top || y > margin.top + h) return null;
+  const column = Math.min(columns - 1, Math.floor((x - margin.left) / colW));
+  const from = Math.floor(column * perColumn);
+  const to = Math.max(Math.floor((column + 1) * perColumn), from + 1);
+  return { kind: 'bar', from, to, rect: { x: margin.left + column * colW, y: margin.top, width: colW, height: h } };
+}
+
+/**
+ * Explains a chart under the pointer: the bar or the cell below the mouse,
+ * or below the finger after a tap, gets an outline and a label with the
+ * text describe(hit), inserted as plain text. Both stay inside the
+ * canvas's parent, which must be positioned. Returns the function that
+ * removes them.
+ */
+export function attachChartTooltip(canvas, { draw, data, describe }) {
+  const box = canvas.parentElement;
+  const mark = document.createElement('div');
+  const tip = document.createElement('div');
+  mark.className = 'chart-mark';
+  tip.className = 'chart-tip';
+  // the canvas already has its description; the label only repeats numbers on screen
+  mark.setAttribute('aria-hidden', 'true');
+  tip.setAttribute('aria-hidden', 'true');
+  mark.hidden = true;
+  tip.hidden = true;
+  box.append(mark, tip);
+  canvas.classList.add('has-tip');
+  let frame = 0;
+  let shown = null;
+  const hide = () => {
+    mark.hidden = true;
+    tip.hidden = true;
+    shown = null;
+  };
+  const show = (clientX, clientY) => {
+    const r = canvas.getBoundingClientRect();
+    const x = clientX - r.left;
+    const y = clientY - r.top;
+    const hit = chartHitTest(draw, data, r.width, x, y);
+    const text = hit && describe(hit);
+    if (!text) {
+      hide();
+      return;
+    }
+    const left = canvas.offsetLeft;
+    const top = canvas.offsetTop;
+    Object.assign(mark.style, {
+      left: `${left + hit.rect.x}px`,
+      top: `${top + hit.rect.y}px`,
+      width: `${Math.max(2, hit.rect.width)}px`,
+      height: `${hit.rect.height}px`,
+    });
+    mark.classList.toggle('is-thin', hit.rect.width < 6);
+    mark.hidden = false;
+    if (text !== shown) {
+      tip.textContent = text;
+      shown = text;
+    }
+    tip.hidden = false;
+    // above and to the right of the pointer, flipped near the edges of the figure
+    let tx = left + x + 14;
+    if (tx + tip.offsetWidth > box.clientWidth) tx = Math.max(0, left + x - tip.offsetWidth - 14);
+    let ty = top + y - tip.offsetHeight - 12;
+    if (ty < 0) ty = top + y + 18;
+    tip.style.left = `${tx}px`;
+    tip.style.top = `${ty}px`;
+  };
+  const onMove = (e) => {
+    if (e.pointerType === 'touch') return;
+    const { clientX, clientY } = e;
+    cancelAnimationFrame(frame);
+    frame = requestAnimationFrame(() => show(clientX, clientY));
+  };
+  // a finger leaves the canvas as soon as it is lifted: the label stays until a tap elsewhere
+  const onLeave = (e) => {
+    if (e.pointerType !== 'touch') hide();
+  };
+  const onDown = (e) => {
+    if (e.pointerType === 'touch') show(e.clientX, e.clientY);
+  };
+  const onDocumentDown = (e) => {
+    if (e.target !== canvas) hide();
+  };
+  canvas.addEventListener('pointermove', onMove);
+  canvas.addEventListener('pointerleave', onLeave);
+  canvas.addEventListener('pointerdown', onDown);
+  document.addEventListener('pointerdown', onDocumentDown);
+  return () => {
+    cancelAnimationFrame(frame);
+    canvas.removeEventListener('pointermove', onMove);
+    canvas.removeEventListener('pointerleave', onLeave);
+    canvas.removeEventListener('pointerdown', onDown);
+    document.removeEventListener('pointerdown', onDocumentDown);
+    canvas.classList.remove('has-tip');
+    mark.remove();
+    tip.remove();
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -2062,6 +2280,9 @@ export function reportLines(pipeline) {
 }
 
 const DIGITS = /^\d{1,10}$/;
+
+/** The steps of the pipeline as the command line names them. */
+const STEP_NAMES = { bip39: 'BIP-39', seed: 'PBKDF2', bip32: 'BIP-32', secp256k1: 'secp256k1', keccak: 'Keccak-256', eip55: 'EIP-55' };
 
 /**
  * Command line: node homework2.js [--mnemonic "w1 ... w12"] [--passphrase p]
@@ -2112,26 +2333,20 @@ export function runCli(argv, print = console.log) {
   failed.forEach((r) => print(`  FAILED ${r.group} ${r.name}: expected ${r.expected}, got ${r.actual}`));
   if (!options.stats) return pipeline.ok && !failed.length ? 0 : 1;
   print('');
-  print('Statistical properties (random inputs from a fixed seed; p-values of the tests):');
   const s = explore();
+  const all = Object.entries(statisticalTests(s)).flatMap(([step, list]) => list.map(([key, test]) => ({ step, key, test })));
   const p = (t) => (t.pValue < 0.001 ? t.pValue.toExponential(1) : t.pValue.toFixed(3));
-  const table = [
-    ['BIP-39', 'word frequencies, uniform over 2048', p(s.bip39.words.test)],
-    ['BIP-39', `random 12-word sequences valid: ${(100 * s.bip39.randomSequences.rate).toFixed(2)}% (1/16 = 6.25%)`, p(s.bip39.randomSequences)],
-    ['BIP-39', `one wrong word detected: ${(100 * s.bip39.wordTypos.detected).toFixed(2)}%`, p(s.bip39.wordTypos)],
-    ['PBKDF2', `seed bits balanced (${s.seed.bits.N} seeds x 512 bits)`, p(s.seed.bits.global)],
-    ['PBKDF2', `one entropy bit flipped: ${s.seed.avalanche.mean.toFixed(1)} of 512 seed bits change`, p(s.seed.avalanche.mean_test)],
-    ['BIP-32', `private key bits balanced (${s.bip32.bits.N} children)`, p(s.bip32.bits.global)],
-    ['BIP-32', 'index bits vs key bits, permutation test', p(s.bip32.correlation)],
-    ['secp256k1', 'parity of y (02/03 prefix) balanced', p(s.secp256k1.parity)],
-    ['secp256k1', `one private-key bit flipped: ${s.secp256k1.avalanche.mean.toFixed(1)} of 512 bits change`, p(s.secp256k1.avalanche.mean_test)],
-    ['secp256k1', `(k1 + k2)G = k1G + k2G in ${s.secp256k1.homomorphism.holds} of ${s.secp256k1.homomorphism.trials} trials`, 'structure'],
-    ['Keccak-256', 'address bits balanced', p(s.keccak.addressBits.global)],
-    ['Keccak-256', `one input bit flipped: ${s.keccak.avalanche.mean.toFixed(1)} of 256 bits change`, p(s.keccak.avalanche.fit)],
-    ['EIP-55', `letters per address: ${s.eip55.letters.mean.toFixed(1)} (Binomial(40, 3/8), mean 15)`, p(s.eip55.letters.test)],
-    ['EIP-55', `typos accepted: ${s.eip55.typos.passed} of ${s.eip55.typos.trials} (expected ${s.eip55.typos.expected.toFixed(1)})`, p(s.eip55.typos)],
-  ];
-  for (const [step, what, value] of table) print(`  ${step.padEnd(11)} ${what.padEnd(68)} ${value}`);
+  print(`Statistical properties: ${all.length} hypothesis tests on random inputs from a fixed seed (${EXPLORE_SEED}), alpha = ${SIGNIFICANCE}.`);
+  print('  step        p-value  null hypothesis H0');
+  for (const { step, key, test } of all) {
+    print(`  ${STEP_NAMES[step].padEnd(11)} ${p(test).padEnd(7)}  ${test.verdict === 'reject' ? '[rejected] ' : ''}${TEST_LABELS[step][key]}`);
+  }
+  const h = s.secp256k1.homomorphism;
+  print(`  secp256k1   structure, not a test: (k1 + k2)G = k1G + k2G in ${h.holds} of ${h.trials} trials`);
+  const rejected = all.filter((t) => t.test.verdict === 'reject').length;
+  const smallest = all.reduce((m, t) => (t.test.pValue < m.test.pValue ? t : m));
+  print(`Rejected: ${rejected} of ${all.length} (${(all.length * SIGNIFICANCE).toFixed(1)} expected by chance if every function were ideal).`);
+  print(`Smallest p-value: ${p(smallest.test)} (${STEP_NAMES[smallest.step]}); the Bonferroni threshold would be ${SIGNIFICANCE}/${all.length} = ${(SIGNIFICANCE / all.length).toFixed(4)}.`);
   return pipeline.ok && !failed.length ? 0 : 1;
 }
 

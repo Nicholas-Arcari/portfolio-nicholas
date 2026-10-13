@@ -18,6 +18,14 @@ function formatters(decimal, na) {
     decimal,
     num: (v, digits = 3) => (missing(v) ? na : local((Math.abs(v) < 0.5 * 10 ** -digits ? 0 : v).toFixed(digits))),
     pval: (v) => (missing(v) ? na : v === 0 ? '0' : v < 0.001 ? local(v.toExponential(1)) : local(v.toFixed(3))),
+    // an expected count: a decimal when it is large, two significant digits when it is small
+    approx: (v) => {
+      if (missing(v)) return na;
+      if (v === 0) return '0';
+      if (v >= 100) return local(v.toFixed(0));
+      if (v >= 1) return local(v.toFixed(1));
+      return v >= 1e-4 ? local(String(Number(v.toPrecision(2)))) : `< ${local('0.0001')}`;
+    },
     pct: (v) => (missing(v) ? na : `${local((100 * v).toFixed(1))}%`),
     short: (v) => (missing(v) ? na : local(String(v))),
   };
@@ -93,6 +101,7 @@ const it = {
     index: 'Indice',
     indexTitle: 'Indice dell’homework',
     close: 'Chiudi',
+    backToTop: 'Torna su',
     computing: 'Calcolo in corso...',
     language: 'Lingua',
     error: (m) => `Errore: ${m}`,
@@ -275,6 +284,23 @@ const it = {
         : `G = ${fmtPoint(s.G)}, di ordine n = ${s.n}: N = ${s.N} osservazioni, una per ogni k da 1 a ${s.n - 1}.`,
     ordersLine: (orders) => `Ordini dei punti base: ${orders.map(([o, c]) => `${c} di ordine ${o}`).join(', ')}.`,
     smallSample: (N) => `Con N = ${N} le analisi che seguono hanno pochissima potenza statistica: i numeri sono riportati per completezza, ognuno con la sua avvertenza.`,
+    // the label over a chart, for the bar or the cell under the pointer
+    tips: {
+      hist: (coord, from, to, count, expected) =>
+        `${from === to ? `${coord} = ${from}` : `${coord} da ${from} a ${to}`}: ${count} ${count === 1 ? 'osservazione' : 'osservazioni'} (attese ${IT.approx(expected)})`,
+      freq: (coord, from, to, min, max, expected) => {
+        const times = (n) => (n === 0 ? 'mai' : n === 1 ? 'una volta' : `${n} volte`);
+        const what = from === to ? `${coord} = ${from}: ${times(max)}` : `${coord} da ${from} a ${to}: ${min === max ? times(max) : `da ${min} a ${max} volte`} ciascuno`;
+        return `${what} (attese ${IT.approx(expected)})`;
+      },
+      bit: (coord, b) =>
+        b.fraction === null
+          ? `bit ${b.bit} di ${coord}: nessun valore osservato`
+          : `bit ${b.bit} di ${coord}: quota di 1 = ${IT.num(b.fraction, 3)} su ${b.distinct} valori distinti (attesa ${IT.num(b.expected, 3)})${b.z === null ? '' : `, z = ${IT.num(b.z, 2)}`}`,
+      distance: (d, count, expected) => `${d} ${d === 1 ? 'bit cambiato' : 'bit cambiati'}: ${count} ${count === 1 ? 'coppia' : 'coppie'} (attese ${IT.approx(expected)})`,
+      correlation: (kBit, coord, bit, phi) => `bit ${kBit} di k, bit ${bit} di ${coord}: ${phi === null ? 'φ non definito (bit costante)' : `φ = ${IT.num(phi, 3)}`}`,
+      sac: (kBit, coord, bit, z) => `bit ${kBit} di k invertito, bit ${bit} di ${coord}: ${z === null ? 'non definito' : `z = ${IT.num(z, 2)}`}`,
+    },
     distribution: {
       intro: 'Quante volte cade ciascun valore di x e di y. Sulle curve piccole una barra per valore, su quelle grandi una barra per classe di valori consecutivi; la linea tratteggiata è ciò che darebbero valori uniformi in [0, p).',
       chartX: 'Distribuzione di x',
@@ -291,7 +317,7 @@ const it = {
       },
     },
     frequency: {
-      intro: 'La frequenza di ogni singolo valore di x e di y, poi un riepilogo: quanti valori compaiono 0, 1, 2, ... volte.',
+      intro: 'La frequenza di ogni singolo valore di x e di y: nel grafico per tutte le curve, e in una tabella per quelle piccole.',
       chartX: 'Frequenza per valore di x (tratteggio: N/p)',
       chartY: 'Frequenza per valore di y (tratteggio: N/p)',
       tableTitle: 'Frequenze per valore',
@@ -300,18 +326,6 @@ const it = {
       colY: 'volte come y',
       tableNote: (p) => `Tutti i ${p} valori di [0, p).`,
       bigNote: (p) => `Con p = ${p} una tabella di ${p} righe non sarebbe leggibile: il grafico mostra ogni valore, e dove una colonna di pixel raccoglie più valori ne mostra il massimo.`,
-      summaryTitle: 'Riepilogo delle molteplicità',
-      summary: (coord, table) => {
-        const parts = table
-          .map((count, times) => {
-            if (!count) return null;
-            const what = count === 1 ? '1 valore' : `${count} valori`;
-            const how = times === 0 ? 'mai' : times === 1 ? 'una volta' : `${times} volte`;
-            return `${what} ${how}`;
-          })
-          .filter(Boolean);
-        return `${coord}: ${parts.join(', ')}.`;
-      },
       explain: (s) => {
         const ux = s.uniformity.x;
         const uy = s.uniformity.y;
@@ -640,6 +654,7 @@ const en = {
     index: 'Contents',
     indexTitle: 'Homework contents',
     close: 'Close',
+    backToTop: 'Back to top',
     computing: 'Computing...',
     language: 'Language',
     error: (m) => `Error: ${m}`,
@@ -820,6 +835,23 @@ const en = {
         : `G = ${fmtPoint(s.G)}, of order n = ${s.n}: N = ${s.N} observations, one for each k from 1 to ${s.n - 1}.`,
     ordersLine: (orders) => `Orders of the base points: ${orders.map(([o, c]) => `${c} of order ${o}`).join(', ')}.`,
     smallSample: (N) => `With N = ${N} the analyses below have very little statistical power: the numbers are reported for completeness, each with its caveat.`,
+    // the label over a chart, for the bar or the cell under the pointer
+    tips: {
+      hist: (coord, from, to, count, expected) =>
+        `${from === to ? `${coord} = ${from}` : `${coord} from ${from} to ${to}`}: ${count} ${count === 1 ? 'observation' : 'observations'} (expected ${EN.approx(expected)})`,
+      freq: (coord, from, to, min, max, expected) => {
+        const times = (n) => (n === 0 ? 'never' : n === 1 ? 'once' : n === 2 ? 'twice' : `${n} times`);
+        const what = from === to ? `${coord} = ${from}: ${times(max)}` : `${coord} from ${from} to ${to}: ${min === max ? times(max) : `from ${min} to ${max} times`} each`;
+        return `${what} (expected ${EN.approx(expected)})`;
+      },
+      bit: (coord, b) =>
+        b.fraction === null
+          ? `bit ${b.bit} of ${coord}: no value observed`
+          : `bit ${b.bit} of ${coord}: share of ones = ${EN.num(b.fraction, 3)} over ${b.distinct} distinct values (expected ${EN.num(b.expected, 3)})${b.z === null ? '' : `, z = ${EN.num(b.z, 2)}`}`,
+      distance: (d, count, expected) => `${d} ${d === 1 ? 'bit changed' : 'bits changed'}: ${count} ${count === 1 ? 'pair' : 'pairs'} (expected ${EN.approx(expected)})`,
+      correlation: (kBit, coord, bit, phi) => `bit ${kBit} of k, bit ${bit} of ${coord}: ${phi === null ? 'φ not defined (constant bit)' : `φ = ${EN.num(phi, 3)}`}`,
+      sac: (kBit, coord, bit, z) => `bit ${kBit} of k flipped, bit ${bit} of ${coord}: ${z === null ? 'not defined' : `z = ${EN.num(z, 2)}`}`,
+    },
     distribution: {
       intro: 'How often each value of x and of y occurs. On small curves one bar per value, on large ones one bar per class of consecutive values; the dashed line is what uniform values in [0, p) would give.',
       chartX: 'Distribution of x',
@@ -836,7 +868,7 @@ const en = {
       },
     },
     frequency: {
-      intro: 'The frequency of each individual value of x and of y, then a summary: how many values occur 0, 1, 2, ... times.',
+      intro: 'The frequency of each individual value of x and of y: in the chart for every curve, and in a table for the small ones.',
       chartX: 'Frequency per value of x (dashed: N/p)',
       chartY: 'Frequency per value of y (dashed: N/p)',
       tableTitle: 'Frequencies per value',
@@ -845,18 +877,6 @@ const en = {
       colY: 'times as y',
       tableNote: (p) => `All ${p} values of [0, p).`,
       bigNote: (p) => `With p = ${p} a table of ${p} rows would be unreadable: the chart shows every value, and where a pixel column gathers several values it shows their maximum.`,
-      summaryTitle: 'Multiplicity summary',
-      summary: (coord, table) => {
-        const parts = table
-          .map((count, times) => {
-            if (!count) return null;
-            const what = count === 1 ? '1 value' : `${count} values`;
-            const how = times === 0 ? 'never' : times === 1 ? 'once' : times === 2 ? 'twice' : `${times} times`;
-            return `${what} ${how}`;
-          })
-          .filter(Boolean);
-        return `${coord}: ${parts.join(', ')}.`;
-      },
       explain: (s) => {
         const ux = s.uniformity.x;
         const uy = s.uniformity.y;

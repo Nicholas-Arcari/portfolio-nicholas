@@ -9,7 +9,7 @@
 //
 // I parametri citati nelle descrizioni vengono dalla stessa costante usata
 // dal codice dell'homework: se la consegna cambia, cambia anche qui.
-import { TASK as HW1 } from '../pages/statistics/hw1/homework1.js';
+import { TASK as HW1 } from '../pages/statistics/hw1/task.js';
 
 const hw1Curve = `y² = x³ + ${HW1.b} mod ${HW1.p}, G = (${HW1.G.x}, ${HW1.G.y}), k = ${HW1.k}`;
 

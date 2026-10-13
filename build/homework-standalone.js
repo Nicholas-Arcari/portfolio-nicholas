@@ -27,8 +27,8 @@ const STATIC_FILES = ['index.html', 'style.css', 'README.txt'];
 /**
  * Gli homework con un programma scaricabile. `library` e' il file dei
  * calcoli, che diventa lo script globale `global`; `inner` sono i moduli che
- * la libreria importa e che finiscono dentro di lei (per l'Homework #2 la
- * lista di parole di BIP-39).
+ * la libreria importa e che finiscono dentro di lei (i parametri della
+ * consegna dell'Homework #1, la lista di parole di BIP-39 dell'Homework #2).
  */
 export const HOMEWORKS = [
   {
@@ -36,7 +36,7 @@ export const HOMEWORKS = [
     source: 'hw1',
     library: 'homework1.js',
     global: 'Homework1',
-    inner: [],
+    inner: ['task.js'],
     contents: 'Computations: toy curve, point addition, scalar multiplication, statistics,\n * animation and command line (node homework1.js [k] [p]).',
     description: 'Homework #1 - Statistics: from a private key to a public key with elliptic-curve scalar multiplication, as in Ethereum.',
   },

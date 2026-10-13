@@ -54,4 +54,16 @@ const cspMeta = () => ({
 export default defineConfig({
   plugins: [react(), cspMeta(), homeworkStandalone()],
   base: '/portfolio-nicholas/', // <--- Nome del repo
+  build: {
+    rollupOptions: {
+      output: {
+        // React, React DOM e il router cambiano di rado: in un file a parte
+        // restano nella cache del browser anche quando il sito si aggiorna
+        manualChunks(id) {
+          if (/[\\/]node_modules[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/.test(id)) return 'react';
+          return undefined;
+        },
+      },
+    },
+  },
 })

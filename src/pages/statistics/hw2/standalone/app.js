@@ -64,7 +64,6 @@ const state = {
   lang: initialLanguage(),
   fields: { ...view.TEST_INPUTS },
   applied: view.appliedInput(view.readInputs(view.TEST_INPUTS)),
-  valid: true,
 };
 let text = HW2_TEXTS[state.lang];
 const regions = {};
@@ -120,7 +119,10 @@ const title = (id, level, label) => h(HEADINGS[level], { id, tabindex: -1, class
 const subtitle = (label) => h('p', { class: 'table-title' }, h('strong', { text: label }));
 const pending = () => h('p', { class: 'note pending', role: 'status', text: text.ui.computing });
 const failure = (message) => h('p', { class: 'note', text: text.ui.error(message) });
-const staleNote = () => (state.valid ? null : h('p', { class: 'stale', role: 'status', text: text.pipeline.stale }));
+// La nota "valori dell'ultimo input valido" c'e' sempre, nascosta: la mostra
+// il CSS quando la sezione della pipeline ha la classe is-stale. Cosi' un
+// errore in un campo cambia una classe invece di ridisegnare tutto.
+const staleNote = () => h('p', { class: 'stale stale-note', text: text.pipeline.stale });
 const check = (ok, label) => h('p', { class: ok ? 'check is-ok' : 'check is-bad', text: label });
 
 /** A labelled value: the label above, the (long, hexadecimal) value below. */
@@ -130,7 +132,7 @@ const value = (label, content, extra = '') => h('div', { class: `value ${extra}`
 // layout: reading clientWidth right after another chart has been resized
 // would make the browser lay out the whole page again, once per chart. The
 // height is set at once, the drawing happens a few milliseconds per frame.
-const charts = new Map(); // canvas -> { draw, data, width }
+const charts = new Map(); // canvas -> { draw, data, width, detach }
 const resizer = new ResizeObserver((entries) => {
   for (const entry of entries) {
     const canvas = entry.target;
@@ -145,17 +147,22 @@ const resizer = new ResizeObserver((entries) => {
   }
 });
 
-function figure(caption, draw, data, wide = false) {
+function figure(caption, draw, data, wide = false, tip = null) {
   const canvas = h('canvas', { class: 'chart', role: 'img', 'aria-label': caption });
-  charts.set(canvas, { draw, data, width: -1 });
+  const fig = h('figure', { class: wide ? 'figure wide' : 'figure' }, canvas, h('figcaption', { text: caption }));
+  // the label with the values of the bar or the cell under the pointer
+  const detach = tip ? hw.attachChartTooltip(canvas, { draw, data, describe: tip }) : null;
+  charts.set(canvas, { draw, data, width: -1, detach });
   resizer.observe(canvas);
-  return h('figure', { class: wide ? 'figure wide' : 'figure' }, canvas, h('figcaption', { text: caption }));
+  return fig;
 }
 
-/** Replaces the content of a region, releasing the charts it contained. */
+/** Replaces the content of a region, releasing the charts it contained and their labels. */
 function fill(region, ...nodes) {
   for (const canvas of region.querySelectorAll('canvas.chart')) {
     resizer.unobserve(canvas);
+    const chart = charts.get(canvas);
+    if (chart && chart.detach) chart.detach();
     charts.delete(canvas);
   }
   region.replaceChildren(...nodes.flat(Infinity).filter((n) => n !== null && n !== undefined && n !== false));
@@ -219,7 +226,7 @@ function pipelineSection() {
   for (const name of ['flow', 'mnemonicStatus', 'pathHelp', 'stale', 'badge', 'bip39', 'seed', 'bip32', 'bip44', 'secp', 'keccak', 'eip55', 'vectors', 'wallets']) {
     regions[name] = h('div');
   }
-  return h(
+  regions.pipeline = h(
     'section',
     { class: 'section' },
     title('hw2-pipeline', 0, S.pipeline),
@@ -272,6 +279,7 @@ function pipelineSection() {
     h('ol', { class: 'steps' }, text.wallets.steps.map((step) => h('li', { text: step }))),
     regions.wallets,
   );
+  return regions.pipeline;
 }
 
 function updateFlow(pipeline) {
@@ -379,8 +387,8 @@ function changeFields(patch, fromButton = false) {
   state.fields = { ...state.fields, ...patch };
   if (fromButton) syncFields();
   const read = view.readInputs(state.fields);
-  let refresh = read.valid !== state.valid;
-  state.valid = read.valid;
+  regions.pipeline.classList.toggle('is-stale', !read.valid);
+  let refresh = false;
   if (read.valid) {
     const input = view.appliedInput(read);
     if (!sameApplied(input, state.applied)) {
@@ -706,6 +714,7 @@ function updateVectors() {
         };
       }),
     ),
+    h('p', { class: 'note', text: W.verified }),
   );
 }
 
@@ -766,14 +775,15 @@ function updateStats() {
   const T = text.stats;
   const F = text.fmt;
   const data = view.chartData(s, { decimal: F.decimal, axes: T.axes });
+  const tips = view.chartTips(s, data, T.tips);
   const summary = view.testSummary(s);
   const smallest = summary.smallest;
   fill(
     regions.stats,
     titles[0],
     h('p', { text: T.bip39.intro }),
-    figure(T.bip39.wordsChart(s.bip39.words.test.N, s.samples.mnemonics), hw.drawBarChart, data.words, true),
-    h('div', { class: 'charts' }, figure(T.bip39.nibbleChart(s.samples.mnemonics), hw.drawBarChart, data.nibble)),
+    figure(T.bip39.wordsChart(s.bip39.words.test.N, s.samples.mnemonics), hw.drawBarChart, data.words, true, tips.words),
+    h('div', { class: 'charts' }, figure(T.bip39.nibbleChart(s.samples.mnemonics), hw.drawBarChart, data.nibble, false, tips.nibble)),
     tests('bip39', s),
     paras(T.bip39.explain(s)),
 
@@ -782,8 +792,8 @@ function updateStats() {
     h(
       'div',
       { class: 'charts' },
-      figure(T.seed.bitsChart(s.seed.bits.N), hw.drawBarChart, data.seedBits),
-      figure(T.seed.distanceChart(s.seed.avalanche, data.seedDistances), hw.drawBarChart, data.seedDistances),
+      figure(T.seed.bitsChart(s.seed.bits.N), hw.drawBarChart, data.seedBits, false, tips.seedBits),
+      figure(T.seed.distanceChart(s.seed.avalanche, data.seedDistances), hw.drawBarChart, data.seedDistances, false, tips.seedDistances),
     ),
     tests('seed', s),
     paras(T.seed.explain(s)),
@@ -793,10 +803,10 @@ function updateStats() {
     h(
       'div',
       { class: 'charts' },
-      figure(T.bip32.bitsChart(s.bip32.bits.N), hw.drawBarChart, data.keyBits),
-      figure(T.bip32.distanceChart(s.bip32.siblings, data.siblings), hw.drawBarChart, data.siblings),
+      figure(T.bip32.bitsChart(s.bip32.bits.N), hw.drawBarChart, data.keyBits, false, tips.keyBits),
+      figure(T.bip32.distanceChart(s.bip32.siblings, data.siblings), hw.drawBarChart, data.siblings, false, tips.siblings),
     ),
-    figure(T.bip32.heatmap(s.bip32.correlation), hw.drawHeatmap, data.correlation, true),
+    figure(T.bip32.heatmap(s.bip32.correlation), hw.drawHeatmap, data.correlation, true, tips.correlation),
     tests('bip32', s),
     paras(T.bip32.explain(s)),
 
@@ -805,10 +815,10 @@ function updateStats() {
     h(
       'div',
       { class: 'charts' },
-      figure(T.secp.xChart(s.secp256k1.bitsX.N), hw.drawBarChart, data.xBits),
-      figure(T.secp.yChart(s.secp256k1.bitsY.N), hw.drawBarChart, data.yBits),
+      figure(T.secp.xChart(s.secp256k1.bitsX.N), hw.drawBarChart, data.xBits, false, tips.xBits),
+      figure(T.secp.yChart(s.secp256k1.bitsY.N), hw.drawBarChart, data.yBits, false, tips.yBits),
     ),
-    figure(T.secp.distanceChart(s.secp256k1.avalanche, data.pointDistances), hw.drawBarChart, data.pointDistances),
+    figure(T.secp.distanceChart(s.secp256k1.avalanche, data.pointDistances), hw.drawBarChart, data.pointDistances, false, tips.pointDistances),
     tests('secp256k1', s),
     h('p', { class: 'structure', text: T.secp.homomorphism(s.secp256k1.homomorphism) }),
     paras(T.secp.explain(s)),
@@ -818,17 +828,17 @@ function updateStats() {
     h(
       'div',
       { class: 'charts' },
-      figure(T.keccak.bitsChart(s.keccak.addressBits.N), hw.drawBarChart, data.addressBits),
-      figure(T.keccak.hexChart(s.keccak.firstHex.test.N), hw.drawBarChart, data.firstHex),
+      figure(T.keccak.bitsChart(s.keccak.addressBits.N), hw.drawBarChart, data.addressBits, false, tips.addressBits),
+      figure(T.keccak.hexChart(s.keccak.firstHex.test.N), hw.drawBarChart, data.firstHex, false, tips.firstHex),
     ),
-    figure(T.keccak.distanceChart(s.keccak.avalanche, data.keccakDistances), hw.drawBarChart, data.keccakDistances),
-    figure(T.keccak.heatmap, hw.drawHeatmap, data.sac, true),
+    figure(T.keccak.distanceChart(s.keccak.avalanche, data.keccakDistances), hw.drawBarChart, data.keccakDistances, false, tips.keccakDistances),
+    figure(T.keccak.heatmap, hw.drawHeatmap, data.sac, true, tips.sac),
     tests('keccak', s),
     paras(T.keccak.explain(s)),
 
     titles[5],
     h('p', { text: T.eip55.intro }),
-    figure(T.eip55.lettersChart(s.eip55.letters.test.N), hw.drawBarChart, data.letters),
+    figure(T.eip55.lettersChart(s.eip55.letters.test.N), hw.drawBarChart, data.letters, false, tips.letters),
     tests('eip55', s),
     paras(T.eip55.explain(s)),
 
@@ -1004,6 +1014,16 @@ function goTo(id) {
   target.addEventListener('animationend', () => target.classList.remove('flash'), { once: true });
 }
 
+// In cima alla pagina, con il focus sul titolo: chi usa la tastiera riparte
+// da li', non dal pulsante in fondo
+function backToTop() {
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
+  document.getElementById('page-title').focus({ preventScroll: true });
+}
+
+const toTopButton = () => h('p', { class: 'to-top' }, h('button', { type: 'button', class: 'btn alt', text: text.ui.backToTop, onclick: backToTop }));
+
 function renderChrome() {
   const t = text;
   document.documentElement.lang = state.lang;
@@ -1027,8 +1047,9 @@ function render() {
   text = HW2_TEXTS[state.lang];
   renderChrome();
   const app = document.getElementById('app');
-  fill(app, assignmentSection(), pipelineSection(), categoriesSection(), statsSection(), historySection(), discussionSection());
+  fill(app, assignmentSection(), pipelineSection(), categoriesSection(), statsSection(), historySection(), discussionSection(), toTopButton());
   const read = view.readInputs(state.fields);
+  regions.pipeline.classList.toggle('is-stale', !read.valid);
   updateInputs(read);
   updateBip39(read);
   updatePipeline();

@@ -15,7 +15,7 @@ const TemplateScripts = () => {
 
       // Se jQuery non c'è o il menu non è ancora stato disegnato da React, riprova dopo
       if (!$ || $('#nav').length === 0) {
-        return; 
+        return false;
       }
 
       const $body = $('body');
@@ -135,11 +135,20 @@ const TemplateScripts = () => {
           navigate(path);
         }
       });
+      return true;
     };
 
-    // Eseguiamo lo script con un piccolo ritardo (200ms) per essere SICURI 
-    // che React abbia finito di disegnare l'HTML della pagina.
-    const timer = setTimeout(initThemeScripts, 200);
+    // Eseguiamo lo script quando React ha disegnato il menu della pagina: un
+    // primo tentativo dopo 200 ms, poi altri ogni 150 ms finche' #nav non
+    // c'e', per al massimo una decina di secondi. Le pagine caricate a
+    // richiesta (gli homework) possono arrivare dopo i primi 200 ms.
+    let tries = 0;
+    let timer = 0;
+    const attempt = () => {
+      if (initThemeScripts() || ++tries > 60) return;
+      timer = setTimeout(attempt, 150);
+    };
+    timer = setTimeout(attempt, 200);
 
     // Pulizia quando si smonta il componente
     return () => {

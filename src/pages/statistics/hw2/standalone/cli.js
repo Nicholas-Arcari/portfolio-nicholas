@@ -29,6 +29,15 @@
   }
 
   globalThis.Homework2 = Homework2;
+  // In un modulo ES require non esiste, e fino a Node 18 manca anche il
+  // generatore crittografico globale (crypto): lo si carica qui, in modo
+  // asincrono, e la riga di comando parte solo dopo, cosi' anche --random
+  // funziona su ogni versione di Node da 14 in su.
+  const ready = globalThis.crypto
+    ? Promise.resolve()
+    : import('crypto').then((nodeCrypto) => {
+      if (!globalThis.crypto) globalThis.crypto = nodeCrypto.webcrypto || { getRandomValues: (bytes) => nodeCrypto.randomFillSync(bytes) };
+    });
   // where is this file? the first frame of a fresh stack trace says it
   const frame = (new Error().stack || '').split('\n').find((line) => /^\s+at /.test(line)) || '';
   const location = frame
@@ -54,5 +63,5 @@
   };
   const entry = process.argv[1] ? normalize(real(process.argv[1])) : '';
   const self = normalize(location);
-  if (entry && (entry === self || `${entry}.js` === self)) run();
+  if (entry && (entry === self || `${entry}.js` === self)) ready.then(run);
 })();

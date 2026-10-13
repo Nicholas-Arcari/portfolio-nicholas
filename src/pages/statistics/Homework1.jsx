@@ -59,12 +59,13 @@ const Paras = ({ list }) => list.filter(Boolean).map((t, i) => <p key={i}>{t}</p
 const Pending = ({ text }) => <p className="hw1-note hw1-pending" role="status">{text.ui.computing}</p>;
 
 // Un grafico su canvas (barre o mappa di calore), ridisegnato quando cambia
-// la larghezza: il disegno vero e' in homework1.js. La larghezza arriva dal
+// la larghezza, con i valori del pezzo sotto il puntatore: il disegno vero
+// e' in homework1.js. La larghezza arriva dal
 // ResizeObserver, che la misura dopo il layout: leggerla da clientWidth dopo
 // che un altro grafico si e' appena ridimensionato costringerebbe il browser
 // a ricalcolare l'intera pagina, una volta per grafico. L'altezza e' fissata
 // subito, il disegno avviene qualche millisecondo per fotogramma.
-const Figure = ({ title, draw, data, palette, wide = false }) => {
+const Figure = ({ title, draw, data, palette, tip = null, wide = false }) => {
   const ref = useRef(null);
   useEffect(() => {
     const canvas = ref.current;
@@ -79,11 +80,14 @@ const Figure = ({ title, draw, data, palette, wide = false }) => {
       });
     });
     observer.observe(canvas);
+    // il riquadro con i valori della barra o della cella sotto il puntatore
+    const detach = tip ? hw.attachChartTooltip(canvas, { draw, data, describe: tip }) : null;
     return () => {
       drawn = -2;
       observer.disconnect();
+      if (detach) detach();
     };
-  }, [draw, data, palette]);
+  }, [draw, data, palette, tip]);
   return (
     <figure className={wide ? 'hw1-figure hw1-figure-wide' : 'hw1-figure'}>
       <canvas ref={ref} className="hw1-canvas" role="img" aria-label={title} />
@@ -206,6 +210,7 @@ const Analyses = ({ prefix, result, text, palette }) => {
     () => (s ? view.chartData(s, { kBits: T.correlation.kBits, flipBits: T.avalanche.kBits, decimal: F.decimal }) : null),
     [s, T, F],
   );
+  const tips = useMemo(() => (s ? view.chartTips(s, T.tips) : null), [s, T]);
   const titles = view.ANALYSES.map((key) => (
     <Title key={key} id={`${prefix}-${key}`} level={2}>{text.sections[key]}</Title>
   ));
@@ -226,16 +231,16 @@ const Analyses = ({ prefix, result, text, palette }) => {
       {titles[0]}
       <p>{T.distribution.intro}</p>
       <div className="hw1-charts">
-        <Figure title={T.distribution.chartX} draw={hw.drawBarChart} data={charts.histX} palette={palette} />
-        <Figure title={T.distribution.chartY} draw={hw.drawBarChart} data={charts.histY} palette={palette} />
+        <Figure title={T.distribution.chartX} draw={hw.drawBarChart} data={charts.histX} palette={palette} tip={tips.histX} />
+        <Figure title={T.distribution.chartY} draw={hw.drawBarChart} data={charts.histY} palette={palette} tip={tips.histY} />
       </div>
       <Paras list={T.distribution.explain(s)} />
 
       {titles[1]}
       <p>{T.frequency.intro}</p>
       <div className="hw1-charts">
-        <Figure title={T.frequency.chartX} draw={hw.drawBarChart} data={charts.freqX} palette={palette} />
-        <Figure title={T.frequency.chartY} draw={hw.drawBarChart} data={charts.freqY} palette={palette} />
+        <Figure title={T.frequency.chartX} draw={hw.drawBarChart} data={charts.freqX} palette={palette} tip={tips.freqX} />
+        <Figure title={T.frequency.chartY} draw={hw.drawBarChart} data={charts.freqY} palette={palette} tip={tips.freqY} />
       </div>
       {s.p <= view.FREQUENCY_TABLE_MAX_P ? (
         <>
@@ -258,18 +263,13 @@ const Analyses = ({ prefix, result, text, palette }) => {
       ) : (
         <p className="hw1-note">{T.frequency.bigNote(s.p)}</p>
       )}
-      <p>
-        <strong>{T.frequency.summaryTitle}</strong><br />
-        {T.frequency.summary('x', s.multiplicityX)}<br />
-        {T.frequency.summary('y', s.multiplicityY)}
-      </p>
       <Paras list={T.frequency.explain(s)} />
 
       {titles[2]}
       <p>{T.bits.intro}</p>
       <div className="hw1-charts">
-        <Figure title={T.bits.chartX} draw={hw.drawBarChart} data={charts.bitsX} palette={palette} />
-        <Figure title={T.bits.chartY} draw={hw.drawBarChart} data={charts.bitsY} palette={palette} />
+        <Figure title={T.bits.chartX} draw={hw.drawBarChart} data={charts.bitsX} palette={palette} tip={tips.bitsX} />
+        <Figure title={T.bits.chartY} draw={hw.drawBarChart} data={charts.bitsY} palette={palette} tip={tips.bitsY} />
       </div>
       <Paras list={T.bits.explain(s)} />
 
@@ -305,15 +305,15 @@ const Analyses = ({ prefix, result, text, palette }) => {
         </tbody>
       </table>
       {hasUndefined && <p className="hw1-note">{C.undefinedWhy}</p>}
-      <Figure wide title={C.heatmapTitle(charts.correlation.range)} draw={hw.drawHeatmap} data={charts.correlation} palette={palette} />
+      <Figure wide title={C.heatmapTitle(charts.correlation.range)} draw={hw.drawHeatmap} data={charts.correlation} palette={palette} tip={tips.correlation} />
       <Paras list={C.explain(s)} />
 
       {titles[5]}
       <p>{A.intro}</p>
       {s.avalanche.measurements > 0 && (
         <>
-          <Figure title={A.chartTitle} draw={hw.drawBarChart} data={charts.distances} palette={palette} />
-          <Figure wide title={A.heatmapTitle()} draw={hw.drawHeatmap} data={charts.sac} palette={palette} />
+          <Figure title={A.chartTitle} draw={hw.drawBarChart} data={charts.distances} palette={palette} tip={tips.distances} />
+          <Figure wide title={A.heatmapTitle()} draw={hw.drawHeatmap} data={charts.sac} palette={palette} tip={tips.sac} />
           <div className="hw1-uniformity">
             {view.avalancheBlocks(s, A, T.uniformity).map((block) => (
               <section key={block.label} className="hw1-coord">

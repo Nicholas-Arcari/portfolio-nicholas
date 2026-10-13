@@ -370,50 +370,7 @@ export const STAT_SECTIONS = [
 ];
 
 /** Every hypothesis test of the exploration, by section: [key, test]. The texts name each key. */
-export function statTests(s) {
-  return {
-    bip39: [
-      ['words', s.bip39.words.test],
-      ['nibble', s.bip39.checksumNibble.test],
-      ['random', s.bip39.randomSequences],
-      ['typos', s.bip39.wordTypos],
-    ],
-    seed: [
-      ['bits', s.seed.bits.global],
-      ['avalancheMean', s.seed.avalanche.mean_test],
-      ['avalancheFit', s.seed.avalanche.fit],
-    ],
-    bip32: [
-      ['bits', s.bip32.bits.global],
-      ['siblingsMean', s.bip32.siblings.mean_test],
-      ['siblingsFit', s.bip32.siblings.fit],
-      ['correlation', s.bip32.correlation],
-    ],
-    secp256k1: [
-      ['parity', s.secp256k1.parity],
-      ['bitsX', s.secp256k1.bitsX.global],
-      ['bitsY', s.secp256k1.bitsY.global],
-      ['avalancheMean', s.secp256k1.avalanche.mean_test],
-      ['avalancheFit', s.secp256k1.avalanche.fit],
-    ],
-    keccak: [
-      ['bits', s.keccak.addressBits.global],
-      ['firstHex', s.keccak.firstHex.test],
-      ['bytes', s.keccak.bytes.test],
-      ['avalancheMean', s.keccak.avalanche.mean_test],
-      ['avalancheFit', s.keccak.avalanche.fit],
-      ['sacOutput', s.keccak.avalanche.perOutput.global],
-      ['sacInput', s.keccak.avalanche.perInput.global],
-      ['sha3Mean', s.keccak.versusSha3.mean_test],
-      ['sha3Fit', s.keccak.versusSha3.fit],
-    ],
-    eip55: [
-      ['letters', s.eip55.letters.test],
-      ['uppercase', s.eip55.uppercase],
-      ['typos', s.eip55.typos],
-    ],
-  };
-}
+export const statTests = hw.statisticalTests;
 
 /** The tests as one list, with how many were rejected and the smallest p-value. */
 export function testSummary(s) {
@@ -513,6 +470,46 @@ export function chartData(s, { decimal = '.', axes = {} } = {}) {
     keccakDistances: distanceChart(s.keccak.avalanche, decimal),
     sac: { values: s.keccak.avalanche.blocks, range: 4, rowLabel: axes.inputBits || '', colLabel: axes.outputBits || '', decimal },
     letters: { values: s.eip55.letters.counts, expected: binomialExpected(40, 6 / 16, s.eip55.letters.test.N), labels: indexLabels(41), decimal },
+  };
+}
+
+/**
+ * What the label over each chart of chartData says for the bar or the cell
+ * under the pointer (hw.attachChartTooltip), from the same statistics and
+ * chart data. P is the `tips` part of the texts. A bar may stand for
+ * several values when the chart has more of them than pixels (the 2048
+ * words): then the label gives the range.
+ */
+export function chartTips(s, data, P) {
+  const sum = (list, from, to) => list.slice(from, to).reduce((a, b) => a + b, 0);
+  const words = s.bip39.words.counts;
+  const bit = (b, what) => ({ from }) => P.bit(what, from, b.fractions[from], b.z[from]);
+  // classes of `width` distances from `lo`; the first and the last also hold anything beyond the range
+  const distances = (chart, d) => ({ from, to }) => {
+    const first = chart.lo + from * chart.width;
+    const last = Math.min(d.n, chart.lo + to * chart.width - 1);
+    return P.distances(from === 0 && chart.lo > 0 ? null : first, to === chart.values.length && chart.hi < d.n ? null : last, sum(chart.values, from, to), sum(chart.expected, from, to));
+  };
+  return {
+    words: ({ from, to }) => {
+      if (to - from === 1) return P.word(from, hw.WORDLIST[from], words[from], data.words.expected);
+      const part = words.slice(from, to);
+      return P.words(from, to - 1, hw.WORDLIST[from], hw.WORDLIST[to - 1], Math.min(...part), Math.max(...part));
+    },
+    nibble: ({ from }) => P.nibble(from, s.bip39.checksumNibble.counts[from], data.nibble.expected),
+    seedBits: bit(s.seed.bits, P.of.seed),
+    seedDistances: distances(data.seedDistances, s.seed.avalanche),
+    keyBits: bit(s.bip32.bits, P.of.key),
+    siblings: distances(data.siblings, s.bip32.siblings),
+    correlation: ({ row, col }) => P.indexKey(row, col * CORRELATION_BLOCK, Math.min(255, (col + 1) * CORRELATION_BLOCK - 1), data.correlation.values[row][col]),
+    xBits: bit(s.secp256k1.bitsX, P.of.x),
+    yBits: bit(s.secp256k1.bitsY, P.of.y),
+    pointDistances: distances(data.pointDistances, s.secp256k1.avalanche),
+    addressBits: bit(s.keccak.addressBits, P.of.address),
+    firstHex: ({ from }) => P.firstHex('0123456789abcdef'[from], s.keccak.firstHex.counts[from], data.firstHex.expected),
+    keccakDistances: distances(data.keccakDistances, s.keccak.avalanche),
+    sac: ({ row, col }) => P.sacBlock(16 * row, 16 * row + 15, 8 * col, 8 * col + 7, data.sac.values[row][col]),
+    letters: ({ from }) => P.letters(from, s.eip55.letters.counts[from], data.letters.expected[from]),
   };
 }
 

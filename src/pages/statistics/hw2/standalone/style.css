@@ -103,6 +103,20 @@ h1 {
   line-height: 1.2;
 }
 
+h1:focus {
+  outline: none;
+}
+
+h1:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
+/* in fondo alla pagina: il ritorno all'inizio */
+.to-top {
+  margin: 2.5rem 0 0;
+}
+
 .subtitle {
   margin: 0.7rem 0 0.2rem;
   font-size: 1.05rem;
@@ -408,8 +422,41 @@ canvas.chart {
 }
 
 .figure {
+  position: relative;
   min-width: 0;
   margin: 0 0 1rem;
+}
+
+/* i valori della barra o della cella sotto il puntatore (attachChartTooltip) */
+canvas.has-tip {
+  cursor: crosshair;
+}
+
+.chart-mark {
+  position: absolute;
+  box-sizing: border-box;
+  border: 2px solid var(--accent);
+  background: var(--accent-soft);
+  pointer-events: none;
+}
+
+.chart-mark.is-thin {
+  border-width: 1px;
+}
+
+.chart-tip {
+  position: absolute;
+  z-index: 5;
+  max-width: min(20rem, 90%);
+  padding: 0.35rem 0.6rem;
+  border-radius: 6px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  white-space: pre-line;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
 .figure figcaption {
@@ -577,6 +624,14 @@ input.wide {
 
 .check.is-bad {
   color: var(--error);
+}
+
+.stale-note {
+  display: none;
+}
+
+.is-stale .stale-note {
+  display: block;
 }
 
 .stale {

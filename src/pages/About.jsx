@@ -5,6 +5,14 @@ import TerminalText from '../components/TerminalText';
 import { useLanguage } from '../contexts/languageContext';
 import Footer from '../components/Footer';
 
+// Profili social che compaiono nei contatti solo quando il loro indirizzo e'
+// noto: per pubblicarne uno basta scriverlo al posto di null. Nessun
+// indirizzo viene indovinato.
+const PENDING_PROFILES = [
+  { key: 'instagram', label: 'Instagram', icon: 'icon brands fa-instagram', color: '#E4405F', url: null },
+  { key: 'bump', label: 'Bump', icon: 'icon solid fa-user-friends', color: '#d52349', url: null },
+];
+
 const About = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
@@ -144,6 +152,13 @@ const About = () => {
                     <i className="icon solid fa-bug" style={{ width: '30px', color: '#333', fontSize: '1.2em' }}></i>
                     <a href="https://hackerone.com/arcari" target="_blank" rel="noreferrer">HackerOne</a>
                   </li>
+
+                  {PENDING_PROFILES.filter((profile) => profile.url).map((profile) => (
+                    <li key={profile.key}>
+                      <i className={profile.icon} style={{ width: '30px', color: profile.color, fontSize: '1.2em' }}></i>
+                      <a href={profile.url} target="_blank" rel="noreferrer">{profile.label}</a>
+                    </li>
+                  ))}
 
                 </ul>
               </div>

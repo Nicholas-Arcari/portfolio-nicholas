@@ -64,7 +64,10 @@ const Paras = ({ list }) => list.filter(Boolean).map((t, i) => <p key={i}>{t}</p
 
 const Pending = ({ text }) => <p className="hw1-note hw1-pending" role="status">{text.ui.computing}</p>;
 
-const Stale = ({ show, text }) => (show ? <p className="hw2-stale" role="status">{text.pipeline.stale}</p> : null);
+// La nota "valori dell'ultimo input valido" c'e' sempre, nascosta: la mostra
+// il CSS quando la sezione della pipeline ha la classe is-stale. Cosi' un
+// errore in un campo non ridisegna tutte le sezioni, ma cambia una classe.
+const Stale = ({ text }) => <p className="hw2-stale hw2-stale-note">{text.pipeline.stale}</p>;
 
 // Un valore esadecimale lungo: va a capo dove serve, e si copia intero
 const Value = ({ label, children, className = '' }) => (
@@ -75,10 +78,11 @@ const Value = ({ label, children, className = '' }) => (
 );
 
 // Un grafico su canvas (barre o mappa di calore), ridisegnato quando cambia
-// la larghezza: il disegno vero e' in homework2.js. La larghezza arriva dal
+// la larghezza, con i valori del pezzo sotto il puntatore: il disegno vero
+// e' in homework2.js. La larghezza arriva dal
 // ResizeObserver, misurata dopo il layout; l'altezza e' fissata subito, il
 // disegno avviene qualche millisecondo per fotogramma.
-const Figure = ({ title, draw, data, palette, wide = false }) => {
+const Figure = ({ title, draw, data, palette, tip = null, wide = false }) => {
   const ref = useRef(null);
   useEffect(() => {
     const canvas = ref.current;
@@ -93,11 +97,14 @@ const Figure = ({ title, draw, data, palette, wide = false }) => {
       });
     });
     observer.observe(canvas);
+    // il riquadro con i valori della barra o della cella sotto il puntatore
+    const detach = tip ? hw.attachChartTooltip(canvas, { draw, data, describe: tip }) : null;
     return () => {
       drawn = -2;
       observer.disconnect();
+      if (detach) detach();
     };
-  }, [draw, data, palette]);
+  }, [draw, data, palette, tip]);
   return (
     <figure className={wide ? 'hw1-figure hw1-figure-wide' : 'hw1-figure'}>
       <canvas ref={ref} className="hw1-canvas" role="img" aria-label={title} />
@@ -130,12 +137,12 @@ const Tests = ({ section, s, text }) => (
 
 // --- 1. La pipeline: il diagramma -------------------------------------------
 
-const Flow = React.memo(function Flow({ pipeline, text, stale }) {
+const Flow = React.memo(function Flow({ pipeline, text }) {
   const P = text.pipeline;
   return (
     <figure className="hw2-flow">
       <figcaption>{P.flowTitle}</figcaption>
-      <Stale show={stale} text={text} />
+      <Stale text={text} />
       <ol>
         {view.flowNodes(pipeline).map((item) =>
           item.arrow ? (
@@ -158,7 +165,7 @@ const Flow = React.memo(function Flow({ pipeline, text, stale }) {
 
 // --- 1.2 BIP-39 ---------------------------------------------------------------
 
-const Bip39 = ({ analysis, pipeline, text, stale }) => {
+const Bip39 = ({ analysis, pipeline, text }) => {
   const B = text.bip39;
   const rows = view.wordRows(analysis);
   const groups = view.bitGroups(analysis);
@@ -207,7 +214,7 @@ const Bip39 = ({ analysis, pipeline, text, stale }) => {
       )}
       <p className="hw1-table-title"><strong>{B.seedTitle}</strong></p>
       <pre className="hw1-formulas">{B.seedFormula}</pre>
-      <Stale show={stale} text={text} />
+      <Stale text={text} />
       <Value label={B.seedLabel(pipeline.passphrase !== '')}>{hex(pipeline.seed)}</Value>
       <Paras list={B.after} />
     </>
@@ -216,7 +223,7 @@ const Bip39 = ({ analysis, pipeline, text, stale }) => {
 
 // --- 1.3 BIP-32 ---------------------------------------------------------------
 
-const Bip32 = React.memo(function Bip32({ pipeline, text, stale }) {
+const Bip32 = React.memo(function Bip32({ pipeline, text }) {
   const B = text.bip32;
   const rows = useMemo(() => view.levelRows(pipeline), [pipeline]);
   const leak = useMemo(() => view.leakDemo(pipeline), [pipeline]);
@@ -225,7 +232,7 @@ const Bip32 = React.memo(function Bip32({ pipeline, text, stale }) {
     <>
       <Paras list={B.intro} />
       <p className="hw1-table-title"><strong>{B.levelsTitle}</strong></p>
-      <Stale show={stale} text={text} />
+      <Stale text={text} />
       <table className="hw1-table hw1-discussion-table hw2-levels">
         <thead>
           <tr><th>{B.cols.path}</th><th>{B.cols.kind}</th><th>{B.cols.data}</th><th>{B.cols.key}</th><th>{B.cols.chain}</th></tr>
@@ -255,14 +262,14 @@ const Bip32 = React.memo(function Bip32({ pipeline, text, stale }) {
 
 // --- 1.4 BIP-44 ---------------------------------------------------------------
 
-const Bip44 = React.memo(function Bip44({ pipeline, comparison, text, stale }) {
+const Bip44 = React.memo(function Bip44({ pipeline, comparison, text }) {
   const B = text.bip44;
   const levels = view.bip44Levels(pipeline.levels);
   return (
     <>
       <p>{B.intro}</p>
       <p className="hw1-table-title"><strong>{B.levelsTitle(pipeline.path)}</strong></p>
-      <Stale show={stale} text={text} />
+      <Stale text={text} />
       {levels.standard ? (
         <ul className="hw2-roles">
           {levels.rows.map((r) => (
@@ -302,7 +309,7 @@ const Bip44 = React.memo(function Bip44({ pipeline, comparison, text, stale }) {
 
 // --- 1.5 secp256k1 ------------------------------------------------------------
 
-const Secp = React.memo(function Secp({ pipeline, text, stale }) {
+const Secp = React.memo(function Secp({ pipeline, text }) {
   const C = text.secp;
   const params = useMemo(() => view.curveParameters(), []);
   const checks = useMemo(() => view.curveChecks(pipeline), [pipeline]);
@@ -314,7 +321,7 @@ const Secp = React.memo(function Secp({ pipeline, text, stale }) {
         {['p', 'n', 'Gx', 'Gy'].map((key) => <Value key={key} label={C.constants[key]}>{params[key]}</Value>)}
       </details>
       <p className="hw1-table-title"><strong>{C.keyTitle}</strong></p>
-      <Stale show={stale} text={text} />
+      <Stale text={text} />
       <Value label={C.keyLabel}>{hex(pipeline.privateKey)}</Value>
       <p className={checks.keyInRange ? 'hw2-check is-ok' : 'hw2-check is-bad'}>{C.keyCheck(checks.keyInRange)}</p>
       <Value label={C.xLabel}>{checks.x}</Value>
@@ -332,13 +339,13 @@ const Secp = React.memo(function Secp({ pipeline, text, stale }) {
 
 // --- 1.6 Keccak-256 -----------------------------------------------------------
 
-const Keccak = React.memo(function Keccak({ pipeline, text, stale }) {
+const Keccak = React.memo(function Keccak({ pipeline, text }) {
   const K = text.keccak;
   const parts = useMemo(() => view.hashParts(pipeline), [pipeline]);
   return (
     <>
       <p>{K.intro}</p>
-      <Stale show={stale} text={text} />
+      <Stale text={text} />
       <Value label={K.inputLabel}>{hex(pipeline.address.xy)}</Value>
       <Value label={K.hashLabel}>
         <span className="hw2-dropped">{parts.dropped}</span>
@@ -388,7 +395,7 @@ const AddressChecker = ({ reference, text }) => {
   );
 };
 
-const Eip55 = React.memo(function Eip55({ pipeline, text, stale }) {
+const Eip55 = React.memo(function Eip55({ pipeline, text }) {
   const E = text.eip55;
   const c = pipeline.checksum;
   const letters = c.chars.filter((ch) => ch.letter).length;
@@ -396,7 +403,7 @@ const Eip55 = React.memo(function Eip55({ pipeline, text, stale }) {
     <>
       <Paras list={E.intro} />
       <p className="hw1-table-title"><strong>{E.gridTitle}</strong></p>
-      <Stale show={stale} text={text} />
+      <Stale text={text} />
       <div className="hw2-grid" role="img" aria-label={`${E.resultLabel}: ${c.address}`}>
         {c.chars.map((ch, i) => (
           <span key={i} className={ch.letter ? (ch.upper ? 'is-upper' : 'is-lower') : 'is-digit'}>
@@ -488,6 +495,7 @@ const Wallets = React.memo(function Wallets({ result, text }) {
           })}
         </tbody>
       </table>
+      <p className="hw1-note">{W.verified}</p>
     </>
   );
 });
@@ -499,6 +507,7 @@ const Statistics = React.memo(function Statistics({ result, text, palette }) {
   const T = text.stats;
   const F = text.fmt;
   const charts = useMemo(() => (s ? view.chartData(s, { decimal: F.decimal, axes: T.axes }) : null), [s, F, T]);
+  const tips = useMemo(() => (s ? view.chartTips(s, charts, T.tips) : null), [s, charts, T]);
   const summary = useMemo(() => (s ? view.testSummary(s) : null), [s]);
   const titles = view.STAT_SECTIONS.map(({ key, id, title }) => <Title key={key} id={id} level={1}>{text.sections[title]}</Title>);
   const summaryTitle = <Title id="hw2-stats-summary" level={1}>{text.sections.statsSummary}</Title>;
@@ -518,9 +527,9 @@ const Statistics = React.memo(function Statistics({ result, text, palette }) {
     <>
       {titles[0]}
       <p>{T.bip39.intro}</p>
-      <Figure wide title={T.bip39.wordsChart(s.bip39.words.test.N, s.samples.mnemonics)} draw={hw.drawBarChart} data={charts.words} palette={palette} />
+      <Figure wide title={T.bip39.wordsChart(s.bip39.words.test.N, s.samples.mnemonics)} draw={hw.drawBarChart} data={charts.words} palette={palette} tip={tips.words} />
       <div className="hw1-charts">
-        <Figure title={T.bip39.nibbleChart(s.samples.mnemonics)} draw={hw.drawBarChart} data={charts.nibble} palette={palette} />
+        <Figure title={T.bip39.nibbleChart(s.samples.mnemonics)} draw={hw.drawBarChart} data={charts.nibble} palette={palette} tip={tips.nibble} />
       </div>
       <Tests section="bip39" s={s} text={text} />
       <Paras list={T.bip39.explain(s)} />
@@ -528,8 +537,8 @@ const Statistics = React.memo(function Statistics({ result, text, palette }) {
       {titles[1]}
       <p>{T.seed.intro}</p>
       <div className="hw1-charts">
-        <Figure title={T.seed.bitsChart(s.seed.bits.N)} draw={hw.drawBarChart} data={charts.seedBits} palette={palette} />
-        <Figure title={T.seed.distanceChart(s.seed.avalanche, charts.seedDistances)} draw={hw.drawBarChart} data={charts.seedDistances} palette={palette} />
+        <Figure title={T.seed.bitsChart(s.seed.bits.N)} draw={hw.drawBarChart} data={charts.seedBits} palette={palette} tip={tips.seedBits} />
+        <Figure title={T.seed.distanceChart(s.seed.avalanche, charts.seedDistances)} draw={hw.drawBarChart} data={charts.seedDistances} palette={palette} tip={tips.seedDistances} />
       </div>
       <Tests section="seed" s={s} text={text} />
       <Paras list={T.seed.explain(s)} />
@@ -537,20 +546,20 @@ const Statistics = React.memo(function Statistics({ result, text, palette }) {
       {titles[2]}
       <p>{T.bip32.intro}</p>
       <div className="hw1-charts">
-        <Figure title={T.bip32.bitsChart(s.bip32.bits.N)} draw={hw.drawBarChart} data={charts.keyBits} palette={palette} />
-        <Figure title={T.bip32.distanceChart(s.bip32.siblings, charts.siblings)} draw={hw.drawBarChart} data={charts.siblings} palette={palette} />
+        <Figure title={T.bip32.bitsChart(s.bip32.bits.N)} draw={hw.drawBarChart} data={charts.keyBits} palette={palette} tip={tips.keyBits} />
+        <Figure title={T.bip32.distanceChart(s.bip32.siblings, charts.siblings)} draw={hw.drawBarChart} data={charts.siblings} palette={palette} tip={tips.siblings} />
       </div>
-      <Figure wide title={T.bip32.heatmap(s.bip32.correlation)} draw={hw.drawHeatmap} data={charts.correlation} palette={palette} />
+      <Figure wide title={T.bip32.heatmap(s.bip32.correlation)} draw={hw.drawHeatmap} data={charts.correlation} palette={palette} tip={tips.correlation} />
       <Tests section="bip32" s={s} text={text} />
       <Paras list={T.bip32.explain(s)} />
 
       {titles[3]}
       <p>{T.secp.intro}</p>
       <div className="hw1-charts">
-        <Figure title={T.secp.xChart(s.secp256k1.bitsX.N)} draw={hw.drawBarChart} data={charts.xBits} palette={palette} />
-        <Figure title={T.secp.yChart(s.secp256k1.bitsY.N)} draw={hw.drawBarChart} data={charts.yBits} palette={palette} />
+        <Figure title={T.secp.xChart(s.secp256k1.bitsX.N)} draw={hw.drawBarChart} data={charts.xBits} palette={palette} tip={tips.xBits} />
+        <Figure title={T.secp.yChart(s.secp256k1.bitsY.N)} draw={hw.drawBarChart} data={charts.yBits} palette={palette} tip={tips.yBits} />
       </div>
-      <Figure title={T.secp.distanceChart(s.secp256k1.avalanche, charts.pointDistances)} draw={hw.drawBarChart} data={charts.pointDistances} palette={palette} />
+      <Figure title={T.secp.distanceChart(s.secp256k1.avalanche, charts.pointDistances)} draw={hw.drawBarChart} data={charts.pointDistances} palette={palette} tip={tips.pointDistances} />
       <Tests section="secp256k1" s={s} text={text} />
       <p className="hw2-structure">{T.secp.homomorphism(s.secp256k1.homomorphism)}</p>
       <Paras list={T.secp.explain(s)} />
@@ -558,17 +567,17 @@ const Statistics = React.memo(function Statistics({ result, text, palette }) {
       {titles[4]}
       <p>{T.keccak.intro}</p>
       <div className="hw1-charts">
-        <Figure title={T.keccak.bitsChart(s.keccak.addressBits.N)} draw={hw.drawBarChart} data={charts.addressBits} palette={palette} />
-        <Figure title={T.keccak.hexChart(s.keccak.firstHex.test.N)} draw={hw.drawBarChart} data={charts.firstHex} palette={palette} />
+        <Figure title={T.keccak.bitsChart(s.keccak.addressBits.N)} draw={hw.drawBarChart} data={charts.addressBits} palette={palette} tip={tips.addressBits} />
+        <Figure title={T.keccak.hexChart(s.keccak.firstHex.test.N)} draw={hw.drawBarChart} data={charts.firstHex} palette={palette} tip={tips.firstHex} />
       </div>
-      <Figure title={T.keccak.distanceChart(s.keccak.avalanche, charts.keccakDistances)} draw={hw.drawBarChart} data={charts.keccakDistances} palette={palette} />
-      <Figure wide title={T.keccak.heatmap} draw={hw.drawHeatmap} data={charts.sac} palette={palette} />
+      <Figure title={T.keccak.distanceChart(s.keccak.avalanche, charts.keccakDistances)} draw={hw.drawBarChart} data={charts.keccakDistances} palette={palette} tip={tips.keccakDistances} />
+      <Figure wide title={T.keccak.heatmap} draw={hw.drawHeatmap} data={charts.sac} palette={palette} tip={tips.sac} />
       <Tests section="keccak" s={s} text={text} />
       <Paras list={T.keccak.explain(s)} />
 
       {titles[5]}
       <p>{T.eip55.intro}</p>
-      <Figure title={T.eip55.lettersChart(s.eip55.letters.test.N)} draw={hw.drawBarChart} data={charts.letters} palette={palette} />
+      <Figure title={T.eip55.lettersChart(s.eip55.letters.test.N)} draw={hw.drawBarChart} data={charts.letters} palette={palette} tip={tips.letters} />
       <Tests section="eip55" s={s} text={text} />
       <Paras list={T.eip55.explain(s)} />
 
@@ -595,6 +604,149 @@ const Statistics = React.memo(function Statistics({ result, text, palette }) {
       <p className="hw2-structure">{T.secp.homomorphism(s.secp256k1.homomorphism)}</p>
       <Paras list={T.summary.after} />
     </>
+  );
+});
+
+// --- 0, 2, 4, 5: le sezioni di solo testo ---------------------------------------
+// Memorizzate: scrivendo nei campi della sezione 1 non si ridisegnano.
+
+const Assignment = React.memo(function Assignment({ text }) {
+  const S = text.sections;
+  return (
+    <section className="hw1-section hw2">
+      <Title id="hw2-assignment" level={0}>{S.assignment}</Title>
+      <Paras list={text.assignment.intro} />
+      <details className="hw1-original" open>
+        <summary>{text.assignment.originalTitle}</summary>
+        <p className="hw1-note">{text.assignment.originalNote}</p>
+        <blockquote lang="en">
+          {originalAssignment().map((block, i) => {
+            if (block.type === 'title' || block.type === 'heading') return <p key={i}><strong>{block.text}</strong></p>;
+            if (block.type === 'lines') {
+              return (
+                <p key={i}>
+                  {block.lines.map((line, j) => (
+                    <React.Fragment key={j}>{j > 0 && <br />}{line}</React.Fragment>
+                  ))}
+                </p>
+              );
+            }
+            return <p key={i}>{block.text}</p>;
+          })}
+        </blockquote>
+      </details>
+    </section>
+  );
+});
+
+const Categories = React.memo(function Categories({ text }) {
+  const S = text.sections;
+  return (
+    <section className="hw1-section hw2 hw2-far">
+      <Title id="hw2-categories" level={0}>{S.categories}</Title>
+      <p>{text.categories.intro}</p>
+      <table className="hw1-table hw1-discussion-table hw2-categories">
+        <thead>
+          <tr>
+            <th>{text.categories.cols.category}</th><th>{text.categories.cols.what}</th>
+            <th>{text.categories.cols.where}</th><th>{text.categories.cols.properties}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {text.categories.rows.map((row) => (
+            <tr key={row.key}>
+              <th data-label={text.categories.cols.category}>{row.name}</th>
+              <td data-label={text.categories.cols.what}>{row.what}</td>
+              <td data-label={text.categories.cols.where}>{row.where}</td>
+              <td data-label={text.categories.cols.properties}>{row.properties}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <Paras list={text.categories.after} />
+    </section>
+  );
+});
+
+const History = React.memo(function History({ text, digests }) {
+  const S = text.sections;
+  const H = text.history;
+  return (
+    <section className="hw1-section hw2 hw2-far">
+      <Title id="hw2-history" level={0}>{S.history}</Title>
+      <Title id="hw2-timeline" level={1}>{S.timeline}</Title>
+      <p>{H.intro}</p>
+      <p className="hw2-legend">
+        <span className="hw2-legend-task">{H.legend.task}</span>
+        <span className="hw2-legend-context">{H.legend.context}</span>
+      </p>
+      <ol className="hw2-timeline">
+        {H.events.map((e) => (
+          <li key={`${e.year}-${e.title}`} className={e.task ? 'is-task' : 'is-context'}>
+            <span className="hw2-year">{e.year}</span>
+            <div>
+              <strong>{e.title}</strong>
+              <p>{e.text}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+      <p>{H.after}</p>
+
+      <Title id="hw2-sha" level={1}>{S.sha}</Title>
+      <p>{H.sha.intro}</p>
+      <table className="hw1-table hw1-discussion-table hw2-sha">
+        <thead>
+          <tr>{H.sha.cols.map((c, i) => <th key={i}>{c}</th>)}</tr>
+        </thead>
+        <tbody>
+          {H.sha.rows.map((row) => (
+            <tr key={row[0]}>
+              <th>{row[0]}</th>
+              {row.slice(1).map((cell, i) => <td key={i} data-label={H.sha.cols[i + 1]}>{cell}</td>)}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="hw1-table-title"><strong>{H.sha.digestsTitle}</strong></p>
+      <Value label={H.sha.digestLabel('Keccak-256')}>{digests.keccak}</Value>
+      <Value label={H.sha.digestLabel('SHA3-256')}>{digests.sha3}</Value>
+      <Paras list={H.sha.paras} />
+    </section>
+  );
+});
+
+const Discussion = React.memo(function Discussion({ text, summary }) {
+  const S = text.sections;
+  const D = text.discussion;
+  return (
+    <section className="hw1-section hw2 hw2-far">
+      <Title id="hw2-discussion" level={0}>{S.discussion}</Title>
+
+      <Title id="hw2-why" level={1}>{S.why}</Title>
+      <p>{D.why.intro}</p>
+      <table className="hw1-table hw1-discussion-table hw2-why">
+        <thead>
+          <tr><th>{D.why.cols.parts}</th><th>{D.why.cols.purpose}</th><th>{D.why.cols.instead}</th></tr>
+        </thead>
+        <tbody>
+          {D.why.rows.map((row) => (
+            <tr key={row.parts}>
+              <th data-label={D.why.cols.parts}>{row.parts}</th>
+              <td data-label={D.why.cols.purpose}>{row.purpose}</td>
+              <td data-label={D.why.cols.instead}>{row.instead}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <Paras list={D.why.after} />
+
+      <Title id="hw2-fit" level={1}>{S.fit}</Title>
+      <Paras list={D.fit} />
+
+      <Title id="hw2-conclusion" level={1}>{S.conclusion}</Title>
+      <Paras list={D.conclusion(summary)} />
+    </section>
   );
 });
 
@@ -684,41 +836,15 @@ const Homework2 = () => {
     </section>
   );
 
-  const H = text.history;
-  const D = text.discussion;
-
   return (
     <HomeworkShell slug="homework-2" sidebar={sidebar} toc={toc}>
-      {/* 0. La consegna */}
-      <section className="hw1-section hw2">
-        <Title id="hw2-assignment" level={0}>{S.assignment}</Title>
-        <Paras list={text.assignment.intro} />
-        <details className="hw1-original" open>
-          <summary>{text.assignment.originalTitle}</summary>
-          <p className="hw1-note">{text.assignment.originalNote}</p>
-          <blockquote lang="en">
-            {originalAssignment().map((block, i) => {
-              if (block.type === 'title' || block.type === 'heading') return <p key={i}><strong>{block.text}</strong></p>;
-              if (block.type === 'lines') {
-                return (
-                  <p key={i}>
-                    {block.lines.map((line, j) => (
-                      <React.Fragment key={j}>{j > 0 && <br />}{line}</React.Fragment>
-                    ))}
-                  </p>
-                );
-              }
-              return <p key={i}>{block.text}</p>;
-            })}
-          </blockquote>
-        </details>
-      </section>
+      <Assignment text={text} />
 
       {/* 1. TASK: la pipeline */}
-      <section className="hw1-section hw2">
+      <section className={stale ? 'hw1-section hw2 is-stale' : 'hw1-section hw2'}>
         <Title id="hw2-pipeline" level={0}>{S.pipeline}</Title>
         <Paras list={text.pipeline.intro} />
-        <Flow pipeline={pipeline} text={text} stale={stale} />
+        <Flow pipeline={pipeline} text={text} />
 
         <Title id="hw2-input" level={1}>{S.input}</Title>
         <div className="hw2-warning" role="note">
@@ -807,22 +933,22 @@ const Homework2 = () => {
         </p>
 
         <Title id="hw2-bip39" level={1}>{S.bip39}</Title>
-        <Bip39 analysis={read.analysis} pipeline={pipeline} text={text} stale={stale} />
+        <Bip39 analysis={read.analysis} pipeline={pipeline} text={text} />
 
         <Title id="hw2-bip32" level={1}>{S.bip32}</Title>
-        <Bip32 pipeline={pipeline} text={text} stale={stale} />
+        <Bip32 pipeline={pipeline} text={text} />
 
         <Title id="hw2-bip44" level={1}>{S.bip44}</Title>
-        <Bip44 pipeline={pipeline} comparison={comparison} text={text} stale={stale} />
+        <Bip44 pipeline={pipeline} comparison={comparison} text={text} />
 
         <Title id="hw2-secp256k1" level={1}>{S.secp256k1}</Title>
-        <Secp pipeline={pipeline} text={text} stale={stale} />
+        <Secp pipeline={pipeline} text={text} />
 
         <Title id="hw2-keccak" level={1}>{S.keccak}</Title>
-        <Keccak pipeline={pipeline} text={text} stale={stale} />
+        <Keccak pipeline={pipeline} text={text} />
 
         <Title id="hw2-eip55" level={1}>{S.eip55}</Title>
-        <Eip55 pipeline={pipeline} text={text} stale={stale} />
+        <Eip55 pipeline={pipeline} text={text} />
 
         <Title id="hw2-verify" level={1}>{S.verify}</Title>
         <p>{text.verify.intro}</p>
@@ -832,109 +958,18 @@ const Homework2 = () => {
         <Wallets result={vectors} text={text} />
       </section>
 
-      {/* 2. Le cinque categorie */}
-      <section className="hw1-section hw2">
-        <Title id="hw2-categories" level={0}>{S.categories}</Title>
-        <p>{text.categories.intro}</p>
-        <table className="hw1-table hw1-discussion-table hw2-categories">
-          <thead>
-            <tr>
-              <th>{text.categories.cols.category}</th><th>{text.categories.cols.what}</th>
-              <th>{text.categories.cols.where}</th><th>{text.categories.cols.properties}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {text.categories.rows.map((row) => (
-              <tr key={row.key}>
-                <th data-label={text.categories.cols.category}>{row.name}</th>
-                <td data-label={text.categories.cols.what}>{row.what}</td>
-                <td data-label={text.categories.cols.where}>{row.where}</td>
-                <td data-label={text.categories.cols.properties}>{row.properties}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <Paras list={text.categories.after} />
-      </section>
+      <Categories text={text} />
 
       {/* 3. Statistiche */}
-      <section className="hw1-section hw2">
+      <section className="hw1-section hw2 hw2-far">
         <Title id="hw2-stats" level={0}>{S.stats}</Title>
         <Paras list={text.stats.intro} />
         <Statistics result={stats} text={text} palette={palette} />
       </section>
 
-      {/* 4. Contesto storico */}
-      <section className="hw1-section hw2">
-        <Title id="hw2-history" level={0}>{S.history}</Title>
-        <Title id="hw2-timeline" level={1}>{S.timeline}</Title>
-        <p>{H.intro}</p>
-        <p className="hw2-legend">
-          <span className="hw2-legend-task">{H.legend.task}</span>
-          <span className="hw2-legend-context">{H.legend.context}</span>
-        </p>
-        <ol className="hw2-timeline">
-          {H.events.map((e) => (
-            <li key={`${e.year}-${e.title}`} className={e.task ? 'is-task' : 'is-context'}>
-              <span className="hw2-year">{e.year}</span>
-              <div>
-                <strong>{e.title}</strong>
-                <p>{e.text}</p>
-              </div>
-            </li>
-          ))}
-        </ol>
-        <p>{H.after}</p>
+      <History text={text} digests={digests} />
 
-        <Title id="hw2-sha" level={1}>{S.sha}</Title>
-        <p>{H.sha.intro}</p>
-        <table className="hw1-table hw1-discussion-table hw2-sha">
-          <thead>
-            <tr>{H.sha.cols.map((c, i) => <th key={i}>{c}</th>)}</tr>
-          </thead>
-          <tbody>
-            {H.sha.rows.map((row) => (
-              <tr key={row[0]}>
-                <th>{row[0]}</th>
-                {row.slice(1).map((cell, i) => <td key={i} data-label={H.sha.cols[i + 1]}>{cell}</td>)}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <p className="hw1-table-title"><strong>{H.sha.digestsTitle}</strong></p>
-        <Value label={H.sha.digestLabel('Keccak-256')}>{digests.keccak}</Value>
-        <Value label={H.sha.digestLabel('SHA3-256')}>{digests.sha3}</Value>
-        <Paras list={H.sha.paras} />
-      </section>
-
-      {/* 5. Discussione */}
-      <section className="hw1-section hw2">
-        <Title id="hw2-discussion" level={0}>{S.discussion}</Title>
-
-        <Title id="hw2-why" level={1}>{S.why}</Title>
-        <p>{D.why.intro}</p>
-        <table className="hw1-table hw1-discussion-table hw2-why">
-          <thead>
-            <tr><th>{D.why.cols.parts}</th><th>{D.why.cols.purpose}</th><th>{D.why.cols.instead}</th></tr>
-          </thead>
-          <tbody>
-            {D.why.rows.map((row) => (
-              <tr key={row.parts}>
-                <th data-label={D.why.cols.parts}>{row.parts}</th>
-                <td data-label={D.why.cols.purpose}>{row.purpose}</td>
-                <td data-label={D.why.cols.instead}>{row.instead}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <Paras list={D.why.after} />
-
-        <Title id="hw2-fit" level={1}>{S.fit}</Title>
-        <Paras list={D.fit} />
-
-        <Title id="hw2-conclusion" level={1}>{S.conclusion}</Title>
-        <Paras list={D.conclusion(summary)} />
-      </section>
+      <Discussion text={text} summary={summary} />
     </HomeworkShell>
   );
 };

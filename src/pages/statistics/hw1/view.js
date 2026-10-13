@@ -252,6 +252,38 @@ export function chartData(s, { kBits = 'k', flipBits = 'k', decimal = '.' } = {}
   };
 }
 
+/**
+ * What the label over each chart of chartData says for the bar or the cell
+ * under the pointer (hw.attachChartTooltip), from the same statistics. P is
+ * the `tips` part of the texts. A bar may stand for several values when
+ * the chart has more of them than pixels: then the label gives the range.
+ */
+export function chartTips(s, P) {
+  const sum = (list, from, to) => list.slice(from, to).reduce((a, b) => a + b, 0);
+  const classStart = (j) => Math.ceil((j * s.p) / s.histogram.bins);
+  const hist = (coord, counts) => ({ from, to }) => P.hist(coord, classStart(from), classStart(to) - 1, sum(counts, from, to), sum(s.histogram.expected, from, to));
+  const freq = (coord, counts) => ({ from, to }) => {
+    const part = counts.slice(from, to);
+    return P.freq(coord, from, to - 1, Math.min(...part), Math.max(...part), s.N / s.p);
+  };
+  const bit = (coord, list) => ({ from }) => P.bit(coord, list[from]);
+  const L = s.bitLength;
+  // the heatmaps have the bits of x in the first L columns, those of y after
+  const cell = (values, describe) => ({ row, col }) => (col < L ? describe(row, 'x', col, values[row][col]) : describe(row, 'y', col - L, values[row][col]));
+  const a = s.avalanche;
+  return {
+    histX: hist('x', s.histogram.x),
+    histY: hist('y', s.histogram.y),
+    freqX: freq('x', s.freqX),
+    freqY: freq('y', s.freqY),
+    bitsX: bit('x', s.bits.x),
+    bitsY: bit('y', s.bits.y),
+    distances: ({ from }) => P.distance(from, a.distances[from], a.expectedDistances[from]),
+    correlation: cell(s.correlation.bits.values, P.correlation),
+    sac: cell(a.exact.z, P.sac),
+  };
+}
+
 // --- Drawing many charts without freezing the page ---------------------------
 
 const frameJobs = [];

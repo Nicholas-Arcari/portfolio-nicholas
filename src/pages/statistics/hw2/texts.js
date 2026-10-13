@@ -4,7 +4,7 @@
 // stesse cose con le stesse parole. Ogni numero arriva dagli argomenti (la
 // pipeline calcolata, i risultati dell'esplorazione) o dalle costanti della
 // libreria: nessuna frase contiene un risultato scritto a mano.
-import { EXPLORE_SEED, MAX_PATH_DEPTH, SAMPLES, SIGNIFICANCE, chiSquarePValue } from './homework2.js';
+import { EXPLORE_SEED, MAX_PATH_DEPTH, SAMPLES, SIGNIFICANCE, TEST_LABELS, chiSquarePValue } from './homework2.js';
 import { CORRELATION_BLOCK, addressesWithAtMost } from './view.js';
 
 /** Number formatting of one language: decimal separator and "not available" marker. */
@@ -16,6 +16,14 @@ function formatters(decimal, na) {
     decimal,
     num: (v, digits = 3) => (missing(v) ? na : local((Math.abs(v) < 0.5 * 10 ** -digits ? 0 : v).toFixed(digits))),
     pval: (v) => (missing(v) ? na : v === 0 ? '0' : v < 0.001 ? local(v.toExponential(1)) : local(v.toFixed(3))),
+    // an expected count: a decimal when it is large, two significant digits when it is small
+    approx: (v) => {
+      if (missing(v)) return na;
+      if (v === 0) return '0';
+      if (v >= 100) return local(v.toFixed(0));
+      if (v >= 1) return local(v.toFixed(1));
+      return v >= 1e-4 ? local(String(Number(v.toPrecision(2)))) : `< ${local('0.0001')}`;
+    },
     pct: (v, digits = 1) => (missing(v) ? na : `${local((100 * v).toFixed(digits))}%`),
   };
 }
@@ -135,6 +143,7 @@ const it = {
     index: 'Indice',
     indexTitle: 'Indice dell’homework',
     close: 'Chiudi',
+    backToTop: 'Torna su',
     computing: 'Calcolo in corso...',
     language: 'Lingua',
     error: (m) => `Errore: ${m}`,
@@ -423,18 +432,20 @@ const it = {
     failed: 'diverso',
   },
   wallets: {
-    intro: 'La consegna suggerisce di provare un wallet vero. La frase di prova è pubblica, quindi si può importare senza rischi, purché non ci si versino fondi veri: il wallet deve mostrare gli stessi indirizzi che questa pagina calcola, e il confronto verifica l’intera pipeline sul software reale.',
+    intro: 'La consegna suggerisce di provare un wallet vero. La frase di prova è pubblica, quindi si può importare senza rischi, purché non ci si versino fondi veri: il wallet deve mostrare gli stessi indirizzi che questa pagina calcola, e il confronto verifica l’intera pipeline su software reale. I passi qui sotto sono stati eseguiti davvero il 13 ottobre 2026, con MetaMask 13.50.0 e Rabby 0.94.11 per Chrome; le voci sono quelle mostrate dai wallet, che possono cambiarle da una versione all’altra.',
     steps: [
       'Usare un profilo del browser separato, o un browser che non si usa per altro, senza estensioni di wallet che custodiscono fondi veri.',
-      'In MetaMask: "Importa un wallet esistente" (Import an existing wallet), incollare le 12 parole della frase di prova e scegliere una password. In Rabby: "Import Seed Phrase". Rainbow ed Exodus, su telefono e computer, hanno una voce analoga per ripristinare un wallet da una frase.',
-      'Il primo account deve essere quello della tabella qui sotto; "Aggiungi account" (Add account) produce in ordine il secondo e il terzo. Gli stessi indirizzi compaiono qui con il percorso "MetaMask, Rabby, ..." e gli indici 0, 1 e 2.',
-      'Provare poi una frase generata qui con "Genera": il wallet mostra gli stessi indirizzi della pagina. Cambiando una parola, il wallet rifiuta la frase per il checksum, come in 1.2.',
-      'I wallet che lasciano scegliere il percorso, come Rabby e MyEtherWallet con un wallet hardware, mostrano anche gli indirizzi di Ledger Live e del vecchio percorso di Ledger: sono le altre righe della tabella in 1.4.',
-      'MetaMask non supporta la passphrase di BIP-39; Trezor e Ledger la offrono come "wallet nascosto". Con una passphrase la stessa frase dà indirizzi del tutto diversi (1.2).',
+      'MetaMask: "I have an existing wallet", poi "Import using Secret Recovery Phrase" (non gli accessi con Google, Apple o Telegram). In "Import a wallet" scrivere o incollare le 12 parole nell’unico campo e premere "Continue"; in "MetaMask password" scrivere due volte la password, spuntare "If I lose this password, MetaMask can’t reset it." e premere "Create password"; poi "Maybe later" per la biometria, "Continue" e "Open wallet". In questa versione le schermate di importazione restano in inglese anche con la lingua italiana, perché la traduzione manca.',
+      'In alto compare "Account 1" con 0xf39Fd...92266. Per la frase di prova MetaMask trova da solo gli altri account, perché hanno transazioni: nella lista "Accounts", Account 2 è 0x70997...c79C8 e Account 3 è 0x3C44C...293BC, cioè gli indici 1 e 2 di questa pagina con il percorso "MetaMask, Rabby, ...". "Receive" mostra lo stesso indirizzo su Ethereum, Linea, Base, Arbitrum, BNB Chain, OP e Polygon: il tipo di moneta 60 di 1.4 vale per tutte.',
+      'Con una frase generata qui con "Genera" MetaMask mostra solo Account 1, e "Add account" nella lista degli account crea Account 2 e Account 3, con gli indirizzi degli indici 1 e 2 di questa pagina. Una frase con il checksum sbagliato non passa: "Continue" resta disattivato e compare "Secret Recovery Phrase not found.".',
+      'Rabby: "I already have an address", poi "Seed Phrase or Private Key"; nella scheda "Seed Phrase" ("My seed phrase has 12 words") scrivere le parole e premere "Next"; in "Set Password" scrivere due volte la password e premere "Confirm". La schermata "Address Imported" mostra "Seed Phrase 1 #1" con 0xf39fd6...b92266. Con il checksum sbagliato Rabby risponde "The seed phrase is invalid, please check!".',
+      'In Rabby, "Add more addresses from this Seed Phrase" apre "Manage Seed Phrase": gli indirizzi completi della frase, con le reti usate, la data della prima transazione e il saldo (gli account della frase di prova sono in uso dal 2020 su decine di reti). In "Advanced Settings", "Custom Address HD path" offre "BIP44", "Ledger Live" e "Ledger Legacy": i primi tre indirizzi di ciascuno coincidono con le righe della tabella in 1.4.',
+      'Rainbow ed Exodus, su telefono e computer, hanno una voce analoga per ripristinare un wallet da una frase (qui non provati). MetaMask non chiede la passphrase di BIP-39; Trezor e Ledger la offrono come "wallet nascosto", e con una passphrase la stessa frase dà indirizzi del tutto diversi (1.2).',
     ],
     tableTitle: 'Gli account attesi della frase di prova',
     cols: { account: 'Account', path: 'Percorso', address: 'Indirizzo', check: 'Calcolato qui' },
     accountName: (i) => `Account ${i + 1}`,
+    verified: 'Verifica del 13 ottobre 2026: MetaMask 13.50.0 mostra 0xf39Fd...92266, 0x70997...c79C8 e 0x3C44C...293BC; Rabby 0.94.11 elenca per esteso 0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266, 0x70997970c51812dc3a010c7d01b50e0d17dc79c8 e 0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc. Sono gli indirizzi della tabella.',
     warning: 'La frase di prova è nota a tutti: chiunque può spostare i fondi dei suoi indirizzi, e dei programmi automatici lo fanno in pochi secondi su ogni rete in cui hanno valore. Non mandarci mai fondi veri, nemmeno per prova, e non importare mai una frase vera in un profilo di prova o in una pagina web.',
   },
   categories: {
@@ -539,6 +550,24 @@ const it = {
         uppercase: 'Metà delle lettere è maiuscola (binomiale)',
         typos: 'Gli errori di battitura accettati sono quelli previsti per un hash ideale (Poisson esatto)',
       },
+    },
+    // the label over a chart, for the bar or the cell under the pointer
+    tips: {
+      word: (index, word, count, expected) => `parola ${index}, "${word}": ${count === 1 ? 'una volta' : `${count} volte`} (attese ${IT.approx(expected)})`,
+      words: (from, to, fromWord, toWord, min, max) => `parole da ${from} ("${fromWord}") a ${to} ("${toWord}"): ${min === max ? `${max} volte` : `da ${min} a ${max} volte`} ciascuna`,
+      nibble: (value, count, expected) => `checksum ${value.toString(2).padStart(4, '0')} (${value}): ${count} ${count === 1 ? 'frase' : 'frasi'} (attese ${IT.approx(expected)})`,
+      of: { seed: 'del seed', key: 'della chiave', x: 'di x', y: 'di y', address: 'dell’indirizzo' },
+      bit: (what, index, fraction, z) => `bit ${index} ${what}: quota di 1 = ${IT.num(fraction, 3)} (attesa 0,500), z = ${IT.num(z, 2)}`,
+      distances: (from, to, count, expected) => {
+        let what = from === to ? `distanza ${from}` : `distanze da ${from} a ${to}`;
+        if (from === null) what = `distanze fino a ${to}`;
+        else if (to === null) what = `distanze da ${from} in su`;
+        return `${what}: ${count} ${count === 1 ? 'coppia' : 'coppie'} (attese ${IT.approx(expected)})`;
+      },
+      indexKey: (row, from, to, z) => `bit ${row} dell’indice, bit ${from}-${to} della chiave: ${z === null ? 'non definito' : `z = ${IT.num(z, 2)}`}`,
+      firstHex: (digit, count, expected) => `prima cifra ${digit}: ${count} ${count === 1 ? 'indirizzo' : 'indirizzi'} (attesi ${IT.approx(expected)})`,
+      sacBlock: (inFrom, inTo, outFrom, outTo, z) => `bit d’ingresso ${inFrom}-${inTo}, bit d’uscita ${outFrom}-${outTo}: z = ${IT.num(z, 2)}`,
+      letters: (n, count, expected) => `${n} ${n === 1 ? 'lettera' : 'lettere'}: ${count} ${count === 1 ? 'indirizzo' : 'indirizzi'} (attesi ${IT.approx(expected)})`,
     },
     axes: {
       indexBits: 'bit dell’indice',
@@ -784,6 +813,7 @@ const en = {
     index: 'Contents',
     indexTitle: 'Contents of the homework',
     close: 'Close',
+    backToTop: 'Back to top',
     computing: 'Computing...',
     language: 'Language',
     error: (m) => `Error: ${m}`,
@@ -1072,18 +1102,20 @@ const en = {
     failed: 'different',
   },
   wallets: {
-    intro: 'The assignment suggests trying a real wallet. The test sentence is public, so it can be imported safely as long as no real funds are sent to it: the wallet must show the same addresses this page computes, and the comparison checks the whole pipeline on real software.',
+    intro: 'The assignment suggests trying a real wallet. The test sentence is public, so it can be imported safely as long as no real funds are sent to it: the wallet must show the same addresses this page computes, and the comparison checks the whole pipeline on real software. The steps below were actually carried out on 13 October 2026, with MetaMask 13.50.0 and Rabby 0.94.11 for Chrome; the labels are those shown by the wallets, which may change them from one version to the next.',
     steps: [
       'Use a separate browser profile, or a browser not used for anything else, with no wallet extensions holding real funds.',
-      'In MetaMask: "Import an existing wallet", paste the 12 words of the test sentence and choose a password. In Rabby: "Import Seed Phrase". Rainbow and Exodus, on phone and desktop, have a similar option to restore a wallet from a sentence.',
-      'The first account must be the one in the table below; "Add account" produces the second and the third, in order. The same addresses appear here with the path "MetaMask, Rabby, ..." and indices 0, 1 and 2.',
-      'Then try a sentence generated here with "Generate": the wallet shows the same addresses as the page. Changing a word, the wallet refuses the sentence because of the checksum, as in 1.2.',
-      'Wallets that let you choose the path, such as Rabby and MyEtherWallet with a hardware wallet, also show the addresses of Ledger Live and of the old Ledger path: they are the other rows of the table in 1.4.',
-      'MetaMask does not support the BIP-39 passphrase; Trezor and Ledger offer it as a "hidden wallet". With a passphrase the same sentence gives completely different addresses (1.2).',
+      'MetaMask: "I have an existing wallet", then "Import using Secret Recovery Phrase" (not the Google, Apple or Telegram sign-ins). In "Import a wallet" type or paste the 12 words in the single field and press "Continue"; in "MetaMask password" type the password twice, tick "If I lose this password, MetaMask can’t reset it." and press "Create password"; then "Maybe later" for biometrics, "Continue" and "Open wallet". In this version the import screens stay in English even with the Italian language, because the translation is missing.',
+      'At the top appears "Account 1" with 0xf39Fd...92266. For the test sentence MetaMask finds the other accounts by itself, because they have transactions: in the "Accounts" list, Account 2 is 0x70997...c79C8 and Account 3 is 0x3C44C...293BC, that is indices 1 and 2 of this page with the path "MetaMask, Rabby, ...". "Receive" shows the same address on Ethereum, Linea, Base, Arbitrum, BNB Chain, OP and Polygon: coin type 60 of 1.4 holds for all of them.',
+      'With a sentence generated here with "Generate" MetaMask shows only Account 1, and "Add account" in the account list creates Account 2 and Account 3, with the addresses of indices 1 and 2 of this page. A sentence with a wrong checksum does not pass: "Continue" stays disabled and "Secret Recovery Phrase not found." appears.',
+      'Rabby: "I already have an address", then "Seed Phrase or Private Key"; in the "Seed Phrase" tab ("My seed phrase has 12 words") type the words and press "Next"; in "Set Password" type the password twice and press "Confirm". The "Address Imported" screen shows "Seed Phrase 1 #1" with 0xf39fd6...b92266. With a wrong checksum Rabby answers "The seed phrase is invalid, please check!".',
+      'In Rabby, "Add more addresses from this Seed Phrase" opens "Manage Seed Phrase": the full addresses of the sentence, with the networks used, the date of the first transaction and the balance (the accounts of the test sentence have been in use since 2020 on dozens of networks). In "Advanced Settings", "Custom Address HD path" offers "BIP44", "Ledger Live" and "Ledger Legacy": the first three addresses of each match the rows of the table in 1.4.',
+      'Rainbow and Exodus, on phone and desktop, have a similar option to restore a wallet from a sentence (not tried here). MetaMask does not ask for the BIP-39 passphrase; Trezor and Ledger offer it as a "hidden wallet", and with a passphrase the same sentence gives completely different addresses (1.2).',
     ],
     tableTitle: 'The expected accounts of the test sentence',
     cols: { account: 'Account', path: 'Path', address: 'Address', check: 'Computed here' },
     accountName: (i) => `Account ${i + 1}`,
+    verified: 'Checked on 13 October 2026: MetaMask 13.50.0 shows 0xf39Fd...92266, 0x70997...c79C8 and 0x3C44C...293BC; Rabby 0.94.11 lists in full 0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266, 0x70997970c51812dc3a010c7d01b50e0d17dc79c8 and 0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc. They are the addresses of the table.',
     warning: 'The test sentence is known to everybody: anyone can move the funds of its addresses, and automated programs do it within seconds on every network where they have value. Never send real funds to it, not even as a test, and never import a real sentence into a test profile or a web page.',
   },
   categories: {
@@ -1147,47 +1179,24 @@ const en = {
     verdict: { reject: 'H₀ rejected', notReject: 'H₀ not rejected' },
     testLine: testLineEn,
     steps: { bip39: 'BIP-39', seed: 'Seed', bip32: 'BIP-32', secp256k1: 'secp256k1', keccak: 'Keccak-256', eip55: 'EIP-55' },
-    labels: {
-      bip39: {
-        words: 'The 2048 words are equally likely (chi-square goodness of fit)',
-        nibble: 'The 4 checksum bits are uniform over the 16 values (χ²)',
-        random: '12 random words pass the checksum with probability 1/16 (binomial)',
-        typos: 'A replaced word passes the checksum with the computed probability (binomial)',
+    labels: TEST_LABELS, // the same English labels as the command line
+    // the label over a chart, for the bar or the cell under the pointer
+    tips: {
+      word: (index, word, count, expected) => `word ${index}, "${word}": ${count === 1 ? 'once' : `${count} times`} (expected ${EN.approx(expected)})`,
+      words: (from, to, fromWord, toWord, min, max) => `words from ${from} ("${fromWord}") to ${to} ("${toWord}"): ${min === max ? `${max} times` : `from ${min} to ${max} times`} each`,
+      nibble: (value, count, expected) => `checksum ${value.toString(2).padStart(4, '0')} (${value}): ${count} ${count === 1 ? 'sentence' : 'sentences'} (expected ${EN.approx(expected)})`,
+      of: { seed: 'of the seed', key: 'of the key', x: 'of x', y: 'of y', address: 'of the address' },
+      bit: (what, index, fraction, z) => `bit ${index} ${what}: share of ones = ${EN.num(fraction, 3)} (expected 0.500), z = ${EN.num(z, 2)}`,
+      distances: (from, to, count, expected) => {
+        let what = from === to ? `distance ${from}` : `distances from ${from} to ${to}`;
+        if (from === null) what = `distances up to ${to}`;
+        else if (to === null) what = `distances from ${from} up`;
+        return `${what}: ${count} ${count === 1 ? 'pair' : 'pairs'} (expected ${EN.approx(expected)})`;
       },
-      seed: {
-        bits: 'Every bit of the seed is a fair coin: Σz² ~ χ²(512)',
-        avalancheMean: 'One changed entropy bit changes 256 seed bits on average (z)',
-        avalancheFit: 'The distances follow Binomial(512, 1/2) (χ²)',
-      },
-      bip32: {
-        bits: 'Every bit of the child keys is a fair coin: Σz² ~ χ²(256)',
-        siblingsMean: 'Keys of consecutive indices are 128 bits apart on average (z)',
-        siblingsFit: 'Their distances follow Binomial(256, 1/2) (χ²)',
-        correlation: 'Index bits and key bits are independent (permutations)',
-      },
-      secp256k1: {
-        parity: 'y is odd with probability 1/2 (binomial)',
-        bitsX: 'The bits of x are fair coins: Σz² ~ χ²(256)',
-        bitsY: 'The bits of y are fair coins: Σz² ~ χ²(256)',
-        avalancheMean: 'One changed bit of k changes 256 bits of x ‖ y on average (z)',
-        avalancheFit: 'The distances follow Binomial(512, 1/2) (χ²)',
-      },
-      keccak: {
-        bits: 'The bits of the addresses are fair coins: Σz² ~ χ²(160)',
-        firstHex: 'The first hexadecimal digit is uniform (χ²)',
-        bytes: 'The bytes of the addresses are uniform over the 256 values (χ²)',
-        avalancheMean: 'One changed input bit changes 128 output bits on average (z)',
-        avalancheFit: 'The distances follow Binomial(256, 1/2) (χ²)',
-        sacOutput: 'Every output bit changes with probability 1/2: Σz² ~ χ²(256)',
-        sacInput: 'Every input bit changes half of the output on average: Σz² ~ χ²(512)',
-        sha3Mean: 'Keccak-256 and SHA3-256 of the same input are 128 bits apart on average (z)',
-        sha3Fit: 'Their distances follow Binomial(256, 1/2) (χ²)',
-      },
-      eip55: {
-        letters: 'Letters per address follow Binomial(40, 3/8) (χ²)',
-        uppercase: 'Half of the letters are upper case (binomial)',
-        typos: 'The accepted typos are those expected for an ideal hash (exact Poisson)',
-      },
+      indexKey: (row, from, to, z) => `bit ${row} of the index, bits ${from}-${to} of the key: ${z === null ? 'not defined' : `z = ${EN.num(z, 2)}`}`,
+      firstHex: (digit, count, expected) => `first digit ${digit}: ${count} ${count === 1 ? 'address' : 'addresses'} (expected ${EN.approx(expected)})`,
+      sacBlock: (inFrom, inTo, outFrom, outTo, z) => `input bits ${inFrom}-${inTo}, output bits ${outFrom}-${outTo}: z = ${EN.num(z, 2)}`,
+      letters: (n, count, expected) => `${n} ${n === 1 ? 'letter' : 'letters'}: ${count} ${count === 1 ? 'address' : 'addresses'} (expected ${EN.approx(expected)})`,
     },
     axes: {
       indexBits: 'index bits',

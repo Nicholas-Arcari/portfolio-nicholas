@@ -639,6 +639,10 @@ body.dark-mode ::-webkit-scrollbar-thumb {
     border-radius: 4px;
 }
 
+/* Mentre si scarica una pagina caricata a richiesta (gli homework), lo spazio
+   resta occupato: il piede non sale per poi riscendere */
+.page-loading { min-height: 100vh; }
+
 /* ===== HOMEWORK (Statistics) ===== */
 /* La tabella non deve mai superare lo schermo: colonne a larghezza fissa e
    testo che va a capo anche dentro parole lunghe (un URL nella descrizione). */
@@ -667,6 +671,11 @@ body.dark-mode .hw-table th,
 body.dark-mode .hw-table td { border-bottom-color: #2a2a2a; }
 .hw-note { font-size: 0.85em; color: #888; }
 .hw-dates { display: flex; flex-wrap: wrap; gap: 0.4em 1.5em; }
+/* In fondo a ogni homework: ritorno all'elenco e all'inizio della pagina */
+.hw-bottom-actions { display: flex; flex-wrap: wrap; gap: 0.8em 1em; margin-top: 1.5em; }
+.hw-bottom-actions .button { margin: 0; }
+.hw-title h2:focus { outline: none; }
+.hw-title h2:focus-visible { outline: 2px solid #d52349; outline-offset: 4px; }
 
 /* Telefono: ogni riga diventa una scheda, con l'intestazione accanto al valore */
 @media screen and (max-width: 736px) {
@@ -777,7 +786,7 @@ body.dark-mode .hw1-key strong { color: #ff6b81; }
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     gap: 1em 1.5em;
 }
-.hw1-figure { margin: 0; min-width: 0; }
+.hw1-figure { position: relative; margin: 0; min-width: 0; }
 .hw1-figure figcaption { font-size: 0.8em; color: #888; margin-top: 0.3em; }
 
 /* Il nome di un corso con una pagina sua (Statistics) e' un link: rosso
@@ -1306,6 +1315,24 @@ body.dark-mode p.hw2-check.is-bad {
     text-align: left;
 }
 
+/* Le sezioni dopo la pipeline (2-5) sono lunghe e lontane dai campi: il
+   browser le impagina solo quando arrivano sullo schermo, e un tasto premuto
+   nella sezione 1 non costringe a reimpaginare tutta la pagina. Con "auto"
+   il browser ricorda l'altezza vera dopo averla vista una volta. */
+.hw2-far {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 2500px;
+}
+
+/* Le note sui valori dell'ultimo input valido: nascoste, finche' la sezione
+   della pipeline non riceve la classe is-stale */
+.hw2-stale-note {
+    display: none;
+}
+.is-stale .hw2-stale-note {
+    display: block;
+}
+
 /* Il diagramma della pipeline: nodi e frecce, ogni freccia porta alla sua sezione */
 .hw2-flow {
     margin: 1em 0 1.5em;
@@ -1675,4 +1702,44 @@ body.dark-mode .hw2-legend-context::before {
     .hw2-categories th:nth-child(1) { width: 17%; }
     .hw2-why th:nth-child(1) { width: 20%; }
     .hw2-sha th:nth-child(1) { width: 16%; }
+}
+
+/* ===== Grafici degli homework: i valori del pezzo sotto il puntatore =====
+   Il riquadro e il contorno li crea attachChartTooltip (homework1.js,
+   homework2.js) dentro la figura, che per questo e' posizionata. */
+canvas.has-tip {
+    cursor: crosshair;
+}
+.chart-mark {
+    position: absolute;
+    box-sizing: border-box;
+    border: 2px solid #d52349;
+    background: rgba(213, 35, 73, 0.12);
+    pointer-events: none;
+}
+.chart-mark.is-thin {
+    border-width: 1px;
+}
+.chart-tip {
+    position: absolute;
+    z-index: 5;
+    max-width: min(20em, 90%);
+    padding: 0.35em 0.6em;
+    border-radius: 4px;
+    background: rgba(25, 25, 25, 0.92);
+    color: #fff;
+    font-size: 0.78em;
+    line-height: 1.4;
+    text-align: left;
+    white-space: pre-line;
+    pointer-events: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+body.dark-mode .chart-tip {
+    background: rgba(235, 235, 235, 0.95);
+    color: #111;
+}
+body.dark-mode .chart-mark {
+    border-color: #ff6b81;
+    background: rgba(255, 107, 129, 0.14);
 }

@@ -113,7 +113,7 @@ const pending = () => h('p', { class: 'note pending', role: 'status', text: text
 // layout: reading clientWidth right after another chart has been resized
 // would make the browser lay out the whole page again, once per chart. The
 // height is set at once, the drawing happens a few milliseconds per frame.
-const charts = new Map(); // canvas -> { draw, data, width }
+const charts = new Map(); // canvas -> { draw, data, width, detach }
 const resizer = new ResizeObserver((entries) => {
   for (const entry of entries) {
     const canvas = entry.target;
@@ -128,17 +128,22 @@ const resizer = new ResizeObserver((entries) => {
   }
 });
 
-function figure(caption, draw, data, wide = false) {
+function figure(caption, draw, data, wide = false, tip = null) {
   const canvas = h('canvas', { class: 'chart', role: 'img', 'aria-label': caption });
-  charts.set(canvas, { draw, data, width: -1 });
+  const fig = h('figure', { class: wide ? 'figure wide' : 'figure' }, canvas, h('figcaption', { text: caption }));
+  // the label with the values of the bar or the cell under the pointer
+  const detach = tip ? hw.attachChartTooltip(canvas, { draw, data, describe: tip }) : null;
+  charts.set(canvas, { draw, data, width: -1, detach });
   resizer.observe(canvas);
-  return h('figure', { class: wide ? 'figure wide' : 'figure' }, canvas, h('figcaption', { text: caption }));
+  return fig;
 }
 
-/** Replaces the content of a region, releasing the charts it contained. */
+/** Replaces the content of a region, releasing the charts it contained and their labels. */
 function fill(region, ...nodes) {
   for (const canvas of region.querySelectorAll('canvas.chart')) {
     resizer.unobserve(canvas);
+    const chart = charts.get(canvas);
+    if (chart && chart.detach) chart.detach();
     charts.delete(canvas);
   }
   region.replaceChildren(...nodes.flat(Infinity).filter((n) => n !== null && n !== undefined && n !== false));
@@ -559,18 +564,19 @@ function analyses(prefix, result) {
     return view.ANALYSES.map((key, i) => [titles[i], result.error ? h('p', { class: 'note', text: text.ui.error(result.error) }) : pending()]);
   }
   const data = view.chartData(s, { kBits: T.correlation.kBits, flipBits: T.avalanche.kBits, decimal: F.decimal });
+  const tips = view.chartTips(s, T.tips);
   const C = T.correlation;
   const A = T.avalanche;
   const valueRows = ['pearsonKX', 'pearsonKY', 'spearmanKX', 'spearmanKY'];
   return [
     titles[0],
     h('p', { text: T.distribution.intro }),
-    h('div', { class: 'charts' }, figure(T.distribution.chartX, hw.drawBarChart, data.histX), figure(T.distribution.chartY, hw.drawBarChart, data.histY)),
+    h('div', { class: 'charts' }, figure(T.distribution.chartX, hw.drawBarChart, data.histX, false, tips.histX), figure(T.distribution.chartY, hw.drawBarChart, data.histY, false, tips.histY)),
     paras(T.distribution.explain(s)),
 
     titles[1],
     h('p', { text: T.frequency.intro }),
-    h('div', { class: 'charts' }, figure(T.frequency.chartX, hw.drawBarChart, data.freqX), figure(T.frequency.chartY, hw.drawBarChart, data.freqY)),
+    h('div', { class: 'charts' }, figure(T.frequency.chartX, hw.drawBarChart, data.freqX, false, tips.freqX), figure(T.frequency.chartY, hw.drawBarChart, data.freqY, false, tips.freqY)),
     s.p <= view.FREQUENCY_TABLE_MAX_P
       ? [
         h('p', { class: 'table-title' }, h('strong', { text: T.frequency.tableTitle }), ' ', h('span', { class: 'note', text: T.frequency.tableNote(s.p) })),
@@ -586,12 +592,11 @@ function analyses(prefix, result) {
         ),
       ]
       : h('p', { class: 'note', text: T.frequency.bigNote(s.p) }),
-    h('p', null, h('strong', { text: T.frequency.summaryTitle }), h('br'), T.frequency.summary('x', s.multiplicityX), h('br'), T.frequency.summary('y', s.multiplicityY)),
     paras(T.frequency.explain(s)),
 
     titles[2],
     h('p', { text: T.bits.intro }),
-    h('div', { class: 'charts' }, figure(T.bits.chartX, hw.drawBarChart, data.bitsX), figure(T.bits.chartY, hw.drawBarChart, data.bitsY)),
+    h('div', { class: 'charts' }, figure(T.bits.chartX, hw.drawBarChart, data.bitsX, false, tips.bitsX), figure(T.bits.chartY, hw.drawBarChart, data.bitsY, false, tips.bitsY)),
     paras(T.bits.explain(s)),
 
     titles[3],
@@ -628,15 +633,15 @@ function analyses(prefix, result) {
       ),
     ),
     valueRows.some((key) => s.correlation[key] === null) ? h('p', { class: 'note', text: C.undefinedWhy }) : null,
-    figure(C.heatmapTitle(data.correlation.range), hw.drawHeatmap, data.correlation, true),
+    figure(C.heatmapTitle(data.correlation.range), hw.drawHeatmap, data.correlation, true, tips.correlation),
     paras(C.explain(s)),
 
     titles[5],
     h('p', { text: A.intro }),
     s.avalanche.measurements > 0
       ? [
-        figure(A.chartTitle, hw.drawBarChart, data.distances),
-        figure(A.heatmapTitle(), hw.drawHeatmap, data.sac, true),
+        figure(A.chartTitle, hw.drawBarChart, data.distances, false, tips.distances),
+        figure(A.heatmapTitle(), hw.drawHeatmap, data.sac, true, tips.sac),
         h('div', { class: 'uniformity' }, view.avalancheBlocks(s, A, T.uniformity).map((block) => h('section', { class: 'coord' }, testResult(block)))),
       ]
       : null,
@@ -814,6 +819,16 @@ function goTo(id) {
   target.addEventListener('animationend', () => target.classList.remove('flash'), { once: true });
 }
 
+// In cima alla pagina, con il focus sul titolo: chi usa la tastiera riparte
+// da li', non dal pulsante in fondo
+function backToTop() {
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
+  document.getElementById('page-title').focus({ preventScroll: true });
+}
+
+const toTopButton = () => h('p', { class: 'to-top' }, h('button', { type: 'button', class: 'btn alt', text: text.ui.backToTop, onclick: backToTop }));
+
 function renderChrome() {
   const t = text;
   document.documentElement.lang = state.lang;
@@ -837,7 +852,7 @@ function render() {
   text = HW1_TEXTS[state.lang];
   renderChrome();
   const app = document.getElementById('app');
-  fill(app, assignmentSection(), taskSection(), guruSection(), statsSection(), discussionSection());
+  fill(app, assignmentSection(), taskSection(), guruSection(), statsSection(), discussionSection(), toTopButton());
   syncTaskControls();
   updateTask();
   updateStats('task');
