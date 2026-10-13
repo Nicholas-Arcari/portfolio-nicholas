@@ -209,7 +209,7 @@ const it = {
     stale: 'Valori dell’ultimo input valido: i campi in 1.1 contengono un errore.',
   },
   input: {
-    intro: 'La frase predefinita è quella pubblica di prova di Hardhat e Foundry: i suoi account sono noti a tutti, e proprio per questo serve ai confronti. Si può generare una frase casuale, aggiungere una passphrase e scegliere il percorso di un wallet.',
+    intro: 'La frase iniziale è stata estratta a caso una volta per tutte, con un generatore crittografico, per questo homework: chiunque apra la pagina vede gli stessi valori, e node homework2.js stampa gli stessi numeri. Il pulsante "Frase di prova" carica invece la frase pubblica di Hardhat e Foundry, i cui account sono noti a tutti e servono al confronto con i wallet in 1.9. Si può anche generare una frase casuale, aggiungere una passphrase e scegliere il percorso di un wallet.',
     mnemonicLabel: 'Frase mnemonica (BIP-39, lista inglese)',
     useTest: 'Frase di prova',
     random: (n) => `Genera ${n} parole`,
@@ -251,8 +251,9 @@ const it = {
     },
     stale: 'Finché i campi contengono un errore, i valori calcolati restano quelli dell’ultimo input valido.',
     testBadge: (address) => `Valori di prova: frase pubblica di Hardhat e Foundry, nessuna passphrase, percorso di MetaMask, indice 0. Indirizzo atteso: ${address}.`,
-    customBadge: 'Valori diversi da quelli di prova.',
-    restore: 'Ripristina i valori di prova',
+    defaultBadge: (address) => `Valori iniziali: la frase estratta per questo homework, nessuna passphrase, percorso di MetaMask, indice 0. Indirizzo atteso, ricalcolato anche con la libreria ethers 6.13.5: ${address}.`,
+    customBadge: 'Valori diversi da quelli iniziali.',
+    restore: 'Ripristina i valori iniziali',
   },
   bip39: {
     intro: [
@@ -427,14 +428,14 @@ const it = {
     failed: 'diverso',
   },
   wallets: {
-    intro: 'La consegna suggerisce di provare un wallet vero. La frase di prova è pubblica, quindi si può importare senza rischi, purché non ci si versino fondi veri: il wallet deve mostrare gli stessi indirizzi che questa pagina calcola, e il confronto verifica l’intera pipeline su software reale. I passi qui sotto sono stati eseguiti davvero il 13 ottobre 2026, con MetaMask 13.50.0 e Rabby 0.94.11 per Chrome; le voci sono quelle mostrate dai wallet, che possono cambiarle da una versione all’altra.',
+    intro: 'La consegna suggerisce di provare un wallet vero. La frase di prova (pulsante "Frase di prova" in 1.1) è pubblica, quindi si può importare senza rischi, purché non ci si versino fondi veri: il wallet deve mostrare gli stessi indirizzi che questa pagina calcola, e il confronto verifica l’intera pipeline su software reale. I passi qui sotto sono stati eseguiti davvero il 13 ottobre 2026, con MetaMask 13.50.0 e Rabby 0.94.11 per Chrome; le voci sono quelle mostrate dai wallet, che possono cambiarle da una versione all’altra.',
     steps: [
       'Usare un profilo del browser separato, o un browser che non si usa per altro, senza estensioni di wallet che custodiscono fondi veri.',
       'MetaMask: "I have an existing wallet", poi "Import using Secret Recovery Phrase" (non gli accessi con Google, Apple o Telegram). In "Import a wallet" scrivere o incollare le 12 parole nell’unico campo e premere "Continue"; in "MetaMask password" scrivere due volte la password, spuntare "If I lose this password, MetaMask can’t reset it." e premere "Create password"; poi "Maybe later" per la biometria, "Continue" e "Open wallet". In questa versione le schermate di importazione restano in inglese anche con la lingua italiana, perché la traduzione manca.',
       'In alto compare "Account 1" con 0xf39Fd...92266. Per la frase di prova MetaMask trova da solo gli altri account, perché hanno transazioni: nella lista "Accounts", Account 2 è 0x70997...c79C8 e Account 3 è 0x3C44C...293BC, cioè gli indici 1 e 2 di questa pagina con il percorso "MetaMask, Rabby, ...". "Receive" mostra lo stesso indirizzo su Ethereum, Linea, Base, Arbitrum, BNB Chain, OP e Polygon: il tipo di moneta 60 di 1.4 vale per tutte.',
       'Con una frase generata qui con "Genera" MetaMask mostra solo Account 1, e "Add account" nella lista degli account crea Account 2 e Account 3, con gli indirizzi degli indici 1 e 2 di questa pagina. Una frase con il checksum sbagliato non passa: "Continue" resta disattivato e compare "Secret Recovery Phrase not found.".',
       'Rabby: "I already have an address", poi "Seed Phrase or Private Key"; nella scheda "Seed Phrase" ("My seed phrase has 12 words") scrivere le parole e premere "Next"; in "Set Password" scrivere due volte la password e premere "Confirm". La schermata "Address Imported" mostra "Seed Phrase 1 #1" con 0xf39fd6...b92266. Con il checksum sbagliato Rabby risponde "The seed phrase is invalid, please check!".',
-      'In Rabby, "Add more addresses from this Seed Phrase" apre "Manage Seed Phrase": gli indirizzi completi della frase, con le reti usate, la data della prima transazione e il saldo (gli account della frase di prova sono in uso dal 2020 su decine di reti). In "Advanced Settings", "Custom Address HD path" offre "BIP44", "Ledger Live" e "Ledger Legacy": i primi tre indirizzi di ciascuno coincidono con le righe della tabella in 1.4.',
+      'In Rabby, "Add more addresses from this Seed Phrase" apre "Manage Seed Phrase": gli indirizzi completi della frase, con le reti usate, la data della prima transazione e il saldo (gli account della frase di prova sono in uso dal 2020 su decine di reti). In "Advanced Settings", "Custom Address HD path" offre "BIP44", "Ledger Live" e "Ledger Legacy": i primi tre indirizzi di ciascuno coincidono con le righe della tabella in 1.4, con la frase di prova caricata in 1.1.',
       'Rainbow ed Exodus, su telefono e computer, hanno una voce analoga per ripristinare un wallet da una frase (qui non provati). MetaMask non chiede la passphrase di BIP-39; Trezor e Ledger la offrono come "wallet nascosto", e con una passphrase la stessa frase dà indirizzi del tutto diversi (1.2).',
     ],
     tableTitle: 'Gli account attesi della frase di prova',
@@ -873,7 +874,7 @@ const en = {
     stale: 'Values of the last valid input: the fields in 1.1 contain an error.',
   },
   input: {
-    intro: 'The default sentence is the public test sentence of Hardhat and Foundry: its accounts are known to everybody, which is exactly why it is useful for comparisons. A random sentence can be generated, a passphrase added and the path of a wallet chosen.',
+    intro: 'The starting sentence was drawn at random once and for all, with a cryptographic generator, for this homework: whoever opens the page sees the same values, and node homework2.js prints the same numbers. The "Test sentence" button loads instead the public sentence of Hardhat and Foundry, whose accounts are known to everybody and serve for the comparison with the wallets in 1.9. A random sentence can also be generated, a passphrase added and the path of a wallet chosen.',
     mnemonicLabel: 'Mnemonic sentence (BIP-39, English list)',
     useTest: 'Test sentence',
     random: (n) => `Generate ${n} words`,
@@ -915,8 +916,9 @@ const en = {
     },
     stale: 'While the fields contain an error, the computed values stay those of the last valid input.',
     testBadge: (address) => `Test values: the public sentence of Hardhat and Foundry, no passphrase, the MetaMask path, index 0. Expected address: ${address}.`,
-    customBadge: 'Values different from the test ones.',
-    restore: 'Restore the test values',
+    defaultBadge: (address) => `Starting values: the sentence drawn for this homework, no passphrase, the MetaMask path, index 0. Expected address, also computed with the ethers 6.13.5 library: ${address}.`,
+    customBadge: 'Values different from the starting ones.',
+    restore: 'Restore the starting values',
   },
   bip39: {
     intro: [
@@ -1091,14 +1093,14 @@ const en = {
     failed: 'different',
   },
   wallets: {
-    intro: 'The assignment suggests trying a real wallet. The test sentence is public, so it can be imported safely as long as no real funds are sent to it: the wallet must show the same addresses this page computes, and the comparison checks the whole pipeline on real software. The steps below were actually carried out on 13 October 2026, with MetaMask 13.50.0 and Rabby 0.94.11 for Chrome; the labels are those shown by the wallets, which may change them from one version to the next.',
+    intro: 'The assignment suggests trying a real wallet. The test sentence (the "Test sentence" button in 1.1) is public, so it can be imported safely as long as no real funds are sent to it: the wallet must show the same addresses this page computes, and the comparison checks the whole pipeline on real software. The steps below were actually carried out on 13 October 2026, with MetaMask 13.50.0 and Rabby 0.94.11 for Chrome; the labels are those shown by the wallets, which may change them from one version to the next.',
     steps: [
       'Use a separate browser profile, or a browser not used for anything else, with no wallet extensions holding real funds.',
       'MetaMask: "I have an existing wallet", then "Import using Secret Recovery Phrase" (not the Google, Apple or Telegram sign-ins). In "Import a wallet" type or paste the 12 words in the single field and press "Continue"; in "MetaMask password" type the password twice, tick "If I lose this password, MetaMask can’t reset it." and press "Create password"; then "Maybe later" for biometrics, "Continue" and "Open wallet". In this version the import screens stay in English even with the Italian language, because the translation is missing.',
       'At the top appears "Account 1" with 0xf39Fd...92266. For the test sentence MetaMask finds the other accounts by itself, because they have transactions: in the "Accounts" list, Account 2 is 0x70997...c79C8 and Account 3 is 0x3C44C...293BC, that is indices 1 and 2 of this page with the path "MetaMask, Rabby, ...". "Receive" shows the same address on Ethereum, Linea, Base, Arbitrum, BNB Chain, OP and Polygon: coin type 60 of 1.4 holds for all of them.',
       'With a sentence generated here with "Generate" MetaMask shows only Account 1, and "Add account" in the account list creates Account 2 and Account 3, with the addresses of indices 1 and 2 of this page. A sentence with a wrong checksum does not pass: "Continue" stays disabled and "Secret Recovery Phrase not found." appears.',
       'Rabby: "I already have an address", then "Seed Phrase or Private Key"; in the "Seed Phrase" tab ("My seed phrase has 12 words") type the words and press "Next"; in "Set Password" type the password twice and press "Confirm". The "Address Imported" screen shows "Seed Phrase 1 #1" with 0xf39fd6...b92266. With a wrong checksum Rabby answers "The seed phrase is invalid, please check!".',
-      'In Rabby, "Add more addresses from this Seed Phrase" opens "Manage Seed Phrase": the full addresses of the sentence, with the networks used, the date of the first transaction and the balance (the accounts of the test sentence have been in use since 2020 on dozens of networks). In "Advanced Settings", "Custom Address HD path" offers "BIP44", "Ledger Live" and "Ledger Legacy": the first three addresses of each match the rows of the table in 1.4.',
+      'In Rabby, "Add more addresses from this Seed Phrase" opens "Manage Seed Phrase": the full addresses of the sentence, with the networks used, the date of the first transaction and the balance (the accounts of the test sentence have been in use since 2020 on dozens of networks). In "Advanced Settings", "Custom Address HD path" offers "BIP44", "Ledger Live" and "Ledger Legacy": the first three addresses of each match the rows of the table in 1.4, with the test sentence loaded in 1.1.',
       'Rainbow and Exodus, on phone and desktop, have a similar option to restore a wallet from a sentence (not tried here). MetaMask does not ask for the BIP-39 passphrase; Trezor and Ledger offer it as a "hidden wallet", and with a passphrase the same sentence gives completely different addresses (1.2).',
     ],
     tableTitle: 'The expected accounts of the test sentence',

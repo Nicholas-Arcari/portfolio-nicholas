@@ -827,6 +827,16 @@ export const MNEMONIC_LENGTHS = Object.freeze([12, 15, 18, 21, 24]);
 /** A public test mnemonic (Hardhat, Foundry): every development tool knows its accounts. Never use it for real funds. */
 export const TEST_MNEMONIC = 'test test test test test test test test test test test junk';
 
+/**
+ * The sentence the page and the command line start from, drawn once at random with a
+ * cryptographic generator for this homework, so that every reader sees the same values.
+ * Its seed, keys and addresses were checked against ethers 6.13.5. It belongs to no wallet.
+ */
+export const DEFAULT_MNEMONIC = 'myself place force amazing chuckle decide choose fold master cloth card coast';
+
+/** The address of DEFAULT_MNEMONIC on m/44'/60'/0'/0/0, as ethers 6.13.5 computes it. */
+export const DEFAULT_ADDRESS = '0xf92c424EF6fC99E0253289c51298628cf4cd7A86';
+
 const WORD_INDEX = new Map(WORDLIST.map((w, i) => [w, i]));
 let wordlistChecked = false;
 
@@ -1130,7 +1140,7 @@ export function keysFromSeed(seed, path) {
  * intermediate value. If the sentence is not valid the pipeline stops there,
  * as a wallet would.
  */
-export function walletPipeline({ mnemonic = TEST_MNEMONIC, passphrase = '', path = DEFAULT_PATH } = {}) {
+export function walletPipeline({ mnemonic = DEFAULT_MNEMONIC, passphrase = '', path = DEFAULT_PATH } = {}) {
   const analysis = analyzeMnemonic(mnemonic);
   if (!analysis.valid) return { ok: false, stage: 'mnemonic', analysis };
   try {
@@ -1225,7 +1235,7 @@ export function verifyVectors() {
   for (const account of TEST_ACCOUNTS) {
     const path = pathFor('bip44', account.index);
     let pipeline = null;
-    const run = () => pipeline || (pipeline = walletPipeline({ path }));
+    const run = () => pipeline || (pipeline = walletPipeline({ mnemonic: TEST_MNEMONIC, path }));
     add('ethereum', 'address', path, `test mnemonic, ${path}`, account.address, () => run().checksum.address);
     add('ethereum', 'privateKey', path, `test mnemonic, ${path}, private key`, account.privateKey, () => toHex(run().privateKey));
   }
@@ -2295,7 +2305,7 @@ export function runCli(argv, print = console.log) {
     print('       Educational code: never type a real seed phrase, here or anywhere else.');
     return 1;
   };
-  const options = { mnemonic: TEST_MNEMONIC, passphrase: '', path: DEFAULT_PATH, stats: true };
+  const options = { mnemonic: DEFAULT_MNEMONIC, passphrase: '', path: DEFAULT_PATH, stats: true };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     const value = argv[i + 1];

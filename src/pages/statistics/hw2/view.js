@@ -57,8 +57,8 @@ export const INDEX_MAX = 999;
 export const PRESETS = [...hw.PATH_PRESETS.map((p) => p.id), 'custom'];
 
 /** The values the page starts from, and returns to with "restore". */
-export const TEST_INPUTS = Object.freeze({
-  mnemonic: hw.TEST_MNEMONIC,
+export const DEFAULT_INPUTS = Object.freeze({
+  mnemonic: hw.DEFAULT_MNEMONIC,
   passphrase: '',
   preset: 'bip44',
   indexText: '0',
@@ -103,14 +103,25 @@ export function readInputs({ mnemonic, passphrase, preset, indexText, customPath
 /** The input of the pipeline, when the fields are valid: the words as BIP-39 normalizes them. */
 export const appliedInput = (read) => ({ mnemonic: read.analysis.sentence, passphrase: read.passphrase, path: read.path.value });
 
-/** True when the fields hold the public test values. */
-export function isTestInput(inputs) {
-  return (
-    hw.normalizeMnemonic(inputs.mnemonic).join(' ') === TEST_INPUTS.mnemonic &&
-    inputs.passphrase === '' &&
-    inputs.preset === TEST_INPUTS.preset &&
-    inputs.indexText.trim() === TEST_INPUTS.indexText
-  );
+/**
+ * Which known values the fields hold, with no passphrase, the MetaMask path and
+ * index 0: 'default' for the starting sentence, 'test' for the public test
+ * sentence, 'custom' for anything else.
+ */
+export function inputKind(inputs) {
+  const standard = inputs.passphrase === '' && inputs.preset === DEFAULT_INPUTS.preset && inputs.indexText.trim() === DEFAULT_INPUTS.indexText;
+  if (!standard) return 'custom';
+  const sentence = hw.normalizeMnemonic(inputs.mnemonic).join(' ');
+  if (sentence === DEFAULT_INPUTS.mnemonic) return 'default';
+  return sentence === hw.TEST_MNEMONIC ? 'test' : 'custom';
+}
+
+/** The line under the fields: the known values with their expected address, and whether "restore" makes sense. */
+export function inputBadge(inputs, I) {
+  const kind = inputKind(inputs);
+  if (kind === 'default') return { known: true, restore: false, text: I.defaultBadge(hw.DEFAULT_ADDRESS) };
+  if (kind === 'test') return { known: true, restore: true, text: I.testBadge(hw.TEST_ACCOUNTS[0].address) };
+  return { known: false, restore: true, text: I.customBadge };
 }
 
 const WORD_INDEX = new Map(hw.WORDLIST.map((w, i) => [w, i]));

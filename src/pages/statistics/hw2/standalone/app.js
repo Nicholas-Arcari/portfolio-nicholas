@@ -58,8 +58,8 @@ function initialLanguage() {
 
 const state = {
   lang: initialLanguage(),
-  fields: { ...view.TEST_INPUTS },
-  applied: view.appliedInput(view.readInputs(view.TEST_INPUTS)),
+  fields: { ...view.DEFAULT_INPUTS },
+  applied: view.appliedInput(view.readInputs(view.DEFAULT_INPUTS)),
 };
 let text = HW2_TEXTS[state.lang];
 const regions = {};
@@ -432,14 +432,14 @@ function updateInputs(read) {
     h('p', { id: 'path-help', class: error ? 'field-error' : 'note', role: error ? 'alert' : null, text: error || (custom ? I.pathHint : I.indexHint(view.INDEX_MAX)) }),
   );
   fill(regions.stale, read.valid ? null : h('p', { class: 'stale', role: 'status', text: I.stale }));
-  const isTest = view.isTestInput(f);
+  const badge = view.inputBadge(f, I);
   fill(
     regions.badge,
     h(
       'p',
-      { class: isTest ? 'badge-line is-task' : 'badge-line is-custom' },
-      h('span', { text: isTest ? I.testBadge(hw.TEST_ACCOUNTS[0].address) : I.customBadge }),
-      isTest ? null : h('button', { type: 'button', class: 'btn alt', text: I.restore, onclick: () => changeFields(view.TEST_INPUTS, true) }),
+      { class: badge.known ? 'badge-line is-task' : 'badge-line is-custom' },
+      h('span', { text: badge.text }),
+      badge.restore ? h('button', { type: 'button', class: 'btn alt', text: I.restore, onclick: () => changeFields(view.DEFAULT_INPUTS, true) }) : null,
     ),
   );
 }

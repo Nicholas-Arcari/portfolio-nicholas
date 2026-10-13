@@ -760,8 +760,8 @@ const Homework2 = () => {
   const I = text.input;
 
   // --- 1.1 i campi, e l'ultimo input valido da cui si calcola la pipeline ---
-  const [fields, setFields] = useState(view.TEST_INPUTS);
-  const [applied, setApplied] = useState(() => view.appliedInput(view.readInputs(view.TEST_INPUTS)));
+  const [fields, setFields] = useState(view.DEFAULT_INPUTS);
+  const [applied, setApplied] = useState(() => view.appliedInput(view.readInputs(view.DEFAULT_INPUTS)));
   const read = useMemo(() => view.readInputs(fields), [fields]);
   const change = (patch) => {
     const next = { ...fields, ...patch };
@@ -772,7 +772,7 @@ const Homework2 = () => {
       setApplied((prev) => (sameApplied(prev, input) ? prev : input));
     }
   };
-  const restore = () => change(view.TEST_INPUTS);
+  const restore = () => change(view.DEFAULT_INPUTS);
   // passando al percorso personalizzato, si parte da quello in uso
   const changePreset = (value) => {
     const preset = view.PRESETS.includes(value) ? value : 'bip44';
@@ -787,7 +787,7 @@ const Homework2 = () => {
   const pipeline = useMemo(() => ({ ok: true, analysis, passphrase: applied.passphrase, ...keys }), [analysis, applied.passphrase, keys]);
   const comparison = useMemo(() => view.presetComparison(seed), [seed]);
   const stale = !read.valid;
-  const isTest = view.isTestInput(fields);
+  const badge = view.inputBadge(fields, I);
 
   const vectors = useComputed('vectors');
   const stats = useComputed('explore');
@@ -922,9 +922,9 @@ const Homework2 = () => {
           </p>
         </div>
         {stale && <p className="hw2-stale" role="status">{I.stale}</p>}
-        <p className={isTest ? 'hw1-badge-line is-task' : 'hw1-badge-line is-custom'}>
-          <span>{isTest ? I.testBadge(hw.TEST_ACCOUNTS[0].address) : I.customBadge}</span>
-          {!isTest && <button type="button" className="button alt hw1-restore" onClick={restore}>{I.restore}</button>}
+        <p className={badge.known ? 'hw1-badge-line is-task' : 'hw1-badge-line is-custom'}>
+          <span>{badge.text}</span>
+          {badge.restore && <button type="button" className="button alt hw1-restore" onClick={restore}>{I.restore}</button>}
         </p>
 
         <Title id="hw2-bip39" level={1}>{S.bip39}</Title>
