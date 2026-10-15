@@ -1,4 +1,4 @@
-HOMEWORK #2 - STATISTICS
+HOMEWORK #1 - EXERCISE 2 - STATISTICS
 Dalla frase mnemonica all'indirizzo Ethereum: hashing, derivazione delle
 chiavi e primitive crittografiche.
 Nicholas Arcari - Laurea magistrale in Cybersecurity, Sapienza Università di Roma

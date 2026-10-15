@@ -1,0 +1,15 @@
+{
+  "name": "homework2a-statistics",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Homework #2 - Statistics: a toy elliptic-curve scheme and the Caesar cipher, with statistical cryptanalysis and attacks.",
+  "author": "Nicholas Arcari",
+  "type": "commonjs",
+  "main": "homework2a.js",
+  "scripts": {
+    "start": "node homework2a.js"
+  },
+  "engines": {
+    "node": ">=14"
+  }
+}

@@ -1,5 +1,5 @@
 /*
- * Homework #2 - Statistics: lo stile del programma scaricabile.
+ * Homework #1 - Exercise 2 - Statistics: lo stile del programma scaricabile.
  * Nessun font esterno e nessuna dipendenza: tema chiaro e scuro seguono le
  * impostazioni del sistema, e la pagina si legge da 320 px di larghezza in su.
  */
@@ -523,7 +523,7 @@ canvas.has-tip {
   margin: 0 0 0.9rem;
 }
 
-/* ===== Homework #2: avviso, campi, pipeline ===== */
+/* ===== Exercise 2: avviso, campi, pipeline ===== */
 
 code {
   font-family: var(--mono);

@@ -2,7 +2,7 @@
   "name": "homework2-statistics",
   "version": "1.0.0",
   "private": true,
-  "description": "Homework #2 - Statistics: from a wallet seed to an Ethereum address, with BIP-39, BIP-32, BIP-44, secp256k1, Keccak-256 and EIP-55.",
+  "description": "Homework #1 - Exercise 2 - Statistics: from a wallet seed to an Ethereum address, with BIP-39, BIP-32, BIP-44, secp256k1, Keccak-256 and EIP-55.",
   "author": "Nicholas Arcari",
   "type": "commonjs",
   "main": "homework2.js",

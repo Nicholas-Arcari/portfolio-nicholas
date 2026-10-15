@@ -1,5 +1,5 @@
 /*
- * Homework #2 - Statistics - Nicholas Arcari
+ * Homework #1 - Exercise 2 - Statistics - Nicholas Arcari
  * Sapienza University of Rome, MSc in Cybersecurity
  *
  * Interface and texts (Italian and English). Needs homework2.js, loaded first.
@@ -15,7 +15,7 @@ var view$ = (function () {
 'use strict';
 
 // src/pages/statistics/hw2/view.js
-// Logica di presentazione dell'Homework #2, condivisa fra la pagina del sito
+// Logica di presentazione dell'Homework #1 - Exercise 2, condivisa fra la pagina del sito
 // (React) e il programma scaricabile (DOM puro): le sezioni, la lettura dei
 // campi, le righe delle tabelle, i test e i dati dei grafici. Tenerla qui
 // impedisce che le due versioni dicano cose diverse sugli stessi numeri.
@@ -572,7 +572,7 @@ var texts$ = (function () {
 'use strict';
 
 // src/pages/statistics/hw2/texts.js
-// I testi dell'Homework #2 in italiano e in inglese. Li usano sia la pagina
+// I testi dell'Homework #1 - Exercise 2 in italiano e in inglese. Li usano sia la pagina
 // del sito sia il programma scaricabile, cosi' le due versioni dicono le
 // stesse cose con le stesse parole. Ogni numero arriva dagli argomenti (la
 // pipeline calcolata, i risultati dell'esplorazione) o dalle costanti della
@@ -899,7 +899,7 @@ const it = {
   },
   secp: {
     intro: [
-      'secp256k1 è la curva y² = x³ + 7 sul campo F_p, con p = 2^256 - 2^32 - 977, definita nel 2000 dallo standard SEC 2 e scelta da Bitcoin e poi da Ethereum. Il punto base G genera un gruppo di ordine primo n, poco meno di 2^256, che contiene tutti i punti della curva (cofattore 1). La chiave privata è un intero k con 1 ≤ k < n, la chiave pubblica il punto K = kG: la moltiplicazione scalare dell’Homework #1, su numeri di 256 bit.',
+      'secp256k1 è la curva y² = x³ + 7 sul campo F_p, con p = 2^256 - 2^32 - 977, definita nel 2000 dallo standard SEC 2 e scelta da Bitcoin e poi da Ethereum. Il punto base G genera un gruppo di ordine primo n, poco meno di 2^256, che contiene tutti i punti della curva (cofattore 1). La chiave privata è un intero k con 1 ≤ k < n, la chiave pubblica il punto K = kG: la moltiplicazione scalare dell’esercizio 1, su numeri di 256 bit.',
       'Calcolare K da k costa circa 256 raddoppi e 128 somme di punti; tornare da K a k è il logaritmo discreto su curva ellittica, per cui il miglior algoritmo noto, il rho di Pollard, richiede circa √n ≈ 2^128 operazioni. È questa asimmetria a rendere pubblicabile K, che serve a verificare le firme ECDSA fatte con k.',
     ],
     constantsTitle: 'I parametri della curva',
@@ -917,7 +917,7 @@ const it = {
     decompress: (ok) => `Dalla forma compressa si torna a y = (x³ + 7)^((p + 1)/4) mod p, scegliendo la radice con la parità del prefisso${ok ? ': si riottiene la stessa y ✓' : ': y diversa ✗'}`,
     after: [
       'La forma compressa basta perché per ogni x ci sono al più due punti, (x, y) e (x, p - y), uno con y pari e uno con y dispari; e poiché p ≡ 3 (mod 4) la radice quadrata è un solo elevamento a potenza. BIP-32 usa la forma compressa, nei dati di derivazione e nelle impronte; Ethereum usa la coppia x ‖ y senza prefisso.',
-      'Le transazioni Ethereum non contengono né la chiave pubblica né il mittente: contengono la firma ECDSA (r, s) e un bit di recupero (v, o yParity) che dice quale dei due punti con ascissa r usare. Dalla firma la rete ricostruisce K (ecrecover), ne calcola l’indirizzo e lo usa come mittente. E poiché con (r, s) anche (r, n - s) sarebbe valida, dal 2016 Ethereum accetta solo s ≤ n/2 (EIP-2): la simmetria P ↔ -P già vista nell’Homework #1.',
+      'Le transazioni Ethereum non contengono né la chiave pubblica né il mittente: contengono la firma ECDSA (r, s) e un bit di recupero (v, o yParity) che dice quale dei due punti con ascissa r usare. Dalla firma la rete ricostruisce K (ecrecover), ne calcola l’indirizzo e lo usa come mittente. E poiché con (r, s) anche (r, n - s) sarebbe valida, dal 2016 Ethereum accetta solo s ≤ n/2 (EIP-2): la simmetria P ↔ -P già vista nell’esercizio 1.',
     ],
   },
   keccak: {
@@ -1071,7 +1071,7 @@ const it = {
   stats: {
     intro: [
       'Ogni passaggio della pipeline dovrebbe produrre uscite che, viste da fuori, non si distinguono da bit casuali uniformi, tranne dove la struttura è voluta: le parole codificano i bit, la chiave pubblica è un punto della curva, le maiuscole codificano un checksum. Qui lo si verifica con test d’ipotesi, passaggio per passaggio.',
-      `A differenza dell’Homework #1, dove la popolazione era intera (tutti i multipli di un punto su una curva giocattolo), qui gli ingressi sono campioni casuali e indipendenti di spazi enormi, 2^128 frasi e 2^256 chiavi: i test sono inferenziali, e un p-value piccolo direbbe qualcosa sulla funzione, non solo sul campione. Gli ingressi vengono da un generatore con seme fisso (mulberry32, seme ${EXPLORE_SEED}), così la pagina, il programma scaricabile e il terminale stampano gli stessi numeri; i campioni sono dimensionati perché il calcolo duri pochi secondi.`,
+      `A differenza dell’esercizio 1, dove la popolazione era intera (tutti i multipli di un punto su una curva giocattolo), qui gli ingressi sono campioni casuali e indipendenti di spazi enormi, 2^128 frasi e 2^256 chiavi: i test sono inferenziali, e un p-value piccolo direbbe qualcosa sulla funzione, non solo sul campione. Gli ingressi vengono da un generatore con seme fisso (mulberry32, seme ${EXPLORE_SEED}), così la pagina, il programma scaricabile e il terminale stampano gli stessi numeri; i campioni sono dimensionati perché il calcolo duri pochi secondi.`,
       `Ogni test ha livello di significatività α = ${IT.num(SIGNIFICANCE, 2)} e un’ipotesi nulla H₀ scritta accanto. Un test superato, però, non dimostra nulla sulla sicurezza: misura l’assenza di difetti grossolani, non la difficoltà di invertire una funzione (sezione 3.7).`,
     ],
     verdict: { reject: 'H₀ rifiutata', notReject: 'H₀ non rifiutata' },
@@ -1315,7 +1315,7 @@ const it = {
         },
       ],
       after: [
-        'Le proprietà richieste sono in conflitto, e nessun algoritmo le ha tutte: una firma ha bisogno di struttura algebrica, un hash della sua assenza; una chiave deve essere lunga e imprevedibile, un checksum corto e calcolabile da chiunque; la generazione deve essere casuale, la derivazione deterministica. L’Homework #1 lo ha mostrato in piccolo: la moltiplicazione scalare è a senso unico, ma ha troppa struttura per fare da hash.',
+        'Le proprietà richieste sono in conflitto, e nessun algoritmo le ha tutte: una firma ha bisogno di struttura algebrica, un hash della sua assenza; una chiave deve essere lunga e imprevedibile, un checksum corto e calcolabile da chiunque; la generazione deve essere casuale, la derivazione deterministica. L’esercizio 1 lo ha mostrato in piccolo: la moltiplicazione scalare è a senso unico, ma ha troppa struttura per fare da hash.',
         'Separare i ruoli ha anche vantaggi d’ingegneria: ogni strato si analizza, si standardizza e si sostituisce da solo. EIP-55 è arrivato nel 2016 senza cambiare il protocollo; un wallet può cambiare lista di parole o percorso senza toccare la curva; e se un computer quantistico risolvesse il logaritmo discreto (algoritmo di Shor) andrebbero sostituite le firme, mentre agli hash l’algoritmo di Grover toglierebbe al più metà dei bit di sicurezza. Anche dove la funzione è la stessa, come HMAC-SHA512 in BIP-39 e in BIP-32, chiavi e dati cambiano da un uso all’altro: è la separazione di dominio, che impedisce a un uso di interferire con l’altro.',
       ],
     },
@@ -1564,7 +1564,7 @@ const en = {
   },
   secp: {
     intro: [
-      'secp256k1 is the curve y² = x³ + 7 over the field F_p, with p = 2^256 - 2^32 - 977, defined in 2000 by the SEC 2 standard and chosen by Bitcoin and then by Ethereum. The base point G generates a group of prime order n, just below 2^256, which contains every point of the curve (cofactor 1). The private key is an integer k with 1 ≤ k < n, the public key the point K = kG: the scalar multiplication of Homework #1, on 256-bit numbers.',
+      'secp256k1 is the curve y² = x³ + 7 over the field F_p, with p = 2^256 - 2^32 - 977, defined in 2000 by the SEC 2 standard and chosen by Bitcoin and then by Ethereum. The base point G generates a group of prime order n, just below 2^256, which contains every point of the curve (cofactor 1). The private key is an integer k with 1 ≤ k < n, the public key the point K = kG: the scalar multiplication of Exercise 1, on 256-bit numbers.',
       'Computing K from k costs about 256 doublings and 128 point additions; going back from K to k is the elliptic-curve discrete logarithm, for which the best known algorithm, Pollard’s rho, needs about √n ≈ 2^128 operations. This asymmetry is what makes K publishable: it is used to verify the ECDSA signatures made with k.',
     ],
     constantsTitle: 'The parameters of the curve',
@@ -1582,7 +1582,7 @@ const en = {
     decompress: (ok) => `From the compressed form, y = (x³ + 7)^((p + 1)/4) mod p, choosing the root with the parity of the prefix${ok ? ': the same y comes back ✓' : ': a different y ✗'}`,
     after: [
       'The compressed form is enough because for every x there are at most two points, (x, y) and (x, p - y), one with even y and one with odd y; and since p ≡ 3 (mod 4) the square root is a single exponentiation. BIP-32 uses the compressed form, in the derivation data and in fingerprints; Ethereum uses the pair x ‖ y without prefix.',
-      'Ethereum transactions contain neither the public key nor the sender: they contain the ECDSA signature (r, s) and a recovery bit (v, or yParity) that says which of the two points with abscissa r to use. From the signature the network rebuilds K (ecrecover), computes its address and uses it as the sender. And since with (r, s) also (r, n - s) would be valid, since 2016 Ethereum only accepts s ≤ n/2 (EIP-2): the symmetry P ↔ -P already seen in Homework #1.',
+      'Ethereum transactions contain neither the public key nor the sender: they contain the ECDSA signature (r, s) and a recovery bit (v, or yParity) that says which of the two points with abscissa r to use. From the signature the network rebuilds K (ecrecover), computes its address and uses it as the sender. And since with (r, s) also (r, n - s) would be valid, since 2016 Ethereum only accepts s ≤ n/2 (EIP-2): the symmetry P ↔ -P already seen in Exercise 1.',
     ],
   },
   keccak: {
@@ -1736,7 +1736,7 @@ const en = {
   stats: {
     intro: [
       'Every step of the pipeline should produce outputs that, seen from outside, cannot be told apart from uniform random bits, except where the structure is intended: the words encode the bits, the public key is a point of the curve, the letter case encodes a checksum. This is checked here with hypothesis tests, step by step.',
-      `Unlike Homework #1, where the population was complete (every multiple of a point on a toy curve), here the inputs are random, independent samples of huge spaces, 2^128 sentences and 2^256 keys: the tests are inferential, and a small p-value would say something about the function, not just about the sample. The inputs come from a generator with a fixed seed (mulberry32, seed ${EXPLORE_SEED}), so the page, the downloadable program and the terminal print the same numbers; the samples are sized so that the computation takes a few seconds.`,
+      `Unlike Exercise 1, where the population was complete (every multiple of a point on a toy curve), here the inputs are random, independent samples of huge spaces, 2^128 sentences and 2^256 keys: the tests are inferential, and a small p-value would say something about the function, not just about the sample. The inputs come from a generator with a fixed seed (mulberry32, seed ${EXPLORE_SEED}), so the page, the downloadable program and the terminal print the same numbers; the samples are sized so that the computation takes a few seconds.`,
       `Every test has significance level α = ${EN.num(SIGNIFICANCE, 2)} and a null hypothesis H₀ written next to it. A passed test, however, proves nothing about security: it measures the absence of gross defects, not the difficulty of inverting a function (section 3.7).`,
     ],
     verdict: { reject: 'H₀ rejected', notReject: 'H₀ not rejected' },
@@ -1939,7 +1939,7 @@ const en = {
         },
       ],
       after: [
-        'The required properties conflict, and no algorithm has them all: a signature needs algebraic structure, a hash its absence; a key must be long and unpredictable, a checksum short and computable by anyone; generation must be random, derivation deterministic. Homework #1 showed it on a small scale: scalar multiplication is one-way, but has too much structure to act as a hash.',
+        'The required properties conflict, and no algorithm has them all: a signature needs algebraic structure, a hash its absence; a key must be long and unpredictable, a checksum short and computable by anyone; generation must be random, derivation deterministic. Exercise 1 showed it on a small scale: scalar multiplication is one-way, but has too much structure to act as a hash.',
         'Separating the roles also has engineering advantages: each layer is analysed, standardized and replaced on its own. EIP-55 arrived in 2016 without changing the protocol; a wallet can change word list or path without touching the curve; and if a quantum computer solved the discrete logarithm (Shor’s algorithm), the signatures would have to be replaced, while Grover’s algorithm would take at most half of the security bits of the hashes. Even where the function is the same, like HMAC-SHA512 in BIP-39 and in BIP-32, keys and data change from one use to the other: this is domain separation, which keeps one use from interfering with another.',
       ],
     },
@@ -3001,7 +3001,7 @@ const toTopButton = () => h('p', { class: 'to-top' }, h('button', { type: 'butto
 function renderChrome() {
   const t = text;
   document.documentElement.lang = state.lang;
-  document.title = 'Homework #2 - Statistics';
+  document.title = 'Homework #1 - Exercise 2 - Statistics';
   document.getElementById('subtitle').textContent = t.standalone.subtitle;
   document.getElementById('course').textContent = t.standalone.course;
   document.getElementById('open-index').textContent = t.ui.index;

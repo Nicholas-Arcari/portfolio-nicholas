@@ -1,5 +1,5 @@
 /*
- * Homework #1 - Statistics - Nicholas Arcari
+ * Homework #1 - Exercise 1 - Statistics - Nicholas Arcari
  * Sapienza University of Rome, MSc in Cybersecurity
  *
  * Computations: toy curve, point addition, scalar multiplication, statistics,
@@ -16,7 +16,7 @@ var task$ = (function () {
 'use strict';
 
 // src/pages/statistics/hw1/task.js
-// I parametri della consegna dell'Homework #1, in un modulo a parte: li usano
+// I parametri della consegna dell'Homework #1 - Exercise 1, in un modulo a parte: li usano
 // i calcoli (homework1.js), i testi e l'elenco degli homework, che cosi'
 // citano gli stessi numeri senza dover caricare tutto il resto.
 
@@ -28,7 +28,7 @@ return { TASK };
 
 /* global process */
 /**
- * HMWK 1 - Public-key cryptography: PRIVATE KEY -> PUBLIC KEY, as in Ethereum
+ * Homework #1 - Exercise 1 - Public-key cryptography: PRIVATE KEY -> PUBLIC KEY, as in Ethereum
  * Sapienza University of Rome - MSc in Cybersecurity (LM-66) - Statistics
  * Nicholas Arcari
  *

@@ -1,5 +1,5 @@
 /*
- * Homework #1 - Statistics - Nicholas Arcari
+ * Homework #1 - Exercise 1 - Statistics - Nicholas Arcari
  * Sapienza University of Rome, MSc in Cybersecurity
  *
  * Interface and texts (Italian and English). Needs homework1.js, loaded first.
@@ -332,7 +332,7 @@ var texts$ = (function () {
 'use strict';
 
 // src/pages/statistics/hw1/texts.js
-// I testi dell'Homework #1 in italiano e in inglese. Li usano sia la pagina
+// I testi dell'Homework #1 - Exercise 1 in italiano e in inglese. Li usano sia la pagina
 // del sito sia il programma scaricabile, cosi' le due versioni dicono le
 // stesse cose con le stesse parole. I parametri della consegna arrivano da
 // TASK e ogni numero delle analisi dagli argomenti: nessuna frase contiene
@@ -2364,7 +2364,7 @@ const toTopButton = () => h('p', { class: 'to-top' }, h('button', { type: 'butto
 function renderChrome() {
   const t = text;
   document.documentElement.lang = state.lang;
-  document.title = `Homework #1 - Statistics`;
+  document.title = 'Homework #1 - Exercise 1 - Statistics';
   document.getElementById('subtitle').textContent = t.standalone.subtitle;
   document.getElementById('course').textContent = t.standalone.course;
   document.getElementById('open-index').textContent = t.ui.index;
