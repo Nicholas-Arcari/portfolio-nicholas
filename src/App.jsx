@@ -30,6 +30,7 @@ const SeedCast = lazy(() => import('./pages/SeedCast'));
 const StatisticsHomework = lazy(() => import('./pages/statistics/StatisticsHomework'));
 const Homework1 = lazy(() => import('./pages/statistics/Homework1'));
 const Homework2 = lazy(() => import('./pages/statistics/Homework2'));
+const Homework2a = lazy(() => import('./pages/statistics/Homework2a'));
 
 function App() {
   return (
@@ -59,6 +60,7 @@ function App() {
               <Route path="/statistics" element={<StatisticsHomework />} />
               <Route path="/statistics/homework-1" element={<Homework1 />} />
               <Route path="/statistics/homework-2" element={<Homework2 />} />
+              <Route path="/statistics/homework-2a" element={<Homework2a />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>

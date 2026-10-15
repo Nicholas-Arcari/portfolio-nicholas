@@ -1021,7 +1021,7 @@ const toTopButton = () => h('p', { class: 'to-top' }, h('button', { type: 'butto
 function renderChrome() {
   const t = text;
   document.documentElement.lang = state.lang;
-  document.title = 'Homework #2 - Statistics';
+  document.title = 'Homework #1 - Exercise 2 - Statistics';
   document.getElementById('subtitle').textContent = t.standalone.subtitle;
   document.getElementById('course').textContent = t.standalone.course;
   document.getElementById('open-index').textContent = t.ui.index;

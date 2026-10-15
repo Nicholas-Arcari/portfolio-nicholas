@@ -37,7 +37,7 @@ const HomeworkShell = ({ slug, sidebar = null, toc = null, children }) => {
 
         <p className="hw-dates">
           <span><strong>{t('statistics.colCreated')}:</strong> {formatRomeDateTime(hw.created)}</span>
-          <span><strong>{t('statistics.colDue')}:</strong> {formatRomeDateTime(hw.due)}</span>
+          <span><strong>{t('statistics.colDue')}:</strong> {hw.due ? formatRomeDateTime(hw.due) : t('statistics.dueTbd')}</span>
         </p>
         {description && <p>{description}</p>}
 

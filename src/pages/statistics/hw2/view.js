@@ -1,5 +1,5 @@
 // src/pages/statistics/hw2/view.js
-// Logica di presentazione dell'Homework #2, condivisa fra la pagina del sito
+// Logica di presentazione dell'Homework #1 - Exercise 2, condivisa fra la pagina del sito
 // (React) e il programma scaricabile (DOM puro): le sezioni, la lettura dei
 // campi, le righe delle tabelle, i test e i dati dei grafici. Tenerla qui
 // impedisce che le due versioni dicano cose diverse sugli stessi numeri.

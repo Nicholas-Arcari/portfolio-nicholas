@@ -1,5 +1,5 @@
 // src/pages/statistics/Homework1.jsx
-// Homework #1 di Statistics: dalla chiave privata alla chiave pubblica con la
+// Homework #1 - Exercise 1 di Statistics: dalla chiave privata alla chiave pubblica con la
 // moltiplicazione scalare su curva ellittica, come in Ethereum. La pagina
 // segue la consegna punto per punto: TASK, OPTIONAL - GURU LEVEL,
 // STATISTICAL EXPLORATION e discussione.

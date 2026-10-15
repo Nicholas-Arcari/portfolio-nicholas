@@ -1,5 +1,5 @@
 // src/pages/statistics/Homework2.jsx
-// Homework #2 di Statistics: dalla frase mnemonica all'indirizzo Ethereum.
+// Homework #1 - Exercise 2 di Statistics: dalla frase mnemonica all'indirizzo Ethereum.
 // La pagina segue la consegna punto per punto: la pipeline (BIP-39, BIP-32,
 // BIP-44, secp256k1, Keccak-256, EIP-55) con i valori calcolati dal vivo, le
 // cinque categorie, le proprieta' statistiche, il contesto storico e la

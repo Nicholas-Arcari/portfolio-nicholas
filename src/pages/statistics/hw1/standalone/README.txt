@@ -1,4 +1,4 @@
-HOMEWORK #1 - STATISTICS
+HOMEWORK #1 - EXERCISE 1 - STATISTICS
 Dalla chiave privata alla chiave pubblica: moltiplicazione scalare su curva
 ellittica, come in Ethereum.
 Nicholas Arcari - Laurea magistrale in Cybersecurity, Sapienza Università di Roma

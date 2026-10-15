@@ -1,6 +1,6 @@
 /* global process */
 /**
- * HMWK 2 - From wallet seed to Ethereum address:
+ * Homework #1 - Exercise 2 - From wallet seed to Ethereum address:
  *          hashing, key derivation and cryptographic primitives
  * Sapienza University of Rome - MSc in Cybersecurity (LM-66) - Statistics
  * Nicholas Arcari
@@ -1251,7 +1251,7 @@ export function verifyVectors() {
  * Sample sizes of the statistical exploration. The inputs come from a
  * seeded generator, so the page, the downloadable program and the command
  * line print the same numbers; they are random and independent, so unlike
- * Homework #1 the tests are inferential: what they say about the sample,
+ * Exercise 1 the tests are inferential: what they say about the sample,
  * they say about the function.
  */
 export const SAMPLES = Object.freeze({

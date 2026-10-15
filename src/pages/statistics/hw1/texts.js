@@ -1,5 +1,5 @@
 // src/pages/statistics/hw1/texts.js
-// I testi dell'Homework #1 in italiano e in inglese. Li usano sia la pagina
+// I testi dell'Homework #1 - Exercise 1 in italiano e in inglese. Li usano sia la pagina
 // del sito sia il programma scaricabile, cosi' le due versioni dicono le
 // stesse cose con le stesse parole. I parametri della consegna arrivano da
 // TASK e ogni numero delle analisi dagli argomenti: nessuna frase contiene

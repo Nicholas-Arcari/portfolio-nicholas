@@ -1,6 +1,6 @@
 /* global process */
 /**
- * HMWK 1 - Public-key cryptography: PRIVATE KEY -> PUBLIC KEY, as in Ethereum
+ * Homework #1 - Exercise 1 - Public-key cryptography: PRIVATE KEY -> PUBLIC KEY, as in Ethereum
  * Sapienza University of Rome - MSc in Cybersecurity (LM-66) - Statistics
  * Nicholas Arcari
  *

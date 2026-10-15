@@ -690,7 +690,7 @@ body.dark-mode .hw-table td { border-bottom-color: #2a2a2a; }
     }
 }
 
-/* ===== HOMEWORK #1 (Statistics) ===== */
+/* ===== HOMEWORK #1 - EXERCISE 1 (Statistics) ===== */
 .hw1-section { margin-top: 2.5em; }
 .hw1-section h3 { margin-bottom: 0.6em; }
 .hw1-section h4 { margin: 1.2em 0 0.4em; }
@@ -985,7 +985,7 @@ body.dark-mode dialog.hw-index .hw-index-list button:focus-visible {
     }
 }
 
-/* ===== HOMEWORK #1: consegna, campi, test e discussione ===== */
+/* ===== HOMEWORK #1 - EXERCISE 1: consegna, campi, test e discussione ===== */
 .hw1-section h5 {
     margin: 2em 0 0.6em;
     font-size: 0.95em;
@@ -1198,17 +1198,17 @@ body.dark-mode span.hw1-badge {
     white-space: normal;
 }
 
-/* ===== HOMEWORK #2 (Statistics) =====
+/* ===== HOMEWORK #1 - EXERCISE 2 (Statistics) =====
    Le classi hw1-* (sezioni, campi, tabelle, grafici, test) sono lo stile
    comune degli homework; qui ci sono solo gli elementi nuovi della pagina
-   dell'Homework #2, dentro le sezioni marcate .hw2. */
+   dell'Homework #1 - Exercise 2, dentro le sezioni marcate .hw2. */
 .hw2 code {
     font-family: monospace;
     font-size: 0.92em;
     overflow-wrap: anywhere;
 }
 
-/* Le formule dell'Homework #2 sono frasi lunghe: vanno a capo invece di scorrere */
+/* Le formule dell'Homework #1 - Exercise 2 sono frasi lunghe: vanno a capo invece di scorrere */
 .hw2 .hw1-formulas {
     white-space: pre-wrap;
     overflow-wrap: anywhere;
@@ -1673,6 +1673,160 @@ body.dark-mode .hw2-legend-context::before {
     .hw2-categories th:nth-child(1) { width: 17%; }
     .hw2-why th:nth-child(1) { width: 20%; }
     .hw2-sha th:nth-child(1) { width: 16%; }
+}
+
+/* ===== HOMEWORK #2 (Statistics) =====
+   Le sezioni hanno anche le classi hw1-section e hw2: qui solo gli elementi
+   nuovi della pagina dell'Homework #2, dentro le sezioni marcate .hw2a. */
+.hw1-controls .hw2a-key input {
+    width: 11em;
+    font-family: monospace;
+}
+.hw1-controls .hw2a-shift input {
+    width: 4em;
+}
+.hw2a-message {
+    margin-top: 0.4em;
+}
+
+/* I nonce: riproducibili o casuali, il pulsante premuto in evidenza */
+.hw2a-nonces {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5em;
+    margin: 0.9em 0 0.2em;
+}
+.hw2a-nonces-label {
+    margin-right: 0.3em;
+    font-size: 0.85em;
+    font-weight: 600;
+}
+.hw2a-nonces .button {
+    padding: 0.55em 1.3em;
+}
+.hw2a-nonces .button.alt[aria-pressed="true"] {
+    background: #d52349;
+}
+body.dark-mode .hw2a-nonces .button.alt[aria-pressed="true"] {
+    background: #e94560;
+    border-color: #e94560;
+    color: #fff !important;
+}
+
+/* La tabella di sostituzione: l'alfabeto in chiaro sopra, quello cifrato sotto */
+.hw2a-subst {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-width: 100%;
+    margin: 0.2em 0 1em;
+    overflow-x: auto;
+    font-family: monospace;
+}
+.hw2a-subst-row {
+    display: flex;
+    gap: 2px;
+}
+.hw2a-subst-row span {
+    flex: 0 0 auto;
+    min-width: 1.6em;
+    padding: 0.15em 0.1em;
+    border-radius: 3px;
+    background: rgba(0, 0, 0, 0.04);
+    text-align: center;
+}
+.hw2a-subst-row.is-cipher span {
+    background: rgba(213, 35, 73, 0.1);
+    color: #d52349;
+    font-weight: 700;
+}
+.hw2a-subst-row .hw2a-subst-head,
+.hw2a-subst-row.is-cipher .hw2a-subst-head {
+    min-width: 4.6em;
+    background: transparent;
+    color: #888;
+    font-family: inherit;
+    font-size: 0.8em;
+    font-weight: 600;
+    text-align: left;
+}
+body.dark-mode .hw2a-subst-row span {
+    background: rgba(255, 255, 255, 0.05);
+    color: #d4d4d4;
+}
+body.dark-mode .hw2a-subst-row.is-cipher span {
+    background: rgba(255, 107, 129, 0.12);
+    color: #ff6b81;
+}
+body.dark-mode .hw2a-subst-row .hw2a-subst-head,
+body.dark-mode .hw2a-subst-row.is-cipher .hw2a-subst-head {
+    background: transparent;
+    color: #888;
+}
+
+/* La legenda sotto un grafico: una riga del colore della serie, tratteggiata per i limiti teorici */
+.hw2a-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3em 1em;
+    margin: 0.4em 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.8em;
+    color: #888;
+}
+.hw2a-legend li {
+    margin: 0;
+    padding: 0;
+}
+.hw2a-legend span {
+    display: inline-block;
+    width: 1.4em;
+    height: 0;
+    margin-right: 0.4em;
+    border-top: 3px solid;
+    vertical-align: middle;
+}
+.hw2a-legend span.is-dashed {
+    border-top-style: dashed;
+}
+
+/* Tabelle */
+.hw2a-blocks td {
+    white-space: nowrap;
+}
+.hw2a-candidates tr.is-current,
+.hw2a-chapters tr.is-test {
+    background: rgba(213, 35, 73, 0.06);
+}
+body.dark-mode .hw2a-candidates tr.is-current,
+body.dark-mode .hw2a-chapters tr.is-test {
+    background: rgba(255, 107, 129, 0.07);
+}
+@media screen and (max-width: 736px) {
+    .hw2a-subst-row span {
+        min-width: 1.35em;
+    }
+}
+@media screen and (min-width: 737px) {
+    .hw2a-roles th:nth-child(1) { width: 18%; }
+    .hw2a-compare th:nth-child(1) { width: 15%; }
+    .hw2a-chapters th:nth-child(1) { width: 8%; }
+    .hw2a-chapters th:nth-child(3) { width: 14%; }
+    .hw2a-chapters th:nth-child(4) { width: 16%; }
+    .hw2a-ciphers th:nth-child(1) { width: 34%; }
+    .hw2a-models th:nth-child(1) { width: 24%; }
+    .hw2a-candidates th:nth-child(1) { width: 6%; }
+    .hw2a-candidates th:nth-child(2) { width: 18%; }
+    .hw2a-candidates th:nth-child(3) { width: 16%; }
+    .hw2a-thresholds th:nth-child(1) { width: 40%; }
+    .hw2a-fits th:nth-child(1) { width: 30%; }
+    .hw2a-extrapolation th:nth-child(1) { width: 12%; }
+    .hw2a-differences th:nth-child(1) { width: 20%; }
+    .hw2a-weaknesses th:nth-child(1) { width: 17%; }
+    .hw2a-weaknesses th:nth-child(2) { width: 14%; }
+    .hw2a-summary th:nth-child(5) { width: 18%; }
 }
 
 /* ===== Grafici degli homework: i valori del pezzo sotto il puntatore =====

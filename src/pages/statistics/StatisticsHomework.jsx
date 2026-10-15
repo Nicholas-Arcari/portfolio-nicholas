@@ -68,7 +68,7 @@ const StatisticsHomework = () => {
                   </td>
                   <td data-label={t('statistics.colDescription')}>{hw.description[language]}</td>
                   <td data-label={t('statistics.colCreated')}>{formatRomeDateTime(hw.created)}</td>
-                  <td data-label={t('statistics.colDue')}>{formatRomeDateTime(hw.due)}</td>
+                  <td data-label={t('statistics.colDue')}>{hw.due ? formatRomeDateTime(hw.due) : t('statistics.dueTbd')}</td>
                 </tr>
               ))}
             </tbody>

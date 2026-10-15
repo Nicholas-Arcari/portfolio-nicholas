@@ -1,5 +1,5 @@
 // src/pages/statistics/hw2/stats.worker.js
-// I calcoli lunghi dell'Homework #2 fuori dal thread principale: i vettori di
+// I calcoli lunghi dell'Homework #1 - Exercise 2 fuori dal thread principale: i vettori di
 // test ufficiali (sette PBKDF2 da 2048 iterazioni, piu' le derivazioni) e
 // l'esplorazione statistica (un paio di secondi su un computer, molto di piu'
 // su un telefono lento). In un worker la pagina resta reattiva mentre i

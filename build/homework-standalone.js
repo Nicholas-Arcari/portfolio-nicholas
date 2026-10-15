@@ -25,29 +25,44 @@ const OUTPUT = 'downloads/statistics';
 const STATIC_FILES = ['index.html', 'style.css', 'README.txt'];
 
 /**
- * Gli homework con un programma scaricabile. `library` e' il file dei
+ * Gli homework con un programma scaricabile. `number` da' il nome della
+ * cartella (homework1, homework2a, ...) e dell'indirizzo della pagina
+ * (homework-1, homework-2a, ...), `name` il titolo; `library` e' il file dei
  * calcoli, che diventa lo script globale `global`; `inner` sono i moduli che
  * la libreria importa e che finiscono dentro di lei (i parametri della
- * consegna dell'Homework #1, la lista di parole di BIP-39 dell'Homework #2).
+ * consegna dell'Exercise 1, la lista di parole di BIP-39 dell'Exercise 2, il
+ * corpus dell'Homework #2).
  */
 export const HOMEWORKS = [
   {
-    number: 1,
+    number: '1',
+    name: 'Homework #1 - Exercise 1',
     source: 'hw1',
     library: 'homework1.js',
     global: 'Homework1',
     inner: ['task.js'],
     contents: 'Computations: toy curve, point addition, scalar multiplication, statistics,\n * animation and command line (node homework1.js [k] [p]).',
-    description: 'Homework #1 - Statistics: from a private key to a public key with elliptic-curve scalar multiplication, as in Ethereum.',
+    description: 'Homework #1 - Exercise 1 - Statistics: from a private key to a public key with elliptic-curve scalar multiplication, as in Ethereum.',
   },
   {
-    number: 2,
+    number: '2',
+    name: 'Homework #1 - Exercise 2',
     source: 'hw2',
     library: 'homework2.js',
     global: 'Homework2',
     inner: ['wordlist.js'],
     contents: 'The wallet pipeline (BIP-39, BIP-32, BIP-44, secp256k1, Keccak-256, EIP-55),\n * the official test vectors, statistics and command line (node homework2.js [options]).',
-    description: 'Homework #2 - Statistics: from a wallet seed to an Ethereum address, with BIP-39, BIP-32, BIP-44, secp256k1, Keccak-256 and EIP-55.',
+    description: 'Homework #1 - Exercise 2 - Statistics: from a wallet seed to an Ethereum address, with BIP-39, BIP-32, BIP-44, secp256k1, Keccak-256 and EIP-55.',
+  },
+  {
+    number: '2a',
+    name: 'Homework #2',
+    source: 'hw2a',
+    library: 'homework2a.js',
+    global: 'Homework2a',
+    inner: ['corpus.js'],
+    contents: 'Computations: the toy EC-ElGamal scheme on secp256k1, the Caesar cipher, the corpus and its language models,\n * the statistical attack, the attacks on the private key, statistics and command line (node homework2a.js [options]).',
+    description: 'Homework #2 - Statistics: a toy elliptic-curve scheme and the Caesar cipher, with statistical cryptanalysis and attacks.',
   },
 ];
 
@@ -107,7 +122,7 @@ function moduleScript(hw, file) {
 }
 
 const banner = (hw, what) => `/*
- * Homework #${hw.number} - Statistics - Nicholas Arcari
+ * ${hw.name} - Statistics - Nicholas Arcari
  * Sapienza University of Rome, MSc in Cybersecurity
  *
  * ${what}

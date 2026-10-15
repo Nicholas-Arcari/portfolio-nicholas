@@ -1,5 +1,5 @@
 // src/pages/statistics/hw1/task.js
-// I parametri della consegna dell'Homework #1, in un modulo a parte: li usano
+// I parametri della consegna dell'Homework #1 - Exercise 1, in un modulo a parte: li usano
 // i calcoli (homework1.js), i testi e l'elenco degli homework, che cosi'
 // citano gli stessi numeri senza dover caricare tutto il resto.
 
