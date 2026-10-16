@@ -936,6 +936,14 @@ input.shift {
   color: #ffffff;
 }
 
+/* il cifrato di adesso sotto i pulsanti: a ogni scelta sui nonce la riga si
+   illumina per un attimo (.flash), perche' la tabella che cambia e' piu' in basso */
+.cipher-now {
+  margin: 0.6rem 0 0.3rem;
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
 /* la tabella di sostituzione: l'alfabeto in chiaro sopra, quello cifrato sotto */
 .subst {
   display: flex;

@@ -23,7 +23,7 @@ export const STATISTICS_HOMEWORK = [
       en: `Public-key cryptography: from a private key to a public key with elliptic-curve scalar multiplication, as in Ethereum (toy curve ${hw1Curve}), with an animation of the algorithm, a statistical exploration and a discussion.`,
     },
     created: '2026-10-12T08:28:00+02:00',
-    due: '2026-10-15T00:00:00+02:00',
+    due: '2026-10-15T21:00:00+02:00',
   },
   {
     slug: 'homework-2',
@@ -33,7 +33,7 @@ export const STATISTICS_HOMEWORK = [
       en: `From a mnemonic sentence to an Ethereum address: the wallet pipeline (BIP-39, BIP-32, BIP-44, secp256k1, Keccak-256, EIP-55) written from scratch and checked against the official test vectors, the distinction between key generation and derivation, public-key cryptography, hashing, checksums and encoding, the statistical properties of every step and the historical context.`,
     },
     created: '2026-10-13T13:30:00+02:00',
-    due: '2026-10-15T00:00:00+02:00',
+    due: '2026-10-15T21:00:00+02:00',
   },
   {
     // homework-2a e non homework-2: gli indirizzi dei due esercizi

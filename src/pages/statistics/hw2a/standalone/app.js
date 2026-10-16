@@ -61,7 +61,10 @@ const state = {
   fields: { ...view.DEFAULT_INPUTS },
   applied: { key: hw.DEFAULT_KEY, message: hw.DEFAULT_MESSAGE, shift: hw.DEFAULT_SHIFT },
   nonces: 'seeded',
+  // round cambia a ogni scelta sui nonce e ricrea lo schema; draw conta le
+  // estrazioni casuali, compresa quella che fa da sola una chiave nuova
   round: 0,
+  draw: 0,
 };
 let text = HW2A_TEXTS[state.lang];
 const regions = {};
@@ -276,7 +279,7 @@ function assignmentSection() {
 
 function schemeSection() {
   const S = text.sections;
-  for (const name of ['keyHelp', 'messageHelp', 'nonces', 'stale', 'badge', 'keys', 'encrypt', 'decrypt', 'verify']) regions[name] = h('div');
+  for (const name of ['keyHelp', 'messageHelp', 'nonces', 'cipherNow', 'stale', 'badge', 'keys', 'encrypt', 'decrypt', 'verify']) regions[name] = h('div');
   regions.scheme = h(
     'section',
     { class: 'section' },
@@ -355,6 +358,7 @@ function inputBlock() {
       h('label', { class: 'mnemonic' }, h('span', { text: I.messageLabel }), controls.message),
       regions.messageHelp,
       regions.nonces,
+      regions.cipherNow,
       h('p', { class: 'note', text: I.noncesHint }),
     ),
     regions.stale,
@@ -381,6 +385,7 @@ function changeFields(patch, fromButton = false) {
     shift: read.shift.ok ? read.shift.value : prev.shift,
   };
   state.applied = next;
+  if (next.key !== prev.key && state.nonces === 'random') state.draw++;
   updateInputs(read);
   if (next.key !== prev.key || next.message !== prev.message) updateScheme();
   else if (next.shift !== prev.shift) updateCaesar();
@@ -390,6 +395,7 @@ function chooseNonces(mode, reroll = false) {
   if (mode === state.nonces && !reroll) return;
   state.nonces = mode;
   state.round++;
+  if (mode === 'random') state.draw++;
   updateInputs(view.readInputs(state.fields));
   updateScheme();
 }
@@ -478,6 +484,19 @@ function updateEncryption(c) {
     h('div', { class: 'scroll' }, table('compact blocks', [E.cols.position, E.cols.byte, E.cols.r, E.cols.C1, E.cols.C2], view.blockRows(c.encryption.blocks).map((r) => ({ cells: [{ text: r.position }, { text: `${r.byte} ${r.char}` }, { text: r.r }, { text: r.C1 }, { text: r.C2 }] })))),
     h('p', { class: 'note', text: E.size(view.ciphertextSize(c.encryption.blocks)) }),
   );
+}
+
+// Il cifrato di adesso sotto i pulsanti dei nonce: la tabella e' in 1.3, piu'
+// in basso. La riga si illumina solo a una scelta sui nonce (o a una chiave
+// nuova con i nonce casuali), non a ogni lettera del messaggio.
+let cipherNowId = '0:0';
+
+function updateCipherNow(c) {
+  const id = `${state.round}:${state.draw}`;
+  const flash = id !== cipherNowId;
+  cipherNowId = id;
+  const summary = view.cipherSummary(c.encryption, c.decryption, state.nonces, state.draw);
+  fill(regions.cipherNow, h('p', { class: 'cipher-now' }, h('span', { class: flash ? 'flash' : null, text: text.input.cipherNow(summary) })));
 }
 
 function updateDecryption(c) {
@@ -950,6 +969,7 @@ function updateScheme() {
   updateKeys(c);
   updateEncryption(c);
   updateDecryption(c);
+  updateCipherNow(c);
   updateCaesar();
   updateCompare();
   updateWeaknesses();
@@ -1129,6 +1149,7 @@ function render() {
   updateKeys(c);
   updateEncryption(c);
   updateDecryption(c);
+  updateCipherNow(c);
   updateVerify();
   updateCaesar();
   updateCompare();

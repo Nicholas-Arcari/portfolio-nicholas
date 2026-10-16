@@ -1714,6 +1714,23 @@ body.dark-mode .hw2a-nonces .button.alt[aria-pressed="true"] {
     color: #fff !important;
 }
 
+/* Il cifrato di adesso sotto i pulsanti: a ogni scelta sui nonce la riga si
+   illumina per un attimo, perche' la tabella che cambia e' piu' in basso */
+.hw2a-cipher-now {
+    margin: 0.6em 0 0.3em;
+    font-size: 0.9em;
+    overflow-wrap: anywhere;
+}
+.hw2a-cipher-now .hw2a-flash {
+    border-radius: 4px;
+    animation: wheel-flash 1.8s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+    .hw2a-cipher-now .hw2a-flash {
+        animation: none;
+    }
+}
+
 /* La tabella di sostituzione: l'alfabeto in chiaro sopra, quello cifrato sotto */
 .hw2a-subst {
     display: flex;

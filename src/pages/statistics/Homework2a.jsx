@@ -839,12 +839,15 @@ const Homework2a = () => {
   // --- 1.1 i campi, e l'ultimo valore valido di ognuno ---
   const [fields, setFields] = useState(view.DEFAULT_INPUTS);
   const [applied, setApplied] = useState({ key: hw.DEFAULT_KEY, message: hw.DEFAULT_MESSAGE, shift: hw.DEFAULT_SHIFT });
-  const [nonces, setNonces] = useState({ mode: 'seeded', round: 0 });
+  // round cambia a ogni scelta sui nonce e ricrea lo schema; draw conta le
+  // estrazioni casuali, compresa quella che fa da sola una chiave nuova
+  const [nonces, setNonces] = useState({ mode: 'seeded', round: 0, draw: 0 });
   const read = useMemo(() => view.readInputs(fields), [fields]);
   const change = (patch) => {
     const next = { ...fields, ...patch };
     setFields(next);
     const r = view.readInputs(next);
+    if (r.key.ok && r.key.value !== applied.key) setNonces((n) => (n.mode === 'random' ? { ...n, draw: n.draw + 1 } : n));
     setApplied((prev) => {
       const key = r.key.ok ? r.key.value : prev.key;
       const message = r.message.ok ? r.message.value : prev.message;
@@ -853,11 +856,12 @@ const Homework2a = () => {
     });
   };
   const restore = () => {
+    // prima i nonce riproducibili, cosi' la chiave di partenza non conta come estrazione
+    setNonces((n) => (n.mode === 'seeded' ? n : { ...n, mode: 'seeded', round: n.round + 1 }));
     change(view.DEFAULT_INPUTS);
-    setNonces((n) => (n.mode === 'seeded' ? n : { mode: 'seeded', round: n.round + 1 }));
   };
-  const chooseNonces = (mode) => setNonces((n) => (n.mode === mode ? n : { mode, round: n.round + 1 }));
-  const reroll = () => setNonces((n) => ({ mode: 'random', round: n.round + 1 }));
+  const chooseNonces = (mode) => setNonces((n) => (n.mode === mode ? n : { mode, round: n.round + 1, draw: mode === 'random' ? n.draw + 1 : n.draw }));
+  const reroll = () => setNonces((n) => ({ mode: 'random', round: n.round + 1, draw: n.draw + 1 }));
 
   // lo schema: ogni chiave e ogni estrazione di nonce ne crea uno nuovo, con le sue tabelle
   const scheme = useMemo(() => hw.toyScheme(applied.key, { nonces: nonces.mode }), [applied.key, nonces]);
@@ -866,6 +870,7 @@ const Homework2a = () => {
   const publicKey = useMemo(() => hw.pointHex(scheme.K), [scheme]);
   const caesar = useMemo(() => view.caesarFacts(applied.message, applied.shift), [applied.message, applied.shift]);
   const size = useMemo(() => view.ciphertextSize(encryption.blocks), [encryption]);
+  const cipherNow = useMemo(() => view.cipherSummary(encryption, decryption, nonces.mode, nonces.draw), [encryption, decryption, nonces.mode, nonces.draw]);
 
   // i calcoli lunghi, nei worker
   const verify = useJob('verify');
@@ -977,6 +982,11 @@ const Homework2a = () => {
             ))}
             {nonces.mode === 'random' && <button type="button" className="button alt" onClick={reroll}>{I.reroll}</button>}
           </div>
+          {/* il cifrato di adesso accanto ai pulsanti, perche' la tabella e' in 1.3,
+              piu' in basso: a ogni scelta sui nonce la riga si illumina per un attimo */}
+          <p className="hw2a-cipher-now">
+            <span key={`${nonces.round}:${nonces.draw}`} className={nonces.round + nonces.draw > 0 ? 'hw2a-flash' : undefined}>{I.cipherNow(cipherNow)}</span>
+          </p>
           <p className="hw1-note">{I.noncesHint}</p>
         </div>
         {(schemeStale || caesarStale) && <p className="hw2-stale" role="status">{I.stale}</p>}

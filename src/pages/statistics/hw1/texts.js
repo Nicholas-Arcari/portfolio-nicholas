@@ -631,7 +631,7 @@ const it = {
     title: 'Scarica il codice',
     text: 'Il programma completo in HTML, CSS e JavaScript, senza dipendenze, in italiano e in inglese: dopo aver estratto l’archivio si apre con un doppio clic su index.html, anche offline. Con node homework1.js [k] [p] stampa da terminale la sequenza, la chiave pubblica e le statistiche.',
     contents: 'Contenuto: index.html, style.css, homework1.js (calcoli e statistiche), app.js (interfaccia e testi), README.txt.',
-    zip: 'Scarica homework1.zip',
+    zip: 'Scarica homework1.1',
     online: 'Apri il programma online',
   },
   standalone: {
@@ -1182,7 +1182,7 @@ const en = {
     title: 'Download the code',
     text: 'The complete program in HTML, CSS and JavaScript, with no dependencies, in Italian and English: once the archive is extracted, it opens with a double click on index.html, even offline. With node homework1.js [k] [p] it prints the sequence, the public key and the statistics in a terminal.',
     contents: 'Contents: index.html, style.css, homework1.js (computations and statistics), app.js (interface and texts), README.txt.',
-    zip: 'Download homework1.zip',
+    zip: 'Download homework1.1',
     online: 'Open the program online',
   },
   standalone: {

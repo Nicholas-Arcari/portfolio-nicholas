@@ -538,7 +538,7 @@ export function decodeByte(M) {
  * of SHA-256(seed || i || attempt) in [1, n - 1], for attempt = 0, 1, ...
  * Deterministic, so that the page, the downloadable program and the command
  * line show the same ciphertext; for the same reason anyone can recompute
- * it, which a real sender must never allow (section 4.8): there r comes
+ * it, which a real sender must never allow (section 4.7): there r comes
  * from a cryptographic generator, as in randomNonce.
  */
 export function seededNonce(i, seed = NONCE_SEED) {
@@ -568,7 +568,7 @@ export function randomNonce() {
  * S_i, then k C1 when decrypting) is computed once and kept: a new message
  * costs one point addition per byte. `nonces` is 'seeded' (reproducible,
  * seededNonce), 'random' (randomNonce) or a function i -> r_i, for the
- * flawed variants of section 4.8.
+ * flawed variants of section 4.7.
  */
 export function toyScheme(k, { nonces = 'seeded' } = {}) {
   if (typeof k !== 'bigint' || k < 1n || k > KEY_MAX) fail(`the private key must be a BigInt in [1, ${KEY_MAX}]`);
@@ -1274,7 +1274,7 @@ export function attackSteps(name, publicKeyHexValue) {
   return fail(`unknown attack ${describe(name)}`);
 }
 
-/** A nonce used for every byte by the flawed variant of section 4.8. */
+/** A nonce used for every byte by the flawed variant of section 4.7. */
 export const REUSED_NONCE = seededNonce(0, `${NONCE_SEED} (reused)`);
 
 let byteModel = null;
@@ -2273,7 +2273,7 @@ export function reportLines({ key = DEFAULT_KEY, message = DEFAULT_MESSAGE, shif
     lines.push(`  ${String(b.index + 1).padStart(5)}  ${String(b.byte).padStart(3)} ${printable(b.byte)}  ${short(b.r.toString(16).padStart(64, '0'))}  ${short(pointHex(b.C1))}  ${short(pointHex(b.C2))}`);
   }
   if (blocks.length > 4) lines.push(`  ... and ${blocks.length - 4} more blocks`);
-  lines.push(`  ciphertext: ${66 * blocks.length} bytes, 66 per byte of message`);
+  lines.push(`  ciphertext: ${66 * blocks.length} bytes, 66 per byte of message, SHA-256 ${toHex(sha256(ciphertextBytes(blocks)))}`);
   lines.push(`  decrypted with k: ${back.text === message ? 'identical to the message' : `DIFFERENT: ${back.text}`}`);
   lines.push('');
   const cipherText = caesar(message, shift);

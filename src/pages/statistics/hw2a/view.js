@@ -145,6 +145,22 @@ export function firstBlock(blocks, decrypted) {
 /** The size of the ciphertext: 66 bytes per byte of message. */
 export const ciphertextSize = (blocks) => ({ bytes: blocks.length, total: 66 * blocks.length });
 
+/**
+ * The line under the nonce buttons: the ciphertext of section 1.3 by its
+ * size and SHA-256, so that a new draw shows next to the button that made
+ * it, and whether k still decrypts it to the message.
+ */
+export function cipherSummary(encryption, decryption, nonces, draw) {
+  const bytes = hw.ciphertextBytes(encryption.blocks);
+  return {
+    mode: nonces,
+    draw,
+    total: bytes.length,
+    digest: shortHex(hw.toHex(hw.sha256(bytes))),
+    ok: decryption.ok && decryption.text === encryption.text,
+  };
+}
+
 /** The rows of the checks of section 1.6, grouped. */
 export function checkGroups(rows) {
   const groups = [];
