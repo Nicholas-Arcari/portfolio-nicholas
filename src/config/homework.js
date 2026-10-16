@@ -45,7 +45,6 @@ export const STATISTICS_HOMEWORK = [
       en: "A toy scheme on secp256k1 (elliptic-curve ElGamal with 32-bit private keys) and the Caesar cipher: encrypting and decrypting the same message, comparing procedures, key spaces and statistical properties, breaking Caesar with the statistics of an English corpus (maximum likelihood, χ², n-grams, dictionary) and the toy scheme with exhaustive search, baby-step giant-step and Pollard's kangaroo, with hypothesis tests, historical context and discussion.",
     },
     created: '2026-10-15T20:25:00+02:00',
-    // scadenza non ancora comunicata: la pagina scrive "da definire"
-    due: null,
+    due: '2026-10-20T21:00:00+02:00',
   },
 ];
