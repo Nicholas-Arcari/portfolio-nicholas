@@ -81,7 +81,8 @@ const Galleria = () => {
 
             {/* Intro */}
             <article className="box post">
-              <header><h2>{t('galleria.introTitle')}</h2></header>
+              {/* amoR e' Roma letta al contrario: le maiuscole contano, quindi qui il titolo non passa in maiuscolo come gli altri */}
+              <header><h2 style={{ textTransform: 'none' }}>{t('galleria.introTitle')}</h2></header>
               <p>{t('galleria.introDesc')}</p>
 
               {/* Segnaposto finche' le foto non sono pronte, come quello dei servizi in arrivo in Home */}
