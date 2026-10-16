@@ -74,6 +74,9 @@ const Ricette = () => {
                     <li style={{ padding: '5px 20px', borderTop: '1px solid #eee' }}>
                       <Link to="/stampe3d" style={{ display: 'block', color: '#444', textDecoration: 'none' }}>{t('nav.prints3d')}</Link>
                     </li>
+                    <li style={{ padding: '5px 20px', borderTop: '1px solid #eee' }}>
+                      <Link to="/galleria" style={{ display: 'block', color: '#444', textDecoration: 'none' }}>{t('nav.gallery')}</Link>
+                    </li>
                   </ul>
                 )}
               </li>

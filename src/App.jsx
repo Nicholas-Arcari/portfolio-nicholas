@@ -16,6 +16,7 @@ const Ricette = lazy(() => import('./pages/Ricette'));
 const Cocktail = lazy(() => import('./pages/Cocktail'));
 const Cocktail_classici = lazy(() => import('./pages/Cocktail_classici'));
 const Stampe3d = lazy(() => import('./pages/Stampe3d'));
+const Galleria = lazy(() => import('./pages/Galleria'));
 const Pizze = lazy(() => import('./pages/Pizze'));
 const FreelanceDetails = lazy(() => import('./pages/FreelanceDetails'));
 const UniversityDetails = lazy(() => import('./pages/UniversityDetails'));
@@ -48,6 +49,7 @@ function App() {
               <Route path="/cocktail" element={<Cocktail />} />
               <Route path="/cocktail-classici" element={<Cocktail_classici />} />
               <Route path="/stampe3d" element={<Stampe3d />} />
+              <Route path="/galleria" element={<Galleria />} />
               <Route path="/freelance-details" element={<FreelanceDetails />} />
               <Route path="/university-details" element={<UniversityDetails />} />
               <Route path="/master-details" element={<MasterDetails />} />

@@ -88,6 +88,11 @@ const Home = () => {
                         {t('nav.prints3d')}
                       </Link>
                     </li>
+                    <li style={{ padding: '5px 20px', borderTop: '1px solid #eee' }}>
+                      <Link to="/galleria" style={{ display: 'block', color: '#444', textDecoration: 'none' }}>
+                        {t('nav.gallery')}
+                      </Link>
+                    </li>
                   </ul>
                 )}
               </li>
@@ -522,6 +527,8 @@ const Home = () => {
                       <Link to="/cocktail" className="button icon solid fa-glass-martini">{t('home.sidebar.goCocktails')}</Link>
                       <br /><br />
                       <Link to="/stampe3d" className="button icon solid fa-cube">{t('home.sidebar.goPrints')}</Link>
+                      <br /><br />
+                      <Link to="/galleria" className="button icon solid fa-camera-retro">{t('home.sidebar.goGallery')}</Link>
                     </article>
                   </li>
                 </ul>

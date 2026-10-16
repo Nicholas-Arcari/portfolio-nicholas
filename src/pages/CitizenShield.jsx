@@ -52,6 +52,7 @@ const CitizenShield = () => {
                     <li style={{ padding: '5px 20px', borderTop: 'none' }}><Link to="/ricette" style={{ display: 'block', color: '#444' }}>{t('nav.recipes')}</Link></li>
                     <li style={{ padding: '5px 20px', borderTop: '1px solid #eee' }}><Link to="/cocktail" style={{ display: 'block', color: '#444' }}>{t('nav.cocktails')}</Link></li>
                     <li style={{ padding: '5px 20px', borderTop: '1px solid #eee' }}><Link to="/stampe3d" style={{ display: 'block', color: '#444' }}>{t('nav.prints3d')}</Link></li>
+                    <li style={{ padding: '5px 20px', borderTop: '1px solid #eee' }}><Link to="/galleria" style={{ display: 'block', color: '#444' }}>{t('nav.gallery')}</Link></li>
                   </ul>
                 )}
               </li>

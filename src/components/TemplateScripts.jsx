@@ -78,6 +78,7 @@ const TemplateScripts = () => {
         { href: '#/ricette', label: t('nav.recipes') },
         { href: '#/cocktail', label: t('nav.cocktails') },
         { href: '#/stampe3d', label: t('nav.prints3d') },
+        { href: '#/galleria', label: t('nav.gallery') },
       ];
       const $passions = $navPanel.find('a.link').filter(function () {
         return !$(this).attr('href');

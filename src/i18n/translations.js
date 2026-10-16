@@ -11,6 +11,7 @@ export const translations = {
       recipes: 'Ricette di Mamma Niky',
       cocktails: 'I miei Cocktail',
       prints3d: 'Stampe 3D',
+      gallery: 'Galleria',
       github: 'GitHub',
     },
 
@@ -975,10 +976,11 @@ export const translations = {
         ccnaDesc: 'Competenza convalidata nella configurazione, gestione e troubleshooting di infrastrutture di rete enterprise, con focus su automazione e programmabilit\u00e0.',
         secplusDesc: 'Certificazione core per la sicurezza informatica operativa: valutazione delle minacce, gestione del rischio e implementazione di architetture sicure (Defense-in-Depth).',
         notOnlyCode: 'Non solo codice...',
-        notOnlyCodeDesc: 'Quando non sono al terminale, mi dedico alla cucina, alla mixology e alla stampa 3D. Scopri le mie passioni.',
+        notOnlyCodeDesc: 'Quando non sono al terminale, mi dedico alla cucina, alla mixology, alla stampa 3D e alla fotografia. Scopri le mie passioni.',
         goRecipes: 'Vai alle Ricette',
         goCocktails: 'Vai ai Cocktail',
         goPrints: 'Vai alle Stampe 3D',
+        goGallery: 'Vai alla Galleria',
       },
     },
 
@@ -1509,6 +1511,19 @@ export const translations = {
       ],
     },
 
+    // --- GALLERIA ---
+    galleria: {
+      terminal: [
+        '> ./load_module.sh --gallery',
+        '> Caricamento scatti: Roma...',
+        '> Selezione delle foto migliori...',
+        '> Status: Work in progress...',
+      ],
+      introTitle: 'Roma, attraverso il mio obiettivo',
+      introDesc: 'Qui raccoglierò una selezione delle mie fotografie di Roma.',
+      wip: 'Work in progress...',
+    },
+
     // --- FREELANCE ---
     freelance: {
       terminal: [
@@ -1723,6 +1738,7 @@ export const translations = {
       recipes: 'Mamma Niky\'s Recipes',
       cocktails: 'My Cocktails',
       prints3d: '3D Prints',
+      gallery: 'Gallery',
       github: 'GitHub',
     },
 
@@ -2687,10 +2703,11 @@ export const translations = {
         ccnaDesc: 'Validated competence in configuring, managing and troubleshooting enterprise network infrastructures, with a focus on automation and programmability.',
         secplusDesc: 'Core certification for operational cybersecurity: threat assessment, risk management and implementation of secure architectures (Defense-in-Depth).',
         notOnlyCode: 'Not just code...',
-        notOnlyCodeDesc: 'When I\'m not at the terminal, I enjoy cooking, mixology and 3D printing. Discover my passions.',
+        notOnlyCodeDesc: 'When I\'m not at the terminal, I enjoy cooking, mixology, 3D printing and photography. Discover my passions.',
         goRecipes: 'Go to Recipes',
         goCocktails: 'Go to Cocktails',
         goPrints: 'Go to 3D Prints',
+        goGallery: 'Go to Gallery',
       },
     },
 
@@ -3219,6 +3236,19 @@ export const translations = {
           link: "https://makerworld.com/it/models/1595160-cyberpunk-2077-kiroshi-optics#profileId-1680368"
         },
       ],
+    },
+
+    // --- GALLERIA ---
+    galleria: {
+      terminal: [
+        '> ./load_module.sh --gallery',
+        '> Loading shots: Rome...',
+        '> Picking the best photos...',
+        '> Status: Work in progress...',
+      ],
+      introTitle: 'Rome, through my lens',
+      introDesc: 'Here I will collect a selection of my photographs of Rome.',
+      wip: 'Work in progress...',
     },
 
     // --- FREELANCE ---
