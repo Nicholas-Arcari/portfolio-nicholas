@@ -161,6 +161,22 @@ function firstBlock(blocks, decrypted) {
 /** The size of the ciphertext: 66 bytes per byte of message. */
 const ciphertextSize = (blocks) => ({ bytes: blocks.length, total: 66 * blocks.length });
 
+/**
+ * The line under the nonce buttons: the ciphertext of section 1.3 by its
+ * size and SHA-256, so that a new draw shows next to the button that made
+ * it, and whether k still decrypts it to the message.
+ */
+function cipherSummary(encryption, decryption, nonces, draw) {
+  const bytes = hw.ciphertextBytes(encryption.blocks);
+  return {
+    mode: nonces,
+    draw,
+    total: bytes.length,
+    digest: shortHex(hw.toHex(hw.sha256(bytes))),
+    ok: decryption.ok && decryption.text === encryption.text,
+  };
+}
+
 /** The rows of the checks of section 1.6, grouped. */
 function checkGroups(rows) {
   const groups = [];
@@ -509,7 +525,7 @@ function scheduleFrameJob(job) {
   }
 }
 
-return { SECTIONS, tocEntries, KEY_MAX_LENGTH, MESSAGE_MAX_LENGTH, SHIFT_MAX_LENGTH, DEFAULT_INPUTS, parseMessage, readInputs, isDefaultInput, inputBadge, shortHex, charOf, keyFacts, blockRows, firstBlock, ciphertextSize, checkGroups, substitution, caesarFacts, letterChart, cipherRows, ecBytesChart, chapterRows, corpusChart, modelRows, candidateRows, posteriorChart, fitChecks, LENGTH_TICKS, successChart, methodsChart, LEVELS, thresholds, rateAt, lengthRows, exhaustiveSummary, bsgsSummary, scalingBits, ATTACKS, scalingChart, EXTRAPOLATION_BITS, FAST_RATE, extrapolationRows, reuseDemo, augustusDemo, TEST_GROUPS, EXPECTED_VERDICTS, statTests, testSummary, tips, scheduleFrameJob };
+return { SECTIONS, tocEntries, KEY_MAX_LENGTH, MESSAGE_MAX_LENGTH, SHIFT_MAX_LENGTH, DEFAULT_INPUTS, parseMessage, readInputs, isDefaultInput, inputBadge, shortHex, charOf, keyFacts, blockRows, firstBlock, ciphertextSize, cipherSummary, checkGroups, substitution, caesarFacts, letterChart, cipherRows, ecBytesChart, chapterRows, corpusChart, modelRows, candidateRows, posteriorChart, fitChecks, LENGTH_TICKS, successChart, methodsChart, LEVELS, thresholds, rateAt, lengthRows, exhaustiveSummary, bsgsSummary, scalingBits, ATTACKS, scalingChart, EXTRAPOLATION_BITS, FAST_RATE, extrapolationRows, reuseDemo, augustusDemo, TEST_GROUPS, EXPECTED_VERDICTS, statTests, testSummary, tips, scheduleFrameJob };
 })();
 
 var texts$ = (function () {
@@ -716,6 +732,10 @@ const it = {
     nonces: { seeded: 'Riproducibili', random: 'Casuali' },
     reroll: 'Nuovi nonce casuali',
     noncesHint: 'I nonce riproducibili vengono da SHA-256 di un seme fisso, così la pagina e il terminale mostrano lo stesso cifrato; per lo stesso motivo chiunque può ricalcolarli, ed è una delle debolezze della sezione 4.7. I nonce casuali vengono dal generatore crittografico del browser: il cifrato cambia a ogni estrazione, il messaggio decifrato no.',
+    cipherNow: ({ mode, draw, total, digest, ok }) =>
+      mode === 'random'
+        ? `Estrazione ${IT.int(draw)}: il cifrato della sezione 1.3, ${IT.int(total)} byte, ha SHA-256 ${digest} e cambia a ogni estrazione; decifrato con k ${ok ? 'dà sempre il messaggio' : 'non dà il messaggio'}.`
+        : `Il cifrato della sezione 1.3, ${IT.int(total)} byte, ha SHA-256 ${digest}: con i nonce riproducibili è sempre lo stesso, qui e nel terminale.`,
     defaultBadge: (pk) => `Valori iniziali: la chiave estratta per questo homework, la frase di Svetonio e i nonce riproducibili. Chiave pubblica attesa, ricalcolata anche con la libreria ethers 6.13.5: ${pk}.`,
     customBadge: 'Valori diversi da quelli iniziali.',
     restore: 'Ripristina i valori iniziali',
@@ -1212,7 +1232,7 @@ const it = {
     title: 'Scarica il codice',
     text: 'Il programma completo in HTML, CSS e JavaScript, senza dipendenze, in italiano e in inglese: dopo aver estratto l’archivio si apre con un doppio clic su index.html, anche offline. Con node homework2a.js stampa nel terminale lo schema, il cifrario di Cesare, gli attacchi e le statistiche; --key, --message, --shift e --random-nonces cambiano l’input.',
     contents: 'Contenuto: index.html, style.css, homework2a.js (schemi, attacchi, corpus e statistiche), app.js (interfaccia e testi), README.txt.',
-    zip: 'Scarica homework2a.zip',
+    zip: 'Scarica homework2',
     online: 'Apri il programma online',
   },
   standalone: {
@@ -1340,6 +1360,10 @@ const en = {
     nonces: { seeded: 'Reproducible', random: 'Random' },
     reroll: 'New random nonces',
     noncesHint: 'The reproducible nonces come from SHA-256 of a fixed seed, so that the page and the terminal show the same ciphertext; for the same reason anyone can recompute them, which is one of the weaknesses of section 4.7. The random nonces come from the browser’s cryptographic generator: the ciphertext changes with every draw, the decrypted message does not.',
+    cipherNow: ({ mode, draw, total, digest, ok }) =>
+      mode === 'random'
+        ? `Draw ${EN.int(draw)}: the ciphertext of section 1.3, ${EN.int(total)} bytes, has SHA-256 ${digest} and changes with every draw; decrypted with k, it ${ok ? 'still gives the message' : 'does not give the message'}.`
+        : `The ciphertext of section 1.3, ${EN.int(total)} bytes, has SHA-256 ${digest}: with the reproducible nonces it is always the same, here and in the terminal.`,
     defaultBadge: (pk) => `Starting values: the key drawn for this homework, the sentence of Suetonius and the reproducible nonces. Expected public key, also computed with the ethers 6.13.5 library: ${pk}.`,
     customBadge: 'Values different from the starting ones.',
     restore: 'Restore the starting values',
@@ -1836,7 +1860,7 @@ const en = {
     title: 'Download the code',
     text: 'The complete program in HTML, CSS and JavaScript, with no dependencies, in Italian and English: once the archive is extracted, it opens with a double click on index.html, even offline. With node homework2a.js it prints the scheme, the Caesar cipher, the attacks and the statistics in a terminal; --key, --message, --shift and --random-nonces change the input.',
     contents: 'Contents: index.html, style.css, homework2a.js (schemes, attacks, corpus and statistics), app.js (interface and texts), README.txt.',
-    zip: 'Download homework2a.zip',
+    zip: 'Download homework2',
     online: 'Open the program online',
   },
   standalone: {
@@ -1918,7 +1942,10 @@ const state = {
   fields: { ...view.DEFAULT_INPUTS },
   applied: { key: hw.DEFAULT_KEY, message: hw.DEFAULT_MESSAGE, shift: hw.DEFAULT_SHIFT },
   nonces: 'seeded',
+  // round cambia a ogni scelta sui nonce e ricrea lo schema; draw conta le
+  // estrazioni casuali, compresa quella che fa da sola una chiave nuova
   round: 0,
+  draw: 0,
 };
 let text = HW2A_TEXTS[state.lang];
 const regions = {};
@@ -2133,7 +2160,7 @@ function assignmentSection() {
 
 function schemeSection() {
   const S = text.sections;
-  for (const name of ['keyHelp', 'messageHelp', 'nonces', 'stale', 'badge', 'keys', 'encrypt', 'decrypt', 'verify']) regions[name] = h('div');
+  for (const name of ['keyHelp', 'messageHelp', 'nonces', 'cipherNow', 'stale', 'badge', 'keys', 'encrypt', 'decrypt', 'verify']) regions[name] = h('div');
   regions.scheme = h(
     'section',
     { class: 'section' },
@@ -2212,6 +2239,7 @@ function inputBlock() {
       h('label', { class: 'mnemonic' }, h('span', { text: I.messageLabel }), controls.message),
       regions.messageHelp,
       regions.nonces,
+      regions.cipherNow,
       h('p', { class: 'note', text: I.noncesHint }),
     ),
     regions.stale,
@@ -2238,6 +2266,7 @@ function changeFields(patch, fromButton = false) {
     shift: read.shift.ok ? read.shift.value : prev.shift,
   };
   state.applied = next;
+  if (next.key !== prev.key && state.nonces === 'random') state.draw++;
   updateInputs(read);
   if (next.key !== prev.key || next.message !== prev.message) updateScheme();
   else if (next.shift !== prev.shift) updateCaesar();
@@ -2247,6 +2276,7 @@ function chooseNonces(mode, reroll = false) {
   if (mode === state.nonces && !reroll) return;
   state.nonces = mode;
   state.round++;
+  if (mode === 'random') state.draw++;
   updateInputs(view.readInputs(state.fields));
   updateScheme();
 }
@@ -2335,6 +2365,19 @@ function updateEncryption(c) {
     h('div', { class: 'scroll' }, table('compact blocks', [E.cols.position, E.cols.byte, E.cols.r, E.cols.C1, E.cols.C2], view.blockRows(c.encryption.blocks).map((r) => ({ cells: [{ text: r.position }, { text: `${r.byte} ${r.char}` }, { text: r.r }, { text: r.C1 }, { text: r.C2 }] })))),
     h('p', { class: 'note', text: E.size(view.ciphertextSize(c.encryption.blocks)) }),
   );
+}
+
+// Il cifrato di adesso sotto i pulsanti dei nonce: la tabella e' in 1.3, piu'
+// in basso. La riga si illumina solo a una scelta sui nonce (o a una chiave
+// nuova con i nonce casuali), non a ogni lettera del messaggio.
+let cipherNowId = '0:0';
+
+function updateCipherNow(c) {
+  const id = `${state.round}:${state.draw}`;
+  const flash = id !== cipherNowId;
+  cipherNowId = id;
+  const summary = view.cipherSummary(c.encryption, c.decryption, state.nonces, state.draw);
+  fill(regions.cipherNow, h('p', { class: 'cipher-now' }, h('span', { class: flash ? 'flash' : null, text: text.input.cipherNow(summary) })));
 }
 
 function updateDecryption(c) {
@@ -2807,6 +2850,7 @@ function updateScheme() {
   updateKeys(c);
   updateEncryption(c);
   updateDecryption(c);
+  updateCipherNow(c);
   updateCaesar();
   updateCompare();
   updateWeaknesses();
@@ -2986,6 +3030,7 @@ function render() {
   updateKeys(c);
   updateEncryption(c);
   updateDecryption(c);
+  updateCipherNow(c);
   updateVerify();
   updateCaesar();
   updateCompare();
