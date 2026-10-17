@@ -108,7 +108,8 @@ const UniversityDetails = () => {
                       <React.Fragment key={index}>
                         <div style={{ marginBottom: '2em' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <h3 style={{ margin: 0 }}>{course.name}</h3>
+                                {/* Un esame con una pagina sua (per ora Reti di Calcolatori, con il laboratorio) ha il nome cliccabile */}
+                                <h3 style={{ margin: 0 }}>{course.link ? <Link to={course.link} className="course-link">{course.name}</Link> : course.name}</h3>
                                 <span className="button alt small" style={{ pointerEvents: 'none' }}>{course.year}</span>
                             </div>
                             <p style={{ marginTop: '0.5em' }}>{course.description}</p>

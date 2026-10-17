@@ -1961,3 +1961,101 @@ body.dark-mode .th-outline .th-time,
 body.dark-mode .th-answer-label {
     color: #ff6b81;
 }
+
+/* Il filtro per tipo sotto la barra di ricerca dell'elenco di Statistics:
+   il pulsante scelto in evidenza, come quelli dei nonce dell'Homework #2 */
+.hw-filter {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5em;
+    margin: 0.2em 0 1em;
+}
+.hw-filter-label {
+    margin-right: 0.3em;
+    font-size: 0.85em;
+    font-weight: 600;
+}
+.hw-filter .button.alt[aria-pressed="true"] {
+    background: #d52349;
+}
+body.dark-mode .hw-filter .button.alt[aria-pressed="true"] {
+    background: #e94560;
+    border-color: #e94560;
+    color: #fff !important;
+}
+
+/* ===== RETI DI CALCOLATORI: il README e i file del laboratorio ===== */
+/* Il testo dei file, identico: carattere fisso perche' i disegni ASCII restino
+   in piedi; le righe piu' larghe scorrono dentro il riquadro, o vanno a capo */
+.lab-text {
+    font-family: monospace;
+    font-size: 0.8em;
+    line-height: 1.45;
+    padding: 1em;
+    border-radius: 5px;
+    background: rgba(0, 0, 0, 0.04);
+    overflow-x: auto;
+    white-space: pre;
+    tab-size: 8;
+    margin: 0 0 1.5em;
+}
+.lab-text.is-wrapped {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+.lab-anchor {
+    scroll-margin-top: 4em;
+}
+.lab-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5em 1em;
+    margin: 1.5em 0 0.4em;
+}
+.lab-file-name {
+    font-family: monospace;
+    font-size: 0.9em;
+}
+.lab-toolbar .button.alt[aria-pressed="true"] {
+    background: #d52349;
+}
+.lab-file-box .button {
+    margin: 0 0.4em 0.6em 0;
+}
+.lab-readme {
+    margin: 1.5em 0 2.5em;
+    padding: 1em 1.2em;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 5px;
+}
+.lab-readme-label {
+    margin: 0 0 0.6em;
+    font-family: monospace;
+    font-size: 0.8em;
+    color: #888;
+}
+.lab-readme-list {
+    margin: 0 0 1.5em 1.2em;
+}
+.lab-readme-table code,
+.lab-readme-list code,
+.lab-readme p code {
+    font-size: 0.9em;
+}
+/* L'elenco ha solo nome e descrizione: il nome prende piu' spazio */
+.lab-table th:nth-child(1) {
+    width: 38%;
+}
+body.dark-mode .lab-text {
+    background: rgba(255, 255, 255, 0.05);
+}
+body.dark-mode .lab-readme {
+    border-color: rgba(255, 255, 255, 0.15);
+}
+body.dark-mode .lab-toolbar .button.alt[aria-pressed="true"] {
+    background: #e94560;
+    border-color: #e94560;
+    color: #fff !important;
+}

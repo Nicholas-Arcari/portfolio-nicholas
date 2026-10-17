@@ -1,7 +1,8 @@
 // src/pages/statistics/StatisticsHomework.jsx
-// Elenco degli homework di Statistics, con la stessa barra di ricerca delle
-// altre pagine con un elenco: filtra per nome e descrizione nella lingua
-// scelta. Ogni riga porta alla pagina dell'homework: il nome e' un link vero
+// Elenco degli homework e dei project di Statistics, con la stessa barra di
+// ricerca delle altre pagine con un elenco: filtra per nome e descrizione
+// nella lingua scelta, e i pulsanti sotto la barra per tipo (tutti, solo gli
+// homework, solo i project). Ogni riga porta alla sua pagina: il nome e' un link vero
 // (tastiera, apri in nuova scheda), e il resto della riga e' cliccabile per
 // comodita'.
 import React, { useState } from 'react';
@@ -22,14 +23,21 @@ const SEARCH_STYLE = {
   marginBottom: '10px',
 };
 
+const FILTERS = [
+  ['all', 'statistics.filterAll'],
+  ['homework', 'statistics.filterHomework'],
+  ['project', 'statistics.filterProject'],
+];
+
 const StatisticsHomework = () => {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
+  const [type, setType] = useState('all');
 
   const term = searchTerm.trim().toLowerCase();
   const filtered = STATISTICS_HOMEWORK.filter(
-    (hw) => !term || `${hw.name} ${hw.description[language]}`.toLowerCase().includes(term),
+    (hw) => (type === 'all' || hw.type === type) && (!term || `${hw.name} ${hw.description[language]}`.toLowerCase().includes(term)),
   );
 
   return (
@@ -44,7 +52,13 @@ const StatisticsHomework = () => {
           onChange={setSearchTerm}
           style={SEARCH_STYLE}
         />
-        {searchTerm && (
+        <div className="hw-filter" role="group" aria-label={t('statistics.filterLabel')}>
+          <span className="hw-filter-label">{t('statistics.filterLabel')}</span>
+          {FILTERS.map(([value, label]) => (
+            <button key={value} type="button" className="button alt small" aria-pressed={type === value} onClick={() => setType(value)}>{t(label)}</button>
+          ))}
+        </div>
+        {(searchTerm || type !== 'all') && (
           <p className="search-results-count">
             {filtered.length} {filtered.length === 1 ? t('settings.resultFound') : t('settings.resultsFound')}
           </p>
@@ -56,7 +70,7 @@ const StatisticsHomework = () => {
               <tr>
                 <th>{t('statistics.colName')}</th>
                 <th>{t('statistics.colDescription')}</th>
-                <th>{t('statistics.colCreated')}</th>
+                <th>{t('statistics.colCompleted')}</th>
                 <th>{t('statistics.colDue')}</th>
               </tr>
             </thead>
@@ -66,19 +80,21 @@ const StatisticsHomework = () => {
                   <td data-label={t('statistics.colName')}>
                     <Link to={`/statistics/${hw.slug}`} onClick={(e) => e.stopPropagation()}>{hw.name}</Link>
                     {/* la teoria dietro all'homework, in una scheda nuova: l'elenco resta aperto */}
-                    <a
-                      className="hw-theory-link icon solid fa-book"
-                      href={`#/statistics/${hw.slug}/theory`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      title={t('statistics.theoryNewTab')}
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {t('statistics.theory')}
-                    </a>
+                    {hw.theory && (
+                      <a
+                        className="hw-theory-link icon solid fa-book"
+                        href={`#/statistics/${hw.slug}/theory`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={t('statistics.theoryNewTab')}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {t('statistics.theory')}
+                      </a>
+                    )}
                   </td>
                   <td data-label={t('statistics.colDescription')}>{hw.description[language]}</td>
-                  <td data-label={t('statistics.colCreated')}>{formatRomeDateTime(hw.created)}</td>
+                  <td data-label={t('statistics.colCompleted')}>{hw.completed ? formatRomeDateTime(hw.completed) : t('statistics.dueTbd')}</td>
                   <td data-label={t('statistics.colDue')}>{hw.due ? formatRomeDateTime(hw.due) : t('statistics.dueTbd')}</td>
                 </tr>
               ))}

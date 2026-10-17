@@ -1,7 +1,8 @@
 // src/pages/statistics/StatisticsLayout.jsx
 // Lo scheletro comune alle pagine di Statistics (l'elenco degli homework e le
 // pagine dei singoli homework): stesso header, stessa navigazione e stessa
-// sidebar destra delle altre pagine del portfolio.
+// sidebar destra delle altre pagine del portfolio. Lo usano anche le pagine
+// di Reti di Calcolatori, con il loro riepilogo (`course`).
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import TerminalText from '../../components/TerminalText';
@@ -10,8 +11,21 @@ import Footer from '../../components/Footer';
 
 // `sidebar`: riquadri in piu' nella colonna destra, subito dopo il riepilogo
 // (es. il download del codice di un homework).
-const StatisticsLayout = ({ terminal, sidebar = null, children }) => {
+// `course`: il riepilogo in cima alla sidebar ({ summary: [[etichetta,
+// valore], ...] }) e il ritorno al piano di studi ({ back: { to, title,
+// desc, btn } }); senza, quelli di Statistics.
+const StatisticsLayout = ({ terminal, sidebar = null, course = null, children }) => {
   const { t } = useLanguage();
+  const summary = course ? course.summary : [
+    [t('statistics.sidebarCoursel'), 'Statistics'],
+    [t('statistics.sidebarDegreel'), t('masterDetails.sidebarCourse')],
+  ];
+  const back = course ? course.back : {
+    to: '/master-details',
+    title: t('statistics.sidebarBack'),
+    desc: t('statistics.sidebarBackDesc'),
+    btn: t('statistics.sidebarBackBtn'),
+  };
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   useEffect(() => {
@@ -83,8 +97,12 @@ const StatisticsLayout = ({ terminal, sidebar = null, children }) => {
                     <article className="box highlight">
                       <header><h3>{t('statistics.sidebarTitle')}</h3></header>
                       <p>
-                        <strong>{t('statistics.sidebarCoursel')}</strong> Statistics<br />
-                        <strong>{t('statistics.sidebarDegreel')}</strong> {t('masterDetails.sidebarCourse')}
+                        {summary.map(([label, value], i) => (
+                          <React.Fragment key={label}>
+                            {i > 0 && <br />}
+                            <strong>{label}</strong> {value}
+                          </React.Fragment>
+                        ))}
                       </p>
                     </article>
                   </li>
@@ -97,9 +115,9 @@ const StatisticsLayout = ({ terminal, sidebar = null, children }) => {
                 <ul className="divided">
                   <li>
                     <article className="box highlight">
-                      <header><h3><Link to="/master-details">{t('statistics.sidebarBack')}</Link></h3></header>
-                      <p>{t('statistics.sidebarBackDesc')}</p>
-                      <Link to="/master-details" className="button icon solid fa-graduation-cap">{t('statistics.sidebarBackBtn')}</Link>
+                      <header><h3><Link to={back.to}>{back.title}</Link></h3></header>
+                      <p>{back.desc}</p>
+                      <Link to={back.to} className="button icon solid fa-graduation-cap">{back.btn}</Link>
                     </article>
                   </li>
                 </ul>

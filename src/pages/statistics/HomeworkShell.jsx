@@ -28,7 +28,7 @@ const HomeworkShell = ({ slug, sidebar = null, toc = null, children }) => {
   };
 
   return (
-    <StatisticsLayout terminal={[`> ./open_homework.sh --${slug}`, ...t('statistics.homeworkTerminal')]} sidebar={sidebar}>
+    <StatisticsLayout terminal={[`> ./open_${hw.type}.sh --${slug}`, ...t('statistics.homeworkTerminal')]} sidebar={sidebar}>
       <article className="box post">
         <header className="hw-title">
           <h2 ref={titleRef} tabIndex={-1}>{hw.name}</h2>
@@ -36,7 +36,7 @@ const HomeworkShell = ({ slug, sidebar = null, toc = null, children }) => {
         </header>
 
         <p className="hw-dates">
-          <span><strong>{t('statistics.colCreated')}:</strong> {formatRomeDateTime(hw.created)}</span>
+          <span><strong>{t('statistics.colCompleted')}:</strong> {hw.completed ? formatRomeDateTime(hw.completed) : t('statistics.dueTbd')}</span>
           <span><strong>{t('statistics.colDue')}:</strong> {hw.due ? formatRomeDateTime(hw.due) : t('statistics.dueTbd')}</span>
         </p>
         {description && <p>{description}</p>}

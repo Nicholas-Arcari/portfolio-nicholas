@@ -1,0 +1,420 @@
+  _                _                              _                    _              ___
+ | |              | |                            | |                  (_)            / _ \
+ | |        __ _  | |__     ___    _ __    __ _  | |_    ___    _ __   _    ___     | (_) |
+ | |       / _` | | '_ \   / _ \  | '__|  / _` | | __|  / _ \  | '__| | |  / _ \     > _ <
+ | |____  | (_| | | |_) | | (_) | | |    | (_| | | |_  | (_) | | |    | | | (_) |   | (_) |
+ |______|  \__,_| |_.__/   \___/  |_|     \__,_|  \__|  \___/  |_|    |_|  \___/     \___/
+
+
+
+
+	---------------------------------------------------------------------------------------
+		Utilizzo di OpenSSL per familiarizzare con gli strumenti crittografici
+	---------------------------------------------------------------------------------------
+
+# Attivita' svolta su didattica-linux.
+# Iniziamo con il creare su didattica-linux la directory html/RETI2425/ e al suo interno un file personale (toencrypt.txt) che verra' utilizzato come dato su cui applicare le diverse tecniche crittografiche:
+
+> ssh nicholas.arcari@studenti.unipr.it@didattica-linux.unipr.it
+(nicholas.arcari@studenti.unipr.it@didattica-linux.unipr.it) Password:
+Welcome to Ubuntu 18.04.3 LTS (GNU/Linux 4.15.0-213-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/advantage
+
+
+ * Canonical Livepatch is available for installation.
+   - Reduce system reboots and improve kernel security. Activate at:
+     https://ubuntu.com/livepatch
+New release '20.04.6 LTS' available.
+Run 'do-release-upgrade' to upgrade to it.
+
+Last login: Sun Dec  1 16:59:41 2024 from 160.78.143.15
+
+
+> cd html/RETI2425
+
+> mkdir  8-OpenSSL
+
+> du -hs *  > 8-OpenSSL/toencrypt.txt
+
+> cd 8-OpenSSL
+
+> ls
+toencrypt.txt
+
+> cat toencrypt.txt
+20K     1-Docker.txt
+8,0K    2-NetSniffing.pcap
+16K     2-NetSniffing.txt
+8,0K    3-IPstatico.txt
+12K     4-DockerRouting.txt
+16K     5-NetProg.txt
+12K     6-http.txt
+16K     7-firewall.txt
+4,0K    8-OpenSSL
+12K     opz-IPv6.txt
+12K     opz-wifi.txt
+
+
+[Analisi a basso livello]
+
+  Il file toencrypt.txt contiene l'elenco dei file del laboratorio con le rispettive dimensioni.
+  Verra' usato come input per testare diverse operazioni crittografiche: codifica, cifratura simmetrica,
+  hashing, HMAC, e crittografia asimmetrica (RSA).
+
+  La crittografia si divide in due macro-categorie:
+  - Crittografia simmetrica: stessa chiave per cifrare e decifrare (AES, DES, ChaCha20). Veloce, usata per dati bulk.
+  - Crittografia asimmetrica: coppia chiave pubblica/privata (RSA, ECDSA, Ed25519). Lenta, usata per scambio chiavi e firme.
+
+  OpenSSL e' una libreria open-source che implementa i protocolli SSL/TLS e fornisce un toolkit CLI
+  per operazioni crittografiche. Il comando `openssl` e' il front-end per accedere a queste funzionalita'.
+
+[/Analisi]
+
+
+# Creare i file:
+
+
+# - toencrypt.b64
+> openssl base64 -e -in toencrypt.txt -out toencrypt.b64
+
+> cat toencrypt.b64
+MjBLCTEtRG9ja2VyLnR4dAo4LDBLCTItTmV0U25pZmZpbmcucGNhcAoxNksJMi1O
+ZXRTbmlmZmluZy50eHQKOCwwSwkzLUlQc3RhdGljby50eHQKMTJLCTQtRG9ja2Vy
+Um91dGluZy50eHQKMTZLCTUtTmV0UHJvZy50eHQKMTJLCTYtaHR0cC50eHQKMTZL
+CTctZmlyZXdhbGwudHh0CjQsMEsJOC1PcGVuU1NMCjEySwlvcHotSVB2Ni50eHQK
+MTJLCW9wei13aWZpLnR4dAo=
+
+#per decodificare:
+> openssl base64 -d -in toencrypt.b64
+20K     1-Docker.txt
+8,0K    2-NetSniffing.pcap
+16K     2-NetSniffing.txt
+8,0K    3-IPstatico.txt
+12K     4-DockerRouting.txt
+16K     5-NetProg.txt
+12K     6-http.txt
+16K     7-firewall.txt
+4,0K    8-OpenSSL
+12K     opz-IPv6.txt
+12K     opz-wifi.txt
+
+
+[Analisi a basso livello]
+
+  Base64 NON e' crittografia, e' una codifica (encoding):
+  - Converte dati binari arbitrari in una sequenza di caratteri ASCII stampabili (A-Z, a-z, 0-9, +, /).
+  - Funzionamento: prende 3 byte di input (24 bit) e li divide in 4 gruppi da 6 bit.
+    Ogni gruppo da 6 bit viene mappato a un carattere della tabella Base64 (2^6 = 64 caratteri).
+  - Se i byte di input non sono multiplo di 3, si aggiunge padding con il carattere '=' alla fine.
+    Nell'output: "...dAo=" termina con '=' -> i byte originali non erano multiplo di 3.
+  - L'overhead dimensionale e' del 33%: 3 byte diventano 4 caratteri (ogni carattere = 1 byte ASCII).
+  - Uso tipico: trasporto di dati binari su canali testuali (email MIME, HTTP headers, JSON, data URI).
+
+  ATTENZIONE: Base64 e' completamente reversibile senza alcuna chiave. Non offre NESSUNA protezione
+  crittografica. Chiunque puo' decodificare il contenuto con un semplice `base64 -d`.
+
+[/Analisi]
+
+
+# - toencrypt.aes256		(utilizzare la matricola come encryption password)	#la mia matricola e': xxxxxx
+> openssl enc -aes-256-cbc -in toencrypt.txt -out toencrypt.aes256
+enter aes-256-cbc encryption password:
+Verifying - enter aes-256-cbc encryption password:
+*** WARNING : deprecated key derivation used.
+Using -iter or -pbkdf2 would be better.
+
+> cat toencrypt.aes256
+Salted__v<NTuOr)8b"
+
+# per decifrare:
+> openssl enc -d -aes-256-cbc -in toencrypt.aes256 -out decrypted.txt
+enter aes-256-cbc decryption password:
+*** WARNING : deprecated key derivation used.
+Using -iter or -pbkdf2 would be better.
+
+> cat decrypted.txt
+20K     1-Docker.txt
+8,0K    2-NetSniffing.pcap
+16K     2-NetSniffing.txt
+8,0K    3-IPstatico.txt
+12K     4-DockerRouting.txt
+16K     5-NetProg.txt
+12K     6-http.txt
+16K     7-firewall.txt
+4,0K    8-OpenSSL
+12K     opz-IPv6.txt
+12K     opz-wifi.txt
+
+
+[Analisi a basso livello]
+
+  AES-256-CBC - Cifratura simmetrica a blocchi:
+
+  AES (Advanced Encryption Standard, anche noto come Rijndael):
+  - Cifrario a blocchi simmetrico standardizzato dal NIST nel 2001 (sostituisce DES).
+  - Opera su blocchi di 128 bit (16 byte). La dimensione della chiave puo' essere 128, 192 o 256 bit.
+  - 256 indica la lunghezza della chiave: 256 bit = 32 byte. E' il livello di sicurezza massimo di AES.
+    Con 2^256 chiavi possibili, un attacco brute force e' computazionalmente impossibile.
+  - Il numero di round dipende dalla dimensione della chiave: 10 (AES-128), 12 (AES-192), 14 (AES-256).
+    Ogni round applica: SubBytes (sostituzione non-lineare), ShiftRows (permutazione), MixColumns
+    (diffusione), AddRoundKey (XOR con la sotto-chiave del round).
+
+  CBC (Cipher Block Chaining) - Modalita' di operazione:
+  - Ogni blocco di plaintext viene XOR-ato con il ciphertext del blocco precedente PRIMA della cifratura.
+  - Il primo blocco usa un IV (Initialization Vector) generato casualmente.
+  - Questo rende il ciphertext non deterministico: lo stesso plaintext con la stessa chiave ma IV diverso
+    produce ciphertext diverso -> protegge contro attacchi basati su pattern.
+  - PKCS#7 padding: se l'ultimo blocco e' piu' corto di 16 byte, viene riempito con byte il cui valore
+    indica il numero di byte di padding (es. se mancano 5 byte, si aggiungono 5 byte di valore 0x05).
+
+  Il prefisso "Salted__" nell'output cifrato:
+  - OpenSSL prepone gli 8 byte "Salted__" seguiti da 8 byte di salt random al ciphertext.
+  - Il salt viene combinato con la password per derivare la chiave AES e l'IV tramite EVP_BytesToKey().
+  - Il salt impedisce attacchi con rainbow table: la stessa password con salt diversi produce chiavi diverse.
+
+  WARNING "deprecated key derivation":
+  - EVP_BytesToKey() usa un singolo round di hash (MD5), troppo veloce per resistere al brute force.
+  - Soluzione consigliata: -pbkdf2 (Password-Based Key Derivation Function 2) con -iter 100000.
+    PBKDF2 applica l'hash 100000 volte, rallentando enormemente il brute force.
+  - Comando corretto: `openssl enc -aes-256-cbc -pbkdf2 -iter 100000 -in toencrypt.txt -out toencrypt.aes256`
+
+  Nota sulla modalita' CBC:
+  - CBC e' vulnerabile all'attacco Padding Oracle (Vaudenay, 2002) se l'applicazione rivela errori di padding.
+  - Modalita' piu' moderne: GCM (Galois/Counter Mode) fornisce cifratura + autenticazione (AEAD),
+    proteggendo sia la confidenzialita' che l'integrita' dei dati.
+
+[/Analisi]
+
+
+# - toencrypt.md5       (utilizzare openssl)
+> openssl dgst -md5 toencrypt.txt > toencrypt.md5
+
+> cat toencrypt.md5
+MD5(toencrypt.txt)= c8ca5a5d826afb1676da26d231f12baf
+
+
+# - toencrypt.md5sum		(utilizzare il comando md5sum)
+> md5sum toencrypt.txt > toencrypt.md5sum
+
+> cat toencrypt.md5sum
+c8ca5a5d826afb1676da26d231f12baf  toencrypt.txt
+
+# si puo' controllare l'integrita' del file, ossia se e' stato modificato, con il seguente comando:
+> md5sum -c toencrypt.md5sum
+toencrypt.txt: OK
+
+
+[Analisi a basso livello]
+
+  MD5 (Message Digest 5) - Funzione hash crittografica:
+
+  - Produce un digest (impronta) di 128 bit (32 caratteri esadecimali) da un input di dimensione arbitraria.
+  - Progettata da Ron Rivest nel 1991, utilizza la costruzione Merkle-Damgard:
+    il messaggio viene diviso in blocchi di 512 bit, ciascuno elaborato attraverso una funzione di
+    compressione che aggiorna uno stato interno di 128 bit (4 registri da 32 bit: A, B, C, D).
+  - 4 round di 16 operazioni ciascuno (64 operazioni totali) per blocco.
+
+  Proprieta' ideali di una funzione hash:
+  1. Deterministica: stesso input -> stesso output, sempre.
+  2. Veloce: il calcolo del digest e' rapido.
+  3. Resistenza alla preimmagine: dato h, e' computazionalmente impossibile trovare m tale che H(m) = h.
+  4. Resistenza alla seconda preimmagine: dato m1, impossibile trovare m2 != m1 con H(m1) = H(m2).
+  5. Resistenza alle collisioni: impossibile trovare due messaggi qualsiasi m1 != m2 con H(m1) = H(m2).
+  6. Effetto valanga: un singolo bit di differenza nell'input cambia circa il 50% dei bit dell'output.
+
+  MD5 e' DEPRECATO per usi crittografici:
+  - Wang et al. (2004) hanno dimostrato attacchi di collisione pratici: si possono generare due file
+    diversi con lo stesso hash MD5 in pochi secondi su hardware comune.
+  - Flame malware (2012): sfruttava collisioni MD5 nei certificati Microsoft per firmare codice malevolo.
+  - Usare SHA-256 (256 bit) o SHA-3 per applicazioni che richiedono sicurezza crittografica.
+  - MD5 resta accettabile SOLO per checksum non critici (verifica integrita' download, deduplicazione).
+
+  md5sum -c: confronta l'hash del file attuale con quello salvato. Se anche un solo byte del file
+  cambia, l'hash sara' completamente diverso (effetto valanga) e il controllo fallira'.
+
+[/Analisi]
+
+
+# - toencrypt.hmac		(utilizzare md5 e la matricola come hmac)	#la matricola e' xxxxxx
+> openssl dgst -sha256 -hmac md5<MATRICOLA> toencrypt.txt
+HMAC-SHA256(toencrypt.txt)= e0cdb437379ebf093380a785c3da3e82c9bda8497372530d4e6e2bd900b7048c
+
+
+[Analisi a basso livello]
+
+  HMAC (Hash-based Message Authentication Code):
+
+  HMAC combina una funzione hash con una chiave segreta per garantire:
+  - Integrita': il messaggio non e' stato modificato durante il transito.
+  - Autenticita': solo chi possiede la chiave segreta puo' calcolare (e verificare) l'HMAC.
+
+  Costruzione HMAC (RFC 2104):
+  HMAC(K, m) = H( (K' XOR opad) || H( (K' XOR ipad) || m ) )
+  dove:
+  - K' = chiave adattata alla dimensione del blocco hash (troncata se troppo lunga, paddata se troppo corta)
+  - ipad = 0x36 ripetuto per la dimensione del blocco (inner padding)
+  - opad = 0x5c ripetuto per la dimensione del blocco (outer padding)
+  - || = concatenazione
+  - H = funzione hash (in questo caso SHA-256)
+
+  Il doppio hashing (inner hash + outer hash) protegge contro attacchi di length extension che
+  colpiscono le funzioni hash basate su Merkle-Damgard (come SHA-256 e MD5).
+
+  Differenza tra hash e HMAC:
+  - Hash semplice: chiunque conosca il messaggio puo' calcolare H(m). Un attaccante puo' modificare
+    il messaggio e ricalcolare l'hash senza che il destinatario se ne accorga.
+  - HMAC: solo chi possiede la chiave K puo' calcolare HMAC(K, m). Se l'attaccante modifica il
+    messaggio, non puo' ricalcolare l'HMAC corretto senza la chiave -> il destinatario rileva la manomissione.
+
+  Nel comando: -hmac md5<MATRICOLA> usa la stringa "md5<MATRICOLA>" come chiave segreta HMAC.
+  L'output e' un digest SHA-256 di 256 bit (64 caratteri esadecimali) calcolato con la chiave data.
+
+[/Analisi]
+
+
+# Generare le proprie chiavi RSA   cognome_rsa_pub.pem e cognome_rsa_key.pem con 2048 bit
+> openssl genpkey -algorithm RSA -out arcari_rsa_pub.pem -pkeyopt rsa_keygen_bits:2048
+.+++++
+........................+++++
+
+> cat arcari_rsa_pub.pem
+-----BEGIN PRIVATE KEY-----
+MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCttDTOKHLPUxFd
+IKImtCf2gnKh7yaI3n93nagQBoFN+ry96UumInRjsWgF3eY9fNN11C4+qnS8HFgI
+...[CONTENUTO CHIAVE RIMOSSO PER SICUREZZA]...
+wrOPunPV9GShjc4EjyKHJAXmDih1bqCXCvchTDz5elQ5QoW4u/pTYVTEp8nhhZPZ
+euKAYXxcKn1WXxHavArPdos=
+-----END PRIVATE KEY-----
+
+> openssl genpkey -algorithm RSA -out arcari_rsa_key.pem -pkeyopt rsa_keygen_bits:2048
+.........+++++
+....................+++++
+
+> cat arcari_rsa_key.pem> openssl genpkey -algorithm RSA -out arcari_rsa_key.pem -pkeyopt rsa_keygen_bits:2048
+.........+++++
+....................+++++
+
+> cat arcari_rsa_key.pem
+-----BEGIN PRIVATE KEY-----
+MIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQDJEj3wACTfuQo/
+hw1PfHx0f8Smrxhb1/1hsQ+WvHXzH8mX1Z4+6X27DoYnFyLIWbtVEm15MTDx9Rps
+...[CONTENUTO CHIAVE RIMOSSO PER SICUREZZA]...
+vFYDGFKI6cV/t4qxp/oB1HStFbkqBqOjUl1koijudj9Cnb5B8KLskP2S9jZN4y77
+F66btOea6RiKeBpmNiq1b2oQFA==
+-----END PRIVATE KEY-----
+
+
+[Analisi a basso livello]
+
+  RSA (Rivest-Shamir-Adleman) - Crittografia asimmetrica:
+
+  Fondamento matematico:
+  - La sicurezza di RSA si basa sulla difficolta' di fattorizzare il prodotto di due numeri primi grandi.
+  - Generazione delle chiavi:
+    1. Si scelgono due numeri primi grandi casuali p e q (ciascuno ~1024 bit per RSA-2048).
+    2. Si calcola il modulo n = p * q (2048 bit). Questo e' il valore pubblico.
+    3. Si calcola il totiente di Eulero: phi(n) = (p-1)(q-1).
+    4. Si sceglie l'esponente pubblico e (tipicamente 65537 = 0x10001, un primo di Fermat).
+    5. Si calcola l'esponente privato d tale che e*d mod phi(n) = 1 (tramite algoritmo di Euclide esteso).
+  - Chiave pubblica: (n, e). Chiave privata: (n, d). I primi p e q vengono distrutti (o conservati per CRT).
+
+  Operazioni:
+  - Cifratura: c = m^e mod n (chiunque puo' cifrare con la chiave pubblica)
+  - Decifratura: m = c^d mod n (solo chi ha la chiave privata puo' decifrare)
+  - Firma: s = H(m)^d mod n (solo chi ha la chiave privata puo' firmare)
+  - Verifica: H(m) == s^e mod n (chiunque puo' verificare con la chiave pubblica)
+
+  2048 bit: lunghezza del modulo n. Offre ~112 bit di sicurezza equivalente (simmetrica).
+  Considerato sicuro fino al ~2030. Si consiglia 4096 bit per sicurezza a lungo termine.
+
+  ERRORE NELL'ESERCIZIO: entrambi i file (arcari_rsa_pub.pem e arcari_rsa_key.pem) contengono
+  "-----BEGIN PRIVATE KEY-----", cioe' sono ENTRAMBI chiavi private!
+  Il comando `openssl genpkey` genera SOLO la chiave privata. Per estrarre la chiave pubblica:
+  > openssl rsa -in arcari_rsa_key.pem -pubout -out arcari_rsa_pub.pem
+  Questo produrra' un file con header "-----BEGIN PUBLIC KEY-----".
+
+  Il formato PEM (Privacy Enhanced Mail): e' Base64 del formato DER (binario ASN.1) racchiuso
+  tra header/footer. Il contenuto in formato PKCS#8 include: versione, algoritmo (RSA), e i parametri
+  della chiave (n, e, d, p, q, dp, dq, qinv per la chiave privata; n, e per la pubblica).
+
+[/Analisi]
+
+
+# Scrivere nel file toencrypt.rsa_sign la firma di toencrypt.txt con la propria chiave privata
+
+> openssl dgst -sha1 -sign arcari_rsa_key.pem -out toencrypt.rsa_sign toencrypt.txt
+
+> cat toencrypt.rsa_sign
+|?LJn?}?~?:?Ò½{/{Ï­HHoLWG0?yH\t
+
+
+#per la verifica:
+> openssl dgst -sha1 -verify arcari_rsa_pub.pem -signature toencrypt.rsa_sign toencrypt.txt
+unable to load key file
+
+
+[Analisi a basso livello]
+
+  Firma digitale RSA:
+
+  Il comando `openssl dgst -sha1 -sign arcari_rsa_key.pem` esegue:
+  1. Calcola l'hash SHA-1 del file toencrypt.txt (produce un digest di 160 bit).
+  2. Firma il digest con la chiave privata RSA: firma = digest^d mod n.
+  3. Scrive la firma binaria nel file toencrypt.rsa_sign.
+
+  Il contenuto stampato con cat appare come caratteri illeggibili perche' la firma e' un dato binario
+  di 256 byte (2048 bit, la dimensione del modulo RSA). Per visualizzarla leggibilmente:
+  > openssl dgst -sha1 -hex -sign arcari_rsa_key.pem toencrypt.txt
+
+  Nota su SHA-1: come MD5, SHA-1 e' DEPRECATO (collisioni dimostrate da Google/CWI nel 2017, progetto SHAttered).
+  Usare -sha256 o -sha512 per le firme digitali.
+
+  ERRORE nella verifica: "unable to load key file"
+  - Il comando -verify richiede la chiave PUBBLICA in formato PEM con header "-----BEGIN PUBLIC KEY-----".
+  - Il file arcari_rsa_pub.pem contiene in realta' una chiave PRIVATA (errore nella generazione).
+  - Correzione: prima estrarre la chiave pubblica, poi verificare:
+    > openssl rsa -in arcari_rsa_key.pem -pubout -out arcari_rsa_pub_corretta.pem
+    > openssl dgst -sha1 -verify arcari_rsa_pub_corretta.pem -signature toencrypt.rsa_sign toencrypt.txt
+    Se il file non e' stato modificato, l'output sara': "Verified OK".
+
+[/Analisi]
+
+
+# Scrivere in toencrypt.rsa_crypt la cifratura di toencrypt.txt con la chiave pubblica del docente --> cp /home/alfieri/html/matdid/RETI/security/rsa/alfieri_rsa_pub.pem
+> openssl dgst -sha1 -sign /home/alfieri/html/matdid/RETI/security/rsa/alfieri_rsa_pub.pem -out toencrypt.rsa_crypt toencrypt.txt
+unable to load key file
+140654786912704:error:0909006C:PEM routines:get_name:no start line:../crypto/pem/pem_lib.c:745:Expecting: ANY PRIVATE KEY
+
+
+[Analisi a basso livello]
+
+  ERRORE nel comando:
+  - Il comando `openssl dgst -sha1 -sign` esegue una FIRMA, non una cifratura.
+    Il flag -sign richiede una chiave PRIVATA, ma alfieri_rsa_pub.pem e' una chiave PUBBLICA.
+    L'errore "Expecting: ANY PRIVATE KEY" conferma: OpenSSL si aspetta una chiave privata ma trova una pubblica.
+
+  - Per CIFRARE un file con la chiave pubblica del docente, il comando corretto e':
+    > openssl pkeyutl -encrypt -pubin -inkey alfieri_rsa_pub.pem -in toencrypt.txt -out toencrypt.rsa_crypt
+    Questo cifra il file con la chiave pubblica del docente. Solo il docente (che possiede la chiave privata
+    corrispondente) potra' decifrare il file.
+
+  - LIMITAZIONE RSA: RSA non puo' cifrare dati piu' grandi del modulo meno il padding.
+    Per RSA-2048 con OAEP padding: massimo 256 - 42 = 214 byte di dati.
+    Il file toencrypt.txt e' ~200 byte, quindi al limite della capienza.
+
+  - Per file grandi si usa la crittografia ibrida (approccio di PGP/GPG e TLS):
+    1. Generare una chiave AES-256 casuale (32 byte).
+    2. Cifrare il file con AES-256: `openssl enc -aes-256-cbc -pbkdf2 -pass file:aes_key.bin -in file -out file.enc`
+    3. Cifrare la chiave AES con RSA: `openssl pkeyutl -encrypt -pubin -inkey pub.pem -in aes_key.bin -out aes_key.enc`
+    4. Inviare al destinatario: file.enc + aes_key.enc.
+    Il destinatario decifra la chiave AES con la sua chiave privata RSA, poi decifra il file con AES.
+
+  Riepilogo delle differenze:
+  - Cifratura (encrypt): usa la chiave PUBBLICA del destinatario. Solo il destinatario puo' decifrare.
+  - Firma (sign): usa la chiave PRIVATA del mittente. Chiunque puo' verificare con la chiave pubblica.
+  - Cifratura garantisce confidenzialita'. Firma garantisce autenticita' e non-ripudio.
+
+[/Analisi]

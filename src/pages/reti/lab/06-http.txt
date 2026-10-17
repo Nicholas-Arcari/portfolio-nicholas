@@ -1,0 +1,513 @@
+  _                _                              _                    _                 __
+ | |              | |                            | |                  (_)               / /
+ | |        __ _  | |__     ___    _ __    __ _  | |_    ___    _ __   _    ___        / /_
+ | |       / _` | | '_ \   / _ \  | '__|  / _` | | __|  / _ \  | '__| | |  / _ \      | '_ \
+ | |____  | (_| | | |_) | | (_) | | |    | (_| | | |_  | (_) | | |    | | | (_) |     | (_) |
+ |______|  \__,_| |_.__/   \___/  |_|     \__,_|  \__|  \___/  |_|    |_|  \___/       \___/
+
+
+
+
+	------------------------------------------------------------------------------------------
+		+++++ Configurare un server HTTP, con virtual host e pagine dinamiche +++++
+	------------------------------------------------------------------------------------------
+
+# Setup nel volume condiviso:
+
+> mkdir RETI2425/DockerHTTP/
+
+> cd RETI2425/DockerHTTP/
+
+
+> wget http://didattica-linux.unipr.it/~roberto.alfieri@unipr.it/matdid/RETI/docker/HTTP/compose.yml
+--2024-11-12 11:03:09--  http://didattica-linux.unipr.it/~roberto.alfieri@unipr.it/matdid/RETI/docker/HTTP/compose.yml
+Risoluzione di didattica-linux.unipr.it (didattica-linux.unipr.it)... 160.78.50.165
+Connessione a didattica-linux.unipr.it (didattica-linux.unipr.it)|160.78.50.165|:80... connesso.
+Richiesta HTTP inviata, in attesa di risposta... 200 OK
+Lunghezza: 566
+Salvataggio in: «compose.yml»
+
+compose.yml          100%[=====================>]     566  --.-KB/s    in 0s
+
+2024-11-12 11:03:10 (16,8 MB/s) - «compose.yml» salvato [566/566]
+
+
+# Modificare la porta esposta da ns3 che deve essere 80xx
+
+> more compose.yml
+services:
+  ns3:
+    privileged: true
+    container_name: ns3
+    hostname: ns3
+    image: cyberteam1/nginx-ssh
+    network_mode: bridge
+    ports:
+      - "8006:8006"
+    volumes:
+      - '../Scrivania/Unipr/RetiDeiCalcolatori/RETI2425/DockerHTTP:/var/www/html'
+
+
+  ns2:
+    container_name: ns2
+    hostname: ns2
+    image: cyberteam1/nginx-ssh
+    network_mode: bridge
+    volumes:
+      - '../Scrivania/Unipr/RetiDeiCalcolatori/RETI2425/DockerHTTP:/var/www/html'
+
+
+> docker-compose up -d
+Creating ns3 ... done
+Creating ns2 ... done
+# Utilizzeremo ns3 come server e ns2 come client.
+
+
+# Download in RETI2425/DockerHTTP/ anche del file tar che include i programmi da utilizzare.
+
+> wget  http://didattica-linux.unipr.it/~roberto.alfieri@unipr.it/matdid/RETI/progHTTP.tgz
+--2024-11-12 11:09:11--  http://didattica-linux.unipr.it/~roberto.alfieri@unipr.it/matdid/RETI/progHTTP.tgz
+Risoluzione di didattica-linux.unipr.it (didattica-linux.unipr.it)... 160.78.50.165
+Connessione a didattica-linux.unipr.it (didattica-linux.unipr.it)|160.78.50.165|:80... connesso.
+Richiesta HTTP inviata, in attesa di risposta... 200 OK
+Lunghezza: 7592 (7,4K) [application/x-gzip]
+Salvataggio in: «progHTTP.tgz»
+
+progHTTP.tgz         100%[=====================>]   7,41K  --.-KB/s    in 0s
+
+2024-11-12 11:09:12 (277 MB/s) - «progHTTP.tgz» salvato [7592/7592]
+
+
+# Scompattare il tar:
+> tar xzvf progHTTP.tgz
+progHTTP/
+progHTTP/php/
+progHTTP/php/chunked.php
+progHTTP/php/cookie1.php
+progHTTP/php/phpinfo.php
+progHTTP/php/session.php
+progHTTP/php/superglob.php
+progHTTP/php/chunked2.php
+progHTTP/index.html
+progHTTP/cgi-bin/
+progHTTP/cgi-bin/cookie1.bash
+progHTTP/cgi-bin/cookie2.bash
+progHTTP/cgi-bin/get-post.bash
+progHTTP/cgi-bin/printenv1.bash
+progHTTP/cgi-bin/printenv2.bash
+progHTTP/cgi-bin/printenv3.bash
+progHTTP/cgi-bin/urldecode.c
+progHTTP/cgi-bin/urlencode.crm -f progHTTP.tgz
+progHTTP/cgi-bin/urldecode
+progHTTP/cgi-bin/urlencode
+progHTTP/http_client.py
+
+# Per non avere dati ridondanti e permettere maggiore chiarezza ho anche eliminato il file compresso:
+> rm -f progHTTP.tgz
+
+[Analisi a basso livello]
+Il compose.yml definisce due servizi Docker (ns3 e ns2) che usano l'immagine cyberteam1/nginx-ssh
+(contiene NGINX e un server SSH). La direttiva network_mode: bridge collega entrambi i container
+alla rete bridge predefinita di Docker (172.17.0.0/16), quindi possono comunicare tra loro tramite
+gli indirizzi IP assegnati dal daemon Docker.
+
+La direttiva ports: "8006:8006" su ns3 crea una regola iptables DNAT sul host che mappa la porta
+8006 dell'host alla porta 8006 del container. Questo consente l'accesso dall'esterno.
+
+La direttiva volumes monta una directory dell'host nel container come bind mount: il kernel usa
+il VFS (Virtual File System) per sovrapporre il path dell'host al path del container tramite
+un mount namespace. Qualsiasi modifica ai file e' immediatamente visibile in entrambe le direzioni.
+
+Il comando tar xzvf scompatta l'archivio: x (extract), z (decompressione gzip), v (verbose),
+f (file). Internamente gzip usa l'algoritmo DEFLATE (combinazione di LZ77 e codifica di Huffman).
+[/Analisi]
+
+
+
+	------------------------------------------------------
+		+++++ Configurazione di NGINX +++++
+	------------------------------------------------------
+
+# Verifica della configurazione generale in /etc/nginx/nginx.conf
+> cd ../../etc/nginx/
+> cat nginx.conf
+user www-data;
+worker_processes auto;
+pid /run/nginx.pid;
+include /etc/nginx/modules-enabled/*.conf;
+
+events {
+        worker_connections 768;
+        # multi_accept on;
+}
+
+http {
+
+        ##
+        # Basic Settings
+        ##
+
+        sendfile on;
+        tcp_nopush on;
+        types_hash_max_size 2048;
+        # server_tokens off;
+
+        # server_names_hash_bucket_size 64;
+        # server_name_in_redirect off;
+
+        include /etc/nginx/mime.types;
+        default_type application/octet-stream;
+
+        ##
+        # SSL Settings
+        ##
+
+        ssl_protocols TLSv1 TLSv1.1 TLSv1.2 TLSv1.3; # Dropping SSLv3, ref: POODLE
+        ssl_prefer_server_ciphers on;
+
+        ##
+        # Logging Settings
+        ##
+
+        access_log /var/log/nginx/access.log;			# logging eventi
+        error_log /var/log/nginx/error.log;			# logging errori
+
+        ##
+        # Gzip Settings
+        ##
+
+        gzip on;
+
+        # gzip_vary on;
+        # gzip_proxied any;
+        # gzip_comp_level 6;
+        # gzip_buffers 16 8k;
+        # gzip_http_version 1.1;
+        # gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+
+        ##
+        # Virtual Host Configs
+        ##
+
+        include /etc/nginx/conf.d/*.conf;
+        include /etc/nginx/sites-enabled/*;			# carica i file in sites-enabled
+}
+
+
+#mail {
+#       # See sample authentication script at:
+#       # http://wiki.nginx.org/ImapAuthenticateWithApachePhpScript
+#
+#       # auth_http localhost/auth.php;
+#       # pop3_capabilities "TOP" "USER";
+#       # imap_capabilities "IMAP4rev1" "UIDPLUS";
+#
+#       server {
+#               listen     localhost:110;
+#               protocol   pop3;
+#               proxy      on;
+#       }
+#
+#       server {
+#               listen     localhost:143;
+#               protocol   imap;
+#               proxy      on;
+#       }
+#}
+
+[Analisi a basso livello]
+Architettura NGINX: NGINX utilizza un modello event-driven (guidato dagli eventi) con un singolo
+master process e uno o piu' worker processes.
+
+- Il master process viene eseguito con i privilegi di root ed e' responsabile della lettura e
+  validazione della configurazione, del binding sulle porte privilegiate (< 1024) tramite la
+  syscall bind(), e della gestione del ciclo di vita dei worker tramite le syscall fork() e
+  waitpid(). I segnali SIGHUP (reload configurazione), SIGTERM (shutdown grazioso) e SIGQUIT
+  (shutdown immediato) vengono gestiti dal master per il controllo operativo.
+
+- I worker processes vengono eseguiti come utente www-data (dopo il drop dei privilegi tramite
+  setuid/setgid) e gestiscono effettivamente le connessioni dei client. Ogni worker opera un
+  event loop che utilizza epoll (su Linux) o kqueue (su BSD/macOS) per il multiplexing I/O
+  non bloccante. La syscall epoll_wait() consente a un singolo thread di monitorare migliaia
+  di file descriptor simultaneamente, senza il costo di un thread per connessione.
+
+- worker_processes auto: NGINX rileva automaticamente il numero di core della CPU tramite la
+  chiamata sysconf(_SC_NPROCESSORS_ONLN) e crea un worker per ogni core, massimizzando il
+  parallelismo e minimizzando il context switching tra processi.
+
+- worker_connections 768: ogni singolo worker puo' gestire fino a 768 connessioni simultanee.
+  Questo valore e' limitato dal numero massimo di file descriptor del processo (ulimit -n).
+  Con N worker, il server puo' gestire al massimo N * 768 connessioni totali. Ad esempio,
+  con 4 core: 4 * 768 = 3072 connessioni concorrenti. Ogni connessione richiede almeno un
+  file descriptor per il socket del client, e due se NGINX fa da reverse proxy (uno verso il
+  client, uno verso il backend).
+
+- sendfile on: abilita la syscall sendfile() del kernel, che copia i dati direttamente dal
+  file descriptor del file sorgente a quello del socket di destinazione, interamente nel kernel
+  space. Senza sendfile, il flusso tradizionale prevede:
+    1. read() dal file -> copia dal kernel buffer allo user buffer
+    2. write() sul socket -> copia dallo user buffer al kernel buffer
+  Con sendfile, il kernel esegue un'unica operazione DMA (Direct Memory Access) dal page cache
+  al buffer del socket, eliminando il doppio attraversamento del confine user-kernel (zero-copy
+  transfer). Questo riduce drasticamente l'utilizzo della CPU e il numero di context switch.
+
+- tcp_nopush on: corrisponde all'opzione socket TCP_CORK (setsockopt con livello SOL_TCP).
+  Quando attiva, il kernel accumula i dati nel buffer di invio TCP fino al riempimento di un
+  segmento TCP completo (MSS, Maximum Segment Size, tipicamente 1460 byte su Ethernet) prima
+  di trasmetterlo. Questo riduce il numero di pacchetti piccoli sulla rete, ottimizzando
+  l'utilizzo della banda e riducendo l'overhead degli header TCP/IP. E' particolarmente
+  efficace in combinazione con sendfile, poiche' consente di inviare gli header HTTP e il
+  contenuto del file in un numero minimo di segmenti TCP.
+
+- include /etc/nginx/sites-enabled/*: questo e' il pattern di configurazione Debian-style per
+  la gestione dei virtual host. I file di configurazione vengono creati in /etc/nginx/sites-available/
+  (configurazione disponibile ma non attiva) e poi attivati creando un collegamento simbolico
+  (symlink) in /etc/nginx/sites-enabled/ tramite il comando:
+    ln -s /etc/nginx/sites-available/mio_sito /etc/nginx/sites-enabled/mio_sito
+  Questo pattern consente di abilitare e disabilitare i siti senza cancellare la configurazione.
+  NGINX, al momento del reload, esegue un glob() su questa directory e include tutti i file trovati.
+[/Analisi]
+
+
+
+	------------------------------------------------------
+		+++++ Server default +++++
+	------------------------------------------------------
+
+# Verifica del server default in /etc/nginx/sites-available/default
+> cd ../../etc/nginx/sites-available/
+> cat default
+##
+# You should look at the following URL's in order to grasp a solid understanding
+# of Nginx configuration files in order to fully unleash the power of Nginx.
+# https://www.nginx.com/resources/wiki/start/
+# https://www.nginx.com/resources/wiki/start/topics/tutorials/config_pitfalls/
+# https://wiki.debian.org/Nginx/DirectoryStructure
+#
+# In most cases, administrators will remove this file from sites-enabled/ and
+# leave it as reference inside of sites-available where it will continue to be
+# updated by the nginx packaging team.
+#
+# This file will automatically load configuration files provided by other
+# applications, such as Drupal or Wordpress. These applications will be made
+# available underneath a path with that package name, such as /drupal8.
+#
+# Please see /usr/share/doc/nginx-doc/examples/ for more detailed examples.
+##
+
+# Default server configuration
+#
+server {
+        listen 80 default_server;			# porta di ascolto
+        listen [::]:80 default_server;
+
+        # SSL configuration
+        #
+        # listen 443 ssl default_server;
+        # listen [::]:443 ssl default_server;
+        #
+        # Note: You should disable gzip for SSL traffic.
+        # See: https://bugs.debian.org/773332
+        #
+        # Read up on ssl_ciphers to ensure a secure configuration.
+        # See: https://bugs.debian.org/765782
+        #
+        # Self signed certs generated by the ssl-cert package
+        # Don't use them in a production server!
+        #
+        # include snippets/snakeoil.conf;
+
+        root /var/www/html;				# root directory
+
+        # Add index.php to the list if you are using PHP
+        index index.html index.htm index.nginx-debian.html;
+
+        server_name _;
+
+        location / {
+                # First attempt to serve request as file, then
+                # as directory, then fall back to displaying a 404.
+                try_files $uri $uri/ =404;
+        }
+
+        # pass PHP scripts to FastCGI server
+        #
+        #location ~ \.php$ {
+        #       include snippets/fastcgi-php.conf;
+        #
+        #       # With php-fpm (or other unix sockets):
+        #       fastcgi_pass unix:/run/php/php7.4-fpm.sock;
+        #       # With php-cgi (or other tcp sockets):
+        #       fastcgi_pass 127.0.0.1:9000;
+        #}
+
+        # deny access to .htaccess files, if Apache's document root
+        # concurs with nginx's one
+        #
+        #location ~ /\.ht {
+        #       deny all;
+        #}
+}
+
+
+# Virtual Host configuration for example.com
+#
+# You can move that to a different file under sites-available/ and symlink that
+# to sites-enabled/ to enable it.
+#
+#server {
+#       listen 80;
+#       listen [::]:80;
+#
+#       server_name example.com;
+#
+#       root /var/www/example.com;
+#       index index.html;
+#
+#       location / {
+#               try_files $uri $uri/ =404;
+#       }
+#}
+
+[Analisi a basso livello]
+Analisi dettagliata delle direttive del blocco server default:
+
+- listen 80 default_server: il master process di NGINX crea un socket TCP con la syscall
+  socket(AF_INET, SOCK_STREAM, 0), poi esegue bind(sockfd, {sin_family=AF_INET,
+  sin_addr=0.0.0.0, sin_port=htons(80)}, ...) per associarlo alla porta 80 su tutte le
+  interfacce di rete. Successivamente chiama listen(sockfd, backlog) per mettere il socket
+  in stato LISTEN. Il flag default_server indica che questo blocco server e' quello che
+  risponde quando nessun altro server_name corrisponde al valore dell'header HTTP Host nella
+  richiesta del client. Se un client richiede un hostname non configurato, NGINX lo indirizza
+  a questo virtual host di default.
+
+- listen [::]:80 default_server: identico al precedente, ma crea un socket IPv6 con
+  socket(AF_INET6, SOCK_STREAM, 0) e fa bind sull'indirizzo [::] (tutte le interfacce IPv6).
+
+- root /var/www/html: definisce la document root, cioe' la directory base del filesystem da
+  cui NGINX serve i file statici. Quando arriva una richiesta per /pagina.html, NGINX costruisce
+  il percorso completo come /var/www/html/pagina.html e lo apre con open(path, O_RDONLY) per
+  poi inviarne il contenuto tramite sendfile().
+
+- server_name _: il carattere underscore e' una convenzione usata come wildcard che
+  intenzionalmente non corrisponde a nessun nome di dominio reale. Serve come catch-all:
+  qualsiasi richiesta il cui header Host non corrisponde a un server_name specifico viene
+  gestita da questo blocco (dato che e' anche default_server).
+
+- try_files $uri $uri/ =404: direttiva che implementa una catena di fallback per la
+  risoluzione delle richieste:
+    1. Prima cerca il file corrispondente all'URI richiesto (es. /index.html -> /var/www/html/index.html)
+    2. Se non trova il file, prova a interpretare l'URI come directory e cerca al suo interno
+       un file di indice (index.html, index.htm, ecc., come definito dalla direttiva index)
+    3. Se nemmeno la directory esiste, restituisce un errore HTTP 404 Not Found
+  Internamente, NGINX usa la syscall stat() per verificare l'esistenza e il tipo di ogni percorso.
+
+- index index.html index.htm index.nginx-debian.html: quando una richiesta punta a una directory,
+  NGINX cerca in ordine questi file al suo interno. Il primo trovato viene servito come risposta.
+[/Analisi]
+
+
+
+	------------------------------------------------------
+		+++++ Virtual Host +++++
+	------------------------------------------------------
+
+# Attivazione Virtual Host
+# Editare /etc/nginx/sites-available/default e abilitare il virtual host con nome vh1 su
+# porta 80xx; occorre modificare la porta di ascolto e la root directory.
+
+> cat default
+server {
+        listen 8006;
+        server_name vh1;
+        root /var/www/html/progHTTP/;
+}
+
+
+> service nginx reload
+
+
+# Accedere al server da ns2
+
+> curl http://172.17.0.3:8000/index.html
+
+
+# Attivazione supporto PHP nel Virtual Host
+
+[Analisi a basso livello]
+Il concetto di Virtual Hosting: il virtual hosting consente di ospitare piu' siti web sullo
+stesso server fisico (e sullo stesso indirizzo IP). Esistono due tipologie principali:
+
+- Name-based Virtual Hosting: il server distingue i siti in base al valore dell'header HTTP
+  "Host" inviato dal client nella richiesta. Quando il client si connette e invia ad esempio
+  "Host: vh1", NGINX confronta questo valore con i server_name di tutti i blocchi server
+  configurati. Il blocco il cui server_name corrisponde gestisce la richiesta. Questo meccanismo
+  e' possibile solo con HTTP/1.1+ (che ha reso obbligatorio l'header Host) e con TLS grazie
+  all'estensione SNI (Server Name Indication), che invia il nome del server nel ClientHello
+  prima della negoziazione del certificato.
+
+- IP-based Virtual Hosting: ogni sito e' associato a un indirizzo IP diverso. Il server
+  distingue i siti in base all'indirizzo IP di destinazione del pacchetto. Questo metodo
+  e' meno efficiente perche' richiede un indirizzo IP per ogni sito.
+
+In questa configurazione:
+
+- listen 8006: il socket del virtual host fa bind sulla porta 8006 anziche' sulla porta 80.
+  La porta 8006 e' stata scelta per evitare conflitti con il default server che e' gia' in
+  ascolto sulla porta 80. Essendo una porta non privilegiata (> 1024), non richiede i
+  privilegi di root per il binding.
+
+- server_name vh1: definisce il nome del virtual host. Quando un client invia una richiesta
+  HTTP con l'header "Host: vh1", NGINX seleziona questo blocco server. Tuttavia, poiche'
+  questo virtual host e' in ascolto su una porta dedicata (8006), il matching avviene
+  principalmente sulla porta e non sull'header Host.
+
+- root /var/www/html/progHTTP/: la document root di questo virtual host punta alla directory
+  dove sono stati estratti i file del laboratorio. E' diversa dalla root del default server
+  (/var/www/html), permettendo ai due virtual host di servire contenuti differenti.
+
+- service nginx reload: invia il segnale SIGHUP al master process di NGINX, che rilegge e
+  valida la configurazione, poi crea nuovi worker con la nuova configurazione e termina
+  gradualmente i vecchi worker (dopo che hanno completato le richieste in corso). Questo
+  consente un reload senza downtime (zero-downtime reload).
+[/Analisi]
+
+
+#accedere al server da ns2
+> curl http://172.17.0.3:8006/index.html
+
+
+# Attivazione supporto PHP nel Virtual Host
+
+[Analisi a basso livello]
+
+  Per abilitare PHP in NGINX occorre installare PHP-FPM (FastCGI Process Manager) e configurare
+  NGINX per inoltrare le richieste .php al processo PHP-FPM:
+
+  1. Installazione: apt install php-fpm
+     PHP-FPM crea un pool di worker PHP in ascolto su un socket UNIX (/run/php/phpX.X-fpm.sock)
+     o su un socket TCP (127.0.0.1:9000).
+
+  2. Configurazione nel blocco server di NGINX:
+     location ~ \.php$ {
+         include snippets/fastcgi-php.conf;
+         fastcgi_pass unix:/run/php/php8.2-fpm.sock;
+     }
+     - location ~ \.php$: regex match per tutte le URI che terminano con .php.
+     - fastcgi_pass: NGINX non esegue direttamente il codice PHP. Inoltra la richiesta
+       al processo PHP-FPM tramite il protocollo FastCGI (variante di CGI con connessioni
+       persistenti, molto piu' efficiente del fork-per-request del CGI classico).
+     - Il worker PHP-FPM esegue lo script, genera l'output HTML e lo restituisce a NGINX
+       che lo invia al client. Questa architettura separa il web server dall'interprete PHP.
+
+  CGI (Common Gateway Interface) vs FastCGI:
+  - CGI classico: per ogni richiesta, il web server fa fork() + exec() di un nuovo processo
+    (es. script bash in cgi-bin/). Lento, non scala.
+  - FastCGI: un pool di processi persistenti gestisce le richieste tramite un socket.
+    Non c'e' overhead di fork/exec per ogni richiesta. PHP-FPM e' l'implementazione FastCGI per PHP.
+
+  Nota sulla sezione non completata: in questo laboratorio la configurazione PHP non e' stata
+  portata a termine. I file PHP scaricati (phpinfo.php, cookie1.php, session.php, ecc.) richiedono
+  l'installazione di PHP-FPM nel container e la corretta configurazione del blocco location.
+
+[/Analisi]
