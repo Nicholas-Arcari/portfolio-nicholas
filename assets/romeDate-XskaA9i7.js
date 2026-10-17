@@ -1,0 +1,1 @@
+const r=new Intl.DateTimeFormat("it-IT",{timeZone:"Europe/Rome",day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}),i=o=>{const t=Object.fromEntries(r.formatToParts(new Date(o)).map(e=>[e.type,e.value]));return`${t.day}/${t.month}/${t.year} ${t.hour}:${t.minute}`};export{i as f};
