@@ -21,8 +21,9 @@ const readLanguage = () => {
 // del sito. Il pulsante IT / EN li porta in italiano solo finche' si resta
 // sulla pagina: la scelta non si salva e non tocca la lingua del sito.
 const HOMEWORK_LANGUAGE = 'en';
+// Lo stesso vale per la pagina di teoria di ogni homework.
 const isHomework = (pathname) =>
-  STATISTICS_HOMEWORK.some((hw) => matchPath(`/statistics/${hw.slug}`, pathname));
+  STATISTICS_HOMEWORK.some((hw) => matchPath(`/statistics/${hw.slug}`, pathname) || matchPath(`/statistics/${hw.slug}/theory`, pathname));
 
 export const LanguageProvider = ({ children }) => {
   const { pathname } = useLocation();

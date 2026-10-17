@@ -65,6 +65,17 @@ const StatisticsHomework = () => {
                 <tr key={hw.slug} className="hw-row" onClick={() => navigate(`/statistics/${hw.slug}`)}>
                   <td data-label={t('statistics.colName')}>
                     <Link to={`/statistics/${hw.slug}`} onClick={(e) => e.stopPropagation()}>{hw.name}</Link>
+                    {/* la teoria dietro all'homework, in una scheda nuova: l'elenco resta aperto */}
+                    <a
+                      className="hw-theory-link icon solid fa-book"
+                      href={`#/statistics/${hw.slug}/theory`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={t('statistics.theoryNewTab')}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {t('statistics.theory')}
+                    </a>
                   </td>
                   <td data-label={t('statistics.colDescription')}>{hw.description[language]}</td>
                   <td data-label={t('statistics.colCreated')}>{formatRomeDateTime(hw.created)}</td>

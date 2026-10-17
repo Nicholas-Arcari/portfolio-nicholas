@@ -1885,3 +1885,79 @@ body.dark-mode .chart-mark {
     border-color: #ff6b81;
     background: rgba(255, 107, 129, 0.14);
 }
+
+/* ===== STATISTICS: LE PAGINE DI TEORIA ===== */
+/* Il link alla teoria sotto il nome di ogni homework, nell'elenco */
+.hw-theory-link {
+    display: block;
+    width: fit-content;
+    margin-top: 0.35em;
+    font-size: 0.85em;
+}
+.hw-theory-link:before {
+    margin-right: 0.4em;
+}
+.th-page .th-section {
+    margin-top: 2.5em;
+}
+.th-page .th-subsection {
+    margin-top: 1.5em;
+}
+.th-list {
+    margin: 0 0 1.5em 1.2em;
+}
+.th-list li {
+    margin-bottom: 0.4em;
+}
+.th-note {
+    padding: 0.6em 0.9em;
+    border-radius: 5px;
+    background: rgba(63, 167, 150, 0.12);
+    font-size: 0.95em;
+}
+/* La scaletta: il minuto a sinistra, titolo e cosa dire a destra */
+.th-outline {
+    list-style: none;
+    margin: 0 0 1.5em;
+    padding: 0;
+}
+.th-outline li {
+    display: grid;
+    grid-template-columns: 4em 1fr;
+    gap: 0.1em 0.8em;
+    padding: 0.7em 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+.th-outline .th-time {
+    grid-row: span 2;
+    font-family: monospace;
+    color: #d52349;
+}
+/* Le domande: la risposta resta chiusa finche' non la si apre */
+.th-qa details {
+    margin-bottom: 0.6em;
+    padding: 0.6em 0.9em;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 5px;
+}
+.th-qa summary {
+    cursor: pointer;
+    font-weight: 600;
+}
+.th-qa details p {
+    margin: 0.6em 0 0;
+}
+.th-answer-label {
+    font-weight: 600;
+    color: #d52349;
+}
+body.dark-mode .th-outline li {
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+body.dark-mode .th-qa details {
+    border-color: rgba(255, 255, 255, 0.15);
+}
+body.dark-mode .th-outline .th-time,
+body.dark-mode .th-answer-label {
+    color: #ff6b81;
+}
