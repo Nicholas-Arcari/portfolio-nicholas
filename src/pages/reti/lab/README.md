@@ -15,7 +15,7 @@
  |_| \_\___|\__|_|  \__,_|\___|_|  \____\__,_|_|\___\___/|_|\__,_|\__\___/|_|  |_|
 ```
 
-**Corso**: Reti dei Calcolatori — A.A. 2024/2025  
+**Corso**: Reti dei Calcolatori - A.A. 2024/2025  
 **Docente**: Prof. Roberto Alfieri  
 **Universita'**: Universita' degli Studi di Parma  
 **Studente**: Arcari Nicholas  
