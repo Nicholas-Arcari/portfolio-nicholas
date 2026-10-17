@@ -1,0 +1,654 @@
+const e=`  _                _                              _                    _                _____
+ | |              | |                            | |                  (_)              | ____|
+ | |        __ _  | |__     ___    _ __    __ _  | |_    ___    _ __   _    ___        | |__
+ | |       / _\` | | '_ \\   / _ \\  | '__|  / _\` | | __|  / _ \\  | '__| | |  / _ \\       |___ \\
+ | |____  | (_| | | |_) | | (_) | | |    | (_| | | |_  | (_) | | |    | | | (_) |       ___) |
+ |______|  \\__,_| |_.__/   \\___/  |_|     \\__,_|  \\__|  \\___/  |_|    |_|  \\___/       |____/
+
+
+
+
+	-------------------------------------------------------------------------------------------------------------------------------------------------
+	 Obiettivo: comprendere la programmazione dei Socket e la programmazione client-server attraverso lo sviluppo di semplici programmi in Python.
+	-------------------------------------------------------------------------------------------------------------------------------------------------
+
+> cd RETI2425/DockerNetProg/
+> wget http://didattica-linux.unipr.it/~roberto.alfieri@unipr.it/matdid/RETI/docker/NetProg/compose.yml
+
+--2024-10-22 10:39:05--  http://didattica-linux.unipr.it/~roberto.alfieri@unipr.it/matdid/RETI/docker/NetProg/compose.yml
+Risoluzione di didattica-linux.unipr.it (didattica-linux.unipr.it)... 160.78.50.165
+Connessione a didattica-linux.unipr.it (didattica-linux.unipr.it)|160.78.50.165|:80... connesso.
+Richiesta HTTP inviata, in attesa di risposta... 200 OK
+Lunghezza: 500
+Salvataggio in: «compose.yml»
+
+compose.yml          100%[===========================>]     500  --.-KB/s    in 0s
+
+2024-10-22 10:39:05 (21,3 MB/s) - «compose.yml» salvato [500/500]
+
+
+# Il file compose genera 2 container, ns2 e ns3, con la condivisione del volume.
+# Ho personalizzato il file compose.yml come segue:
+
+services:
+  ns3:
+    container_name: ns3
+    hostname: ns3
+    image: cyberteam1/nginx-ssh
+    network_mode: bridge
+    ports:
+      - "9006:9006"
+    volumes:
+      -  ../Scrivania/Unipr/RetiDeiCalcolatori/RETI2425/DockerNetProg/:/var/www/html
+
+
+  ns2:
+    container_name: ns2
+    hostname: ns2
+    image: cyberteam1/nginx-ssh
+    network_mode: bridge
+    volumes:
+      -  ../Scrivania/Unipr/RetiDeiCalcolatori/RETI2425/DockerNetProg/:/var/www/html
+
+
+> docker-compose up -d
+Creating ns2 ... done
+Creating ns3 ... done
+
+
+> docker-compose ps
+Name              Command               State                            Ports
+--------------------------------------------------------------------------------------------------------
+ns2    /docker-entrypoint.sh ngin ...   Up      22/tcp, 80/tcp
+ns3    /docker-entrypoint.sh ngin ...   Up      22/tcp, 80/tcp, 0.0.0.0:9006->9006/tcp,:::9006->9006/tcp
+
+[Analisi a basso livello]
+Analisi del setup dei container:
+
+Port forwarding 9006:9006 su ns3:
+- La sintassi "9006:9006" nel compose.yml crea una regola di port forwarding (DNAT) tramite iptables
+  sull'host: il traffico in arrivo sulla porta 9006 dell'host viene inoltrato alla porta 9006 del
+  container ns3. Questo e' necessario affinche' i programmi server (come dgram_server.py o
+  echotcp-server-thread.py) che fanno bind() sulla porta 9006 all'interno del container siano
+  raggiungibili dall'esterno del container, ad esempio dall'host stesso o da altri dispositivi sulla
+  rete dell'host.
+- L'output di docker-compose ps mostra "0.0.0.0:9006->9006/tcp,:::9006->9006/tcp", il che significa
+  che l'host ascolta sulla porta 9006 sia su IPv4 (0.0.0.0) che su IPv6 (::) e inoltra il traffico
+  al container ns3.
+- ns2 NON ha port forwarding: e' accessibile solo dagli altri container sulla stessa rete bridge Docker,
+  non direttamente dall'host tramite porte mappate.
+
+Condivisione del volume:
+- Entrambi i container montano la stessa directory dell'host (DockerNetProg/) come /var/www/html.
+  Questo significa che i file Python (dgram_server.py, echotcp-client.py, ecc.) sono accessibili da
+  entrambi i container senza doverli copiare manualmente. Qualsiasi modifica ai file fatta dall'host
+  o da un container e' immediatamente visibile in tutti i container che condividono il volume.
+- Il volume e' un bind mount: Docker monta direttamente la directory dell'host nel container tramite
+  la syscall mount() con il flag --bind, senza creare un volume Docker gestito.
+[/Analisi]
+
+
+> wget  http://didattica-linux.unipr.it/~roberto.alfieri@unipr.it/matdid/RETI/docker/NetProg/NetProg.tgz
+--2024-10-22 10:41:31--  http://didattica-linux.unipr.it/~roberto.alfieri@unipr.it/matdid/RETI/docker/NetProg/NetProg.tgz
+Risoluzione di didattica-linux.unipr.it (didattica-linux.unipr.it)... 160.78.50.165
+Connessione a didattica-linux.unipr.it (didattica-linux.unipr.it)|160.78.50.165|:80... connesso.
+Richiesta HTTP inviata, in attesa di risposta... 200 OK
+Lunghezza: 5180 (5,1K) [application/x-gzip]
+Salvataggio in: «NetProg.tgz»
+
+NetProg.tgz            100%[===========================>]   5,06K  --.-KB/s    in 0s
+
+2024-10-22 10:41:31 (208 MB/s) - «NetProg.tgz» salvato [5180/5180]
+
+
+# Scompattare il tar:
+> tar xzvf NetProg.tgz
+NetProg/
+NetProg/tcp/
+NetProg/tcp/http/
+NetProg/tcp/http/http-server.py
+NetProg/tcp/http/http-client-v2.py
+NetProg/tcp/http/http-client.py
+NetProg/tcp/echo/
+NetProg/tcp/echo/echotcp-client.py
+NetProg/tcp/echo/echotcp-server-thread.py
+NetProg/tcp/echo/echotcp2-client.py
+NetProg/tcp/echo/echotcp2-server-thread.py
+NetProg/udp/
+NetProg/udp/dgram_server6.py
+NetProg/udp/echo_client_prob.py
+NetProg/udp/dgram_client6.py
+NetProg/udp/echo_client.py
+NetProg/udp/dgram_client.py
+NetProg/udp/dgram_server.py
+NetProg/udp/echo_server.py
+NetProg/socket/
+NetProg/socket/addrinfo.c
+NetProg/socket/addrinfo.py
+NetProg/socket/gethostbyname.py
+NetProg/socket/inaddr.c
+NetProg/socket/gethostbyname.c
+NetProg/socket/gethostbyaddr.c
+NetProg/socket/gethostbyaddr.py
+
+
+# Aprire un terminale su ns2 e contemporaneamente un secondo terminale su ns3
+
+> docker exec -it ns2 bash
+root@ns2:/#
+
+> docker exec -it ns3 bash
+root@ns3:/#
+
+
+
+	--------------------------------------
+		 gethostbyname()
+	--------------------------------------
+
+# Inserire un'associazione nome-IP nel file /etc/hosts di ns2		(esempio: 172.17.0.3 ns3)
+
+root@ns2:/etc# nano hosts
+127.0.0.1       localhost
+::1     localhost ip6-localhost ip6-loopback
+fe00::0 ip6-localnet
+ff00::0 ip6-mcastprefix
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+172.17.0.2      ns2
+172.17.0.3      ns3
+
+
+# Quindi verificare che gethostbyname() prima consulta il file locale /etc/hosts poi, se necessario, esegue una query DNS, in base alla configurazione standard della voce "hosts" in /etc/nsswitch.conf ( hosts: files dns )
+
+
+root@ns2:/etc# cat nsswitch.conf
+# /etc/nsswitch.conf
+#
+# Example configuration of GNU Name Service Switch functionality.
+# If you have the \`glibc-doc-reference' and \`info' packages installed, try:
+# \`info libc "Name Service Switch"' for information about this file.
+
+passwd:         files systemd
+group:          files systemd
+shadow:         files systemd
+gshadow:        files systemd
+
+hosts:          files dns
+networks:       files
+
+protocols:      db files
+services:       db files
+ethers:         db files
+rpc:            db files
+
+netgroup:       nis
+
+[Analisi a basso livello]
+Il Name Service Switch (NSS) e il processo di risoluzione dei nomi:
+
+Il file /etc/nsswitch.conf definisce l'ordine di consultazione per diversi servizi di risoluzione del
+sistema operativo. La riga fondamentale per la risoluzione dei nomi host e':
+
+  hosts:          files dns
+
+Questo significa che il sistema segue quest'ordine:
+1. "files" -> consulta il file /etc/hosts (risoluzione statica locale). Questo file contiene associazioni
+   nome-IP definite manualmente dall'amministratore. La ricerca e' immediata (lettura di un file locale).
+2. "dns" -> interroga il DNS (risoluzione distribuita gerarchica). Il resolver DNS utilizza i server
+   configurati in /etc/resolv.conf. La query viene inviata tramite un socket UDP sulla porta 53 del
+   server DNS. La risoluzione DNS segue una gerarchia: resolver locale -> server DNS ricorsivo ->
+   root server -> TLD server -> server autoritativo per il dominio.
+
+La differenza fondamentale tra i due meccanismi:
+- /etc/hosts: risoluzione statica, locale, senza traffico di rete. Utile per ambienti piccoli o per
+  sovrascrivere la risoluzione DNS (ad esempio per il testing o per bloccare domini).
+- DNS: risoluzione distribuita, gerarchica, scalabile globalmente. Supporta record multipli (A, AAAA,
+  CNAME, MX, ecc.) e meccanismi di caching con TTL.
+
+La chiamata gethostbyname() a livello della libreria C (glibc):
+1. Il processo Python chiama socket.gethostbyname() che invoca la funzione gethostbyname() della glibc
+2. La glibc legge /etc/nsswitch.conf per determinare l'ordine delle fonti
+3. Prima cerca in /etc/hosts (source "files"): se trova una corrispondenza, restituisce immediatamente
+4. Se non trova corrispondenza, apre un socket UDP verso il DNS resolver configurato in /etc/resolv.conf
+   (porta 53) e invia una query DNS di tipo A (per IPv4)
+5. La risposta viene restituita al processo chiamante
+
+La funzione getaddrinfo() e' la versione moderna e consigliata di gethostbyname():
+- Supporta IPv6 (AF_INET6) oltre a IPv4 (AF_INET)
+- Restituisce una lista di strutture addrinfo, ciascuna contenente: famiglia di indirizzi
+  (AF_INET/AF_INET6), tipo di socket (SOCK_STREAM per TCP, SOCK_DGRAM per UDP), protocollo e indirizzo
+- gethostbyname() e' considerata obsoleta: non supporta IPv6, non e' thread-safe (usa un buffer statico
+  interno) e non consente di specificare il tipo di servizio desiderato
+[/Analisi]
+
+
+# Andando nella giusta sequenza di cartelle
+
+> more gethostbyname.py
+
+import socket
+import sys
+
+if len(sys.argv) < 2:
+    name = "www.python.org"
+else:
+   [name] = sys.argv[1:]
+
+try:
+    host = socket.gethostbyname(name)
+    print (host)
+except socket.gaierror as err:
+    print ("cannot resolve hostname: ", name, err)
+
+
+root@ns2: python3 gethostbyname.py www.unipr.it
+108.139.229.117
+
+root@ns2: python3 gethostbyname.py ns3
+172.17.0.3
+
+[Analisi a basso livello]
+Analisi dei risultati della risoluzione dei nomi:
+
+1) "python3 gethostbyname.py www.unipr.it" -> 108.139.229.117
+   - Il nome "www.unipr.it" non e' presente in /etc/hosts, quindi il resolver NSS passa alla fonte "dns"
+   - Viene inviata una query DNS di tipo A al server DNS configurato in /etc/resolv.conf del container
+     (tipicamente il DNS interno di Docker, 127.0.0.11, che poi inoltra al DNS dell'host)
+   - L'indirizzo 108.139.229.117 appartiene a CloudFront (CDN di Amazon), indicando che il sito
+     dell'Universita' di Parma utilizza una CDN per la distribuzione dei contenuti
+
+2) "python3 gethostbyname.py ns3" -> 172.17.0.3
+   - Il nome "ns3" e' presente in /etc/hosts (aggiunto manualmente con "172.17.0.3 ns3")
+   - Il resolver NSS trova la corrispondenza nella fonte "files" e restituisce immediatamente
+     l'indirizzo senza effettuare alcuna query DNS
+   - Questo dimostra la priorita' del file /etc/hosts sulla risoluzione DNS, come specificato
+     nell'ordine "files dns" di nsswitch.conf
+[/Analisi]
+
+
+
+	--------------------------------------
+		Programmazione UDP
+	--------------------------------------
+
+# Eseguire i seguenti programmi per la programmazione UDP in Python
+# - DGRAM: il client invia un datagramma al server
+# - ECHO:   il client invia un datagramma al server; il server rimanda il datagramma al client
+
+[Analisi a basso livello]
+Architettura del socket UDP:
+
+UDP (User Datagram Protocol) e' un protocollo di trasporto connectionless definito nella RFC 768.
+Le operazioni fondamentali sui socket UDP sono:
+
+- socket(AF_INET, SOCK_DGRAM): crea un file descriptor per un socket UDP. Il kernel alloca le strutture
+  dati necessarie (struct socket, struct sock) e restituisce un intero (file descriptor) che identifica
+  il socket nelle chiamate successive.
+- bind(address): associa un indirizzo locale (IP + porta) al socket. Il server tipicamente fa bind su
+  ("0.0.0.0", porta) per accettare pacchetti su tutte le interfacce.
+- sendto(data, address): invia un datagramma all'indirizzo specificato. Ogni sendto() e' indipendente
+  e autosufficiente: contiene sia i dati che l'indirizzo di destinazione.
+- recvfrom(bufsize): riceve un datagramma e restituisce sia i dati che l'indirizzo del mittente.
+
+Caratteristiche di UDP:
+- Connectionless: non c'e' handshake, non si stabilisce una connessione. Ogni datagramma e' indipendente.
+- Nessuna garanzia di consegna: i pacchetti possono essere persi, duplicati o arrivare fuori ordine.
+- Nessun controllo di flusso ne' di congestione: il mittente puo' inviare alla massima velocita'.
+- Overhead minimo: l'header UDP e' di soli 8 byte.
+
+Struttura del datagramma UDP:
++------------------+------------------+
+| Porta sorgente   | Porta dest.      |  (2+2 = 4 byte)
++------------------+------------------+
+| Lunghezza        | Checksum         |  (2+2 = 4 byte)
++------------------+------------------+
+|           Payload (dati)            |
++-------------------------------------+
+
+L'incapsulamento completo:
+Dati applicazione -> Header UDP (8 byte) -> Header IP (20 byte min) -> Header Ethernet (14 byte)
+Il frame Ethernet completo include anche il preambolo (8 byte) e il FCS (4 byte) a livello fisico.
+[/Analisi]
+
+root@ns3: python3 dgram_server.py
+port: 9006   server: 0.0.0.0 bufsize: 1024
+
+root@ns2: python3 dgram_client.py -s 172.17.0.3
+OPTIONS server: 172.17.0.3 - port: 9006 - bufsize: 100
+sent 5 Bytes
+
+# In ns3 viene visualizzato quanto segue a schermo:
+# questa e' la parte gia' visualizzata:
+root@ns3: python3 dgram_server.py
+port: 9006   server: 0.0.0.0 bufsize: 1024
+# questa e' la parte nuova:
+addr: ('172.17.0.2', 56476) data: hello
+
+[Analisi a basso livello]
+Analisi dell'output del server DGRAM:
+
+"addr: ('172.17.0.2', 56476) data: hello"
+- ('172.17.0.2', 56476): l'indirizzo sorgente del datagramma ricevuto. 172.17.0.2 e' l'IP di ns2.
+- La porta 56476 e' una porta effimera (ephemeral port) scelta automaticamente dal kernel di ns2 per
+  il socket del client. Su Linux, le porte effimere sono nel range 32768-60999, configurabile tramite
+  /proc/sys/net/ipv4/ip_local_port_range. Il kernel assegna una porta disponibile casualmente quando
+  il client chiama sendto() senza aver fatto un bind() esplicito.
+- "data: hello": il payload del datagramma. I 5 byte inviati ("hello") corrispondono al messaggio
+  predefinito del client.
+- Il server ha usato bind() su ("0.0.0.0", 9006), ovvero INADDR_ANY: accetta datagrammi su tutte le
+  interfacce di rete del container, non solo su un indirizzo specifico.
+[/Analisi]
+
+
+root@ns2: python3 dgram_client.py -s ns3
+OPTIONS server: ns3 - port: 9006 - bufsize: 100
+sent 5 Bytes
+
+# In ns3 viene visualizzato quanto segue a schermo:
+# questa e' la parte gia' visualizzata:
+root@ns3: python3 dgram_server.py
+port: 9006   server: 0.0.0.0 bufsize: 1024
+addr: ('172.17.0.2', 56476) data: hello
+# questa e' la parte nuova:
+addr: ('172.17.0.2', 51377) data: hello
+
+[Analisi a basso livello]
+Confronto tra le due invocazioni del client:
+
+- Prima invocazione: "-s 172.17.0.3" -> il client usa direttamente l'indirizzo IP. Nessuna risoluzione
+  DNS necessaria. Porta effimera assegnata: 56476.
+- Seconda invocazione: "-s ns3" -> il client usa il nome "ns3". Prima di poter inviare il datagramma,
+  la glibc esegue la risoluzione del nome tramite NSS: cerca in /etc/hosts e trova l'associazione
+  "172.17.0.3 ns3", quindi usa quell'indirizzo IP.
+- La porta effimera e' diversa (51377 vs 56476) perche' ogni nuova esecuzione del client crea un
+  nuovo socket con una nuova porta effimera assegnata dal kernel.
+- Il risultato finale e' identico: il server riceve lo stesso payload ("hello") dallo stesso host
+  (172.17.0.2), ma su porte sorgente diverse.
+[/Analisi]
+
+	- - - - - - - - - -
+
+root@ns3: python3 echo_server.py
+port: 9006   server: 0.0.0.0 bufsize: 1024
+
+root@ns2: python3 echo_client.py -s ns3
+OPTIONS server: ns3 - port: 9006 - message: hello from Nicholas Arcari, in python
+to:  ('ns3', 9006)   - data: hello from Nicholas Arcari, in python
+from:  ('172.17.0.3', 9006)   - data: hello from Nicholas Arcari, in python
+
+# In ns3 viene visualizzato quanto segue a schermo:
+# questa e' la parte gia' visualizzata:
+root@ns3: python3 dgram_server.py
+port: 9006   server: 0.0.0.0 bufsize: 1024
+# questa e' la parte nuova:
+from: ('172.17.0.2', 47841)   data: hello from Nicholas Arcari, in python
+to: ('172.17.0.2', 47841)   data: hello from Nicholas Arcari, in python
+----------------------------
+^CChiudi socket ed esci..
+
+[Analisi a basso livello]
+Analisi del flusso echo UDP:
+
+Il programma echo estende il modello DGRAM aggiungendo il percorso di ritorno:
+
+1. Client (ns2) -> Server (ns3):
+   - Il client invia il datagramma con sendto() a ('ns3', 9006)
+   - Il server riceve con recvfrom() e ottiene sia il payload che l'indirizzo del mittente
+     ('172.17.0.2', 47841)
+
+2. Server (ns3) -> Client (ns2):
+   - Il server reinvia lo stesso payload al mittente con sendto() usando l'indirizzo ottenuto da
+     recvfrom(). Questo e' il meccanismo di "echo": il server fa da specchio per i dati ricevuti.
+   - Il client riceve la risposta con recvfrom() e la visualizza: "from: ('172.17.0.3', 9006)"
+
+Nota importante: nell'output del client, la riga "to:" mostra ('ns3', 9006) (il nome non risolto),
+mentre la riga "from:" mostra ('172.17.0.3', 9006) (l'indirizzo IP del server). Questo avviene
+perche' il parametro del sendto() usa il nome simbolico, mentre il recvfrom() restituisce sempre
+l'indirizzo IP numerico (il kernel lavora con indirizzi IP, non con nomi).
+
+Il server viene terminato con Ctrl+C (segnale SIGINT), che invoca il gestore del segnale che chiude
+il socket (socket.close()) prima di uscire: "Chiudi socket ed esci..".
+[/Analisi]
+
+
+	--------------------------------------
+		Programmazione TCP
+	--------------------------------------
+
+# Eseguire i seguenti programmi per la programmazione TCP in Python
+# - echotcp:  il client invia un messaggio al server, il server manda l'echo e chiude la connessione
+# - echotcp2: la connessione rimane aperta per diversi messaggi; per chiudere inviare il messaggio quit
+
+[Analisi a basso livello]
+Architettura del socket TCP:
+
+TCP (Transmission Control Protocol) e' un protocollo di trasporto connection-oriented e reliable
+definito nella RFC 793.
+
+Lato server, la sequenza di chiamate di sistema e':
+1. socket(AF_INET, SOCK_STREAM): crea un file descriptor per un socket TCP
+2. bind(address): associa un indirizzo locale (IP + porta) al socket
+3. listen(backlog): mette il socket in stato di ascolto. Il parametro backlog definisce la dimensione
+   della coda delle connessioni pendenti (SYN ricevuti ma non ancora accettati con accept())
+4. accept(): chiamata bloccante che estrae la prima connessione dalla coda e crea un NUOVO socket
+   dedicato a quella connessione. Il socket originale continua ad ascoltare per nuove connessioni.
+   Restituisce una coppia (new_socket, client_address).
+
+Lato client, la sequenza e':
+1. socket(AF_INET, SOCK_STREAM): crea un socket TCP
+2. connect(address): avvia il three-way handshake verso il server. La chiamata si blocca fino al
+   completamento dell'handshake.
+
+Il three-way handshake TCP:
+  Client                    Server
+    |  ---- SYN (seq=x) ---->  |    1. Il client invia un segmento con flag SYN e un numero
+    |                           |       di sequenza iniziale (ISN) casuale
+    |  <-- SYN+ACK (seq=y, --  |    2. Il server risponde con SYN+ACK, il proprio ISN e
+    |      ack=x+1)            |       l'acknowledgment del SYN del client
+    |  ---- ACK (ack=y+1) --->  |    3. Il client conferma con ACK. La connessione e' stabilita.
+
+Caratteristiche di TCP:
+- Connection-oriented: si stabilisce una connessione prima dello scambio dati
+- Reliable: usa numeri di sequenza e acknowledgment per garantire la consegna ordinata di tutti i dati
+- Ritrasmissione: i segmenti non confermati vengono ritrasmessi dopo un timeout (RTO)
+- Controllo di flusso: il meccanismo della sliding window impedisce al mittente di sovraccaricare
+  il destinatario. Ogni ACK contiene la dimensione della finestra di ricezione (rwnd).
+- Controllo di congestione: algoritmi come slow start, congestion avoidance, fast retransmit e fast
+  recovery regolano la velocita' di invio in base alle condizioni della rete.
+[/Analisi]
+
+root@ns3: python3 echotcp-server-thread.py
+OPTIONS server: 0.0.0.0 - port: 9006
+starting up on port ('0.0.0.0', 9006)
+in atttesa di una connessione
+
+root@ns2: python3 echotcp-client.py -s ns3
+OPTIONS server: ns3 - port: 9006 - message: hello from Arcari, in python
+Connesso al server ('ns3', 9006)
+Invio messaggio  hello from Arcari, in python
+
+# In ns3 viene visualizzato quanto segue a schermo:
+# questa e' la parte gia' visualizzata:
+root@ns3: python3 echotcp-server-thread.py
+OPTIONS server: 0.0.0.0 - port: 9006
+starting up on port ('0.0.0.0', 9006)
+in atttesa di una connessione
+# questa e' la parte nuova:
+connessione dal client  ('172.17.0.2', 38722)
+ricevuto hello from Arcari, in python
+inviato hello from Arcari, in python
+
+[Analisi a basso livello]
+Analisi del flusso echotcp (connessione singola):
+
+Il programma echotcp-server-thread utilizza il threading per gestire le connessioni. Il flusso e':
+
+1. Il server fa bind su ('0.0.0.0', 9006) e chiama listen(), poi entra nel loop di accept()
+2. Il client esegue connect() verso ('ns3', 9006) -> three-way handshake completato
+3. accept() restituisce un nuovo socket e l'indirizzo del client ('172.17.0.2', 38722)
+4. Il server crea un nuovo thread per gestire questa connessione, cosi' il thread principale
+   puo' tornare subito ad accettare nuove connessioni (concorrenza)
+5. Il client invia il messaggio con send(): "hello from Arcari, in python"
+6. Il server riceve con recv(), visualizza il messaggio, e lo reinvia al client con send() (echo)
+7. Il client riceve la risposta e termina
+
+La porta 38722 e' la porta effimera del client, assegnata dal kernel durante il connect().
+Il threading e' essenziale per un server che deve gestire piu' client contemporaneamente: senza
+threading, il server potrebbe servire un solo client alla volta (modello iterativo).
+
+Nota: echotcp chiude la connessione dopo un singolo scambio messaggio/echo (semantica half-duplex).
+Dopo l'invio dell'echo, il server chiude il socket della connessione.
+[/Analisi]
+
+	- - - - - - - - - -
+
+root@ns3: python3 echotcp2-server-thread.py
+OPTIONS server: 0.0.0.0 - port: 9006
+server bind sulla porta ('0.0.0.0', 9006)
+in attesa di una connessione
+
+root@ns2: python3 echotcp2-client.py -s ns3
+OPTIONS server: ns3 - port: 9006  - message: hello from Arcari, in python
+Connesso al server ('ns3', 9006)
+message (q to quit) > ciao
+Risposta del server:  ciao
+
+# In ns3 viene visualizzato quanto segue a schermo:
+# questa e' la parte gia' visualizzata:
+root@ns3: python3 echotcp2-server-thread.py
+OPTIONS server: 0.0.0.0 - port: 9006
+server bind sulla porta ('0.0.0.0', 9006)
+in attesa di una connessione
+# questa e' la parte nuova:
+connessione dal client   ('172.17.0.2', 53789)
+messaggio ricevuto  ciao
+messaggio inviato   ciao
+
+# In ns2 viene visualizzato quanto segue a schermo:
+# questa e' la parte gia' visualizzata:
+root@ns2: python3 echotcp2-client.py -s ns3
+OPTIONS server: ns3 - port: 9006  - message: hello from Arcari, in python
+Connesso al server ('ns3', 9006)
+message (q to quit) > ciao
+Risposta del server:  ciao
+# questa e' la parte nuova:
+message (q to quit) > come
+Risposta del server:  come
+
+# In ns3 viene visualizzato quanto segue a schermo:
+# questa e' la parte gia' visualizzata:
+root@ns3: python3 echotcp2-server-thread.py
+OPTIONS server: 0.0.0.0 - port: 9006
+server bind sulla porta ('0.0.0.0', 9006)
+in attesa di una connessione
+connessione dal client   ('172.17.0.2', 53789)
+messaggio ricevuto  ciao
+messaggio inviato   ciao
+# questa e' la parte nuova:
+messaggio ricevuto  come
+messaggio inviato   come
+
+# In ns2 viene visualizzato quanto segue a schermo:
+# questa e' la parte gia' visualizzata:
+root@ns2: python3 echotcp2-client.py -s ns3
+OPTIONS server: ns3 - port: 9006  - message: hello from Arcari, in python
+Connesso al server ('ns3', 9006)
+message (q to quit) > ciao
+Risposta del server:  ciao
+message (q to quit) > come
+Risposta del server:  come
+# questa e' la parte nuova:
+message (q to quit) > stai
+Risposta del server:  stai
+
+# In ns3 viene visualizzato quanto segue a schermo:
+# questa e' la parte gia' visualizzata:
+root@ns3: python3 echotcp2-server-thread.py
+OPTIONS server: 0.0.0.0 - port: 9006
+server bind sulla porta ('0.0.0.0', 9006)
+in attesa di una connessione
+connessione dal client   ('172.17.0.2', 53789)
+messaggio ricevuto  ciao
+messaggio inviato   ciao
+messaggio ricevuto  come
+messaggio inviato   come
+# questa e' la parte nuova:
+messaggio ricevuto  stai
+messaggio inviato   stai
+
+# In ns2 viene visualizzato quanto segue a schermo:
+# questa e' la parte gia' visualizzata:
+root@ns2: python3 echotcp2-client.py -s ns3
+OPTIONS server: ns3 - port: 9006  - message: hello from Arcari, in python
+Connesso al server ('ns3', 9006)
+message (q to quit) > ciao
+Risposta del server:  ciao
+message (q to quit) > come
+Risposta del server:  come
+message (q to quit) > stai
+Risposta del server:  stai
+# questa e' la parte nuova:
+message (q to quit) > q
+
+# In ns3 viene visualizzato quanto segue a schermo:
+# questa e' la parte gia' visualizzata:
+root@ns3: python3 echotcp2-server-thread.py
+OPTIONS server: 0.0.0.0 - port: 9006
+server bind sulla porta ('0.0.0.0', 9006)
+in attesa di una connessione
+connessione dal client   ('172.17.0.2', 53789)
+messaggio ricevuto  ciao
+messaggio inviato   ciao
+messaggio ricevuto  come
+messaggio inviato   come
+messaggio ricevuto  stai
+messaggio inviato   stai
+# questa e' la parte nuova:
+messaggio ricevuto
+chiusa connessione da  ('172.17.0.2', 53789)
+
+[Analisi a basso livello]
+Analisi del programma echotcp2 (connessione persistente) e confronto con echotcp:
+
+echotcp2 implementa una connessione persistente (persistent connection): dopo il three-way handshake
+iniziale, la connessione TCP rimane aperta e il client puo' inviare piu' messaggi in sequenza.
+Il server esegue un loop di recv()/send() all'interno del thread dedicato alla connessione.
+
+Il flusso dell'interazione:
+1. Connessione stabilita (three-way handshake) -> porta client effimera: 53789
+2. Il client entra in un loop interattivo: legge l'input dell'utente e lo invia con send()
+3. Il server riceve con recv(), visualizza e reinvia con send() (echo)
+4. Il client riceve la risposta con recv() e la visualizza
+5. I passi 2-4 si ripetono per ogni messaggio ("ciao", "come", "stai")
+
+Chiusura della connessione con "q" (quit):
+Quando il client invia "q", il programma esce dal loop e chiama close() sul socket. Questo innesca
+il four-way termination TCP (graceful shutdown):
+
+  Client                    Server
+    |  ---- FIN (seq=x) ---->  |    1. Il client segnala che non inviera' piu' dati
+    |  <--- ACK (ack=x+1) --- |    2. Il server conferma la ricezione del FIN
+    |  <--- FIN (seq=y) -----  |    3. Il server segnala che anche lui ha finito
+    |  ---- ACK (ack=y+1) --->  |    4. Il client conferma. La connessione e' chiusa.
+
+Il messaggio "messaggio ricevuto" (vuoto) sul server indica che recv() ha restituito una stringa vuota
+(0 byte), che in TCP segnala che il peer ha chiuso il proprio lato della connessione (ha inviato FIN).
+Il server interpreta questo come segnale di chiusura e termina il thread.
+
+Differenze fondamentali tra echotcp e echotcp2:
+- echotcp: chiude la connessione dopo un singolo messaggio. Il client invia, riceve l'echo e termina.
+  Ogni interazione richiede un nuovo three-way handshake. Modello adatto per richieste isolate
+  (simile al modello HTTP/1.0 senza keep-alive).
+- echotcp2: mantiene la connessione aperta per un dialogo interattivo (full-duplex, message loop).
+  La connessione TCP viene riutilizzata per piu' scambi, risparmiando l'overhead dell'handshake
+  ripetuto. Modello adatto per sessioni interattive (simile a una chat o a HTTP/1.1 con keep-alive).
+
+Il threading nel server echotcp2-server-thread:
+Il server usa un thread dedicato per ogni connessione client. Dopo che accept() restituisce un nuovo
+socket, il server crea un thread (threading.Thread) che gestisce l'intero ciclo di vita della
+connessione (loop di recv/send fino alla chiusura). Il thread principale ritorna immediatamente a
+chiamare accept() per accettare nuove connessioni. Questo permette al server di gestire piu' client
+contemporaneamente in modo concorrente.
+[/Analisi]
+`;export{e as default};

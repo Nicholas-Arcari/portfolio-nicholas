@@ -1,0 +1,511 @@
+const e=`  _                _                              _                    _                _  _
+ | |              | |                            | |                  (_)              | || |
+ | |        __ _  | |__     ___    _ __    __ _  | |_    ___    _ __   _    ___        | || |_
+ | |       / _\` | | '_ \\   / _ \\  | '__|  / _\` | | __|  / _ \\  | '__| | |  / _ \\       |__   _|
+ | |____  | (_| | | |_) | | (_) | | |    | (_| | | |_  | (_) | | |    | | | (_) |         | |
+ |______|  \\__,_| |_.__/   \\___/  |_|     \\__,_|  \\__|  \\___/  |_|    |_|  \\___/          |_|
+
+
+
+
+
+	-----------------------------------------
+		+++++ Docker Routing +++++
+	-----------------------------------------
+#Attiviamo 2 reti IPv4 (10.0.1.0/24 e 10.0.2.0/24) con tre container (ns8, ns9, ns10):
+
+> docker network create -d bridge bridge1 --subnet=10.0.1.0/24
+0fc55ed33b4054123e8d1752654b8da6c468d0c9c3763440ff59af911bfaf170
+
+> docker network create -d bridge bridge2 --subnet=10.0.2.0/24
+fb65e9947d9d12fb8c871802e4c1a3973e3d8e2e0c7a9babdf51e388efcfe717
+
+> docker run -d --name ns8 --network bridge1 --ip 10.0.1.2 nginx-ssh
+c9903f96982575a36084ef95bf328dbc6245b7f84212bc6f31ebd9681e1fcc6a
+
+> docker run -d --name ns9 --network bridge1 --ip 10.0.1.3 nginx-ssh
+8d9b7464c03fc7845a696f2246d343d98fb3a6bc555b916fba09dd9db3d988a0
+
+> docker run -d --name ns10 --network bridge2 --ip 10.0.2.4 nginx-ssh
+089e8b4f1836b99ee6cf9a3e48121066cdf3c4798dd259480a178eaeb39e5909
+
+> docker network connect bridge2 ns9 --ip 10.0.2.3		# seconda interfaccia di ns9
+
+[Analisi a basso livello]
+Topologia di rete creata:
+
+  bridge1 (10.0.1.0/24)                bridge2 (10.0.2.0/24)
+  gateway: 10.0.1.1 (host)             gateway: 10.0.2.1 (host)
+       |                                     |
+  +----+----+                           +----+----+
+  |         |                           |         |
+ ns8       ns9 ---------------------- ns9       ns10
+ 10.0.1.2  10.0.1.3 (eth0)   10.0.2.3 (eth1)  10.0.2.4
+
+Ogni "docker network create -d bridge" crea sull'host:
+- Un bridge Linux (visibile con "brctl show" o "ip link") con indirizzo IP .1 della subnet
+- Una coppia di regole iptables per il masquerading (NAT) del traffico uscente verso Internet
+- Un namespace di rete isolato per ogni container collegato
+
+Il comando "docker network connect bridge2 ns9" aggiunge una seconda interfaccia virtuale (veth pair)
+al container ns9: un'estremita' della coppia veth viene inserita nel bridge2, l'altra appare come eth1
+dentro il network namespace di ns9. In questo modo ns9 ha un "piede" in ciascuna rete e puo'
+fungere da router tra bridge1 e bridge2.
+
+Il meccanismo sottostante e' il seguente: Docker utilizza le veth pairs del kernel Linux. Ogni veth pair
+e' un tunnel virtuale punto-a-punto: i pacchetti inviati su un'estremita' escono dall'altra. Un'estremita'
+viene collegata al bridge (lato host), l'altra viene spostata nel network namespace del container (lato
+container). Gli identificatori "@ifNN" visibili nell'output di "ip a" (ad esempio eth0@if19) indicano
+l'indice dell'interfaccia peer sull'altro lato della coppia veth.
+
+Come Linux implementa il routing a livello kernel:
+- La Forwarding Information Base (FIB) e' la struttura dati del kernel Linux che contiene tutte le rotte
+  note. Viene consultata per ogni pacchetto in transito attraverso il sistema. La FIB e' organizzata come
+  un trie (albero di prefissi) per consentire il longest prefix match in tempo efficiente O(W), dove W
+  e' la lunghezza massima del prefisso (32 bit per IPv4).
+- Il processo di forwarding funziona cosi': quando un pacchetto arriva su un'interfaccia di rete, il
+  kernel controlla se l'indirizzo IP di destinazione e' locale (cioe' appartiene a una delle interfacce
+  del sistema). Se e' locale, il pacchetto viene consegnato allo stack di rete locale e attraversa la
+  catena INPUT di netfilter/iptables. Se non e' locale, il kernel consulta la routing table (FIB) per
+  determinare il next-hop e l'interfaccia di uscita, e il pacchetto attraversa la catena FORWARD di
+  netfilter/iptables prima di essere inoltrato.
+- Il parametro ip_forward = 1 (impostabile tramite /proc/sys/net/ipv4/ip_forward o con sysctl
+  net.ipv4.ip_forward=1) abilita il forwarding a livello kernel. Senza questo flag attivo, il kernel
+  scarta silenziosamente tutti i pacchetti che non sono destinati a un indirizzo IP locale. Docker
+  abilita automaticamente ip_forward=1 nei container avviati con --privileged o quando il container
+  e' connesso a piu' reti e deve funzionare come router.
+[/Analisi]
+
+#verifica indirizzi IP di ns9:
+> docker exec ns9 ip a
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host
+       valid_lft forever preferred_lft forever
+18: eth0@if19: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default
+    link/ether 02:42:0a:00:01:03 brd ff:ff:ff:ff:ff:ff link-netnsid 0
+    inet 10.0.1.3/24 brd 10.0.1.255 scope global eth0
+       valid_lft forever preferred_lft forever
+22: eth1@if23: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default
+    link/ether 02:42:0a:00:02:03 brd ff:ff:ff:ff:ff:ff link-netnsid 0
+    inet 10.0.2.3/24 brd 10.0.2.255 scope global eth1
+       valid_lft forever preferred_lft forever
+
+#verifica tabella di routing di ns9:
+> docker exec ns9 ip r
+default via 10.0.1.1 dev eth0
+10.0.1.0/24 dev eth0 proto kernel scope link src 10.0.1.3
+10.0.2.0/24 dev eth1 proto kernel scope link src 10.0.2.3
+
+[Analisi a basso livello]
+Analisi riga per riga dell'output di "ip r" di ns9:
+
+1) "default via 10.0.1.1 dev eth0"
+   - E' la rotta di default (0.0.0.0/0), ovvero il gateway predefinito. Tutto il traffico che non trova
+     corrispondenza con rotte piu' specifiche (tramite il meccanismo del longest prefix match) viene
+     inviato a 10.0.1.1 attraverso l'interfaccia eth0. L'indirizzo 10.0.1.1 e' l'interfaccia del bridge1
+     sull'host, che esegue SNAT/masquerading per instradare il traffico verso Internet.
+
+2) "10.0.1.0/24 dev eth0 proto kernel scope link src 10.0.1.3"
+   - Rotta per la rete direttamente connessa tramite eth0.
+   - "proto kernel": la rotta e' stata aggiunta automaticamente dal kernel quando l'interfaccia eth0 ha
+     ricevuto l'indirizzo IP 10.0.1.3/24. Non e' stata configurata manualmente ne' da un protocollo di
+     routing dinamico.
+   - "scope link": la destinazione e' raggiungibile direttamente tramite il collegamento di livello 2
+     (layer 2), senza necessita' di attraversare un router.
+   - "src 10.0.1.3": indirizzo IP sorgente preferito per i pacchetti originati localmente e destinati
+     a questa rete. Il kernel usa questo indirizzo come sorgente quando non viene specificato diversamente
+     dall'applicazione.
+
+3) "10.0.2.0/24 dev eth1 proto kernel scope link src 10.0.2.3"
+   - Analoga alla precedente, ma per la rete 10.0.2.0/24 connessa tramite eth1. Anche questa rotta e'
+     stata creata automaticamente dal kernel quando Docker ha assegnato l'indirizzo 10.0.2.3/24 a eth1
+     tramite il comando "docker network connect bridge2 ns9".
+   - ns9 conosce entrambe le reti perche' ha un'interfaccia in ciascuna: puo' quindi instradare i
+     pacchetti tra bridge1 e bridge2 senza bisogno di rotte statiche aggiuntive.
+[/Analisi]
+
+#rimuovi tutto:
+> docker rm -f ns10 ns9 ns8
+ns10
+ns9
+ns8
+
+> docker network rm bridge1 bridge2
+bridge1
+bridge2
+
+
+
+	---------------------------------------------------------
+		+++++ Docker networking : privileged +++++
+	---------------------------------------------------------
+> docker run -d --privileged --name ns8 nginx-ssh
+60d0d191c637c8b2ece4d03888b3f18a72c650c60adbdee99c967af9426ff8c6
+
+[Analisi a basso livello]
+Il flag --privileged concede al container privilegi estremamente elevati:
+
+- Tutte le Linux capabilities: il container riceve l'intero set di capabilities del kernel, tra cui
+  CAP_NET_ADMIN (modificare interfacce di rete, regole iptables, tabelle di routing), CAP_SYS_ADMIN
+  (operazioni di amministrazione del sistema, montare filesystem, gestire namespaces), CAP_NET_RAW
+  (creare socket raw per cattura/iniezione di pacchetti), e molte altre.
+- Accesso a tutti i device dell'host: il container puo' accedere a /dev dell'host, inclusi dischi,
+  dispositivi USB e altri device a blocchi/carattere.
+- Disabilitazione di AppArmor e seccomp: i profili di sicurezza AppArmor e i filtri seccomp-bpf che
+  normalmente limitano le syscall disponibili al container vengono completamente disattivati.
+
+RISCHIO DI SICUREZZA CRITICO: un container privilegiato puo' potenzialmente eseguire un "container
+escape" verso l'host. Ad esempio, montando il filesystem root dell'host, accedendo ai device a blocchi,
+caricando moduli del kernel o manipolando i cgroups. In ambiente di produzione, il flag --privileged non
+dovrebbe mai essere utilizzato. Le alternative sicure sono:
+- --cap-add=<CAPABILITY>: aggiungere solo le capabilities strettamente necessarie (principio del minimo
+  privilegio)
+- --device=<DEVICE>: concedere accesso solo ai device specifici richiesti
+- Profili seccomp personalizzati: limitare le syscall al sottoinsieme necessario
+
+In questo contesto di laboratorio, --privileged e' necessario perche' il container deve poter modificare
+le tabelle di routing (ip route add/del), abilitare ip_forward e compiere altre operazioni di
+configurazione di rete che richiedono CAP_NET_ADMIN.
+[/Analisi]
+
+
+
+	-----------------------------------------------------------------------------------------------------------
+		+++++ Esercizio: setup di due reti IPv4 in ambiente Docker e interazione tra le reti +++++
+	-----------------------------------------------------------------------------------------------------------
+> wget http://didattica-linux.unipr.it/~roberto.alfieri@unipr.it/matdid/RETI/docker/Routing/compose.yml
+--2024-10-09 15:21:43--  http://didattica-linux.unipr.it/~roberto.alfieri@unipr.it/matdid/RETI/docker/Routing/compose.yml
+Risoluzione di didattica-linux.unipr.it (didattica-linux.unipr.it)... 160.78.50.165
+Connessione a didattica-linux.unipr.it (didattica-linux.unipr.it)|160.78.50.165|:80... connesso.
+Richiesta HTTP inviata, in attesa di risposta... 200 OK
+Lunghezza: 802
+Salvataggio in: «compose.yml»
+
+compose.yml                         100%[================================================================>]     802  --.-KB/s    in 0s
+
+2024-10-09 15:21:44 (34,4 MB/s) - «compose.yml» salvato [802/802]
+
+
+
+	-------------------------------------------------------------
+		+++++ Modifica delle tabelle di routing +++++
+	-------------------------------------------------------------
+#dopo aver scaricato e attivato i container Docker dal file compose con estensione ".yml" nella cartella dockerRouting
+
+> docker-compose up -d
+Creating network "bridge1" with driver "bridge"
+Creating network "bridge2" with driver "bridge"
+Creating ns9  ... done
+Creating ns8  ... done
+Creating ns10 ... done
+
+#visualizza le tabelle di routing
+> docker exec ns8 ip r
+default via 10.0.1.1 dev eth0
+10.0.1.0/24 dev eth0 proto kernel scope link src 10.0.1.2
+
+> docker exec ns9 ip r
+default via 10.0.1.1 dev eth0
+10.0.1.0/24 dev eth0 proto kernel scope link src 10.0.1.3
+10.0.2.0/24 dev eth1 proto kernel scope link src 10.0.2.3
+
+> docker exec ns10 ip r
+default via 10.0.2.1 dev eth0
+10.0.2.0/24 dev eth0 proto kernel scope link src 10.0.2.4
+
+[Analisi a basso livello]
+Analisi delle tabelle di routing iniziali dei tre container:
+
+ns8 (10.0.1.2, solo bridge1):
+- "default via 10.0.1.1 dev eth0": il gateway predefinito e' il bridge1 dell'host. Tutto il traffico
+  non locale esce da qui. L'host applica SNAT/masquerading per inoltrare il traffico verso Internet.
+- "10.0.1.0/24 dev eth0 proto kernel scope link src 10.0.1.2": rete direttamente connessa. ns8 puo'
+  comunicare direttamente con tutti gli host su 10.0.1.0/24 (ns9 su eth0, e il gateway 10.0.1.1).
+- NOTA: ns8 NON ha una rotta verso 10.0.2.0/24. I pacchetti destinati a quella rete seguirebbero
+  il default gateway (10.0.1.1, l'host), che non sa come raggiungerla tramite ns9.
+
+ns9 (10.0.1.3 su bridge1 + 10.0.2.3 su bridge2):
+- Ha visibilita' diretta su entrambe le reti grazie alle due interfacce. Puo' funzionare come router
+  tra bridge1 e bridge2 se ip_forward e' abilitato.
+
+ns10 (10.0.2.4, solo bridge2):
+- "default via 10.0.2.1 dev eth0": il gateway predefinito e' il bridge2 dell'host (10.0.2.1).
+- ns10 NON ha visibilita' diretta su 10.0.1.0/24. Per raggiungerla, dovrebbe passare attraverso un
+  router (ns9) oppure usare il gateway dell'host (10.0.2.1) se l'host avesse le rotte appropriate.
+[/Analisi]
+
+#Verifica che ip_forward sia abilitato (=1) su ns9
+>docker exec ns9 sysctl net.ipv4.ip_forward
+net.ipv4.ip_forward = 1
+#ns9 svolge funzione di router tra le 2 reti
+
+[Analisi a basso livello]
+Il valore ip_forward = 1 significa che il kernel Linux all'interno del network namespace di ns9 e'
+configurato per inoltrare i pacchetti IP tra le sue interfacce. Senza questo parametro (ip_forward = 0),
+il kernel scarterebbe silenziosamente qualsiasi pacchetto ricevuto su un'interfaccia e destinato a un
+indirizzo non locale, anche se la routing table indica una rotta valida verso la destinazione.
+
+Il parametro e' leggibile e scrivibile tramite:
+- /proc/sys/net/ipv4/ip_forward (via procfs)
+- sysctl net.ipv4.ip_forward (via sysctl)
+
+Ogni network namespace Linux ha il proprio valore di ip_forward indipendente. Il fatto che sia gia'
+impostato a 1 dipende dalla configurazione dell'immagine Docker o dal flag --privileged usato nel
+compose.yml, che consente al container di modificare parametri sysctl.
+[/Analisi]
+
+#Modifica default gateway di ns10 da host a ns9
+> docker exec ns10 ip r del default
+> docker exec ns10 ip r add default via 10.0.2.3
+#visualizza nuova tabella di ns10
+> docker exec ns10 ip r
+default via 10.0.2.3 dev eth0
+10.0.2.0/24 dev eth0 proto kernel scope link src 10.0.2.4
+
+[Analisi a basso livello]
+Concetto di next-hop e conseguenze della modifica:
+
+Il concetto di next-hop: un router non conosce il percorso completo verso la destinazione finale. Sa
+soltanto a quale nodo consegnare il pacchetto al prossimo salto (next-hop). Ogni router lungo il
+percorso prende una decisione di forwarding indipendente basata sulla propria tabella di routing.
+
+Con questa modifica, ns10 cambia il default gateway da 10.0.2.1 (interfaccia del bridge Docker
+sull'host) a 10.0.2.3 (ns9). Le conseguenze sono:
+
+1) Il traffico verso Internet NON funziona piu': ns9 non esegue masquerading/NAT verso l'esterno.
+   Quando ns10 tenta di raggiungere un indirizzo su Internet, il pacchetto arriva a ns9 che lo
+   inoltra al proprio default gateway (10.0.1.1, l'host), ma con indirizzo sorgente 10.0.2.4.
+   L'host fa NAT solo per il traffico proveniente dalle subnet dei bridge Docker, e il pacchetto
+   di ritorno potrebbe non trovare la rotta corretta verso 10.0.2.4 attraverso ns9.
+
+2) Il traffico inter-bridge FUNZIONA: ns10 puo' raggiungere 10.0.1.0/24 passando attraverso ns9,
+   a condizione che anche gli host su bridge1 abbiano una rotta di ritorno verso 10.0.2.0/24 via ns9.
+[/Analisi]
+
+# con una rotta statica informiamo ns8 che per raggiungere la rete 10.0.2.0/24 occorre usare ns9
+> docker exec ns8 ip r add 10.0.2.0/24 via 10.0.1.3
+# visualizza nuova tabella di ns8
+> docker exec ns8 ip r
+default via 10.0.1.1 dev eth0
+10.0.1.0/24 dev eth0 proto kernel scope link src 10.0.1.2
+10.0.2.0/24 via 10.0.1.3 dev eth0
+
+[Analisi a basso livello]
+Analisi della nuova rotta statica su ns8:
+
+"10.0.2.0/24 via 10.0.1.3 dev eth0"
+- Rotta statica aggiunta manualmente con il comando "ip r add". Indica al kernel di ns8 che per
+  raggiungere qualsiasi indirizzo nella rete 10.0.2.0/24 deve usare come next-hop 10.0.1.3 (ns9),
+  raggiungibile tramite l'interfaccia eth0 su bridge1.
+- Il longest prefix match garantisce che questa rotta (con prefisso /24) abbia priorita' sulla rotta
+  di default (prefisso /0) per il traffico destinato a 10.0.2.0/24.
+
+A questo punto la comunicazione bidirezionale tra ns8 e ns10 e' completa:
+- ns10 -> ns8: ns10 invia al default gateway ns9 (10.0.2.3), ns9 inoltra a ns8 tramite bridge1
+- ns8 -> ns10: ns8 usa la rotta statica verso 10.0.2.0/24 via ns9 (10.0.1.3), ns9 inoltra a ns10
+  tramite bridge2
+[/Analisi]
+
+
+
+	-----------------------------------------------------
+		+++++ Docker routing : verifiche +++++
+	-----------------------------------------------------
+#shell su ns10
+> docker exec -it ns10 bash
+
+#alcuni comandi su ns10
+
+root@ns10:/# ping 10.0.1.2						# ns8 e' raggiungibile
+PING 10.0.1.2 (10.0.1.2) 56(84) bytes of data.
+64 bytes from 10.0.1.2: icmp_seq=1 ttl=63 time=0.217 ms
+64 bytes from 10.0.1.2: icmp_seq=2 ttl=63 time=0.148 ms
+64 bytes from 10.0.1.2: icmp_seq=3 ttl=63 time=0.144 ms
+64 bytes from 10.0.1.2: icmp_seq=4 ttl=63 time=0.212 ms
+64 bytes from 10.0.1.2: icmp_seq=5 ttl=63 time=0.153 ms
+64 bytes from 10.0.1.2: icmp_seq=6 ttl=63 time=0.147 ms
+64 bytes from 10.0.1.2: icmp_seq=7 ttl=63 time=0.143 ms
+64 bytes from 10.0.1.2: icmp_seq=8 ttl=63 time=0.151 ms
+64 bytes from 10.0.1.2: icmp_seq=9 ttl=63 time=0.148 ms
+64 bytes from 10.0.1.2: icmp_seq=10 ttl=63 time=0.174 ms
+^C
+--- 10.0.1.2 ping statistics ---
+10 packets transmitted, 10 received, 0% packet loss, time 9207ms
+rtt min/avg/max/mdev = 0.143/0.163/0.217/0.026 ms
+
+[Analisi a basso livello]
+Analisi del TTL nel ping da ns10 a ns8:
+
+Il valore ttl=63 nelle risposte del ping e' significativo. Il TTL (Time To Live) iniziale per i
+pacchetti ICMP su Linux e' 64. Ogni router che inoltra il pacchetto decrementa il TTL di 1 prima
+di ritrasmetterlo. Quindi:
+- TTL iniziale su ns8 (che risponde): 64
+- TTL ricevuto su ns10: 63
+- Hop attraversati: 64 - 63 = 1
+
+Questo conferma che il pacchetto ha attraversato esattamente 1 hop intermedio (ns9), coerentemente
+con il traceroute che segue. Il percorso completo del pacchetto ICMP echo-request e':
+ns10 (10.0.2.4) -> [bridge2] -> ns9 (10.0.2.3/10.0.1.3) -> [bridge1] -> ns8 (10.0.1.2)
+
+Il pacchetto ICMP echo-reply segue il percorso inverso:
+ns8 (10.0.1.2) -> [bridge1] -> ns9 (10.0.1.3/10.0.2.3) -> [bridge2] -> ns10 (10.0.2.4)
+Anche la reply perde 1 TTL passando per ns9, ma il valore visualizzato si riferisce al TTL
+del pacchetto di risposta in arrivo, non a quello della richiesta.
+[/Analisi]
+
+
+root@ns10:/# traceroute 10.0.1.2					# percorso verso ns8
+traceroute to 10.0.1.2 (10.0.1.2), 30 hops max, 60 byte packets
+ 1  ns9.bridge2 (10.0.2.3)  0.866 ms  0.743 ms  0.677 ms
+ 2  10.0.1.2 (10.0.1.2)  0.618 ms  0.526 ms  0.472 ms
+
+[Analisi a basso livello]
+Analisi dell'output del traceroute:
+
+Il traceroute funziona inviando pacchetti UDP (o ICMP) con TTL incrementale a partire da 1:
+- TTL=1: il pacchetto viene scartato da ns9 (primo hop) che risponde con un messaggio ICMP
+  "Time Exceeded" (tipo 11, codice 0). Questo rivela ns9.bridge2 (10.0.2.3) come primo hop.
+  Il nome "ns9.bridge2" viene risolto tramite il DNS interno di Docker.
+- TTL=2: il pacchetto raggiunge la destinazione finale 10.0.1.2 (ns8) che risponde con un
+  messaggio ICMP "Port Unreachable" (per traceroute UDP) o "Echo Reply" (per traceroute ICMP).
+
+I tre tempi per ogni hop (ad esempio 0.866 ms, 0.743 ms, 0.677 ms) corrispondono a tre sonde
+(probes) inviate per ciascun valore di TTL, per avere una stima piu' affidabile della latenza.
+I tempi submillisecondo confermano che la comunicazione avviene interamente in locale tramite
+bridge virtuali, senza attraversare interfacce fisiche.
+[/Analisi]
+
+
+root@ns10:/# nmap 10.0.1.0/24						# chi e' connesso sulla rete 10.0.1.0/24 e con quali porte attive
+Starting Nmap 7.93 ( https://nmap.org ) at 2024-10-09 12:33 UTC
+Nmap scan report for 10.0.1.1
+Host is up (0.000012s latency).
+All 1000 scanned ports on 10.0.1.1 are in ignored states.
+Not shown: 1000 closed tcp ports (reset)
+
+Nmap scan report for 10.0.1.2
+Host is up (0.000018s latency).
+Not shown: 998 closed tcp ports (reset)
+PORT   STATE SERVICE
+22/tcp open  ssh
+80/tcp open  http
+
+Nmap scan report for 10.0.1.3
+Host is up (0.000011s latency).
+Not shown: 998 closed tcp ports (reset)
+PORT   STATE SERVICE
+22/tcp open  ssh
+80/tcp open  http
+
+Nmap done: 256 IP addresses (3 hosts up) scanned in 17.39 seconds
+
+[Analisi a basso livello]
+Analisi dell'output di nmap sulla rete 10.0.1.0/24:
+
+Nmap ha effettuato una scansione TCP SYN (SYN scan, -sS, default con privilegi root) su tutti i 256
+indirizzi possibili della subnet 10.0.1.0/24. Sono stati trovati 3 host attivi:
+
+1) 10.0.1.1 (gateway bridge1 sull'host):
+   - Tutte le 1000 porte scansionate risultano "closed" (chiuse tramite reset). Questo significa che
+     l'host risponde ai SYN con un pacchetto RST+ACK: lo stack TCP/IP e' attivo e raggiungibile,
+     ma nessun servizio e' in ascolto su quelle porte sull'interfaccia del bridge. Le porte sono "closed"
+     e non "filtered" perche' non c'e' un firewall che scarta i pacchetti; il kernel risponde
+     attivamente con RST.
+
+2) 10.0.1.2 (ns8) e 10.0.1.3 (ns9):
+   - Porta 22/tcp aperta (SSH): il demone sshd e' in ascolto. Questo servizio e' fornito dall'immagine
+     Docker nginx-ssh che esegue sia il server SSH che il server web.
+   - Porta 80/tcp aperta (HTTP): il server nginx e' in ascolto sulla porta standard HTTP.
+   - Le restanti 998 porte risultano "closed" (reset), indicando che il container risponde
+     attivamente ma senza servizi in ascolto su quelle porte.
+
+La scansione ha rilevato solo 3 host su 256 possibili perche' solo il gateway e i due container (ns8
+e ns9) hanno un indirizzo nella subnet 10.0.1.0/24. ns10 non e' visibile perche' si trova solo su
+bridge2 (10.0.2.0/24).
+[/Analisi]
+
+
+root@ns10:/# ssh ubuntu@10.0.1.2
+The authenticity of host '10.0.1.2 (10.0.1.2)' can't be established.
+ED25519 key fingerprint is SHA256:LB3Ms/DT4dEpcYsnq3DdXfojqT08VDApPMh1fdmSV90.
+This key is not known by any other names
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added '10.0.1.2' (ED25519) to the list of known hosts.
+ubuntu@10.0.1.2's password:
+Welcome to Ubuntu 23.04 (GNU/Linux 6.10.9-amd64 x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/advantage
+
+This system has been minimized by removing packages and content that are
+not required on a system that users do not log into.
+
+To restore this content, you can run the 'unminimize' command.
+
+The programs included with the Ubuntu system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Ubuntu comes with ABSOLUTELY NO WARRANTY, to the extent permitted by
+applicable law.
+
+
+ubuntu@ns8:~$ ping www.unipr.it
+PING d57y3tb4to0kw.cloudfront.net (108.139.229.9) 56(84) bytes of data.
+^C
+--- d57y3tb4to0kw.cloudfront.net ping statistics ---
+51 packets transmitted, 0 received, 100% packet loss, time 51184ms
+
+[Analisi a basso livello]
+Analisi del ping fallito da ns8 verso www.unipr.it con 100% di packet loss:
+
+Il comando e' stato eseguito su ns8 (10.0.1.2), raggiunto tramite SSH da ns10.
+
+La risoluzione DNS funziona correttamente: "www.unipr.it" viene risolto in "d57y3tb4to0kw.cloudfront.net"
+(108.139.229.9), quindi le query DNS escono e ricevono risposta. Il problema e' specifico del traffico
+ICMP di ritorno.
+
+Percorso del pacchetto ICMP echo-request (andata):
+1. ns8 (10.0.1.2) -> default gateway 10.0.1.1 (bridge1 sull'host)
+2. L'host applica masquerading/SNAT: sostituisce l'IP sorgente 10.0.1.2 con l'IP pubblico dell'host
+3. Il pacchetto raggiunge 108.139.229.9 (CloudFront CDN di www.unipr.it)
+
+Percorso del pacchetto ICMP echo-reply (ritorno) - QUI AVVIENE IL PROBLEMA:
+1. CloudFront risponde all'IP pubblico dell'host
+2. L'host riceve il pacchetto e il conntrack (connection tracking di netfilter) esegue il DNAT inverso:
+   sostituisce l'IP destinazione con 10.0.1.2 (ns8)
+3. L'host deve consegnare il pacchetto a ns8 tramite bridge1
+
+Il problema e' un routing asimmetrico combinato con il connection tracking: i pacchetti DNS (UDP) sono
+piccoli e la connessione si completa rapidamente, ma i pacchetti ICMP persistenti possono incontrare
+problemi con le regole iptables del bridge Docker o con il conntrack che non riesce a tracciare
+correttamente la connessione di ritorno. I 51 pacchetti trasmessi senza alcuna risposta indicano che
+i pacchetti echo-reply vengono scartati sistematicamente lungo il percorso di ritorno, probabilmente
+a causa di regole iptables restrittive sulla catena FORWARD del bridge Docker o di un problema di
+conntrack timeout.
+
+Nota: la risoluzione DNS funziona perche' utilizza UDP con connessioni brevi (query/risposta), gestite
+correttamente dal conntrack, mentre il traffico ICMP persistente incontra restrizioni diverse.
+[/Analisi]
+
+
+ubuntu@ns8:~$ exit
+logout
+Connection to 10.0.1.2 closed.
+
+
+# stop e rimozione
+> docker-compose down
+Stopping ns10 ... done
+Stopping ns8  ... done
+Stopping ns9  ... done
+Removing ns10 ... done
+Removing ns8  ... done
+Removing ns9  ... done
+Removing network bridge1
+Removing network bridge2
+`;export{e as default};
