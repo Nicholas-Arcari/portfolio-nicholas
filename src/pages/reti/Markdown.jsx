@@ -1,26 +1,28 @@
 // src/pages/reti/Markdown.jsx
 // Il README del laboratorio impaginato: titoli, paragrafi (con gli a capo
 // dei due spazi finali), grassetto, codice, link, elenchi, tabelle e blocchi
-// di codice, cioe' quello che il README usa. Il testo non cambia: si cambia
-// solo il modo di mostrarlo. I link ai file del laboratorio portano alla
-// pagina di quell'esercitazione.
+// di codice, cioe' quello che il README usa. Il testo non cambia, tranne gli
+// accenti scritti con l'apostrofo, che tornano lettere accentate come nelle
+// esercitazioni (codice escluso). I link ai file del laboratorio portano
+// alla pagina di quell'esercitazione.
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { accents } from './accents';
 import { labByFile } from './labText';
 
 const INLINE = /(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\([^)]+\))/g;
 
 function Inline({ text }) {
   return text.split(INLINE).map((part, i) => {
-    if (part.startsWith('**') && part.endsWith('**') && part.length > 4) return <strong key={i}>{part.slice(2, -2)}</strong>;
+    if (part.startsWith('**') && part.endsWith('**') && part.length > 4) return <strong key={i}>{accents(part.slice(2, -2))}</strong>;
     if (part.startsWith('`') && part.endsWith('`') && part.length > 2) return <code key={i}>{part.slice(1, -1)}</code>;
     const link = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
     if (link) {
       const ex = labByFile(link[2]);
-      if (ex) return <Link key={i} to={`/reti-di-calcolatori/${ex.slug}`}>{link[1]}</Link>;
-      return <a key={i} href={link[2]} target="_blank" rel="noopener noreferrer">{link[1]}</a>;
+      if (ex) return <Link key={i} to={`/reti-di-calcolatori/${ex.slug}`}>{accents(link[1])}</Link>;
+      return <a key={i} href={link[2]} target="_blank" rel="noopener noreferrer">{accents(link[1])}</a>;
     }
-    return part;
+    return accents(part);
   });
 }
 

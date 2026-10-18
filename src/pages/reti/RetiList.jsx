@@ -1,8 +1,10 @@
 // src/pages/reti/RetiList.jsx
 // Il laboratorio di Reti di Calcolatori, nello stile dell'elenco di
-// Statistics ma nella lingua del sito: in cima il README del repository,
-// impaginato, poi la barra di ricerca e una riga per esercitazione. Niente
-// date e niente pagine di teoria: ogni file unisce gia' teoria e pratica.
+// Statistics ma nella lingua del sito: in cima l'intestazione del README del
+// repository, poi la barra di ricerca e una riga per esercitazione, e sotto
+// la tabella lo stack tecnologico e la topologia di rete, sempre dal README.
+// Niente date e niente pagine di teoria: ogni file unisce gia' teoria e
+// pratica.
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../../contexts/languageContext';
@@ -10,8 +12,12 @@ import { RETI_LAB, RETI_REPO } from '../../config/reti';
 import SearchInput from '../../components/SearchInput';
 import StatisticsLayout from '../statistics/StatisticsLayout';
 import Markdown from './Markdown';
-import { README, labDescription } from './labText';
+import { README_PARTS, labDescription } from './labText';
 import { retiCourse } from './retiCourse';
+
+// Del README, sotto la tabella, restano solo queste sezioni: le altre
+// ripetevano l'elenco delle esercitazioni o parlavano del repository
+const README_BELOW = ['Stack Tecnologico', 'Topologia di Rete'];
 
 const SEARCH_STYLE = {
   width: '100%',
@@ -53,9 +59,8 @@ const RetiList = () => {
         <header><h2>{t('reti.title')}</h2></header>
         <p>{t('reti.subtitle')}</p>
 
-        <section className="lab-readme" aria-label={t('reti.readmeLabel')}>
-          <p className="lab-readme-label">README.md</p>
-          <Markdown source={README} />
+        <section className="lab-readme">
+          <Markdown source={README_PARTS.intro} />
         </section>
 
         <SearchInput
@@ -94,6 +99,13 @@ const RetiList = () => {
             {t('reti.noResults')}
           </p>
         )}
+
+        {README_PARTS.sections.filter((part) => README_BELOW.includes(part.title)).map((part) => (
+          <section key={part.title} className="lab-readme-section">
+            <h3>{part.title}</h3>
+            <Markdown source={part.source} />
+          </section>
+        ))}
       </article>
     </StatisticsLayout>
   );

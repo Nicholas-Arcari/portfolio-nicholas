@@ -1892,7 +1892,7 @@ body.dark-mode .chart-mark {
 .hw-theory-link {
     display: block;
     width: fit-content;
-    margin-top: 1.1em;
+    margin-top: 2.2em;
     font-size: 0.85em;
 }
 .hw-theory-link:before {
@@ -2014,11 +2014,12 @@ body.dark-mode .hw-filter .button.alt[aria-pressed="true"] {
     border: 1px solid rgba(0, 0, 0, 0.12);
     border-radius: 5px;
 }
-.lab-readme-label {
-    margin: 0 0 0.6em;
-    font-family: monospace;
-    font-size: 0.8em;
-    color: #888;
+/* Le sezioni del README che stanno sotto la tabella delle esercitazioni */
+.lab-readme-section {
+    margin-top: 2.5em;
+}
+.lab-readme-section h3 {
+    margin-bottom: 0.8em;
 }
 .lab-readme-list {
     margin: 0 0 1.5em 1.2em;

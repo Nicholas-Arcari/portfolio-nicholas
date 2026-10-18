@@ -11,8 +11,6 @@ import { RETI_LAB } from '../../config/reti';
 const TEXTS = import.meta.glob('./lab/*.txt', { query: '?raw', import: 'default' });
 const DOCS = import.meta.glob('./doc/*.lab', { query: '?raw', import: 'default' });
 
-export { README };
-
 // Una promessa per file, sempre la stessa: React.use() la aspetta una volta
 const loaded = new Map();
 const load = (path, files) => {
@@ -45,3 +43,21 @@ export const labDescription = (ex, language) => (language === 'en' ? ex.en : REA
 
 /** L'esercitazione a cui punta un link del README (es. "01-docker.txt"), se c'e'. */
 export const labByFile = (file) => RETI_LAB.find((ex) => ex.file === file) || null;
+
+// Un pezzo del README senza la riga "---" che lo separa dal successivo
+const trimRule = (text) => text.trim().replace(/\n-{3,}$/, '').trim();
+
+/**
+ * Il README a pezzi: l'intestazione (titolo, disegno e dati del corso) e le
+ * sezioni "## Titolo" con il loro testo.
+ */
+export const README_PARTS = (() => {
+  const [intro, ...sections] = README.split(/^(?=## )/m);
+  return {
+    intro: trimRule(intro),
+    sections: sections.map((part) => {
+      const [heading, ...body] = part.split('\n');
+      return { title: heading.replace(/^##\s+/, '').trim(), source: trimRule(body.join('\n')) };
+    }),
+  };
+})();
