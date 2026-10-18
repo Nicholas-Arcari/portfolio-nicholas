@@ -68,6 +68,8 @@ export const STATISTICS_HOMEWORK = [
       en: 'Group project, in preparation.',
     },
     completed: null,
-    due: null,
+    // la fine dell'a.a. 2026-2027: per il Regolamento studenti Sapienza
+    // 2026-2027 (art. 18) l'attivita' didattica termina il 30 settembre
+    due: '2027-09-30T21:00:00+02:00',
   },
 ];
