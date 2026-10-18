@@ -1888,11 +1888,12 @@ body.dark-mode .chart-mark {
 
 /* ===== STATISTICS: LE PAGINE DI TEORIA ===== */
 /* Il link alla teoria sotto il nome di ogni homework, nell'elenco */
-/* staccato dal nome dell'homework, perche' i due link non sembrino uno solo */
+/* staccato dal nome dell'homework, perche' i due link non sembrino uno solo,
+   e sul telefono anche dalla descrizione che lo segue */
 .hw-theory-link {
     display: block;
     width: fit-content;
-    margin-top: 2.2em;
+    margin: 4em 0 1.2em;
     font-size: 0.85em;
 }
 .hw-theory-link:before {
