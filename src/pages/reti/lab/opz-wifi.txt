@@ -340,6 +340,7 @@ listening on wlan0, link-type EN10MB (Ethernet), snapshot length 262144 bytes
 
 
 #Ho provato con un collega universitario che ha Windows, sono riuscito a trovarlo con la porta 22, si vede non aveva come password dell'user ubuntu: "ubuntu"
+#Il test era concordato: il collega sapeva del tentativo di accesso al suo PC e aveva dato il suo consenso.
 > ssh ubuntu@192.168.1.104
 The authenticity of host '192.168.1.104 (192.168.1.104)' can't be established.
 ED25519 key fingerprint is SHA256:yHKeMsGbQLpkFk1DaDD19+frxPG08n8DSXzKCmw7jEo.

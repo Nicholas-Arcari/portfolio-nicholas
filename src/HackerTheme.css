@@ -1987,8 +1987,8 @@ body.dark-mode .hw-filter .button.alt[aria-pressed="true"] {
 }
 
 /* ===== RETI DI CALCOLATORI: il README e i file del laboratorio ===== */
-/* Il testo dei file, identico: carattere fisso perche' i disegni ASCII restino
-   in piedi; le righe piu' larghe scorrono dentro il riquadro, o vanno a capo */
+/* I blocchi di codice del README: carattere fisso, e le righe piu' larghe
+   scorrono dentro il riquadro */
 .lab-text {
     font-family: monospace;
     font-size: 0.8em;
@@ -2001,26 +2001,9 @@ body.dark-mode .hw-filter .button.alt[aria-pressed="true"] {
     tab-size: 8;
     margin: 0 0 1.5em;
 }
-.lab-text.is-wrapped {
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-}
-.lab-anchor {
-    scroll-margin-top: 4em;
-}
-.lab-toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5em 1em;
-    margin: 1.5em 0 0.4em;
-}
 .lab-file-name {
     font-family: monospace;
     font-size: 0.9em;
-}
-.lab-toolbar .button.alt[aria-pressed="true"] {
-    background: #d52349;
 }
 .lab-file-box .button {
     margin: 0 0.4em 0.6em 0;
@@ -2055,8 +2038,231 @@ body.dark-mode .lab-text {
 body.dark-mode .lab-readme {
     border-color: rgba(255, 255, 255, 0.15);
 }
-body.dark-mode .lab-toolbar .button.alt[aria-pressed="true"] {
-    background: #e94560;
-    border-color: #e94560;
-    color: #fff !important;
+
+/* Il testo impaginato di un'esercitazione: prosa, titoli ed elenchi come gli
+   homework; il disegno ASCII in testa si stringe fino a stare nella pagina */
+/* allineato a sinistra: giustificato, il testo pieno di comandi e indirizzi
+   si allargava in buchi, anche dentro i comandi citati */
+.lab-doc p,
+.lab-doc li {
+    text-align: left;
+}
+.lab-doc .lab-heading {
+    margin: 2.2em 0 0.8em;
+}
+.lab-doc h4.lab-heading {
+    margin: 1.6em 0 0.6em;
+}
+.lab-banner {
+    font-family: monospace;
+    font-size: clamp(0.3rem, 1.02vw, 0.6rem);
+    line-height: 1.2;
+    color: #d52349;
+    background: none;
+    border: 0;
+    padding: 0;
+    overflow: hidden;
+    white-space: pre;
+    margin: 1.5em 0 0.6em;
+}
+/* sui telefoni il disegno diventerebbe una macchia illeggibile */
+@media screen and (max-width: 600px) {
+    .lab-banner {
+        display: none;
+    }
+}
+.lab-author {
+    font-family: monospace;
+    font-size: 0.85em;
+    color: #888;
+    margin: 0 0 1.5em;
+}
+/* I comandi citati nel testo, in carattere fisso su un fondo appena visibile */
+.lab-doc p code,
+.lab-doc li code,
+.lab-cmds code {
+    padding: 0.1em 0.35em;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.06);
+    font-family: monospace;
+    font-size: 0.85em;
+    overflow-wrap: anywhere;
+}
+.lab-sep {
+    margin: 2em 0;
+    border: 0;
+    border-top: 1px dashed rgba(0, 0, 0, 0.25);
+}
+.lab-list {
+    margin: 0 0 1.5em 1.4em;
+}
+.lab-list li {
+    margin-bottom: 0.4em;
+}
+.lab-list .lab-list {
+    margin: 0.4em 0 0.2em 1.2em;
+}
+.lab-goal {
+    margin: 0 0 1.5em;
+    padding: 0.8em 1em 0.1em;
+    border-left: 3px solid #d52349;
+    border-radius: 0 5px 5px 0;
+    background: rgba(213, 35, 73, 0.06);
+}
+/* Il terminale resta scuro anche con il sito chiaro: il prompt e la nota in
+   colore, il comando in grassetto, l'output piu' tenue */
+.lab-term {
+    font-family: monospace;
+    font-size: 0.8em;
+    line-height: 1.5;
+    padding: 0.9em 1.1em;
+    border: 1px solid #16181d;
+    border-radius: 6px;
+    background: #16181d;
+    color: #c9d1d9;
+    overflow-x: auto;
+    white-space: pre;
+    tab-size: 8;
+    margin: 0 0 1.5em;
+}
+.lab-prompt {
+    color: #ff6b81;
+}
+.lab-cmd {
+    color: #fff;
+    font-weight: bold;
+}
+.lab-note {
+    color: #e3b341;
+    font-style: italic;
+}
+.lab-comment {
+    color: #8b949e;
+    font-style: italic;
+}
+/* File, schemi e formule: carattere fisso su fondo chiaro */
+.lab-code {
+    margin: 0 0 1.5em;
+}
+.lab-code figcaption {
+    margin: 0 0 0.3em;
+    font-family: monospace;
+    font-size: 0.8em;
+    color: #888;
+}
+.lab-code pre {
+    margin: 0;
+    padding: 0.8em 1em;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 5px;
+    background: rgba(0, 0, 0, 0.035);
+    font-family: monospace;
+    font-size: 0.8em;
+    line-height: 1.5;
+    overflow-x: auto;
+    white-space: pre;
+    tab-size: 8;
+}
+/* L'analisi a basso livello: un riquadro con il bordo verde */
+.lab-analysis {
+    margin: 0 0 1.8em;
+    padding: 1em 1.2em 0.3em;
+    border-left: 4px solid #3fa796;
+    border-radius: 0 6px 6px 0;
+    background: rgba(63, 167, 150, 0.07);
+}
+.lab-subhead {
+    margin: 1.6em 0 0.6em;
+    font-weight: bold;
+}
+.lab-analysis-label {
+    margin: 0 0 0.8em;
+    font-family: monospace;
+    font-size: 0.75em;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #2f7f72;
+}
+/* I comandi con la loro spiegazione; sui telefoni una riga sotto l'altra */
+.lab-cmds {
+    width: 100%;
+    margin: 0 0 1.5em;
+    border-collapse: collapse;
+}
+.lab-cmds th,
+.lab-cmds td {
+    padding: 0.55em 0.7em;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    text-align: left;
+    vertical-align: top;
+}
+.lab-cmds td:first-child {
+    width: 40%;
+}
+.lab-cmds code {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font-size: 0.85em;
+}
+@media screen and (max-width: 736px) {
+    .lab-cmds thead {
+        display: none;
+    }
+    .lab-cmds tr,
+    .lab-cmds td {
+        display: block;
+        width: auto !important;
+    }
+    .lab-cmds td:first-child {
+        padding-bottom: 0.15em;
+        border-bottom: 0;
+    }
+}
+body.dark-mode .lab-banner {
+    color: #e94560;
+}
+body.dark-mode .lab-doc p code,
+body.dark-mode .lab-doc li code,
+body.dark-mode .lab-cmds code {
+    background: rgba(255, 255, 255, 0.08);
+}
+body.dark-mode .lab-sep {
+    border-top-color: rgba(255, 255, 255, 0.25);
+}
+body.dark-mode .lab-goal {
+    border-left-color: #e94560;
+    background: rgba(233, 69, 96, 0.08);
+}
+body.dark-mode .lab-term {
+    border-color: #2a2a2a;
+    background: #0d1014;
+}
+/* "body.dark-mode span" ingrigisce tutti gli span: nel terminale i colori restano */
+body.dark-mode .lab-prompt {
+    color: #ff6b81;
+}
+body.dark-mode .lab-cmd {
+    color: #fff;
+}
+body.dark-mode .lab-note {
+    color: #e3b341;
+}
+body.dark-mode .lab-comment {
+    color: #8b949e;
+}
+body.dark-mode .lab-code pre {
+    border-color: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
+    color: #d4d4d4;
+}
+body.dark-mode .lab-analysis {
+    border-left-color: #4fc3ad;
+    background: rgba(63, 167, 150, 0.1);
+}
+body.dark-mode .lab-analysis-label {
+    color: #5fd3bf;
+}
+body.dark-mode .lab-cmds th,
+body.dark-mode .lab-cmds td {
+    border-bottom-color: rgba(255, 255, 255, 0.1);
 }

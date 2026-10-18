@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import homeworkStandalone from './build/homework-standalone.js'
+import retiDoc from './build/reti-doc.js'
 
 // Content Security Policy del sito pubblicato. GitHub Pages non permette di
 // impostare header HTTP, quindi la politica viaggia come <meta> nell'index.html,
@@ -50,9 +51,10 @@ const cspMeta = () => ({
 // https://vitejs.dev/config/
 // homeworkStandalone: i programmi scaricabili degli homework di Statistics (zip
 // e versione online in downloads/statistics/), generati dagli stessi sorgenti
-// delle pagine.
+// delle pagine. retiDoc: le pagine impaginate del laboratorio di Reti devono
+// avere le stesse parole dei file del laboratorio.
 export default defineConfig({
-  plugins: [react(), cspMeta(), homeworkStandalone()],
+  plugins: [react(), cspMeta(), homeworkStandalone(), retiDoc()],
   base: '/portfolio-nicholas/', // <--- Nome del repo
   build: {
     rollupOptions: {
