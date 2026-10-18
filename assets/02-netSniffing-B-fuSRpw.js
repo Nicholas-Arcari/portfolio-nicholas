@@ -1,0 +1,404 @@
+const e=`@banner
+  _                _                              _                    _               ___
+ | |              | |                            | |                  (_)             |__ \\
+ | |        __ _  | |__     ___    _ __    __ _  | |_    ___    _ __   _    ___          ) |
+ | |       / _\` | | '_ \\   / _ \\  | '__|  / _\` | | __|  / _ \\  | '__| | |  / _ \\        / /
+ | |____  | (_| | | |_) | | (_) | | |    | (_| | | |_  | (_) | | |    | | | (_) |      / /_
+ |______|  \\__,_| |_.__/   \\___/  |_|     \\__,_|  \\__|  \\___/  |_|    |_|  \\___/      |____|
+@end
+
+## Docker Volumes
+
+Eseguire un container che usa un volume:
+
+@term
+$ docker run -v VolumeName:/path/in/container_filesystem cyberteam1/nginx-ssh
+|  * Starting OpenBSD Secure Shell server sshd
+|    ...done.
+| /docker-entrypoint.sh: /docker-entrypoint.d/ is not empty, will attempt to perform configuration
+| /docker-entrypoint.sh: Looking for shell scripts in /docker-entrypoint.d/
+| /docker-entrypoint.sh: Launching /docker-entrypoint.d/20-envsubst-on-templates.sh
+| /docker-entrypoint.sh: Configuration complete; ready for start up
+@end
+
+Eseguire un container che usa un volume sull'host:
+
+@term
+$ docker run -v /path/on/hostfile_system:/path/in/container_filesystem cyberteam1/nginx-ssh
+|  * Starting OpenBSD Secure Shell server sshd
+|    ...done.
+| /docker-entrypoint.sh: /docker-entrypoint.d/ is not empty, will attempt to perform configuration
+| /docker-entrypoint.sh: Looking for shell scripts in /docker-entrypoint.d/
+| /docker-entrypoint.sh: Launching /docker-entrypoint.d/20-envsubst-on-templates.sh
+| /docker-entrypoint.sh: Configuration complete; ready for start up
+@end
+
+@analysis
+Docker supporta tre tipi di volume per la persistenza dei dati:
+
+1) Named Volumes (volumi con nome):
+   - Sintassi: docker run -v VolumeName:/path/in/container
+   - Docker li gestisce internamente e li salva in /var/lib/docker/volumes/<NomeVolume>/_data
+     sul filesystem dell'host.
+   - Sono la soluzione consigliata per la persistenza dei dati: Docker ne gestisce il ciclo
+     di vita (creazione, backup, migrazione). I dati sopravvivono alla rimozione del container.
+   - Si possono elencare con \`docker volume ls\` e ispezionare con \`docker volume inspect\`.
+
+2) Bind Mounts (montaggi diretti):
+   - Sintassi: docker run -v /path/host:/path/container
+   - Montano direttamente una directory del filesystem dell'host dentro il container.
+   - Il path dell'host deve essere assoluto. La directory e' condivisa in tempo reale:
+     qualsiasi modifica fatta dal container e' immediatamente visibile sull'host e viceversa.
+   - Implicazioni di sicurezza: un bind mount espone porzioni del filesystem dell'host al
+     container. Se il container viene compromesso (es: tramite una vulnerabilita' del servizio
+     web), l'attaccante potrebbe leggere/scrivere file sensibili dell'host. Per questo motivo
+     e' buona pratica:
+       * Montare solo le directory strettamente necessarie.
+       * Usare il flag :ro (read-only) quando il container non deve scrivere: -v /path:/path:ro
+       * Non montare mai directory critiche come /etc, /root o /var/run/docker.sock (quest'ultimo
+         darebbe accesso completo al Docker Engine, equivalente a un privilege escalation
+         a root sull'host).
+
+3) tmpfs Mounts:
+   - Sintassi: docker run --tmpfs /path/in/container
+   - I dati vengono salvati solo in memoria RAM, mai scritti su disco.
+   - Utili per dati sensibili temporanei (es: chiavi di sessione, token) che non devono
+     persistere ne' essere scritti su disco per ragioni di sicurezza.
+   - I dati vengono persi quando il container si ferma.
+
+L'opzione -v e i mount namespace:
+
+- Internamente, Docker configura i mount point nel MNT namespace del container. Quando si
+  specifica -v /host/path:/container/path, Docker esegue un bind mount (syscall mount() con
+  flag MS_BIND) della directory dell'host nel filesystem del container.
+- Il mount e' visibile solo all'interno del MNT namespace del container: altri container
+  e i processi dell'host non vedono questo mount point (a meno che non condividano lo stesso
+  namespace).
+@end
+
+## Nginx-ssh con Volume
+
+@term
+$ docker run --name ns4 -v /home/nick/Scrivania/Unipr/RetiDeiCalcolatori/RETI2425/html/:/var/www/html -d cyberteam1/nginx-ssh
+| dc84944c26eaaa627ef63d77f543e54cc7ab83d78529a9c625b906d129c951f4
+|
+| CONTAINER ID   IMAGE                  COMMAND                  CREATED         STATUS         PORTS           NAMES
+| dc84944c26ea   cyberteam1/nginx-ssh   "/docker-entrypoint..."   7 seconds ago   Up 4 seconds   22/tcp, 80/tcp   ns4
+@end
+
+## Avvio di Docker-Compose
+
+Avvio del container via compose:
+
+@term
+$ docker-compose up -d
+@end
+
+@term
+$ docker exec -it ns4 curl localhost/test.html
+| <H1> Documento di prova </H1>
+@end
+
+## Esercizio: Catturare i pacchetti scambiati tra client e server e analizzarne il contenuto con tcpdump e wireshark
+
+@term
+$ docker exec -it ns4 bash
+@end
+
+@term
+$ ns4> cd /var/www/html
+$ ns4> tcpdump port 80
+| tcpdump: verbose output suppressed, use -v[v]... for full protocol decode
+| listening on eth0, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+| 15:53:16.778426 IP dc84944c26ea.50918 > 160.78.50.165.http: Flags [S], seq 1234084124, win 64240, options [mss 1460,sackOK,TS val 1291590397 ecr 0,nop,wscale 7], length 0
+| 15:53:16.850783 IP 160.78.50.165.http > dc84944c26ea.50918: Flags [S.], seq 685219635, ack 1234084125, win 65160, options [mss 1460,sackOK,TS val 791508057 ecr 1291590397,nop,wscale 7], length 0
+| 15:53:16.850806 IP dc84944c26ea.50918 > 160.78.50.165.http: Flags [.], ack 1, win 502, options [nop,nop,TS val 1291590469 ecr 791508057], length 0
+| 15:53:16.850977 IP dc84944c26ea.50918 > 160.78.50.165.http: Flags [P.], seq 1:180, ack 1, win 502, options [nop,nop,TS val 1291590469 ecr 791508057], length 179: HTTP: GET /~nicholas.arcari@studenti.unipr.it/RETI2425/1-Docker.txt HTTP/1.1
+| 15:53:16.937836 IP 160.78.50.165.http > dc84944c26ea.50918: Flags [.], ack 180, win 508, options [nop,nop,TS val 791508147 ecr 1291590469], length 0
+| 15:53:16.957510 IP 160.78.50.165.http > dc84944c26ea.50918: Flags [.], seq 1:1449, ack 180, win 508, options [nop,nop,TS val 791508173 ecr 1291590469], length 1448: HTTP: HTTP/1.1 200 OK
+| 15:53:16.957544 IP dc84944c26ea.50918 > 160.78.50.165.http: Flags [.], ack 1449, win 524, options [nop,nop,TS val 1291590576 ecr 791508173], length 0
+| 15:53:16.962146 IP 160.78.50.165.http > dc84944c26ea.50918: Flags [.], seq 1449:2897, ack 180, win 508, options [nop,nop,TS val 791508173 ecr 1291590469], length 1448: HTTP
+| 15:53:16.962180 IP dc84944c26ea.50918 > 160.78.50.165.http: Flags [.], ack 2897, win 546, options [nop,nop,TS val 1291590581 ecr 791508173], length 0
+| 15:53:16.962154 IP 160.78.50.165.http > dc84944c26ea.50918: Flags [.], seq 2897:4345, ack 180, win 508, options [nop,nop,TS val 791508173 ecr 1291590469], length 1448: HTTP
+| 15:53:16.962198 IP dc84944c26ea.50918 > 160.78.50.165.http: Flags [.], ack 4345, win 569, options [nop,nop,TS val 1291590581 ecr 791508173], length 0
+| 15:53:16.976384 IP 160.78.50.165.http > dc84944c26ea.50918: Flags [.], seq 4345:5793, ack 180, win 508, options [nop,nop,TS val 791508173 ecr 1291590469], length 1448: HTTP
+| 15:53:16.976417 IP dc84944c26ea.50918 > 160.78.50.165.http: Flags [.], ack 5793, win 592, options [nop,nop,TS val 1291590595 ecr 791508173], length 0
+| 15:53:17.032508 IP 160.78.50.165.http > dc84944c26ea.50918: Flags [.], seq 5793:7241, ack 180, win 508, options [nop,nop,TS val 791508173 ecr 1291590469], length 1448: HTTP
+| 15:53:17.032549 IP dc84944c26ea.50918 > 160.78.50.165.http: Flags [.], ack 7241, win 614, options [nop,nop,TS val 1291590651 ecr 791508173], length 0
+| 15:53:17.042492 IP 160.78.50.165.http > dc84944c26ea.50918: Flags [.], seq 7241:8689, ack 180, win 508, options [nop,nop,TS val 791508173 ecr 1291590469], length 1448: HTTP
+| 15:53:17.042555 IP dc84944c26ea.50918 > 160.78.50.165.http: Flags [.], ack 8689, win 637, options [nop,nop,TS val 1291590661 ecr 791508173], length 0
+| 15:53:17.042615 IP 160.78.50.165.http > dc84944c26ea.50918: Flags [.], seq 8689:10137, ack 180, win 508, options [nop,nop,TS val 791508173 ecr 1291590469], length 1448: HTTP
+| 15:53:17.042644 IP dc84944c26ea.50918 > 160.78.50.165.http: Flags [.], ack 10137, win 659, options [nop,nop,TS val 1291590661 ecr 791508173], length 0
+| 15:53:17.042989 IP 160.78.50.165.http > dc84944c26ea.50918: Flags [.], seq 10137:11585, ack 180, win 508, options [nop,nop,TS val 791508173 ecr 1291590469], length 1448: HTTP
+| 15:53:17.043030 IP dc84944c26ea.50918 > 160.78.50.165.http: Flags [.], ack 11585, win 669, options [nop,nop,TS val 1291590661 ecr 791508173], length 0
+| 15:53:17.043002 IP 160.78.50.165.http > dc84944c26ea.50918: Flags [.], seq 11585:13033, ack 180, win 508, options [nop,nop,TS val 791508173 ecr 1291590469], length 1448: HTTP
+| 15:53:17.043064 IP dc84944c26ea.50918 > 160.78.50.165.http: Flags [.], ack 13033, win 659, options [nop,nop,TS val 1291590661 ecr 791508173], length 0
+| 15:53:17.043032 IP 160.78.50.165.http > dc84944c26ea.50918: Flags [.], seq 13033:14481, ack 180, win 508, options [nop,nop,TS val 791508173 ecr 1291590469], length 1448: HTTP
+| 15:53:17.043087 IP dc84944c26ea.50918 > 160.78.50.165.http: Flags [.], ack 14481, win 649, options [nop,nop,TS val 1291590662 ecr 791508173], length 0
+| 15:53:17.043063 IP 160.78.50.165.http > dc84944c26ea.50918: Flags [.], seq 14481:15929, ack 180, win 508, options [nop,nop,TS val 791508238 ecr 1291590576], length 1448: HTTP
+| 15:53:17.043145 IP dc84944c26ea.50918 > 160.78.50.165.http: Flags [.], ack 15929, win 669, options [nop,nop,TS val 1291590662 ecr 791508238], length 0
+| 15:53:17.044311 IP 160.78.50.165.http > dc84944c26ea.50918: Flags [.], seq 15929:17377, ack 180, win 508, options [nop,nop,TS val 791508238 ecr 1291590576], length 1448: HTTP
+| 15:53:17.044353 IP dc84944c26ea.50918 > 160.78.50.165.http: Flags [.], ack 17377, win 669, options [nop,nop,TS val 1291590663 ecr 791508238], length 0
+| 15:53:17.044623 IP 160.78.50.165.http > dc84944c26ea.50918: Flags [.], seq 17377:18825, ack 180, win 508, options [nop,nop,TS val 791508242 ecr 1291590581], length 1448: HTTP
+| 15:53:17.044663 IP dc84944c26ea.50918 > 160.78.50.165.http: Flags [.], ack 18825, win 669, options [nop,nop,TS val 1291590663 ecr 791508242], length 0
+| 15:53:17.044637 IP 160.78.50.165.http > dc84944c26ea.50918: Flags [P.], seq 18825:20259, ack 180, win 508, options [nop,nop,TS val 791508242 ecr 1291590581], length 1434: HTTP
+| 15:53:17.044678 IP dc84944c26ea.50918 > 160.78.50.165.http: Flags [.], ack 20259, win 669, options [nop,nop,TS val 1291590663 ecr 791508242], length 0
+| 15:53:17.045282 IP dc84944c26ea.50918 > 160.78.50.165.http: Flags [F.], seq 180, ack 20259, win 669, options [nop,nop,TS val 1291590664 ecr 791508242], length 0
+| 15:53:17.124296 IP 160.78.50.165.http > dc84944c26ea.50918: Flags [F.], seq 20259, ack 181, win 508, options [nop,nop,TS val 791508338 ecr 1291590664], length 0
+| 15:53:17.124328 IP dc84944c26ea.50918 > 160.78.50.165.http: Flags [.], ack 20260, win 669, options [nop,nop,TS val 1291590743 ecr 791508338], length 0
+| ^C
+| 36 packets captured
+| 36 packets received by filter
+| 0 packets dropped by kernel
+@end
+
+@analysis
+Analisi dettagliata del dump tcpdump:
+
+I TCP Flags visibili nella cattura usano la seguente notazione:
+
+@code
+  S = SYN (synchronize)     - richiesta di apertura connessione
+  . = ACK (acknowledge)     - conferma di ricezione
+  P = PSH (push)            - i dati devono essere consegnati immediatamente all'applicazione
+  F = FIN (finish)          - richiesta di chiusura connessione
+  R = RST (reset)           - reset della connessione (non presente in questa cattura)
+@end
+
+=== TCP Three-Way Handshake (apertura connessione) ===
+
+Pacchetto 1 - SYN (client -> server):
+
+@code
+  Flags [S], seq 1234084124, win 64240, options [mss 1460,sackOK,TS val ... ,nop,wscale 7]
+@end
+
+  - Il client (dc84944c26ea, porta 50918) invia un SYN al server (160.78.50.165, porta 80).
+  - ISN (Initial Sequence Number): 1234084124. E' un numero pseudo-casuale generato dal kernel
+    per prevenire attacchi di TCP sequence prediction.
+  - win 64240: la finestra di ricezione iniziale (prima del window scaling).
+
+Pacchetto 2 - SYN-ACK (server -> client):
+
+@code
+  Flags [S.], seq 685219635, ack 1234084125, win 65160, options [mss 1460,sackOK,TS val ... ,wscale 7]
+@end
+
+  - Il server risponde con SYN+ACK. Il suo ISN e' 685219635.
+  - ack 1234084125 = ISN del client + 1 (conferma di aver ricevuto il SYN).
+
+Pacchetto 3 - ACK (client -> server):
+
+@code
+  Flags [.], ack 1, win 502
+@end
+
+  - Il client conferma il SYN del server. La connessione e' ora ESTABLISHED.
+  - Da questo punto in poi, tcpdump mostra i numeri di sequenza relativi (ack 1 invece di
+    685219636) per leggibilita'.
+
+Analisi delle TCP Options negoziate durante l'handshake:
+
+  - MSS 1460: Maximum Segment Size. Calcolato come MTU - header IP - header TCP =
+    1500 - 20 - 20 = 1460 byte. E' la quantita' massima di dati TCP in un singolo segmento.
+  - SACK permitted (sackOK): abilita il Selective Acknowledgment. Permette al ricevitore di
+    confermare blocchi di dati non contigui, evitando la ritrasmissione di segmenti gia' ricevuti
+    correttamente in caso di perdita.
+  - Timestamp (TS val/ecr): usato per calcolare il RTT con precisione (il ricevitore riflette
+    il timestamp del mittente nel campo ecr) e per il PAWS (Protection Against Wrapped
+    Sequence numbers) per evitare confusione con numeri di sequenza che "riciclano" su
+    connessioni ad alta velocita'.
+  - Window Scale (wscale 7): il fattore di scala della finestra. La finestra TCP nell'header
+    e' un campo a 16 bit (max 65535 byte). Con wscale 7, la finestra reale e':
+    64240 * 2^7 = 64240 * 128 = 8.222.720 byte (~7,8 MB).
+    Questo permette al protocollo TCP di gestire connessioni ad alta velocita' con elevata
+    latenza (reti ad alto BDP - Bandwidth-Delay Product).
+  - NOP (No Operation): padding per allineare le opzioni TCP a multipli di 4 byte.
+
+=== Trasferimento dati HTTP ===
+
+Pacchetto 4 - Richiesta HTTP (client -> server):
+
+@code
+  Flags [P.], seq 1:180, length 179: HTTP: GET /~nicholas.arcari@.../1-Docker.txt HTTP/1.1
+@end
+
+  - Il flag PSH+ACK (P.) indica che il client ha finito di scrivere i dati della richiesta
+    e chiede al kernel del server di consegnarli immediatamente all'applicazione (non bufferare).
+  - La richiesta HTTP GET occupa 179 byte (seq 1:180).
+
+Pacchetto 5 - ACK del server:
+
+@code
+  Flags [.], ack 180
+@end
+
+  - il server conferma di aver ricevuto tutti i 179 byte della richiesta.
+
+Pacchetti 6-32 - Risposta HTTP (server -> client):
+
+  - Il server invia la risposta in segmenti da 1448 byte. Questo valore e' MSS (1460) meno
+    12 byte di TCP Options (timestamp: 10 byte + 2 byte NOP padding).
+  - Ogni segmento del server trasporta esattamente 1448 byte di payload, tranne l'ultimo
+    (1434 byte) che contiene il flag PSH per indicare la fine dei dati.
+  - Il client invia un ACK per ogni segmento (o gruppo di segmenti) ricevuto.
+  - Totale dati trasferiti: il sequence number finale e' 20259, quindi il file e' lungo
+    circa 20 KB (20259 byte di payload HTTP, includendo gli header della risposta).
+
+=== TCP Connection Termination (chiusura connessione) ===
+
+Pacchetto 33 - FIN-ACK (client -> server):
+
+@code
+  Flags [F.], seq 180, ack 20259
+@end
+
+  - Il client ha ricevuto tutti i dati e avvia la chiusura della connessione inviando un FIN.
+
+Pacchetto 34 - FIN-ACK (server -> client):
+
+@code
+  Flags [F.], seq 20259, ack 181
+@end
+
+  - Il server conferma il FIN del client (ack 181 = 180+1) e invia il proprio FIN.
+  - In questo caso si osserva una chiusura "compatta": il server combina il suo ACK e il suo
+    FIN in un unico segmento (invece dei classici 4 pacchetti del Four-Way Termination).
+
+Pacchetto 35 - ACK finale (client -> server):
+
+@code
+  Flags [.], ack 20260
+@end
+
+  - Il client conferma il FIN del server. La connessione e' ora chiusa.
+  - Dopo questo ACK, il client entra nello stato TIME_WAIT per 2*MSL (Maximum Segment
+    Lifetime, tipicamente 60 secondi su Linux), durante il quale il socket non puo' essere
+    riutilizzato per garantire che eventuali segmenti ritardatari vengano gestiti.
+@end
+
+@term
+$ ns4> tcpdump port 80 -w 2-NetSniffing.pcap
+| tcpdump: listening on eth0, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+|
+| ^C
+|
+| 36 packets captured
+| 36 packets received by filter
+| 0 packets dropped by kernel
+@end
+
+@term
+$ root@dc84944c26ea:/# curl -u <NOME>:<PASSWORD> http://didattica-linux.unipr.it/~nicholas.arcari@studenti.unipr.it/RETI2425/1-Docker.txt		--->>		le operazioni sono state eseguite correttamente e i dati sono salvati sul container in /var/www/html/NetSniffing.pcap
+@end
+
+Questo e' cio' che e' stato stampato a schermo su wireshark:
+
+@term
+| 1	0.000000	172.17.0.2	160.78.50.165	TCP	74	45978 > 80 [SYN] Seq=0 Win=64240 Len=0 MSS=1460 SACK_PERM TSval=1291665902 TSecr=0 WS=128
+| 2	0.129072	160.78.50.165	172.17.0.2	TCP	74	80 > 45978 [SYN, ACK] Seq=0 Ack=1 Win=65160 Len=0 MSS=1460 SACK_PERM TSval=791583564 TSecr=1291665902 WS=128
+| 3	0.129111	172.17.0.2	160.78.50.165	TCP	66	45978 > 80 [ACK] Seq=1 Ack=1 Win=64256 Len=0 TSval=1291666031 TSecr=791583564
+| 4	0.129258	172.17.0.2	160.78.50.165	HTTP	245	GET /~nicholas.arcari@studenti.unipr.it/RETI2425/1-Docker.txt HTTP/1.1
+| 5	0.333926	160.78.50.165	172.17.0.2	TCP	66	80 > 45978 [ACK] Seq=1 Ack=180 Win=65024 Len=0 TSval=791583690 TSecr=1291666032
+| 6	0.334215	160.78.50.165	172.17.0.2	TCP	1514	80 > 45978 [ACK] Seq=1 Ack=180 Win=65024 Len=1448 TSval=791583714 TSecr=1291666032 [TCP PDU reassembled in 32]
+| 7	0.334239	172.17.0.2	160.78.50.165	TCP	66	45978 > 80 [ACK] Seq=180 Ack=1449 Win=67072 Len=0 TSval=1291666237 TSecr=791583714
+| 8	0.334242	160.78.50.165	172.17.0.2	TCP	1514	80 > 45978 [ACK] Seq=1449 Ack=180 Win=65024 Len=1448 TSval=791583714 TSecr=1291666032 [TCP PDU reassembled in 32]
+| 9	0.334252	172.17.0.2	160.78.50.165	TCP	66	45978 > 80 [ACK] Seq=180 Ack=2897 Win=69888 Len=0 TSval=1291666237 TSecr=791583714
+| 10	0.334253	160.78.50.165	172.17.0.2	TCP	1514	80 > 45978 [ACK] Seq=2897 Ack=180 Win=65024 Len=1448 TSval=791583714 TSecr=1291666032 [TCP PDU reassembled in 32]
+| 11	0.334258	172.17.0.2	160.78.50.165	TCP	66	45978 > 80 [ACK] Seq=180 Ack=4345 Win=72832 Len=0 TSval=1291666237 TSecr=791583714
+| 12	0.334261	160.78.50.165	172.17.0.2	TCP	1514	80 > 45978 [ACK] Seq=4345 Ack=180 Win=65024 Len=1448 TSval=791583714 TSecr=1291666032 [TCP PDU reassembled in 32]
+| 13	0.334265	172.17.0.2	160.78.50.165	TCP	66	45978 > 80 [ACK] Seq=180 Ack=5793 Win=75776 Len=0 TSval=1291666237 TSecr=791583714
+| ...
+| 33	0.437415	172.17.0.2	160.78.50.165	TCP	66	45978 > 80 [ACK] Seq=180 Ack=20259 Win=77952 Len=0 TSval=1291666340 TSecr=791583911
+| 34	0.438212	172.17.0.2	160.78.50.165	TCP	66	45978 > 80 [FIN, ACK] Seq=180 Ack=20259 Win=85632 Len=0 TSval=1291666341 TSecr=791583911
+| 35	0.641353	160.78.50.165	172.17.0.2	TCP	66	80 > 45978 [FIN, ACK] Seq=20259 Ack=181 Win=65024 Len=0 TSval=791584119 TSecr=1291666341
+| 36	0.641386	172.17.0.2	160.78.50.165	TCP	66	45978 > 80 [ACK] Seq=181 Ack=20260 Win=85632 Len=0 TSval=1291666544 TSecr=791584119
+@end
+
+@analysis
+Differenza tra tcpdump e Wireshark:
+
+- tcpdump e' uno strumento CLI (Command Line Interface) per la cattura e l'analisi dei
+  pacchetti in tempo reale. Opera direttamente sull'interfaccia di rete e stampa una riga
+  per ogni pacchetto catturato. E' leggero, adatto a server senza interfaccia grafica e
+  perfetto per catture rapide o script automatizzati. Usa la libreria libpcap per la cattura.
+- Wireshark e' uno strumento GUI (Graphical User Interface) per l'analisi offline dei
+  pacchetti. Offre dissector per centinaia di protocolli, ricostruzione dei flussi TCP/HTTP,
+  grafici di flusso, statistiche avanzate e filtri di visualizzazione potenti. Usa la stessa
+  libreria libpcap e il formato di cattura e' compatibile (.pcap/.pcapng).
+- In questo esercizio, tcpdump cattura i pacchetti e li salva in un file .pcap (-w), che viene
+  poi aperto in Wireshark per un'analisi piu' dettagliata.
+
+TCP PDU reassembly in Wireshark:
+
+- Nella colonna Info dei pacchetti 6, 8, 10, 12 si vede la nota "[TCP PDU reassembled in 32]".
+  Questo significa che Wireshark ha riconosciuto che questi segmenti TCP fanno parte di un
+  unico messaggio HTTP (la risposta del server) e li ha riassemblati.
+- Il pacchetto 32 contiene il messaggio HTTP completo ricostruito (tutti i segmenti uniti).
+  Questo e' il concetto di TCP PDU reassembly: il protocollo HTTP vede un flusso continuo
+  di byte, ma a livello TCP i dati sono frammentati in segmenti da 1448 byte (MSS - opzioni).
+- Wireshark mostra anche la dimensione del frame Ethernet: 1514 byte = 14 (Ethernet header) +
+  20 (IP header) + 20 (TCP header) + 12 (TCP options) + 1448 (payload).
+
+Osservazione sul Window Scaling in Wireshark:
+
+- Wireshark mostra la finestra gia' scalata (WS=128 = 2^7). Nei pacchetti ACK del client,
+  la finestra cresce progressivamente: 64256 -> 67072 -> 69888 -> 72832 -> 75776 -> ...
+  Questo indica che il buffer di ricezione del client si sta espandendo man mano che arrivano
+  i dati, un comportamento normale del TCP auto-tuning del kernel Linux.
+@end
+
+Facendo "analizza" --> "segui" --> "flusso HTTP":
+
+@term
+| GET /~nicholas.arcari@studenti.unipr.it/RETI2425/1-Docker.txt HTTP/1.1
+| Host: didattica-linux.unipr.it
+| Authorization: Basic <PASSWORD_CRIPTATA_BASE64>
+| User-Agent: curl/7.88.1
+| Accept: */*
+|
+|
+| HTTP/1.1 200 OK
+| Date: Wed, 02 Oct 2024 15:54:32 GMT
+| Server: Apache/2.4.29 (Ubuntu)
+| Last-Modified: Wed, 25 Sep 2024 16:01:01 GMT
+| ETag: "4e22-622f3ba778ec7"
+| Accept-Ranges: bytes
+| Content-Length: 20002
+| Vary: Accept-Encoding
+| Content-Type: text/plain
+@end
+
+@analysis
+  Analisi dell'HTTP Basic Authentication:
+
+  - L'header "Authorization: Basic <PASSWORD_CRIPTATA_BASE64>" contiene le credenziali dell'utente
+    codificate in Base64. Nonostante il termine "criptata" usato nell'etichetta, Base64 NON e'
+    un algoritmo di cifratura ma un semplice schema di codifica reversibile.
+  - Il formato e': Base64(username:password). Chiunque intercetti questo header puo' decodificare
+    le credenziali banalmente con il comando: echo '<stringa_base64>' | base64 -d
+  - RISCHIO DI SICUREZZA CRITICO: in questo esercizio la connessione e' su HTTP (porta 80),
+    quindi tutto il traffico viaggia in chiaro sulla rete. Questo include le credenziali
+    nell'header Authorization. Un attaccante sulla stessa rete (o su qualsiasi nodo intermedio)
+    potrebbe catturare le credenziali con un semplice packet sniffer (come tcpdump o Wireshark).
+  - Per proteggere le credenziali, l'HTTP Basic Auth dovrebbe essere usato ESCLUSIVAMENTE su
+    connessioni HTTPS (TLS), dove il traffico applicativo e' cifrato. Anche con HTTPS, metodi
+    di autenticazione piu' robusti (OAuth 2.0, token JWT, autenticazione a chiave pubblica)
+    sono preferibili perche' non trasmettono la password ad ogni richiesta.
+
+  Analisi degli header della risposta HTTP:
+
+  - Server: Apache/2.4.29 (Ubuntu): il server web e la versione. Esporre la versione del server
+    e' una pratica sconsigliata in sicurezza (information disclosure) perche' facilita la
+    ricerca di exploit noti per quella specifica versione.
+  - ETag: "4e22-622f3ba778ec7": un identificativo univoco della risorsa. 4e22 (hex) = 20002
+    (decimale), che corrisponde al Content-Length. Il server lo usa per il caching condizionale
+    (il client puo' inviare If-None-Match per evitare di riscaricare un file non modificato).
+  - Content-Length: 20002: la dimensione esatta del body della risposta in byte. Questo conferma
+    i dati visti nel dump TCP: il payload totale trasferito e' circa 20 KB.
+  - Accept-Ranges: bytes: il server supporta le richieste parziali (Range requests), utili per
+    riprendere download interrotti.
+@end
+
+Successivamente in blu mi ha stampato anche a schermo tutto il file appena tracciato: 1-Docker.txt
+`;export{e as default};
