@@ -533,6 +533,7 @@ function distributionsSection() {
   const W = text.sweep;
   regions.sweep = h('div');
   regions.moments = h('div');
+  regions.choice = h('div');
   controls.sweepSlider = slider('hw3-sweep-n', (g) => {
     stopPlayer('sweep');
     state.sweep.g = g;
@@ -556,6 +557,8 @@ function distributionsSection() {
     paras(W.after),
     title('hw3-moments', 1, S.moments),
     regions.moments,
+    title('hw3-choice', 1, S.choice),
+    regions.choice,
   );
 }
 
@@ -652,6 +655,35 @@ function updateMoments() {
   );
 }
 
+/** Section 2.3: the attackers needed at every n, in red when more than the simulated ones. */
+function updateChoice() {
+  const C = text.choice;
+  const F = text.fmt;
+  const s = computation.shown;
+  if (!s) {
+    fill(regions.choice, pending());
+    return;
+  }
+  const m = s.params.m;
+  const need = (v) => ({ text: C.count(v), class: v > m ? 'over' : null });
+  fill(
+    regions.choice,
+    paras(C.intro),
+    formulas(C.formulas, C.formulasTitle),
+    subtitle(C.tableTitle(state.epsilon, m)),
+    h(
+      'div',
+      { class: 'scroll' },
+      table(
+        'compact choice',
+        ['n', 'pB', 'mB', 'pR', 'mR', 'd', 'mD'].map((k) => C.cols[k]),
+        view.choiceRows(s, state.epsilon).map((r) => ({ cells: [{ text: F.int(r.n) }, { text: F.small(r.pB) }, need(r.mB), { text: F.small(r.pR) }, need(r.mR), { text: F.num(r.d, 4) }, need(r.mD)] })),
+      ),
+    ),
+    paras(C.after(s, state.epsilon)),
+  );
+}
+
 // ---------------------------------------------------------------------------
 // 3. La legge dei grandi numeri
 // ---------------------------------------------------------------------------
@@ -676,6 +708,7 @@ function llnSection() {
       input.setAttribute('aria-valuetext', label.textContent);
       updateConvergence();
       updateBounds();
+      updateChoice();
     },
   });
   input.value = String(Math.round(state.epsilon * 100));
@@ -1089,6 +1122,7 @@ function updateResults() {
   updateSimTests();
   updateSweep();
   updateMoments();
+  updateChoice();
   updateConvergence();
   updateBounds();
   updateVariance();

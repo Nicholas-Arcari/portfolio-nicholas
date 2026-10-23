@@ -17,6 +17,7 @@ export const SECTIONS = [
   { id: 'hw3-distributions', key: 'distributions', level: 0 },
   { id: 'hw3-sweep', key: 'sweep', level: 1 },
   { id: 'hw3-moments', key: 'moments', level: 1 },
+  { id: 'hw3-choice', key: 'choice', level: 1 },
   { id: 'hw3-lln', key: 'lln', level: 0 },
   { id: 'hw3-convergence', key: 'convergence', level: 1 },
   { id: 'hw3-bounds', key: 'bounds', level: 1 },
@@ -446,6 +447,36 @@ export const normalRule = (mom) => Math.ceil(10 / mom.variance - 1e-9);
 
 /** How many observations a Kolmogorov-Smirnov test needs to see a distance d: about (1/d)^2. */
 export const neededFor = (d) => Math.ceil(1 / (d * d));
+
+/** The targets of section 2.3: a probability within 10% and a variance within 5%, both at 95%. */
+export const M_TARGET = Object.freeze({ z: 1.959963984540054, relative: 0.1, varianceRelative: 0.05 });
+
+/** How many attackers estimate a probability P within the relative error of M_TARGET: m >= z^2 (1 - P)/(r^2 P); one for P = 1, none is enough for P = 0. */
+export const neededForProbability = (P) => (P >= 1 ? 1 : P > 0 ? Math.ceil((M_TARGET.z ** 2 * (1 - P)) / (M_TARGET.relative ** 2 * P)) : Infinity);
+
+/** How many attackers estimate the variance of S_n within 5%, for S_n about normal: m >= 2 (z/r)^2, the same at every n. */
+export const neededForVariance = () => Math.ceil(2 * (M_TARGET.z / M_TARGET.varianceRelative) ** 2);
+
+/** The table of section 2.3: at every n the exact probability of section 3 and the exact distance from the normal of section 5, with the attackers each one needs. */
+export function choiceRows(s, epsilon) {
+  const rows = llnRows(s, epsilon);
+  const R = s.models.rademacher;
+  return rows.bernoulli.map((b, i) => {
+    const r = rows.rademacher[i];
+    const d = R.points[i].distance;
+    return { n: b.n, pB: b.exact, mB: neededForProbability(b.exact), pR: r.exact, mR: neededForProbability(r.exact), d, mD: neededFor(d) };
+  });
+}
+
+/** The largest n of the grid up to which a column of the table needs at most m attackers (null if not even the first). */
+export function enoughUpTo(rows, key, m) {
+  let last = null;
+  for (const r of rows) {
+    if (r[key] > m) break;
+    last = r.n;
+  }
+  return last;
+}
 
 // ---------------------------------------------------------------------------
 // Sistemi e attaccanti

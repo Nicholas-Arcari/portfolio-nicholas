@@ -527,6 +527,45 @@ const Moments = React.memo(function Moments({ s, job, text }) {
   );
 });
 
+// --- 2.3 Quanti attaccanti servono ---------------------------------------------------------
+
+const Choice = React.memo(function Choice({ s, job, epsilon, text }) {
+  const C = text.choice;
+  const F = text.fmt;
+  if (!s) return <Pending text={text} result={job} />;
+  const m = s.params.m;
+  // in rosso gli attaccanti necessari che superano quelli simulati
+  const need = (v) => <td className={v > m ? 'hw3-over' : undefined}>{C.count(v)}</td>;
+  return (
+    <>
+      <Paras list={C.intro} />
+      <Formulas title={C.formulasTitle}>{C.formulas}</Formulas>
+      <p className="hw1-table-title"><strong>{C.tableTitle(epsilon, m)}</strong></p>
+      <div className="hw1-scroll">
+        <table className="hw1-table hw1-compact hw3-choice">
+          <thead>
+            <tr>{['n', 'pB', 'mB', 'pR', 'mR', 'd', 'mD'].map((k) => <th key={k}>{C.cols[k]}</th>)}</tr>
+          </thead>
+          <tbody>
+            {view.choiceRows(s, epsilon).map((r) => (
+              <tr key={r.n}>
+                <td>{F.int(r.n)}</td>
+                <td>{F.small(r.pB)}</td>
+                {need(r.mB)}
+                <td>{F.small(r.pR)}</td>
+                {need(r.mR)}
+                <td>{F.num(r.d, 4)}</td>
+                {need(r.mD)}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <Paras list={C.after(s, epsilon)} />
+    </>
+  );
+});
+
 // --- 3. La legge dei grandi numeri ------------------------------------------------------
 
 const Convergence = React.memo(function Convergence({ s, job, epsilon, setEpsilon, text, palette }) {
@@ -1016,6 +1055,9 @@ const Homework3 = () => {
 
         <Title id="hw3-moments" level={1}>{S.moments}</Title>
         <Moments s={s} job={job} text={text} />
+
+        <Title id="hw3-choice" level={1}>{S.choice}</Title>
+        <Choice s={s} job={job} epsilon={epsilon} text={text} />
       </section>
 
       {/* 3. La legge dei grandi numeri */}

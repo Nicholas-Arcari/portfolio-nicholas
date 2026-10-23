@@ -1977,6 +1977,13 @@ body.dark-mode .hw3-choices .button.alt[aria-pressed="true"] {
 .hw3-stats {
     margin-bottom: 1em;
 }
+/* gli attaccanti necessari che superano quelli simulati (sezione 2.3) */
+.hw3-over {
+    color: #c62828;
+}
+body.dark-mode .hw3-over {
+    color: #ff8a80;
+}
 /* l'intervallo al 95% sotto la frazione, piu' piccolo */
 .hw3-interval {
     display: block;
@@ -1986,6 +1993,7 @@ body.dark-mode .hw3-choices .button.alt[aria-pressed="true"] {
 /* intestazioni e pulsanti con formule: il maiuscolo del tema cambierebbe i
    simboli (S_n/n diventerebbe S_N/N, mu una M greca) */
 .hw3-choices .button,
+.hw3-choice thead th,
 .hw3-models thead th,
 .hw3-moments thead th,
 .hw3-lln thead th,
