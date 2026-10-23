@@ -624,6 +624,8 @@ const normalShare = (normal, from, to) => (normal ? hw.normalCdf((to - normal.me
 
 /** The texts under the pointer: functions of the hit, built from the data of a chart and the words of a language (T = text.tips). */
 const tips = {
+  // the animation: the words for a bar of its histogram or a system of its trajectories
+  trajectory: (text) => (hit) => text.tips.trajectory(hit, text.trajectoryNames[hit.quantity]),
   histogram: (h, T) => (hit) => {
     const b = h.bars[hit.index];
     return b ? T.bin(b.from, b.to, b.share, h.expected ? b.prob : null, normalShare(h.normal, b.from, b.to)) : null;
@@ -1309,6 +1311,10 @@ const it = {
   quantityNames: { sum: 'S_n', mean: 'S_n/n', normalized: 'S_n/√n' },
   trajectoryNames: { sum: 'S_k', mean: 'S_k/k', normalized: 'S_k/√k' },
   tips: {
+    trajectory: (hit, name) =>
+      hit.kind === 'bin'
+        ? `${name} fra ${valueIt(hit.from, hit.quantity)} e ${valueIt(hit.to, hit.quantity)} al sistema ${IT.int(hit.k)}: ${IT.int(hit.count)} attaccanti su ${IT.int(hit.sample)}, ${IT.num(hit.expected, 1)} attesi dalla normale`
+        : `Sistema ${IT.int(hit.step)}: ${name} dell’attaccante 1 ${valueIt(hit.first, hit.quantity)}; media ${valueIt(hit.mean, hit.quantity)}, fascia fra ${valueIt(hit.mean - 2 * hit.sd, hit.quantity)} e ${valueIt(hit.mean + 2 * hit.sd, hit.quantity)}`,
     bin: (from, to, share, prob, normal) => {
       const d = edgeDigits(from, to);
       return `Da ${IT.num(from, d)} a ${IT.num(to, d)}: simulazione ${IT.pct(share, 2)}${prob === null ? '' : `, legge esatta ${IT.pct(prob, 2)}`}${normal === null ? '' : `, normale ${IT.pct(normal, 2)}`}`;
@@ -1819,6 +1825,10 @@ const en = {
   quantityNames: { sum: 'S_n', mean: 'S_n/n', normalized: 'S_n/√n' },
   trajectoryNames: { sum: 'S_k', mean: 'S_k/k', normalized: 'S_k/√k' },
   tips: {
+    trajectory: (hit, name) =>
+      hit.kind === 'bin'
+        ? `${name} between ${valueEn(hit.from, hit.quantity)} and ${valueEn(hit.to, hit.quantity)} at system ${EN.int(hit.k)}: ${EN.int(hit.count)} attackers out of ${EN.int(hit.sample)}, ${EN.num(hit.expected, 1)} expected from the normal`
+        : `System ${EN.int(hit.step)}: ${name} of attacker 1 ${valueEn(hit.first, hit.quantity)}; mean ${valueEn(hit.mean, hit.quantity)}, band between ${valueEn(hit.mean - 2 * hit.sd, hit.quantity)} and ${valueEn(hit.mean + 2 * hit.sd, hit.quantity)}`,
     bin: (from, to, share, prob, normal) => {
       const d = edgeDigits(from, to);
       return `From ${EN.num(from, d)} to ${EN.num(to, d)}: simulation ${EN.pct(share, 2)}${prob === null ? '' : `, exact law ${EN.pct(prob, 2)}`}${normal === null ? '' : `, normal ${EN.pct(normal, 2)}`}`;
@@ -2295,7 +2305,8 @@ function trajectoriesBlock() {
       if (animation) animation.setQuantity(quantity);
     }),
     h('div', { class: 'controls' }, h('label', null, T.speedLabel, speed), h('span', { class: 'buttons' }, controls.play, button(T.step, 'step'), button(T.reset, 'reset'), button(T.end, 'toEnd'))),
-    controls.canvas,
+    // posizionato: ci stanno dentro l'evidenziazione e l'etichetta sotto il puntatore
+    h('div', { class: 'figure' }, controls.canvas),
     legend([{ label: T.legend[0], color: 0 }, { label: T.legend[1], color: 1 }, { label: T.legend[2], color: 2, dashed: true }, { label: T.legend[3], color: 3, dashed: true }]),
     controls.caption,
     paras(T.after),
@@ -2334,6 +2345,7 @@ function createAnimation() {
     speed: view.ANIMATION.speeds[state.anim.speed],
     palette: palette(),
     decimal: text.fmt.decimal,
+    describe: view.tips.trajectory(text),
     onUpdate: updateCaption,
   });
   canvasWidth = canvas.clientWidth;
