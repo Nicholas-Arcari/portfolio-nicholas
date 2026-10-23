@@ -1468,18 +1468,24 @@ function attachPointerLabel(canvas, locate) {
   canvas.classList.add('has-tip');
   let frame = 0;
   let shown = null;
+  // where the pointer is while the label is on screen: refresh() asks again what is under it
+  let pointer = null;
   const hide = () => {
     mark.hidden = true;
     tip.hidden = true;
     shown = null;
+    pointer = null;
   };
   const show = (clientX, clientY) => {
+    pointer = { clientX, clientY };
     const r = canvas.getBoundingClientRect();
     const x = clientX - r.left;
     const y = clientY - r.top;
     const hit = locate(x, y, r.width);
     if (!hit) {
-      hide();
+      mark.hidden = true;
+      tip.hidden = true;
+      shown = null;
       return;
     }
     const { text } = hit;
@@ -1526,7 +1532,7 @@ function attachPointerLabel(canvas, locate) {
   canvas.addEventListener('pointerleave', onLeave);
   canvas.addEventListener('pointerdown', onDown);
   document.addEventListener('pointerdown', onDocumentDown);
-  return () => {
+  const detach = () => {
     cancelAnimationFrame(frame);
     canvas.removeEventListener('pointermove', onMove);
     canvas.removeEventListener('pointerleave', onLeave);
@@ -1536,6 +1542,11 @@ function attachPointerLabel(canvas, locate) {
     mark.remove();
     tip.remove();
   };
+  // a chart that changes under a still pointer (the animation) calls it after every frame
+  detach.refresh = () => {
+    if (pointer) show(pointer.clientX, pointer.clientY);
+  };
+  return detach;
 }
 
 // ---------------------------------------------------------------------------
@@ -1854,6 +1865,8 @@ function createTrajectoryAnimation(canvas, options) {
       ctx.stroke();
     }
     onUpdate(status());
+    // the label under a still pointer follows the frames
+    if (detachLabel) detachLabel.refresh();
   };
 
   // what is under the pointer: a bar of the histogram, or a system of the trajectories
