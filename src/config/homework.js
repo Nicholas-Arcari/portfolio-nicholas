@@ -65,7 +65,7 @@ export const STATISTICS_HOMEWORK = [
       it: 'Il processo di penetrazione di m attaccanti su n sistemi come somma di incrementi i.i.d., nel modello di Bernoulli e in quello di Rademacher: traiettorie animate, distribuzioni del punteggio totale, medio e normalizzato al crescere di n, legge dei grandi numeri con i limiti di Chebyshev e Hoeffding, varianza sotto le tre normalizzazioni, teorema del limite centrale con la sua velocità (Berry-Esseen), il ruolo dei sistemi e degli attaccanti, test d’ipotesi e contesto storico.',
       en: 'The penetration process of m attackers on n systems as a sum of i.i.d. increments, in the Bernoulli and in the Rademacher model: animated trajectories, distributions of the total, average and normalized score as n grows, the law of large numbers with the Chebyshev and Hoeffding bounds, the variance under the three normalizations, the central limit theorem and its speed (Berry-Esseen), the role of systems and attackers, hypothesis tests and historical context.',
     },
-    completed: '2026-10-23T08:12:00+02:00',
+    completed: '2026-10-23T12:12:00+02:00',
     due: '2026-10-29T21:00:00+01:00',
   },
   {
