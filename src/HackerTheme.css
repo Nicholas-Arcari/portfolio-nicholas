@@ -1846,6 +1846,169 @@ body.dark-mode .hw2a-chapters tr.is-test {
     .hw2a-summary th:nth-child(5) { width: 18%; }
 }
 
+/* ===== HOMEWORK #3 (Statistics) =====
+   Le sezioni hanno anche le classi hw1-section, hw2 e hw3: qui solo gli
+   elementi nuovi della pagina dell'Homework #3. */
+/* I quattro parametri: affiancati sugli schermi larghi, uno sotto l'altro sui telefoni */
+.hw3-fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(15em, 1fr));
+    gap: 0.2em 1.5em;
+    margin: 0.8em 0 0.4em;
+}
+.hw3-field label {
+    display: block;
+    margin-bottom: 0.3em;
+    font-size: 0.85em;
+    font-weight: 600;
+}
+.hw3-field-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5em;
+}
+.hw3-field input {
+    width: 9em;
+    max-width: 100%;
+    padding: 0.45em 0.6em;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background: #f9f9f9;
+    font-family: monospace;
+    font-size: 1em;
+}
+.hw3-field input[aria-invalid="true"] {
+    border-color: #c62828;
+}
+.hw3-field .button {
+    padding: 0.5em 1.1em;
+}
+.hw3-field p {
+    margin: 0.3em 0 0.7em;
+}
+body.dark-mode .hw3-field input {
+    background: #222222;
+    color: #efefef;
+    border-color: #2a2a2a;
+}
+/* Le scelte fra pochi valori (modello, grandezza): il pulsante premuto in evidenza, come i nonce dell'Homework #2 */
+.hw3-choices {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5em;
+    margin: 0.5em 0;
+}
+.hw3-choices-label {
+    min-width: 6em;
+    margin-right: 0.3em;
+    font-size: 0.85em;
+    font-weight: 600;
+}
+.hw3-choices .button {
+    padding: 0.5em 1.2em;
+}
+.hw3-choices .button.alt[aria-pressed="true"] {
+    background: #d52349;
+}
+body.dark-mode .hw3-choices .button.alt[aria-pressed="true"] {
+    background: #e94560;
+    border-color: #e94560;
+    color: #fff !important;
+}
+/* I cursori su n e su epsilon */
+.hw3-sweep-controls {
+    margin: 0.8em 0 0.6em;
+}
+.hw3-slider-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.6em 1.2em;
+    margin: 0.5em 0 1em;
+}
+.hw3-slider {
+    display: flex;
+    flex: 1 1 16em;
+    flex-direction: column;
+    gap: 0.35em;
+    max-width: 30em;
+}
+.hw3-slider label {
+    font-size: 0.85em;
+    font-weight: 600;
+}
+/* il tema toglie l'aspetto nativo a ogni input: il cursore lo riprende, altrimenti la barra non si vede */
+.hw3-slider input[type="range"] {
+    -webkit-appearance: auto;
+    appearance: auto;
+    width: 100%;
+    height: auto;
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
+    accent-color: #d52349;
+}
+.hw3-slider-row .button {
+    padding: 0.5em 1.4em;
+}
+/* L'animazione delle traiettorie, larga quanto il testo */
+.hw3-anim-controls {
+    margin: 0.6em 0 0.2em;
+}
+.hw3-anim-buttons {
+    margin: 0.5em 0 0.8em;
+}
+.hw3-anim {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 6px;
+}
+/* Le righe di numeri sotto i grafici */
+.hw3-figure-note,
+.hw3-stats {
+    margin: 0.4em 0 0;
+    font-size: 0.85em;
+    text-align: left;
+    overflow-wrap: anywhere;
+}
+.hw3-stats {
+    margin-bottom: 1em;
+}
+/* l'intervallo al 95% sotto la frazione, piu' piccolo */
+.hw3-interval {
+    display: block;
+    color: #888;
+    font-size: 0.85em;
+}
+/* intestazioni e pulsanti con formule: il maiuscolo del tema cambierebbe i
+   simboli (S_n/n diventerebbe S_N/N, mu una M greca) */
+.hw3-choices .button,
+.hw3-models thead th,
+.hw3-moments thead th,
+.hw3-lln thead th,
+.hw3-drift thead th {
+    text-transform: none;
+    letter-spacing: 0.02em;
+}
+@media screen and (min-width: 737px) {
+    .hw3-models th:nth-child(1) { width: 18%; }
+    .hw3-quantities th:nth-child(1) { width: 12%; }
+    .hw3-quantities th:nth-child(2),
+    .hw3-quantities th:nth-child(3),
+    .hw3-quantities th:nth-child(4) { width: 13%; }
+    .hw3-fits th:nth-child(1) { width: 22%; }
+    .hw3-fits th:nth-child(4) { width: 14%; }
+    .hw3-checks th:nth-child(1) { width: 38%; }
+    .hw3-checks th:nth-child(3) { width: 10%; }
+    .hw3-summary th:nth-child(1) { width: 16%; }
+    .hw3-summary th:nth-child(3),
+    .hw3-summary th:nth-child(4) { width: 14%; }
+    .hw3-summary th:nth-child(5) { width: 18%; }
+}
+
 /* ===== Grafici degli homework: i valori del pezzo sotto il puntatore =====
    Il riquadro e il contorno li crea attachChartTooltip (homework1.js,
    homework2.js) dentro la figura, che per questo e' posizionata. */

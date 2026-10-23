@@ -57,6 +57,18 @@ export const STATISTICS_HOMEWORK = [
     due: '2026-10-22T21:00:00+02:00',
   },
   {
+    slug: 'homework-3',
+    name: 'Homework #3',
+    type: 'homework',
+    theory: true,
+    description: {
+      it: 'Il processo di penetrazione di m attaccanti su n sistemi come somma di incrementi i.i.d., nel modello di Bernoulli e in quello di Rademacher: traiettorie animate, distribuzioni del punteggio totale, medio e normalizzato al crescere di n, legge dei grandi numeri con i limiti di Chebyshev e Hoeffding, varianza sotto le tre normalizzazioni, teorema del limite centrale con la sua velocità (Berry-Esseen), il ruolo dei sistemi e degli attaccanti, test d’ipotesi e contesto storico.',
+      en: 'The penetration process of m attackers on n systems as a sum of i.i.d. increments, in the Bernoulli and in the Rademacher model: animated trajectories, distributions of the total, average and normalized score as n grows, the law of large numbers with the Chebyshev and Hoeffding bounds, the variance under the three normalizations, the central limit theorem and its speed (Berry-Esseen), the role of systems and attackers, hypothesis tests and historical context.',
+    },
+    completed: '2026-10-23T08:12:00+02:00',
+    due: '2026-10-29T21:00:00+01:00',
+  },
+  {
     // progetto di gruppo: per ora la pagina dice solo "Work in progress...";
     // il codice stara' in un repository a parte, ancora da creare
     slug: 'project-1',

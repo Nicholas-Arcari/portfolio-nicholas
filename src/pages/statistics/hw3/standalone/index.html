@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="author" content="Nicholas Arcari">
+  <meta name="description" content="Homework #3 of Statistics: the penetration score of m attackers on n systems, with the law of large numbers and the central limit theorem.">
+  <title>Homework #3 - Statistics</title>
+  <link rel="stylesheet" href="style.css">
+  <style>#not-extracted { animation: show-late 1s; } @keyframes show-late { from, to { visibility: hidden; } }</style>
+</head>
+<body>
+  <!--
+    Homework #3 - Statistics, Nicholas Arcari.
+    La pagina e' uno scheletro, in inglese come la lingua con cui si apre:
+    i testi (inglese e italiano) e i calcoli arrivano da app.js e
+    homework3.js, due script classici, cosi' il file si apre anche con un
+    doppio clic, senza server e senza connessione. Nessun dato lascia il
+    browser: niente rete, niente salvataggi.
+  -->
+  <header class="page-header">
+    <div class="wrap">
+      <p class="eyebrow" id="course">Statistics, MSc in Cybersecurity, Sapienza University of Rome</p>
+      <div class="title-row">
+        <h1 id="page-title" tabindex="-1">Homework #3</h1>
+        <button type="button" id="open-index" class="btn alt" aria-haspopup="dialog">Contents</button>
+        <div class="lang" id="language" role="group" aria-label="Language">
+          <button type="button" data-lang="it" aria-pressed="false">IT</button>
+          <button type="button" data-lang="en" aria-pressed="true">EN</button>
+        </div>
+      </div>
+      <p class="subtitle" id="subtitle">The penetration score of m attackers on n systems: the law of large numbers and the central limit theorem.</p>
+      <p class="author">Nicholas Arcari</p>
+    </div>
+  </header>
+
+  <main id="app" class="wrap">
+    <noscript>
+      <p class="note">This program needs JavaScript. / Questo programma ha bisogno di JavaScript.</p>
+    </noscript>
+    <!-- Resta visibile solo se app.js non parte: di solito perché la pagina è stata aperta dentro il gestore di archivi, che estrae soltanto index.html. -->
+    <div id="not-extracted" style="margin: 1.5rem 0; padding: 0.8rem 1rem; border: 2px solid #c62828; border-radius: 6px; max-width: 46rem;">
+      <p style="margin: 0 0 0.6rem;"><strong>Extract the whole archive first.</strong> Opened on its own, inside the archive manager, this page stays empty: it needs the files next to it (app.js, homework3.js, style.css). Extract homework3.zip into a folder and open index.html from there.</p>
+      <p style="margin: 0;"><strong>Estrai prima tutto l’archivio.</strong> Aperta da sola, dentro il gestore di archivi, questa pagina resta vuota: le servono i file accanto a lei (app.js, homework3.js, style.css). Estrai homework3.zip in una cartella e apri index.html da lì.</p>
+    </div>
+  </main>
+
+  <dialog id="index-dialog" class="index" aria-labelledby="index-title">
+    <div class="index-box">
+      <div class="index-head">
+        <h2 id="index-title">Homework contents</h2>
+        <button type="button" class="index-close" aria-label="Close">&times;</button>
+      </div>
+      <nav class="index-body" aria-labelledby="index-title">
+        <ul id="index-list"></ul>
+      </nav>
+    </div>
+  </dialog>
+
+  <footer class="page-footer">
+    <div class="wrap">
+      <p>
+        Nicholas Arcari ·
+        <span id="online-label">Online version</span>:
+        <a href="https://nicholas-arcari.github.io/portfolio-nicholas/#/statistics/homework-3">nicholas-arcari.github.io/portfolio-nicholas</a>
+      </p>
+    </div>
+  </footer>
+
+  <script src="homework3.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

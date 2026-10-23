@@ -31,7 +31,7 @@ const STATIC_FILES = ['index.html', 'style.css', 'README.txt'];
  * calcoli, che diventa lo script globale `global`; `inner` sono i moduli che
  * la libreria importa e che finiscono dentro di lei (i parametri della
  * consegna dell'Exercise 1, la lista di parole di BIP-39 dell'Exercise 2, il
- * corpus dell'Homework #2).
+ * corpus dell'Homework #2; l'Homework #3 non ne ha).
  */
 export const HOMEWORKS = [
   {
@@ -63,6 +63,16 @@ export const HOMEWORKS = [
     inner: ['corpus.js'],
     contents: 'Computations: the toy EC-ElGamal scheme on secp256k1, the Caesar cipher, the corpus and its language models,\n * the statistical attack, the attacks on the private key, statistics and command line (node homework2a.js [options]).',
     description: 'Homework #2 - Statistics: a toy elliptic-curve scheme and the Caesar cipher, with statistical cryptanalysis and attacks.',
+  },
+  {
+    number: '3',
+    name: 'Homework #3',
+    source: 'hw3',
+    library: 'homework3.js',
+    global: 'Homework3',
+    inner: [],
+    contents: 'Computations: xoshiro128** and SplitMix64, the m attackers of the Bernoulli and Rademacher models, the exact laws,\n * distances from the normal, hypothesis tests, charts, the animation and command line (node homework3.js [options]).',
+    description: 'Homework #3 - Statistics: the penetration score of m attackers on n systems, the law of large numbers and the central limit theorem.',
   },
 ];
 
