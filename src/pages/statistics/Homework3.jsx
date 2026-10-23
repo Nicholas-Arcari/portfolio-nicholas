@@ -315,10 +315,10 @@ const Trajectories = ({ params, text, palette }) => {
   const [quantity, setQuantity] = useState('sum');
   const [speed, setSpeed] = useState(1);
   const [status, setStatus] = useState(null);
-  const settingsRef = useRef({ quantity, speed: view.ANIMATION.speeds[speed], palette, decimal: text.fmt.decimal });
+  const settingsRef = useRef({ quantity, speed: view.ANIMATION.speeds[speed], palette, decimal: text.fmt.decimal, describe: view.tips.trajectory(text) });
 
   useEffect(() => {
-    settingsRef.current = { quantity, speed: view.ANIMATION.speeds[speed], palette, decimal: text.fmt.decimal };
+    settingsRef.current = { quantity, speed: view.ANIMATION.speeds[speed], palette, decimal: text.fmt.decimal, describe: view.tips.trajectory(text) };
   }, [quantity, speed, palette, text]);
 
   useEffect(() => {
@@ -350,7 +350,9 @@ const Trajectories = ({ params, text, palette }) => {
     if (animRef.current) animRef.current.setPalette(palette);
   }, [palette]);
   useEffect(() => {
-    if (animRef.current) animRef.current.setDecimal(text.fmt.decimal);
+    if (!animRef.current) return;
+    animRef.current.setDescribe(view.tips.trajectory(text));
+    animRef.current.setDecimal(text.fmt.decimal);
   }, [text]);
 
   const sizes = view.animationOptions(params, model);
@@ -379,7 +381,10 @@ const Trajectories = ({ params, text, palette }) => {
           </span>
         </div>
       </div>
-      <canvas ref={canvasRef} className="hw1-canvas hw3-anim" role="img" aria-label={text.sections.trajectories} />
+      {/* posizionato: ci stanno dentro l'evidenziazione e l'etichetta sotto il puntatore */}
+      <div className="hw1-figure">
+        <canvas ref={canvasRef} className="hw1-canvas hw3-anim" role="img" aria-label={text.sections.trajectories} />
+      </div>
       <Legend
         items={[
           { label: T.legend[0], color: 0 },

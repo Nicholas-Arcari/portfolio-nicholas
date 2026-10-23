@@ -608,6 +608,8 @@ const normalShare = (normal, from, to) => (normal ? hw.normalCdf((to - normal.me
 
 /** The texts under the pointer: functions of the hit, built from the data of a chart and the words of a language (T = text.tips). */
 export const tips = {
+  // the animation: the words for a bar of its histogram or a system of its trajectories
+  trajectory: (text) => (hit) => text.tips.trajectory(hit, text.trajectoryNames[hit.quantity]),
   histogram: (h, T) => (hit) => {
     const b = h.bars[hit.index];
     return b ? T.bin(b.from, b.to, b.share, h.expected ? b.prob : null, normalShare(h.normal, b.from, b.to)) : null;

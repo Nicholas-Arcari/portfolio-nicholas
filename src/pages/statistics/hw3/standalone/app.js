@@ -439,7 +439,8 @@ function trajectoriesBlock() {
       if (animation) animation.setQuantity(quantity);
     }),
     h('div', { class: 'controls' }, h('label', null, T.speedLabel, speed), h('span', { class: 'buttons' }, controls.play, button(T.step, 'step'), button(T.reset, 'reset'), button(T.end, 'toEnd'))),
-    controls.canvas,
+    // posizionato: ci stanno dentro l'evidenziazione e l'etichetta sotto il puntatore
+    h('div', { class: 'figure' }, controls.canvas),
     legend([{ label: T.legend[0], color: 0 }, { label: T.legend[1], color: 1 }, { label: T.legend[2], color: 2, dashed: true }, { label: T.legend[3], color: 3, dashed: true }]),
     controls.caption,
     paras(T.after),
@@ -478,6 +479,7 @@ function createAnimation() {
     speed: view.ANIMATION.speeds[state.anim.speed],
     palette: palette(),
     decimal: text.fmt.decimal,
+    describe: view.tips.trajectory(text),
     onUpdate: updateCaption,
   });
   canvasWidth = canvas.clientWidth;

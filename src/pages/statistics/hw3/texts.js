@@ -625,6 +625,10 @@ const it = {
   quantityNames: { sum: 'S_n', mean: 'S_n/n', normalized: 'S_n/√n' },
   trajectoryNames: { sum: 'S_k', mean: 'S_k/k', normalized: 'S_k/√k' },
   tips: {
+    trajectory: (hit, name) =>
+      hit.kind === 'bin'
+        ? `${name} fra ${valueIt(hit.from, hit.quantity)} e ${valueIt(hit.to, hit.quantity)} al sistema ${IT.int(hit.k)}: ${IT.int(hit.count)} attaccanti su ${IT.int(hit.sample)}, ${IT.num(hit.expected, 1)} attesi dalla normale`
+        : `Sistema ${IT.int(hit.step)}: ${name} dell’attaccante 1 ${valueIt(hit.first, hit.quantity)}; media ${valueIt(hit.mean, hit.quantity)}, fascia fra ${valueIt(hit.mean - 2 * hit.sd, hit.quantity)} e ${valueIt(hit.mean + 2 * hit.sd, hit.quantity)}`,
     bin: (from, to, share, prob, normal) => {
       const d = edgeDigits(from, to);
       return `Da ${IT.num(from, d)} a ${IT.num(to, d)}: simulazione ${IT.pct(share, 2)}${prob === null ? '' : `, legge esatta ${IT.pct(prob, 2)}`}${normal === null ? '' : `, normale ${IT.pct(normal, 2)}`}`;
@@ -1135,6 +1139,10 @@ const en = {
   quantityNames: { sum: 'S_n', mean: 'S_n/n', normalized: 'S_n/√n' },
   trajectoryNames: { sum: 'S_k', mean: 'S_k/k', normalized: 'S_k/√k' },
   tips: {
+    trajectory: (hit, name) =>
+      hit.kind === 'bin'
+        ? `${name} between ${valueEn(hit.from, hit.quantity)} and ${valueEn(hit.to, hit.quantity)} at system ${EN.int(hit.k)}: ${EN.int(hit.count)} attackers out of ${EN.int(hit.sample)}, ${EN.num(hit.expected, 1)} expected from the normal`
+        : `System ${EN.int(hit.step)}: ${name} of attacker 1 ${valueEn(hit.first, hit.quantity)}; mean ${valueEn(hit.mean, hit.quantity)}, band between ${valueEn(hit.mean - 2 * hit.sd, hit.quantity)} and ${valueEn(hit.mean + 2 * hit.sd, hit.quantity)}`,
     bin: (from, to, share, prob, normal) => {
       const d = edgeDigits(from, to);
       return `From ${EN.num(from, d)} to ${EN.num(to, d)}: simulation ${EN.pct(share, 2)}${prob === null ? '' : `, exact law ${EN.pct(prob, 2)}`}${normal === null ? '' : `, normal ${EN.pct(normal, 2)}`}`;

@@ -1428,7 +1428,18 @@ export function chartHitTest(draw, data, width, x, y) {
  * canvas's parent, which must be positioned. Returns the function that
  * removes them.
  */
-export function attachChartTooltip(canvas, { draw, data, describe: explain }) {
+export const attachChartTooltip = (canvas, { draw, data, describe: explain }) =>
+  attachPointerLabel(canvas, (x, y, width) => {
+    const hit = chartHitTest(draw, data, width, x, y);
+    const text = hit && explain(hit);
+    return text ? { rect: hit.rect, text } : null;
+  });
+
+/**
+ * The same label for any canvas: locate(x, y, width) says what is under
+ * the point, as { rect, text }, or null. The animation uses it directly.
+ */
+export function attachPointerLabel(canvas, locate) {
   const box = canvas.parentElement;
   const mark = document.createElement('div');
   const tip = document.createElement('div');
@@ -1452,12 +1463,12 @@ export function attachChartTooltip(canvas, { draw, data, describe: explain }) {
     const r = canvas.getBoundingClientRect();
     const x = clientX - r.left;
     const y = clientY - r.top;
-    const hit = chartHitTest(draw, data, r.width, x, y);
-    const text = hit && explain(hit);
-    if (!text) {
+    const hit = locate(x, y, r.width);
+    if (!hit) {
       hide();
       return;
     }
+    const { text } = hit;
     const left = canvas.offsetLeft;
     const top = canvas.offsetTop;
     Object.assign(mark.style, {
@@ -1807,6 +1818,7 @@ export function createTrajectoryAnimation(canvas, options) {
       const theory = quantityMoments(mom, k, quantity);
       const expected = counts.map((_, b) => A * (normalCdf((G.y0 + (b + 1) * binH - theory.mean) / theory.sd) - normalCdf((G.y0 + b * binH - theory.mean) / theory.sd)));
       const top = Math.max(1, ...counts, ...expected);
+      histogram = { binH, counts, expected };
       ctx.fillStyle = palette.series[0];
       ctx.globalAlpha = 0.85;
       counts.forEach((c, b) => {
@@ -1829,6 +1841,32 @@ export function createTrajectoryAnimation(canvas, options) {
     }
     onUpdate(status());
   };
+
+  // what is under the pointer: a bar of the histogram, or a system of the trajectories
+  let histogram = null;
+  let describe = options.describe || null;
+  const locate = (x, y) => {
+    const G = geometry;
+    const m = ANIM_MARGIN;
+    if (!G || !describe || y < m.top || y > m.top + G.h) return null;
+    if (x >= G.panelX && x <= G.panelX + G.panelW) {
+      if (!histogram || k === 0) return null;
+      const v = G.y0 + ((m.top + G.h - y) / G.h) * (G.y1 - G.y0);
+      const b = Math.floor((v - G.y0) / histogram.binH);
+      if (b < 0 || b >= histogram.counts.length) return null;
+      const from = G.y0 + b * histogram.binH;
+      const yTop = G.py(from + histogram.binH);
+      const text = describe({ kind: 'bin', quantity, k, from, to: from + histogram.binH, count: histogram.counts[b], expected: histogram.expected[b], sample: A });
+      return text ? { rect: { x: G.panelX, y: yTop, width: G.panelW, height: G.py(from) - yTop }, text } : null;
+    }
+    if (x < m.left || x > m.left + G.plotW) return null;
+    const step = Math.max(1, Math.min(k, Math.round(((x - m.left) / G.plotW) * n)));
+    if (k === 0) return null;
+    const theory = quantityMoments(mom, step, quantity);
+    const text = describe({ kind: 'step', quantity, step, first: value(paths[0][step], step), mean: theory.mean, sd: theory.sd });
+    return text ? { rect: { x: G.px(step) - 3, y: m.top, width: 6, height: G.h }, text } : null;
+  };
+  const detachLabel = typeof document !== 'undefined' && canvas.parentElement ? attachPointerLabel(canvas, locate) : null;
 
   const advance = (target) => {
     if (!generators) generators = Array.from({ length: A }, (_, j) => attackerGenerator(seed, model, j));
@@ -1912,6 +1950,9 @@ export function createTrajectoryAnimation(canvas, options) {
       decimal = d;
       render();
     },
+    setDescribe(fn) {
+      describe = fn;
+    },
     redraw() {
       geometry = null;
       render();
@@ -1921,6 +1962,7 @@ export function createTrajectoryAnimation(canvas, options) {
       playing = false;
       cancelAnimationFrame(frame);
       layer = null;
+      if (detachLabel) detachLabel();
     },
   };
   render();
