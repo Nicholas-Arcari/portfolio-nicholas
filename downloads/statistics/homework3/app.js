@@ -33,6 +33,7 @@ const SECTIONS = [
   { id: 'hw3-distributions', key: 'distributions', level: 0 },
   { id: 'hw3-sweep', key: 'sweep', level: 1 },
   { id: 'hw3-moments', key: 'moments', level: 1 },
+  { id: 'hw3-choice', key: 'choice', level: 1 },
   { id: 'hw3-lln', key: 'lln', level: 0 },
   { id: 'hw3-convergence', key: 'convergence', level: 1 },
   { id: 'hw3-bounds', key: 'bounds', level: 1 },
@@ -463,6 +464,36 @@ const normalRule = (mom) => Math.ceil(10 / mom.variance - 1e-9);
 /** How many observations a Kolmogorov-Smirnov test needs to see a distance d: about (1/d)^2. */
 const neededFor = (d) => Math.ceil(1 / (d * d));
 
+/** The targets of section 2.3: a probability within 10% and a variance within 5%, both at 95%. */
+const M_TARGET = Object.freeze({ z: 1.959963984540054, relative: 0.1, varianceRelative: 0.05 });
+
+/** How many attackers estimate a probability P within the relative error of M_TARGET: m >= z^2 (1 - P)/(r^2 P); one for P = 1, none is enough for P = 0. */
+const neededForProbability = (P) => (P >= 1 ? 1 : P > 0 ? Math.ceil((M_TARGET.z ** 2 * (1 - P)) / (M_TARGET.relative ** 2 * P)) : Infinity);
+
+/** How many attackers estimate the variance of S_n within 5%, for S_n about normal: m >= 2 (z/r)^2, the same at every n. */
+const neededForVariance = () => Math.ceil(2 * (M_TARGET.z / M_TARGET.varianceRelative) ** 2);
+
+/** The table of section 2.3: at every n the exact probability of section 3 and the exact distance from the normal of section 5, with the attackers each one needs. */
+function choiceRows(s, epsilon) {
+  const rows = llnRows(s, epsilon);
+  const R = s.models.rademacher;
+  return rows.bernoulli.map((b, i) => {
+    const r = rows.rademacher[i];
+    const d = R.points[i].distance;
+    return { n: b.n, pB: b.exact, mB: neededForProbability(b.exact), pR: r.exact, mR: neededForProbability(r.exact), d, mD: neededFor(d) };
+  });
+}
+
+/** The largest n of the grid up to which a column of the table needs at most m attackers (null if not even the first). */
+function enoughUpTo(rows, key, m) {
+  let last = null;
+  for (const r of rows) {
+    if (r[key] > m) break;
+    last = r.n;
+  }
+  return last;
+}
+
 // ---------------------------------------------------------------------------
 // Sistemi e attaccanti
 // ---------------------------------------------------------------------------
@@ -678,7 +709,7 @@ function scheduleFrameJob(job) {
   }
 }
 
-return { SECTIONS, tocEntries, FIELD_LENGTH, DEFAULT_PARAMS, fieldsOf, DEFAULT_INPUTS, readInputs, sameParams, applyInputs, allValid, paramsKey, parseParamsKey, inputBadge, ANIMATION, animationOptions, displayOf, latticeHistogram, normalCurve, sweepRange, sweepChart, quantityStats, pointIndex, momentRows, momentFacts, powerTicks, exceedance, llnRows, llnChart, llnFacts, varianceChart, varianceFits, VARIANCE_SLOPES, cltHistogram, qqData, shapeAt, distanceChart, curveAt, driftRows, normalRule, neededFor, arcsineChart, bestChart, probabilityChart, groupRow, systemsChart, aggregateFacts, TEST_GROUPS, statTests, expectedVerdicts, testSummary, tips, scheduleFrameJob };
+return { SECTIONS, tocEntries, FIELD_LENGTH, DEFAULT_PARAMS, fieldsOf, DEFAULT_INPUTS, readInputs, sameParams, applyInputs, allValid, paramsKey, parseParamsKey, inputBadge, ANIMATION, animationOptions, displayOf, latticeHistogram, normalCurve, sweepRange, sweepChart, quantityStats, pointIndex, momentRows, momentFacts, powerTicks, exceedance, llnRows, llnChart, llnFacts, varianceChart, varianceFits, VARIANCE_SLOPES, cltHistogram, qqData, shapeAt, distanceChart, curveAt, driftRows, normalRule, neededFor, M_TARGET, neededForProbability, neededForVariance, choiceRows, enoughUpTo, arcsineChart, bestChart, probabilityChart, groupRow, systemsChart, aggregateFacts, TEST_GROUPS, statTests, expectedVerdicts, testSummary, tips, scheduleFrameJob };
 })();
 
 var texts$ = (function () {
@@ -691,7 +722,7 @@ var texts$ = (function () {
 // risultati della simulazione, la tolleranza scelta) o dalle costanti della
 // libreria: nessuna frase contiene un risultato scritto a mano.
 const { BERRY_ESSEEN_C, DEFAULT_M, DEFAULT_N, DEFAULT_P, DEFAULT_SEED, KS_MEAN, LIMITS, SIGNIFICANCE, SMALL_N, expectedMaxDiscrete } = Homework3;
-const { aggregateFacts, curveAt, groupRow, llnFacts, llnRows, momentFacts, neededFor, normalRule, varianceFits } = view$;
+const { M_TARGET, aggregateFacts, choiceRows, curveAt, enoughUpTo, groupRow, llnFacts, llnRows, momentFacts, neededFor, neededForVariance, normalRule, varianceFits } = view$;
 
 /** Number formatting of one language: decimal and thousands separators, the "not available" marker, the multiplication sign. */
 function formatters(decimal, thousands, na, times) {
@@ -823,6 +854,9 @@ const DIGITS = { sum: 1, mean: 4, normalized: 3 };
 
 const IT = formatters(',', '.', 'n/d', '×');
 
+/** A number of attackers: digits, powers of ten when huge, ∞ when no number is enough. */
+const countIt = (v) => (!Number.isFinite(v) ? '∞' : v >= 1e7 ? IT.sci(v) : IT.int(v));
+
 /** The line of numbers under a hypothesis test, whatever its kind. */
 function testLineIt(t) {
   const F = IT;
@@ -878,6 +912,7 @@ const it = {
     distributions: '2. Le distribuzioni con sempre più sistemi',
     sweep: '2.1 Gli istogrammi, punto per punto',
     moments: '2.2 Medie e varianze',
+    choice: '2.3 Quanti attaccanti servono',
     lln: '3. La legge dei grandi numeri',
     convergence: '3.1 La convergenza in probabilità del punteggio medio',
     bounds: '3.2 Chebyshev, Hoeffding e la normale',
@@ -899,7 +934,7 @@ const it = {
   assignment: {
     intro: [
       'La consegna chiede di modellare con un processo stocastico la penetrazione di m attaccanti su n sistemi: a ogni passo un attaccante ottiene un punteggio X_i, e i punteggi X_1, X_2, ... sono indipendenti e identicamente distribuiti. I modelli sono due: Bernoulli, in cui X_i vale 1 con probabilità p e 0 altrimenti, e Rademacher, in cui vale +1 o -1 con probabilità 1/2, il caso simmetrico a media nulla. Per n crescenti e m scelti in modo adatto si simulano molte traiettorie e si studiano le distribuzioni del punteggio totale S_n, del punteggio medio S_n/n e del punteggio totale normalizzato S_n/√n: la convergenza in probabilità di S_n/n (legge dei grandi numeri), la varianza sotto le tre normalizzazioni e la convergenza in distribuzione di S_n/√n alla normale standard nel caso di Rademacher (teorema del limite centrale). Infine si interpretano le traiettorie nel contesto dei sistemi e degli attaccanti, discutendo come la dimensione del sistema e il numero di attaccanti influenzano il punteggio aggregato.',
-      'La sezione 1 precisa il modello, ne anima le traiettorie e verifica il simulatore; la 2 mostra le distribuzioni delle tre grandezze al crescere di n; la 3 è dedicata alla legge dei grandi numeri, la 4 alla varianza, la 5 al teorema del limite centrale e alla velocità della convergenza; la 6 interpreta i risultati per sistemi e attaccanti. La 7 riassume i test statistici, la 8 colloca le idee nel tempo e la 9 trae le conclusioni. Tutti i numeri sono calcolati nel browser, e il programma scaricabile stampa gli stessi.',
+      'La sezione 1 precisa il modello, ne anima le traiettorie e verifica il simulatore; la 2 mostra le distribuzioni delle tre grandezze al crescere di n e quanti attaccanti servono per ogni n; la 3 è dedicata alla legge dei grandi numeri, la 4 alla varianza, la 5 al teorema del limite centrale e alla velocità della convergenza; la 6 interpreta i risultati per sistemi e attaccanti. La 7 riassume i test statistici, la 8 colloca le idee nel tempo e la 9 trae le conclusioni. Tutti i numeri sono calcolati nel browser, e il programma scaricabile stampa gli stessi.',
     ],
     originalTitle: 'Il testo originale della consegna',
     originalNote: 'Com’è stato assegnato, in inglese. L’unica modifica è il segno meno, scritto "-" come in tutto il sito.',
@@ -907,6 +942,7 @@ const it = {
   model: {
     intro: [
       'Ogni attaccante affronta i sistemi uno dopo l’altro: sul sistema i ottiene il punteggio X_i, e dopo k sistemi il suo punteggio è S_k = X_1 + ... + X_k. La traiettoria k ↦ S_k è un cammino aleatorio, e gli m attaccanti sono m copie indipendenti dello stesso cammino. In questa lettura n è la lunghezza delle traiettorie, cioè quanti sistemi affronta ogni attaccante, e m è la dimensione del campione, cioè quante traiettorie si osservano per stimare le distribuzioni.',
+      'La consegna non dice in che modo n e m entrino nel processo, e la pagina li fissa così per una ragione precisa: la somma S_n = X_1 + ... + X_n corre sui passi del processo, quindi n conta i passi di un attaccante, cioè i sistemi che affronta; gli attaccanti non compaiono nella somma, e sono le sue ripetizioni indipendenti, cioè il campione. L’altra lettura possibile, in cui per ogni sistema si sommano i punteggi degli m attaccanti, è la stessa tabella m × n di esiti letta per colonne: la sezione 6.3 mostra che per i colpi di ciascun sistema valgono gli stessi teoremi, con m al posto di n. Le conclusioni quindi non dipendono dalla lettura scelta; cambia solo quale indice si chiama n.',
       'L’ipotesi i.i.d. dice due cose: i sistemi sono ugualmente difficili, perché ogni X_i ha la stessa legge, e l’esito su un sistema non dice nulla sugli altri, perché gli X_i sono indipendenti. In altre parole l’attaccante non impara e i sistemi non condividono vulnerabilità: la sezione 6.4 discute quanto sia realistico e cosa cambia senza.',
     ],
     formulasTitle: 'Il modello in formule',
@@ -1038,6 +1074,36 @@ const it = {
       return [
         `Le medie campionarie di S_n/n distano da μ al più ${IT.num(f.meanZ, 1)} errori standard, dove l’errore standard è σ/√(nm); le varianze campionarie di S_n/√n distano da σ² al più il ${IT.pct(f.varRel)}, contro un errore relativo tipico di √(2/m) = ${IT.pct(f.expectedRel)}. Sono le differenze che ci si aspetta da ${IT.int(s.params.m)} attaccanti, e i test della sezione 3 lo verificano a n = ${IT.int(s.params.n)}.`,
         'Le colonne mostrano già i due teoremi: la media di S_n/n resta su μ per ogni n mentre la sua varianza, σ²/n, scende verso zero; la varianza di S_n/√n resta σ² per ogni n.',
+      ];
+    },
+  },
+  choice: {
+    intro: [
+      'La consegna chiede di simulare per n crescenti con scelte adatte di m. Che cosa sia adatto dipende da che cosa si vuole vedere, e si calcola prima di simulare: una frazione stimata su m attaccanti ha un errore che scende come 1/√m, quindi a ogni domanda corrisponde un numero minimo di attaccanti, e quel numero dipende da n.',
+    ],
+    formulasTitle: 'Gli attaccanti necessari, al 95%',
+    formulas: [
+      `${`Probabilità P, errore relativo del ${IT.pct(M_TARGET.relative, 0)}`.padEnd(40)} m ≥ z² (1 - P)/(r² P) ≈ ${IT.num(M_TARGET.z ** 2 / M_TARGET.relative ** 2, 0)} (1 - P)/P`,
+      `${'Distanza D dalla normale'.padEnd(40)} m ≥ (1/D)²;  per Rademacher D ≈ 1/√(2πn), quindi m ≈ 2πn ≈ ${IT.num(2 * Math.PI, 1)} n`,
+      `${`Varianza, errore relativo del ${IT.pct(M_TARGET.varianceRelative, 0)}`.padEnd(40)} m ≥ 2 (z/r)² = ${IT.int(neededForVariance())}, a ogni n`,
+    ].join('\n'),
+    tableTitle: (eps, m) => `Gli attaccanti necessari a ogni n, con ε = ${IT.num(eps, 2)}; in rosso quando servono più dei ${IT.int(m)} attaccanti simulati`,
+    cols: { n: 'n', pB: 'Bernoulli: P(|S_n/n - μ| > ε)', mB: 'm necessario', pR: 'Rademacher: P(|S_n/n - μ| > ε)', mR: 'm necessario', d: 'Rademacher: distanza D dalla normale', mD: 'm necessario' },
+    count: (v) => countIt(v),
+    after: (s, eps) => {
+      const rows = choiceRows(s, eps);
+      const m = s.params.m;
+      const last = rows[rows.length - 1];
+      const reach = (key) => {
+        const n = enoughUpTo(rows, key, m);
+        if (n === null) return 'per nessun n della griglia';
+        return n === last.n ? `a ogni n, fino a ${IT.int(n)}` : `fino a n = ${IT.int(n)}`;
+      };
+      const mVar = neededForVariance();
+      return [
+        `Con i ${IT.int(m)} attaccanti simulati la probabilità della legge dei grandi numeri si stima con un errore del ${IT.pct(M_TARGET.relative, 0)} ${reach('mB')} per Bernoulli e ${reach('mR')} per Rademacher. Oltre, l’evento diventa troppo raro per un campione: a n = ${IT.int(last.n)} servirebbero ${countIt(last.mB)} e ${countIt(last.mR)} attaccanti. Il numero necessario cresce come 1/P, e P scende in modo esponenziale con n (Hoeffding, sezione 3.2): per n grandi nessuna m è adatta, e la probabilità si calcola esattamente dalla legge binomiale.`,
+        `La differenza fra S_n/√n e la normale si vede ${reach('mD')}: la distanza vale circa 1/√(2πn), quindi servono circa 2πn attaccanti, ${countIt(last.mD)} a n = ${IT.int(last.n)}. Qui la m adatta cresce in proporzione a n, e con meno attaccanti la simulazione non distingue S_n/√n dalla normale anche quando la differenza c’è. Per la varianza invece bastano ${IT.int(mVar)} attaccanti a ogni n${m >= mVar ? `, e i ${IT.int(m)} simulati bastano` : `, più dei ${IT.int(m)} simulati`}.`,
+        'Una sola m non è adatta a tutte le domande e a tutti gli n. La pagina usa gli stessi attaccanti a ogni n, così le traiettorie sono traiettorie vere e le distribuzioni ai diversi n sono quelle degli stessi attaccanti più avanti; la tabella dice per ogni domanda fin dove arriva la simulazione e da dove servono i calcoli esatti. Con il campo m della sezione 1.3 si vede il confine spostarsi: quadruplicare gli attaccanti dimezza gli errori.',
       ];
     },
   },
@@ -1348,6 +1414,8 @@ const it = {
 
 const EN = formatters('.', ',', 'n/a', '×');
 
+const countEn = (v) => (!Number.isFinite(v) ? '∞' : v >= 1e7 ? EN.sci(v) : EN.int(v));
+
 function testLineEn(t) {
   const F = EN;
   switch (t.kind) {
@@ -1392,6 +1460,7 @@ const en = {
     distributions: '2. The distributions with more and more systems',
     sweep: '2.1 The histograms, point by point',
     moments: '2.2 Means and variances',
+    choice: '2.3 How many attackers are needed',
     lln: '3. The law of large numbers',
     convergence: '3.1 The convergence in probability of the average score',
     bounds: '3.2 Chebyshev, Hoeffding and the normal',
@@ -1413,7 +1482,7 @@ const en = {
   assignment: {
     intro: [
       'The assignment asks to model the penetration of m attackers on n systems with a stochastic process: at every step an attacker gets a score X_i, and the scores X_1, X_2, ... are independent and identically distributed. There are two models: Bernoulli, where X_i is 1 with probability p and 0 otherwise, and Rademacher, where it is +1 or -1 with probability 1/2, the symmetric zero-mean case. For growing n and suitable m, many trajectories are simulated and the distributions of the total score S_n, the average score S_n/n and the normalized total score S_n/√n are studied: the convergence in probability of S_n/n (law of large numbers), the variance under the three normalizations, and the convergence in distribution of S_n/√n to the standard normal in the Rademacher case (central limit theorem). Finally the trajectories are interpreted in terms of systems and attackers, discussing how the system size and the number of attackers affect the aggregate score.',
-      'Section 1 makes the model precise, animates its trajectories and checks the simulator; section 2 shows the distributions of the three quantities as n grows; section 3 is devoted to the law of large numbers, section 4 to the variance, section 5 to the central limit theorem and the speed of the convergence; section 6 interprets the results for systems and attackers. Section 7 sums up the statistical tests, section 8 places the ideas in time and section 9 draws the conclusions. Every number is computed in the browser, and the downloadable program prints the same ones.',
+      'Section 1 makes the model precise, animates its trajectories and checks the simulator; section 2 shows the distributions of the three quantities as n grows and how many attackers each n needs; section 3 is devoted to the law of large numbers, section 4 to the variance, section 5 to the central limit theorem and the speed of the convergence; section 6 interprets the results for systems and attackers. Section 7 sums up the statistical tests, section 8 places the ideas in time and section 9 draws the conclusions. Every number is computed in the browser, and the downloadable program prints the same ones.',
     ],
     originalTitle: 'The original text of the assignment',
     originalNote: 'As it was assigned. The only change is the minus sign, written "-" as everywhere on this site.',
@@ -1421,6 +1490,7 @@ const en = {
   model: {
     intro: [
       'Every attacker faces the systems one after the other: on system i it gets the score X_i, and after k systems its score is S_k = X_1 + ... + X_k. The trajectory k ↦ S_k is a random walk, and the m attackers are m independent copies of the same walk. In this reading n is the length of the trajectories, that is how many systems every attacker faces, and m is the size of the sample, that is how many trajectories are observed to estimate the distributions.',
+      'The assignment does not say how n and m enter the process, and the page fixes them this way for a precise reason: the sum S_n = X_1 + ... + X_n runs over the steps of the process, so n counts the steps of an attacker, that is the systems it faces; the attackers do not appear in the sum, and they are its independent repetitions, that is the sample. The other possible reading, where for each system the scores of the m attackers are added up, is the same m × n table of outcomes read by columns: section 6.3 shows that the hits of each system obey the same theorems, with m in place of n. The conclusions therefore do not depend on the reading chosen; only the name of the index changes.',
       'The i.i.d. assumption says two things: the systems are equally hard, because every X_i has the same law, and the outcome on one system says nothing about the others, because the X_i are independent. In other words the attacker does not learn and the systems share no vulnerabilities: section 6.4 discusses how realistic that is and what changes without it.',
     ],
     formulasTitle: 'The model in formulas',
@@ -1552,6 +1622,36 @@ const en = {
       return [
         `The sample means of S_n/n are at most ${EN.num(f.meanZ, 1)} standard errors from μ, the standard error being σ/√(nm); the sample variances of S_n/√n differ from σ² by at most ${EN.pct(f.varRel)}, against a typical relative error of √(2/m) = ${EN.pct(f.expectedRel)}. These are the differences to expect from ${EN.int(s.params.m)} attackers, and the tests of section 3 check it at n = ${EN.int(s.params.n)}.`,
         'The columns already show the two theorems: the mean of S_n/n stays on μ for every n while its variance, σ²/n, falls towards zero; the variance of S_n/√n stays σ² for every n.',
+      ];
+    },
+  },
+  choice: {
+    intro: [
+      'The assignment asks to simulate for growing n with suitable choices of m. What is suitable depends on what one wants to see, and it can be computed before simulating: a share estimated on m attackers has an error that falls like 1/√m, so every question has a minimum number of attackers, and that number depends on n.',
+    ],
+    formulasTitle: 'The attackers needed, at 95%',
+    formulas: [
+      `${`Probability P, relative error ${EN.pct(M_TARGET.relative, 0)}`.padEnd(40)} m ≥ z² (1 - P)/(r² P) ≈ ${EN.num(M_TARGET.z ** 2 / M_TARGET.relative ** 2, 0)} (1 - P)/P`,
+      `${'Distance D from the normal'.padEnd(40)} m ≥ (1/D)²;  for Rademacher D ≈ 1/√(2πn), so m ≈ 2πn ≈ ${EN.num(2 * Math.PI, 1)} n`,
+      `${`Variance, relative error ${EN.pct(M_TARGET.varianceRelative, 0)}`.padEnd(40)} m ≥ 2 (z/r)² = ${EN.int(neededForVariance())}, at every n`,
+    ].join('\n'),
+    tableTitle: (eps, m) => `The attackers needed at every n, with ε = ${EN.num(eps, 2)}; in red when more than the ${EN.int(m)} simulated attackers are needed`,
+    cols: { n: 'n', pB: 'Bernoulli: P(|S_n/n - μ| > ε)', mB: 'm needed', pR: 'Rademacher: P(|S_n/n - μ| > ε)', mR: 'm needed', d: 'Rademacher: distance D from the normal', mD: 'm needed' },
+    count: (v) => countEn(v),
+    after: (s, eps) => {
+      const rows = choiceRows(s, eps);
+      const m = s.params.m;
+      const last = rows[rows.length - 1];
+      const reach = (key) => {
+        const n = enoughUpTo(rows, key, m);
+        if (n === null) return 'for no n of the grid';
+        return n === last.n ? `at every n, up to ${EN.int(n)}` : `up to n = ${EN.int(n)}`;
+      };
+      const mVar = neededForVariance();
+      return [
+        `With the ${EN.int(m)} simulated attackers the probability of the law of large numbers is estimated within ${EN.pct(M_TARGET.relative, 0)} ${reach('mB')} for Bernoulli and ${reach('mR')} for Rademacher. Beyond that the event becomes too rare for a sample: at n = ${EN.int(last.n)} it would take ${countEn(last.mB)} and ${countEn(last.mR)} attackers. The number needed grows like 1/P, and P falls exponentially with n (Hoeffding, section 3.2): for large n no m is suitable, and the probability is computed exactly from the binomial law.`,
+        `The difference between S_n/√n and the normal can be seen ${reach('mD')}: the distance is about 1/√(2πn), so about 2πn attackers are needed, ${countEn(last.mD)} at n = ${EN.int(last.n)}. Here the suitable m grows in proportion to n, and with fewer attackers the simulation cannot tell S_n/√n from the normal even when the difference is there. For the variance, instead, ${EN.int(mVar)} attackers are enough at every n${m >= mVar ? `, and the ${EN.int(m)} simulated are enough` : `, more than the ${EN.int(m)} simulated`}.`,
+        'No single m suits every question and every n. The page uses the same attackers at every n, so the trajectories are real trajectories and the distributions at different n are those of the same attackers further on; the table says, for each question, how far the simulation reaches and where the exact computations take over. With the m field of section 1.3 the boundary can be seen moving: four times the attackers halve the errors.',
       ];
     },
   },
@@ -2399,6 +2499,7 @@ function distributionsSection() {
   const W = text.sweep;
   regions.sweep = h('div');
   regions.moments = h('div');
+  regions.choice = h('div');
   controls.sweepSlider = slider('hw3-sweep-n', (g) => {
     stopPlayer('sweep');
     state.sweep.g = g;
@@ -2422,6 +2523,8 @@ function distributionsSection() {
     paras(W.after),
     title('hw3-moments', 1, S.moments),
     regions.moments,
+    title('hw3-choice', 1, S.choice),
+    regions.choice,
   );
 }
 
@@ -2518,6 +2621,35 @@ function updateMoments() {
   );
 }
 
+/** Section 2.3: the attackers needed at every n, in red when more than the simulated ones. */
+function updateChoice() {
+  const C = text.choice;
+  const F = text.fmt;
+  const s = computation.shown;
+  if (!s) {
+    fill(regions.choice, pending());
+    return;
+  }
+  const m = s.params.m;
+  const need = (v) => ({ text: C.count(v), class: v > m ? 'over' : null });
+  fill(
+    regions.choice,
+    paras(C.intro),
+    formulas(C.formulas, C.formulasTitle),
+    subtitle(C.tableTitle(state.epsilon, m)),
+    h(
+      'div',
+      { class: 'scroll' },
+      table(
+        'compact choice',
+        ['n', 'pB', 'mB', 'pR', 'mR', 'd', 'mD'].map((k) => C.cols[k]),
+        view.choiceRows(s, state.epsilon).map((r) => ({ cells: [{ text: F.int(r.n) }, { text: F.small(r.pB) }, need(r.mB), { text: F.small(r.pR) }, need(r.mR), { text: F.num(r.d, 4) }, need(r.mD)] })),
+      ),
+    ),
+    paras(C.after(s, state.epsilon)),
+  );
+}
+
 // ---------------------------------------------------------------------------
 // 3. La legge dei grandi numeri
 // ---------------------------------------------------------------------------
@@ -2542,6 +2674,7 @@ function llnSection() {
       input.setAttribute('aria-valuetext', label.textContent);
       updateConvergence();
       updateBounds();
+      updateChoice();
     },
   });
   input.value = String(Math.round(state.epsilon * 100));
@@ -2955,6 +3088,7 @@ function updateResults() {
   updateSimTests();
   updateSweep();
   updateMoments();
+  updateChoice();
   updateConvergence();
   updateBounds();
   updateVariance();

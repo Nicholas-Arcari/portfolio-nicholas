@@ -819,7 +819,13 @@ canvas.anim {
   font-size: 0.85em;
 }
 
+/* gli attaccanti necessari che superano quelli simulati (sezione 2.3) */
+.table td.over {
+  color: var(--error);
+}
+
 /* le intestazioni con formule restano come sono scritte: in maiuscolo S_n/n diventerebbe S_N/N */
+.table.choice thead th,
 .table.models thead th,
 .table.moments thead th,
 .table.lln thead th,
