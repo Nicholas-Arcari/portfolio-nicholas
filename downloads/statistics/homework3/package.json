@@ -1,0 +1,15 @@
+{
+  "name": "homework3-statistics",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Homework #3 - Statistics: the penetration score of m attackers on n systems, the law of large numbers and the central limit theorem.",
+  "author": "Nicholas Arcari",
+  "type": "commonjs",
+  "main": "homework3.js",
+  "scripts": {
+    "start": "node homework3.js"
+  },
+  "engines": {
+    "node": ">=14"
+  }
+}
