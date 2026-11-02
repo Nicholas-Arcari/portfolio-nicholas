@@ -823,6 +823,241 @@ const Inference = React.memo(function Inference({ s, job, text, palette }) {
   );
 });
 
+// --- Gli esempi interattivi ("Prova") -----------------------------------------------------
+
+// 1.2: i dati da trascinare. Il disegno e i conti sono di homework4.js
+// (createWelfordDrag), qui i pulsanti, il cursore e la didascalia.
+const TryDrag = ({ text, palette }) => {
+  const D = text.tryDrag;
+  const F = text.fmt;
+  const canvasRef = useRef(null);
+  const dragRef = useRef(null);
+  const [stats, setStats] = useState(null);
+  const settingsRef = useRef({ palette, decimal: F.decimal });
+  useEffect(() => {
+    settingsRef.current = { palette, decimal: F.decimal };
+  }, [palette, F]);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const drag = hw.createWelfordDrag(canvas, { ...view.DRAG, ...settingsRef.current, onChange: setStats });
+    dragRef.current = drag;
+    let width = canvas.clientWidth;
+    const observer = new ResizeObserver(() => {
+      if (canvas.clientWidth === width) return;
+      width = canvas.clientWidth;
+      drag.redraw();
+    });
+    observer.observe(canvas);
+    return () => {
+      observer.disconnect();
+      drag.destroy();
+      dragRef.current = null;
+    };
+  }, []);
+  useEffect(() => {
+    if (dragRef.current) dragRef.current.setPalette(palette);
+  }, [palette]);
+  useEffect(() => {
+    if (dragRef.current) dragRef.current.setDecimal(F.decimal);
+  }, [F]);
+  const k = stats ? stats.k : view.DRAG.values.length;
+  const x = stats ? stats.x : view.DRAG.values[view.DRAG.values.length - 1];
+  const call = (action, ...args) => dragRef.current && dragRef.current[action](...args);
+  return (
+    <div className="hw4-try">
+      <Title id="hw4-try-drag" level={2}>{text.sections.tryDrag}</Title>
+      <Paras list={D.intro} />
+      <div className="hw3-slider-row">
+        <Slider id="hw4-drag-x" label={D.sliderLabel(k, F.sig(x, 3))} valueText={D.sliderLabel(k, F.sig(x, 3))} max={10 * (view.DRAG.hi - view.DRAG.lo)} value={Math.round(10 * (x - view.DRAG.lo))} onChange={(v) => call('setValue', k - 1, view.DRAG.lo + v / 10)} />
+        <span className="hw1-buttons">
+          <button type="button" className="button alt" onClick={() => call('add', view.DRAG.lo + Math.round(Math.random() * 10 * (view.DRAG.hi - view.DRAG.lo)) / 10)} disabled={k >= hw.DATA_MAX}>{D.add}</button>
+          <button type="button" className="button alt" onClick={() => call('removeLast')} disabled={k <= 2}>{D.remove}</button>
+          <button type="button" className="button alt" onClick={() => call('reset')}>{D.reset}</button>
+        </span>
+      </div>
+      {/* posizionato, come gli altri grafici */}
+      <div className="hw1-figure">
+        <canvas ref={canvasRef} className="hw1-canvas hw4-drag" role="img" aria-label={text.sections.tryDrag} />
+      </div>
+      <Legend
+        items={[
+          { label: D.legend[0], color: 0 },
+          { label: D.legend[1], color: 1 },
+          { label: D.legend[2], color: 1, dashed: true },
+          { label: D.legend[3], color: 3 },
+          { label: D.legend[4], color: 4 },
+          { label: D.legend[5], color: 0 },
+          { label: D.legend[6], color: 2 },
+        ]}
+        palette={palette}
+      />
+      <p className="hw1-caption hw4-line" aria-live="polite">{stats ? D.caption(stats) : ''}</p>
+      <Paras list={D.after} />
+    </div>
+  );
+};
+
+// 1.6: la cancellazione dal vivo, cifra per cifra
+const TryDigits = ({ text }) => {
+  const D = text.tryDigits;
+  const [power, setPower] = useState(8);
+  const [dataset, setDataset] = useState('classic');
+  const report = useMemo(() => view.digitsReport(power, dataset), [power, dataset]);
+  return (
+    <div className="hw4-try">
+      <Title id="hw4-try-digits" level={2}>{text.sections.tryDigits}</Title>
+      <Paras list={D.intro} />
+      <Choices label={D.datasetLabel} options={view.DIGIT_DATASETS.map((d) => [d, D.datasets[d]])} value={dataset} onChange={setDataset} />
+      <div className="hw3-slider-row">
+        <Slider id="hw4-digits-c" label={D.powerLabel(power)} valueText={D.powerLabel(power)} max={view.DIGIT_POWERS[1]} value={power} onChange={setPower} />
+      </div>
+      <p className="hw1-note">{D.exact(report.exact)}</p>
+      <div className="hw4-digits">
+        {report.rows.map((r) => (
+          <div key={r.formula} className="hw4-digit-row">
+            <span className="hw4-digit-name">{D.rows[r.formula]}</span>
+            <span className="hw4-digit-value">
+              {r.parts.map((part, i) => <span key={i} className={part.ok ? 'hw4-digit-ok' : 'hw4-digit-bad'}>{part.text}</span>)}
+            </span>
+            <span className="hw4-digit-note">{`${D.right(r.right)}, ${D.error(r.error)}`}</span>
+          </div>
+        ))}
+      </div>
+      <p className="hw1-table-title"><strong>{D.sumsTitle}</strong></p>
+      <div className="hw4-digits">
+        {[report.sums.a, report.sums.b].map((num, i) => (
+          <div key={D.sumLabels[i]} className="hw4-digit-row">
+            <span className="hw4-digit-name">{D.sumLabels[i]}</span>
+            <span className="hw4-digit-value">
+              <span className="hw4-digit-common">{num.slice(0, report.sums.common)}</span>
+              <span className="hw4-digit-bad">{num.slice(report.sums.common)}</span>
+              <span className="hw4-digit-common">{report.sums.exponents[i]}</span>
+            </span>
+          </div>
+        ))}
+      </div>
+      <p>{D.common(report.sums.commonDigits, report.sums.total)}</p>
+    </div>
+  );
+};
+
+// 2.5: Bessel in diretta. Ogni campione e' un hacker della simulazione (stesso seme, stessa legge).
+const TryBessel = ({ params, text, palette }) => {
+  const B = text.tryBessel;
+  const F = text.fmt;
+  const [n, setN] = useState(5);
+  const key = `${params.dist}|${params.p}|${params.seed}|${n}`;
+  const [run, setRun] = useState(() => ({ key, state: view.besselStart(params, n), playing: false }));
+  // una legge, un seme o un n diversi: l'esperimento ricomincia
+  if (run.key !== key) setRun({ key, state: view.besselStart(params, n), playing: false });
+  const { state, playing } = run;
+  const advance = (count) => setRun((r) => ({ ...r, state: view.besselAdvance(r.state, count) }));
+  useEffect(() => {
+    if (!playing) return undefined;
+    const timer = setTimeout(() => {
+      setRun((r) => {
+        if (r.state.count >= view.BESSEL_MAX) return { ...r, playing: false };
+        return { ...r, state: view.besselAdvance(r.state, Math.max(1, Math.ceil(r.state.count * 0.06))) };
+      });
+    }, 70);
+    return () => clearTimeout(timer);
+  }, [playing, state]);
+  const law = useMemo(() => hw.scoreLaw(params.dist, params.p), [params.dist, params.p]);
+  const data = useMemo(() => view.besselChart(state, F.decimal), [state, F]);
+  const tip = useMemo(() => view.tips.bessel(state, data, text.tips), [state, data, text]);
+  const full = state.count >= view.BESSEL_MAX;
+  return (
+    <div className="hw4-try">
+      <Title id="hw4-try-bessel" level={2}>{text.sections.tryBessel}</Title>
+      <Paras list={B.intro} />
+      <div className="hw3-slider-row">
+        <Slider id="hw4-bessel-n" label={B.nLabel(n)} valueText={B.nLabel(n)} max={view.BESSEL_N[1] - view.BESSEL_N[0]} value={n - view.BESSEL_N[0]} onChange={(v) => setN(view.BESSEL_N[0] + v)} />
+        <span className="hw1-buttons">
+          <button type="button" className="button" onClick={() => setRun((r) => ({ ...r, playing: !r.playing }))} disabled={full}>{playing ? B.pause : B.play}</button>
+          <button type="button" className="button alt" onClick={() => advance(1)} disabled={full}>{B.one}</button>
+          <button type="button" className="button alt" onClick={() => advance(100)} disabled={full}>{B.hundred}</button>
+          <button type="button" className="button alt" onClick={() => advance(1000)} disabled={full}>{B.thousand}</button>
+          <button type="button" className="button alt" onClick={() => setRun({ key, state: view.besselStart(params, n), playing: false })}>{B.reset}</button>
+        </span>
+      </div>
+      <div className="hw1-charts">
+        <Figure
+          title={B.chartTitle(n)}
+          draw={hw.drawLineChart}
+          data={data}
+          palette={palette}
+          tip={tip}
+          wide
+          legend={[
+            { label: B.legend[0], color: 2, dashed: true },
+            { label: B.legend[1], color: 1, dashed: true },
+            { label: B.legend[2], color: 0 },
+            { label: B.legend[3], color: 1 },
+          ]}
+        />
+      </div>
+      <p className="hw1-caption hw4-line" aria-live={playing ? 'off' : 'polite'}>{B.status(state, law)}</p>
+      {state.last && <p className="hw1-note hw4-line">{B.last(state.last)}</p>}
+      {full && <p className="hw1-note">{B.limit}</p>}
+    </div>
+  );
+};
+
+// 2.7: cento intervalli di confidenza, verdi o rossi
+const TryIntervals = ({ params, text, palette }) => {
+  const I = text.tryIntervals;
+  const F = text.fmt;
+  const [g, setG] = useState(3);
+  const [level, setLevel] = useState(0.95);
+  const [param, setParam] = useState('mean');
+  const [chosenLaw, setChosenLaw] = useState(null);
+  const dist = chosenLaw || params.dist;
+  const n = view.INTERVAL_NS[g];
+  const key = `${dist}|${params.p}|${params.seed}|${n}|${level}|${param}`;
+  const [draws, setDraws] = useState({ key, batch: 0 });
+  if (draws.key !== key) setDraws({ key, batch: 0 });
+  const batch = draws.key === key ? draws.batch : 0;
+  const settings = useMemo(() => ({ seed: params.seed, dist, p: params.p, n, level, param }), [params.seed, dist, params.p, n, level, param]);
+  const current = useMemo(() => view.intervalBatch({ ...settings, batch }), [settings, batch]);
+  // i conteggi di tutte le estrazioni con queste impostazioni
+  const totalMisses = useMemo(() => {
+    let total = 0;
+    for (let b = 0; b < batch; b++) total += view.intervalBatch({ ...settings, batch: b }).misses;
+    return total + current.misses;
+  }, [settings, batch, current]);
+  const data = useMemo(() => view.intervalChart(current, F.decimal), [current, F]);
+  const tip = useMemo(() => view.tips.intervals(current, text.tips), [current, text]);
+  return (
+    <div className="hw4-try">
+      <Title id="hw4-try-intervals" level={2}>{text.sections.tryIntervals}</Title>
+      <Paras list={I.intro} />
+      <Choices label={I.paramLabel} options={['mean', 'variance'].map((v) => [v, I.params[v]])} value={param} onChange={setParam} />
+      <Choices label={I.levelLabel} options={view.LEVELS.map((l) => [l, F.pct(l, 0)])} value={level} onChange={setLevel} />
+      <Choices label={I.lawLabel} options={hw.DISTRIBUTIONS.map((d) => [d, text.distNames[d]])} value={dist} onChange={setChosenLaw} />
+      <div className="hw3-slider-row">
+        <Slider id="hw4-intervals-n" label={I.nLabel(n)} valueText={I.nLabel(n)} max={view.INTERVAL_NS.length - 1} value={g} onChange={setG} />
+        <button type="button" className="button" onClick={() => setDraws({ key, batch: batch + 1 })} disabled={batch >= 99}>{I.newBatch}</button>
+      </div>
+      <div className="hw1-charts">
+        <Figure
+          title={I.chartTitle(current, text.distNames[dist])}
+          draw={hw.drawIntervals}
+          data={data}
+          palette={palette}
+          tip={tip}
+          wide
+          legend={[
+            { label: I.legend[0], color: 2 },
+            { label: I.legend[1], color: 1 },
+            { label: I.legend[2], color: 6, dashed: true },
+          ]}
+        />
+      </div>
+      <p className="hw1-caption hw4-line" aria-live="polite">{I.counts(current.misses, level, (batch + 1) * view.INTERVAL_SIZE, totalMisses)}</p>
+    </div>
+  );
+};
+
 // --- 3, 4 e 5 --------------------------------------------------------------------------------------------------
 
 const TestsSummary = React.memo(function TestsSummary({ s, job, text }) {
@@ -974,6 +1209,7 @@ const Homework4 = () => {
 
         <Title id="hw4-ss" level={1}>{S.ss}</Title>
         <Derivation block={text.ss} formulas={text.formulas.ss} />
+        <TryDrag text={text} palette={palette} />
 
         <Title id="hw4-variance" level={1}>{S.variance}</Title>
         <Derivation block={text.variance} formulas={text.formulas.variance} />
@@ -986,6 +1222,7 @@ const Homework4 = () => {
 
         <Title id="hw4-stability" level={1}>{S.stability}</Title>
         <Stability text={text} palette={palette} />
+        <TryDigits text={text} />
 
         <Title id="hw4-checks" level={1}>{S.checks}</Title>
         <Verify text={text} />
@@ -1026,12 +1263,14 @@ const Homework4 = () => {
 
         <Title id="hw4-comparison" level={1}>{S.comparison}</Title>
         <Comparison s={s} text={text} />
+        <TryBessel params={settled} text={text} palette={palette} />
 
         <Title id="hw4-spread" level={1}>{S.spread}</Title>
         <Spread s={s} job={job} text={text} palette={palette} />
 
         <Title id="hw4-inference" level={1}>{S.inference}</Title>
         <Inference s={s} job={job} text={text} palette={palette} />
+        <TryIntervals params={settled} text={text} palette={palette} />
       </section>
 
       <TestsSummary s={s} job={job} text={text} />

@@ -1083,3 +1083,70 @@ pre.core {
 .table.inference thead th {
   text-transform: none;
 }
+
+/* gli esempi interattivi ("Prova"): un riquadro con il bordo colorato */
+.try {
+  margin: 1.2rem 0 1.6rem;
+  padding: 0.9rem 1.1rem 0.6rem;
+  border-left: 4px solid var(--accent);
+  border-radius: 6px;
+  background: var(--accent-soft);
+}
+
+.try .anchor {
+  margin-top: 0;
+}
+
+/* i punti si trascinano anche con il dito: lo scorrimento verticale resta alla pagina */
+canvas.drag {
+  display: block;
+  width: 100%;
+  border-radius: 6px;
+  touch-action: pan-y;
+}
+
+/* le cifre della cancellazione dal vivo */
+.digits {
+  margin: 0.4rem 0 1rem;
+  font-family: var(--mono);
+}
+
+.digit-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem 1rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.digit-name {
+  min-width: 11rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.digit-value {
+  font-size: 1.1rem;
+  letter-spacing: 0.04em;
+  overflow-wrap: anywhere;
+}
+
+.digit-note {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.digit-ok {
+  color: var(--ok);
+  font-weight: 700;
+}
+
+.digit-bad {
+  color: var(--error);
+  font-weight: 700;
+}
+
+.digit-common {
+  color: var(--na);
+}

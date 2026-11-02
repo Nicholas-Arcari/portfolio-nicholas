@@ -2060,6 +2060,79 @@ body.dark-mode .hw4-laws tr.is-current {
     margin-bottom: 0.4em;
     text-align: left;
 }
+/* gli esempi interattivi ("Prova"): un riquadro con il bordo colorato */
+.hw4-try {
+    margin: 1.2em 0 1.6em;
+    padding: 0.9em 1.1em 0.6em;
+    border-left: 4px solid #d52349;
+    border-radius: 6px;
+    background: rgba(213, 35, 73, 0.04);
+}
+body.dark-mode .hw4-try {
+    border-left-color: #e94560;
+    background: rgba(233, 69, 96, 0.07);
+}
+.hw4-try .hw1-anchor {
+    margin-top: 0;
+}
+/* i punti si trascinano anche con il dito: lo scorrimento verticale resta alla pagina */
+.hw4-drag {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 6px;
+    touch-action: pan-y;
+}
+/* le cifre della cancellazione dal vivo */
+.hw4-digits {
+    margin: 0.4em 0 1em;
+    font-family: monospace;
+}
+.hw4-digit-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.2em 1em;
+    padding: 0.35em 0;
+    border-bottom: 1px solid #eee;
+}
+body.dark-mode .hw4-digit-row {
+    border-bottom-color: #2a2a2a;
+}
+.hw4-digit-name {
+    min-width: 11em;
+    font-family: inherit;
+    font-size: 0.85em;
+    font-weight: 600;
+}
+.hw4-digit-value {
+    font-size: 1.15em;
+    letter-spacing: 0.04em;
+    overflow-wrap: anywhere;
+}
+.hw4-digit-note {
+    font-size: 0.8em;
+    color: #888;
+}
+.hw4-digit-ok {
+    color: #2e7d6b;
+    font-weight: 700;
+}
+.hw4-digit-bad {
+    color: #c62828;
+    font-weight: 700;
+}
+.hw4-digit-common {
+    color: #9e9e9e;
+}
+body.dark-mode .hw4-digit-ok {
+    color: #4fb39c;
+}
+body.dark-mode .hw4-digit-bad {
+    color: #ff8a80;
+}
+body.dark-mode .hw4-digit-common {
+    color: #777;
+}
 /* intestazioni con formule: il maiuscolo del tema cambierebbe i simboli
    (M_n diventerebbe M_N, mu una M greca, sigma una S greca) */
 .hw4-steps thead th,

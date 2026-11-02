@@ -67,11 +67,16 @@ const state = {
   spread: { g: null, playing: false, mode: 'fixed' },
   inference: { g: null },
   anim: { quantity: 'mean', speed: 1 },
+  // gli esempi interattivi
+  drag: { values: null },
+  digits: { power: 8, dataset: 'classic' },
+  bessel: { n: 5, run: null, playing: false },
+  intervals: { g: 3, level: 0.95, param: 'mean', dist: null, batch: 0, misses: [] },
 };
 let text = HW4_TEXTS[state.lang];
 const regions = {};
 const controls = { fields: {} };
-const timers = { compute: null, steps: null, spread: null };
+const timers = { compute: null, steps: null, spread: null, bessel: null };
 
 // I risultati gia' calcolati (gli ultimi), quelli mostrati e la simulazione in corso
 const results = new Map();
@@ -325,6 +330,7 @@ function part1Section() {
     derivation(text.knuth, text.formulas.knuth),
     title('hw4-ss', 1, S.ss),
     derivation(text.ss, text.formulas.ss),
+    tryDragBlock(),
     title('hw4-variance', 1, S.variance),
     derivation(text.variance, text.formulas.variance),
     title('hw4-code', 1, S.code),
@@ -338,6 +344,7 @@ function part1Section() {
     stepsBlock(),
     title('hw4-stability', 1, S.stability),
     stabilityBlock(),
+    tryDigitsBlock(),
     title('hw4-checks', 1, S.checks),
     regions.verify,
   );
@@ -569,6 +576,7 @@ function part2Section() {
     regions.averages,
     title('hw4-comparison', 1, S.comparison),
     regions.comparison,
+    tryBesselBlock(),
     title('hw4-spread', 1, S.spread),
     paras(text.spread.intro),
     formulas(text.formulas.spread, text.spread.formulasTitle),
@@ -589,6 +597,7 @@ function part2Section() {
     paras(text.inference.afterList),
     h('div', { class: 'slider-row' }, controls.inferenceSlider.el),
     regions.inference,
+    tryIntervalsBlock(),
   );
 }
 
@@ -702,6 +711,8 @@ function scheduleComputation() {
     state.target = { ...state.params };
     startComputation();
     createAnimation();
+    resetBessel();
+    resetIntervals();
   }, 400);
 }
 
@@ -969,6 +980,322 @@ function updateInference() {
 }
 
 // ---------------------------------------------------------------------------
+// Gli esempi interattivi ("Prova")
+// ---------------------------------------------------------------------------
+
+/** Redraws a chart in place, with new data and labels, without replacing its canvas (no flicker while it plays). */
+function refreshFigure(fig, caption, data, tip) {
+  const canvas = fig.querySelector('canvas.chart');
+  const chart = charts.get(canvas);
+  if (!chart) return;
+  if (chart.detach) chart.detach();
+  chart.data = data;
+  chart.detach = tip ? hw.attachChartTooltip(canvas, { draw: chart.draw, data, describe: tip }) : null;
+  canvas.setAttribute('aria-label', caption);
+  fig.querySelector('figcaption').textContent = caption;
+  if (chart.width > 0) {
+    canvas.style.height = `${hw.chartHeight(chart.draw, data, chart.width)}px`;
+    chart.draw(canvas, { ...data, width: chart.width }, palette());
+  }
+}
+
+// --- 1.2 I dati da trascinare ---------------------------------------------------------
+
+let drag = null;
+let dragWidth = 0;
+const dragResizer = new ResizeObserver(() => {
+  const canvas = controls.dragCanvas;
+  if (!drag || !canvas || canvas.clientWidth === dragWidth) return;
+  dragWidth = canvas.clientWidth;
+  drag.redraw();
+});
+
+function tryDragBlock() {
+  const D = text.tryDrag;
+  const span = 10 * (view.DRAG.hi - view.DRAG.lo);
+  controls.dragCanvas = h('canvas', { class: 'drag', role: 'img', 'aria-label': text.sections.tryDrag });
+  controls.dragCaption = h('p', { class: 'caption line', 'aria-live': 'polite' });
+  controls.dragSlider = slider('hw4-drag-x', (v) => drag && drag.setValue(drag.stats().k - 1, view.DRAG.lo + v / 10));
+  controls.dragAdd = h('button', { type: 'button', class: 'btn alt', text: D.add, onclick: () => drag && drag.add(view.DRAG.lo + Math.round(Math.random() * span) / 10) });
+  controls.dragRemove = h('button', { type: 'button', class: 'btn alt', text: D.remove, onclick: () => drag && drag.removeLast() });
+  const reset = h('button', { type: 'button', class: 'btn alt', text: D.reset, onclick: () => drag && drag.reset() });
+  return h(
+    'div',
+    { class: 'try' },
+    title('hw4-try-drag', 2, text.sections.tryDrag),
+    paras(D.intro),
+    h('div', { class: 'slider-row' }, controls.dragSlider.el, h('span', { class: 'buttons' }, controls.dragAdd, controls.dragRemove, reset)),
+    // posizionato: ci stanno dentro l'evidenziazione e l'etichetta sotto il puntatore
+    h('div', { class: 'figure' }, controls.dragCanvas),
+    legend([
+      { label: D.legend[0], color: 0 },
+      { label: D.legend[1], color: 1 },
+      { label: D.legend[2], color: 1, dashed: true },
+      { label: D.legend[3], color: 3 },
+      { label: D.legend[4], color: 4 },
+      { label: D.legend[5], color: 0 },
+      { label: D.legend[6], color: 2 },
+    ]),
+    controls.dragCaption,
+    paras(D.after),
+  );
+}
+
+function updateDrag(st) {
+  const D = text.tryDrag;
+  state.drag.values = st.values;
+  controls.dragCaption.textContent = D.caption(st);
+  controls.dragSlider.set(10 * (view.DRAG.hi - view.DRAG.lo), Math.round(10 * (st.x - view.DRAG.lo)), D.sliderLabel(st.k, text.fmt.sig(st.x, 3)));
+  controls.dragAdd.disabled = st.k >= hw.DATA_MAX;
+  controls.dragRemove.disabled = st.k <= 2;
+}
+
+/** The draggable data, again after every new drawing of the page (the data moved so far stay). */
+function createDrag() {
+  if (drag) drag.destroy();
+  drag = null;
+  const canvas = controls.dragCanvas;
+  if (!canvas || !canvas.isConnected) return;
+  drag = hw.createWelfordDrag(canvas, { ...view.DRAG, initial: view.DRAG.values, values: state.drag.values || view.DRAG.values, palette: palette(), decimal: text.fmt.decimal, onChange: updateDrag });
+  dragWidth = canvas.clientWidth;
+  dragResizer.disconnect();
+  dragResizer.observe(canvas);
+}
+
+// --- 1.6 Le cifre che si perdono -------------------------------------------------------
+
+function tryDigitsBlock() {
+  const D = text.tryDigits;
+  regions.digits = h('div');
+  controls.digitsSlider = slider('hw4-digits-c', (e) => {
+    state.digits.power = e;
+    updateDigits();
+  });
+  return h(
+    'div',
+    { class: 'try' },
+    title('hw4-try-digits', 2, text.sections.tryDigits),
+    paras(D.intro),
+    choices(D.datasetLabel, view.DIGIT_DATASETS.map((d) => [d, D.datasets[d]]), state.digits.dataset, (d) => {
+      state.digits.dataset = d;
+      updateDigits();
+    }),
+    h('div', { class: 'slider-row' }, controls.digitsSlider.el),
+    regions.digits,
+  );
+}
+
+function updateDigits() {
+  const D = text.tryDigits;
+  const r = view.digitsReport(state.digits.power, state.digits.dataset);
+  controls.digitsSlider.set(view.DIGIT_POWERS[1], state.digits.power, D.powerLabel(state.digits.power));
+  const row = (name, ...value) => h('div', { class: 'digit-row' }, h('span', { class: 'digit-name', text: name }), ...value);
+  fill(
+    regions.digits,
+    h('p', { class: 'note', text: D.exact(r.exact) }),
+    h(
+      'div',
+      { class: 'digits' },
+      r.rows.map((x) => row(D.rows[x.formula], h('span', { class: 'digit-value' }, x.parts.map((part) => h('span', { class: part.ok ? 'digit-ok' : 'digit-bad', text: part.text }))), h('span', { class: 'digit-note', text: `${D.right(x.right)}, ${D.error(x.error)}` }))),
+    ),
+    subtitle(D.sumsTitle),
+    h(
+      'div',
+      { class: 'digits' },
+      [r.sums.a, r.sums.b].map((num, i) => row(D.sumLabels[i], h('span', { class: 'digit-value' }, h('span', { class: 'digit-common', text: num.slice(0, r.sums.common) }), h('span', { class: 'digit-bad', text: num.slice(r.sums.common) }), h('span', { class: 'digit-common', text: r.sums.exponents[i] })))),
+    ),
+    h('p', { text: D.common(r.sums.commonDigits, r.sums.total) }),
+  );
+}
+
+// --- 2.5 Bessel in diretta -----------------------------------------------------------------
+
+function tryBesselBlock() {
+  const B = text.tryBessel;
+  regions.bessel = h('div');
+  controls.besselSlider = slider('hw4-bessel-n', (v) => {
+    state.bessel.n = view.BESSEL_N[0] + v;
+    resetBessel();
+  });
+  controls.besselPlay = h('button', { type: 'button', class: 'btn', text: B.play, onclick: toggleBessel });
+  controls.besselSteps = [
+    [B.one, 1],
+    [B.hundred, 100],
+    [B.thousand, 1000],
+  ].map(([label, count]) => h('button', { type: 'button', class: 'btn alt', text: label, onclick: () => advanceBessel(count) }));
+  const reset = h('button', { type: 'button', class: 'btn alt', text: B.reset, onclick: resetBessel });
+  const data = view.besselChart(view.besselStart(state.target, state.bessel.n), text.fmt.decimal);
+  controls.besselFigure = figure(B.chartTitle(state.bessel.n), hw.drawLineChart, data, {
+    wide: true,
+    items: [
+      { label: B.legend[0], color: 2, dashed: true },
+      { label: B.legend[1], color: 1, dashed: true },
+      { label: B.legend[2], color: 0 },
+      { label: B.legend[3], color: 1 },
+    ],
+  });
+  return h(
+    'div',
+    { class: 'try' },
+    title('hw4-try-bessel', 2, text.sections.tryBessel),
+    paras(B.intro),
+    h('div', { class: 'slider-row' }, controls.besselSlider.el, h('span', { class: 'buttons' }, controls.besselPlay, controls.besselSteps, reset)),
+    h('div', { class: 'charts' }, controls.besselFigure),
+    regions.bessel,
+  );
+}
+
+function stopBessel() {
+  state.bessel.playing = false;
+  clearTimeout(timers.bessel);
+}
+
+function resetBessel() {
+  stopBessel();
+  state.bessel.run = view.besselStart(state.target, state.bessel.n);
+  updateBessel();
+}
+
+function advanceBessel(count) {
+  state.bessel.run = view.besselAdvance(state.bessel.run, count);
+  updateBessel();
+}
+
+function toggleBessel() {
+  if (state.bessel.playing) {
+    stopBessel();
+    updateBessel();
+    return;
+  }
+  state.bessel.playing = true;
+  const tick = () => {
+    timers.bessel = setTimeout(() => {
+      if (!state.bessel.playing) return;
+      const run = state.bessel.run;
+      if (run.count >= view.BESSEL_MAX) {
+        stopBessel();
+        updateBessel();
+        return;
+      }
+      state.bessel.run = view.besselAdvance(run, Math.max(1, Math.ceil(run.count * 0.06)));
+      updateBessel();
+      tick();
+    }, 70);
+  };
+  updateBessel();
+  tick();
+}
+
+function updateBessel() {
+  const B = text.tryBessel;
+  const run = state.bessel.run;
+  if (!run || !controls.besselFigure) return;
+  const law = hw.scoreLaw(run.dist, run.p);
+  const full = run.count >= view.BESSEL_MAX;
+  controls.besselSlider.set(view.BESSEL_N[1] - view.BESSEL_N[0], run.n - view.BESSEL_N[0], B.nLabel(run.n));
+  controls.besselPlay.textContent = state.bessel.playing ? B.pause : B.play;
+  controls.besselPlay.disabled = full;
+  controls.besselSteps.forEach((b) => {
+    b.disabled = full;
+  });
+  const data = view.besselChart(run, text.fmt.decimal);
+  refreshFigure(controls.besselFigure, B.chartTitle(run.n), data, view.tips.bessel(run, data, text.tips));
+  fill(
+    regions.bessel,
+    h('p', { class: 'caption line', 'aria-live': state.bessel.playing ? 'off' : 'polite', text: B.status(run, law) }),
+    run.last && h('p', { class: 'note', text: B.last(run.last) }),
+    full && h('p', { class: 'note', text: B.limit }),
+  );
+}
+
+// --- 2.7 Cento intervalli di confidenza ------------------------------------------------
+
+function tryIntervalsBlock() {
+  const I = text.tryIntervals;
+  const F = text.fmt;
+  const S = state.intervals;
+  regions.intervals = h('div');
+  regions.intervalLaw = h('div');
+  controls.intervalSlider = slider('hw4-intervals-n', (g) => {
+    S.g = g;
+    resetIntervals();
+  });
+  controls.intervalButton = h('button', {
+    type: 'button',
+    class: 'btn',
+    text: I.newBatch,
+    onclick: () => {
+      S.batch += 1;
+      updateIntervals();
+    },
+  });
+  return h(
+    'div',
+    { class: 'try' },
+    title('hw4-try-intervals', 2, text.sections.tryIntervals),
+    paras(I.intro),
+    choices(I.paramLabel, ['mean', 'variance'].map((v) => [v, I.params[v]]), S.param, (v) => {
+      S.param = v;
+      resetIntervals();
+    }),
+    choices(I.levelLabel, view.LEVELS.map((l) => [l, F.pct(l, 0)]), S.level, (v) => {
+      S.level = v;
+      resetIntervals();
+    }),
+    regions.intervalLaw,
+    h('div', { class: 'slider-row' }, controls.intervalSlider.el, controls.intervalButton),
+    regions.intervals,
+  );
+}
+
+function resetIntervals() {
+  state.intervals.batch = 0;
+  state.intervals.misses = [];
+  updateIntervals();
+}
+
+function updateIntervals() {
+  const I = text.tryIntervals;
+  const S = state.intervals;
+  if (!regions.intervals) return;
+  const dist = S.dist || state.target.dist;
+  const n = view.INTERVAL_NS[S.g];
+  fill(
+    regions.intervalLaw,
+    choices(I.lawLabel, hw.DISTRIBUTIONS.map((d) => [d, text.distNames[d]]), dist, (d) => {
+      S.dist = d;
+      resetIntervals();
+    }),
+  );
+  controls.intervalSlider.set(view.INTERVAL_NS.length - 1, S.g, I.nLabel(n));
+  controls.intervalButton.disabled = S.batch >= 99;
+  const settings = { seed: state.target.seed, dist, p: state.target.p, n, level: S.level, param: S.param };
+  const current = view.intervalBatch({ ...settings, batch: S.batch });
+  for (let b = 0; b < S.batch; b++) if (S.misses[b] === undefined) S.misses[b] = view.intervalBatch({ ...settings, batch: b }).misses;
+  S.misses[S.batch] = current.misses;
+  let total = 0;
+  for (let b = 0; b <= S.batch; b++) total += S.misses[b];
+  const data = view.intervalChart(current, text.fmt.decimal);
+  fill(
+    regions.intervals,
+    h(
+      'div',
+      { class: 'charts' },
+      figure(I.chartTitle(current, text.distNames[dist]), hw.drawIntervals, data, {
+        wide: true,
+        tip: view.tips.intervals(current, text.tips),
+        items: [
+          { label: I.legend[0], color: 2 },
+          { label: I.legend[1], color: 1 },
+          { label: I.legend[2], color: 6, dashed: true },
+        ],
+      }),
+    ),
+    h('p', { class: 'caption line', 'aria-live': 'polite', text: I.counts(current.misses, S.level, (S.batch + 1) * view.INTERVAL_SIZE, total) }),
+  );
+}
+
+// ---------------------------------------------------------------------------
 // 3, 4 e 5
 // ---------------------------------------------------------------------------
 
@@ -1187,6 +1514,7 @@ function render() {
   text = HW4_TEXTS[state.lang];
   stopPlayer('steps');
   stopPlayer('spread');
+  stopBessel();
   renderChrome();
   const app = document.getElementById('app');
   fill(app, assignmentSection(), part1Section(), part2Section(), testsSection(), historySection(), conclusionSection(), toTopButton());
@@ -1196,6 +1524,11 @@ function render() {
   updateVerify();
   updateResults();
   createAnimation();
+  createDrag();
+  updateDigits();
+  if (!state.bessel.run || state.bessel.run.seed !== state.target.seed || state.bessel.run.dist !== state.target.dist || state.bessel.run.p !== state.target.p) resetBessel();
+  else updateBessel();
+  updateIntervals();
 }
 
 function boot() {

@@ -185,6 +185,10 @@ const it = {
     comparison: '2.5 Che cosa dice il confronto',
     spread: '2.6 La variabilità al crescere di n',
     inference: '2.7 Perché serve alla statistica inferenziale',
+    tryDrag: 'Prova: trascina i dati',
+    tryDigits: 'Prova: le cifre che si perdono',
+    tryBessel: 'Prova: Bessel in diretta',
+    tryIntervals: 'Prova: 100 intervalli di confidenza',
     tests: '3. Riepilogo dei test statistici',
     history: '4. Contesto storico',
     conclusion: '5. Conclusioni',
@@ -497,6 +501,84 @@ const it = {
       ];
     },
   },
+  tryDrag: {
+    intro: [
+      'Trascinate i punti con il mouse o con il dito: l’ultimo, in rosso, è il dato nuovo x_k (il cursore sotto lo sposta anche da tastiera). Sulla retta ci sono le due medie, M_(k-1) tratteggiata e M_k continua, e i due scarti del dato nuovo: δ in giallo e x_k - M_k in viola. In basso a sinistra il rettangolo che ha per lati i due scarti: la sua area è l’incremento di SS, ed è il quadrato δ × δ senza una striscia di 1/k, perché x_k - M_k = ((k - 1)/k) δ. A destra SS_(k-1) più quell’area, contro SS_k calcolata da capo: le due barre restano sempre lunghe uguali, ed è la formula di Welford.',
+    ],
+    sliderLabel: (k, v) => `Il dato nuovo x_${k} = ${v}`,
+    add: 'Aggiungi un dato',
+    remove: 'Togli l’ultimo',
+    reset: 'Ripristina',
+    legend: ['dati', 'dato nuovo x_k', 'M_(k-1) e M_k', 'δ = x_k - M_(k-1)', 'x_k - M_k', 'SS_(k-1)', 'SS_k calcolata da capo'],
+    caption: (st) => {
+      const F = IT;
+      return `Dato nuovo x_${st.k} = ${F.sig(st.x, 4)}: la media passa da M_${st.k - 1} = ${F.sig(st.previousMean, 4)} a M_${st.k} = ${F.sig(st.mean, 4)}; δ = ${F.sig(st.delta, 4)}, x_${st.k} - M_${st.k} = ${F.sig(st.after, 4)}, incremento ${F.sig(st.increment, 4)}. SS_${st.k} = ${F.sig(st.previousSS, 4)} + ${F.sig(st.increment, 4)} = ${F.sig(st.previousSS + st.increment, 4)}, come il calcolo diretto Σ (x_i - M_${st.k})² = ${F.sig(st.direct, 4)}; varianza campionaria s² = ${F.sig(st.variance, 4)}.`;
+    },
+    after: [
+      'Provate a portare il dato nuovo sopra la media vecchia: δ si annulla, il rettangolo sparisce e SS non cambia. Allontanatelo: l’area cresce come il quadrato della distanza, ed è per questo che un solo valore anomalo pesa tanto sulla varianza. Con molti dati la striscia 1/k diventa sottile e l’incremento è quasi δ².',
+    ],
+  },
+  tryDigits: {
+    intro: [
+      'Il cursore sposta i dati di c = 10^0, ..., 10^15: la varianza esatta non cambia. Per ciascuna delle tre formule le cifre uguali a quelle del valore esatto sono in verde e le altre in rosso. Sotto, i due numeri enormi che la formula da manuale sottrae: in grigio le cifre iniziali che hanno in comune e che la sottrazione cancella, in rosso quelle che restano, già sporcate dagli arrotondamenti.',
+    ],
+    powerLabel: (e) => `Spostamento c = 10^${e}`,
+    datasetLabel: 'Dati',
+    datasets: { classic: '4, 7, 13, 16', scores: '1.000 punteggi' },
+    rows: { naive: 'Formula da manuale', twoPass: 'Due passate', welford: 'Welford' },
+    exact: (v) => `Valore esatto della varianza: ${IT.sig(v, 15)}`,
+    right: (r) => (r === 0 ? 'nessuna cifra giusta' : r >= 16 ? 'tutte le cifre giuste' : `${r} cifre giuste su 16`),
+    error: (e) => (e === 0 ? 'errore nullo' : `errore relativo ${IT.sci(e)}`),
+    sumsTitle: 'Dentro la formula da manuale: Σx² e (Σx)²/n',
+    sumLabels: ['Σx²', '(Σx)²/n'],
+    common: (d, total) =>
+      d === 0
+        ? 'I due numeri non hanno cifre iniziali in comune: la sottrazione non perde niente.'
+        : d >= total
+          ? `I due numeri sono identici in tutte le ${total} cifre: la differenza vale zero, e con lei la varianza.`
+          : `I due numeri hanno in comune le prime ${d} cifre su ${total}: la sottrazione le cancella, e alla differenza restano ${total - d} cifre, quelle già sporcate dagli arrotondamenti.`,
+  },
+  tryBessel: {
+    intro: [
+      'Ogni pressione estrae altri campioni di n punteggi dalla legge della sezione 2.1: il campione j sono i primi n punteggi dell’hacker j della simulazione. Il grafico segue, al crescere del numero di campioni, la media delle s² (blu) e quella di SS/n (rossa): la prima si avvicina a σ², la seconda a σ² (n - 1)/n, e la distanza fra le due è proprio ciò che la correzione di Bessel toglie. La fascia verde è dove la media delle s² deve stare al 95% se s² è corretta, e si stringe come 1/√(numero di campioni). Con n piccolo le due medie restano lontane, con n grande quasi si toccano.',
+    ],
+    nLabel: (n) => `n = ${n} punteggi per campione`,
+    one: '+1 campione',
+    hundred: '+100',
+    thousand: '+1.000',
+    play: 'Avvia',
+    pause: 'Pausa',
+    reset: 'Ricomincia',
+    chartTitle: (n) => `Media delle varianze di campioni di ${n} punteggi, al crescere del numero di campioni (scala logaritmica)`,
+    legend: ['σ², con la fascia al 95%', 'σ² (n - 1)/n', 'media delle s²', 'media di SS/n'],
+    status: (st, law) => {
+      const F = IT;
+      if (st.count === 0) return 'Nessun campione ancora: premete +1 campione o Avvia.';
+      return `${F.int(st.count)} campioni: media delle s² ${F.num(st.sumVariance / st.count, 4)} (σ² = ${F.sig(law.variance, 4)}), media di SS/n ${F.num(st.sumBiased / st.count, 4)} (σ² (n - 1)/n = ${F.sig((law.variance * (st.n - 1)) / st.n, 4)}).`;
+    },
+    last: (sample) => {
+      const F = IT;
+      const shown = sample.values.slice(0, 12).map((v) => F.sig(v, 3)).join(', ');
+      return `Ultimo campione (hacker ${F.int(sample.j + 1)}): ${shown}${sample.values.length > 12 ? ', ...' : ''}; media ${F.num(sample.mean, 3)}, s² ${F.num(sample.variance, 3)}, SS/n ${F.num(sample.biased, 3)}.`;
+    },
+    limit: 'Raggiunto il massimo di 20.000 campioni: Ricomincia o cambiate n.',
+  },
+  tryIntervals: {
+    intro: [
+      'Cento campioni di n punteggi, cioè cento hacker con n sistemi, e per ciascuno l’intervallo di confidenza: in verde quelli che contengono il valore vero (la linea tratteggiata), in rosso quelli che lo mancano. Un intervallo al 95% dovrebbe mancarlo circa 5 volte su 100. Si possono cambiare n, il livello, il parametro (μ con la t di Student, σ² con il chi quadrato) e la legge, e vedere quando la promessa è mantenuta; Nuovi 100 campioni passa ai cento hacker successivi e somma i conteggi.',
+      'Due prove da fare: con la legge iniziale e n = 2 l’intervallo per μ manca il valore vero più spesso del dichiarato; con la legge uniforme l’intervallo per σ² non lo manca quasi mai, perché con code più leggere della normale è troppo largo.',
+    ],
+    nLabel: (n) => `n = ${n} punteggi per campione`,
+    levelLabel: 'Livello',
+    paramLabel: 'Parametro',
+    params: { mean: 'μ (t di Student)', variance: 'σ² (chi quadrato)' },
+    lawLabel: 'Legge',
+    newBatch: 'Nuovi 100 campioni',
+    chartTitle: (b, lawName) => `Intervalli al ${IT.pct(b.level, 0)} per ${b.param === 'mean' ? 'μ' : 'σ²'} con n = ${b.n}, ${lawName}`,
+    legend: ['contiene il valore vero', 'manca il valore vero', 'valore vero'],
+    counts: (misses, level, total, totalMisses) =>
+      `In questa estrazione ${misses} intervalli su 100 mancano il valore vero (attesi circa ${Math.round(100 * (1 - level))}); in tutte le estrazioni con queste impostazioni ${IT.int(totalMisses)} su ${IT.int(total)}, cioè il ${IT.pct(totalMisses / total, 1)}, contro il ${IT.pct(1 - level, 0)} dichiarato.`,
+  },
   stats: {
     verdict: { reject: 'H₀ rifiutata', notReject: 'H₀ non rifiutata' },
     expected: { reject: 'atteso: rifiuto', notReject: 'atteso: nessun rifiuto', either: 'dipende dalla potenza del test' },
@@ -601,6 +683,8 @@ const it = {
     bin: (from, to, share, normal) => `Da ${IT.sig(from, 4)} a ${IT.sig(to, 4)}: hacker ${IT.pct(share, 2)}${normal === null ? '' : `, normale ${IT.pct(normal, 2)}`}`,
     coverage: (r) => `n = ${IT.int(r.n)}: intervallo t ${IT.pct(r.t, 2)} (t = ${IT.num(r.tQuantile, 3)}), intervallo χ² ${IT.pct(r.chi2, 2)}`,
     hacker: (j, mean, variance) => `Hacker ${IT.int(j)}: M_n = ${IT.num(mean, 4)}, s_n² = ${IT.num(variance, 4)}`,
+    bessel: (count, variance, biased) => `${IT.int(count)} campioni: media delle s² ${IT.num(variance, 4)}, media di SS/n ${IT.num(biased, 4)}`,
+    interval: (r, param) => `Hacker ${IT.int(r.hacker)}: media ${IT.num(r.mean, 3)}, s² ${IT.num(r.variance, 3)}; intervallo per ${param === 'mean' ? 'μ' : 'σ²'} da ${IT.num(r.lo, 3)} a ${IT.num(r.hi, 3)}, ${r.ok ? 'contiene' : 'manca'} il valore vero`,
   },
   download: {
     title: 'Scarica il codice',
@@ -684,6 +768,10 @@ const en = {
     comparison: '2.5 What the comparison says',
     spread: '2.6 Variability as n grows',
     inference: '2.7 Why it matters for inferential statistics',
+    tryDrag: 'Try it: drag the data',
+    tryDigits: 'Try it: the digits that get lost',
+    tryBessel: 'Try it: Bessel live',
+    tryIntervals: 'Try it: 100 confidence intervals',
     tests: '3. Summary of the statistical tests',
     history: '4. Historical context',
     conclusion: '5. Conclusions',
@@ -996,6 +1084,84 @@ const en = {
       ];
     },
   },
+  tryDrag: {
+    intro: [
+      'Drag the points with the mouse or a finger: the last one, in red, is the new value x_k (the slider below moves it from the keyboard too). On the line are the two means, M_(k-1) dashed and M_k solid, and the two deviations of the new value: δ in yellow and x_k - M_k in purple. Below on the left is the rectangle whose sides are the two deviations: its area is the increment of SS, and it is the square δ × δ without a strip of 1/k, because x_k - M_k = ((k - 1)/k) δ. On the right, SS_(k-1) plus that area against SS_k computed from scratch: the two bars always stay equally long, and that is Welford’s formula.',
+    ],
+    sliderLabel: (k, v) => `The new value x_${k} = ${v}`,
+    add: 'Add a value',
+    remove: 'Remove the last',
+    reset: 'Restore',
+    legend: ['data', 'new value x_k', 'M_(k-1) and M_k', 'δ = x_k - M_(k-1)', 'x_k - M_k', 'SS_(k-1)', 'SS_k computed from scratch'],
+    caption: (st) => {
+      const F = EN;
+      return `New value x_${st.k} = ${F.sig(st.x, 4)}: the mean goes from M_${st.k - 1} = ${F.sig(st.previousMean, 4)} to M_${st.k} = ${F.sig(st.mean, 4)}; δ = ${F.sig(st.delta, 4)}, x_${st.k} - M_${st.k} = ${F.sig(st.after, 4)}, increment ${F.sig(st.increment, 4)}. SS_${st.k} = ${F.sig(st.previousSS, 4)} + ${F.sig(st.increment, 4)} = ${F.sig(st.previousSS + st.increment, 4)}, as the direct computation Σ (x_i - M_${st.k})² = ${F.sig(st.direct, 4)}; sample variance s² = ${F.sig(st.variance, 4)}.`;
+    },
+    after: [
+      'Try bringing the new value onto the old mean: δ vanishes, the rectangle disappears and SS does not change. Move it away: the area grows like the square of the distance, which is why a single outlier weighs so much on the variance. With many values the 1/k strip gets thin and the increment is almost δ².',
+    ],
+  },
+  tryDigits: {
+    intro: [
+      'The slider shifts the data by c = 10^0, ..., 10^15: the exact variance does not change. For each of the three formulas the digits equal to those of the exact value are green and the others red. Below are the two huge numbers that the textbook formula subtracts: in grey the leading digits they share, which the subtraction cancels, in red those that remain, already spoiled by rounding.',
+    ],
+    powerLabel: (e) => `Shift c = 10^${e}`,
+    datasetLabel: 'Data',
+    datasets: { classic: '4, 7, 13, 16', scores: '1,000 scores' },
+    rows: { naive: 'Textbook formula', twoPass: 'Two passes', welford: 'Welford' },
+    exact: (v) => `Exact value of the variance: ${EN.sig(v, 15)}`,
+    right: (r) => (r === 0 ? 'no right digit' : r >= 16 ? 'all digits right' : `${r} of 16 digits right`),
+    error: (e) => (e === 0 ? 'no error' : `relative error ${EN.sci(e)}`),
+    sumsTitle: 'Inside the textbook formula: Σx² and (Σx)²/n',
+    sumLabels: ['Σx²', '(Σx)²/n'],
+    common: (d, total) =>
+      d === 0
+        ? 'The two numbers share no leading digit: the subtraction loses nothing.'
+        : d >= total
+          ? `The two numbers are identical in all ${total} digits: their difference is zero, and so is the variance.`
+          : `The two numbers share their first ${d} of ${total} digits: the subtraction cancels them, and the difference keeps ${total - d} digits, those already spoiled by rounding.`,
+  },
+  tryBessel: {
+    intro: [
+      'Every press draws more samples of n scores from the law of section 2.1: sample j is the first n scores of hacker j of the simulation. As the number of samples grows, the chart follows the average of s² (blue) and that of SS/n (red): the first approaches σ², the second σ² (n - 1)/n, and the gap between them is exactly what Bessel’s correction removes. The green band is where the average of s² must lie at 95% if s² is unbiased, and it narrows like 1/√(number of samples). With small n the two averages stay apart, with large n they almost touch.',
+    ],
+    nLabel: (n) => `n = ${n} scores per sample`,
+    one: '+1 sample',
+    hundred: '+100',
+    thousand: '+1,000',
+    play: 'Play',
+    pause: 'Pause',
+    reset: 'Start again',
+    chartTitle: (n) => `Average of the variances of samples of ${n} scores, as the number of samples grows (logarithmic scale)`,
+    legend: ['σ², with the 95% band', 'σ² (n - 1)/n', 'average of s²', 'average of SS/n'],
+    status: (st, law) => {
+      const F = EN;
+      if (st.count === 0) return 'No samples yet: press +1 sample or Play.';
+      return `${F.int(st.count)} samples: average of s² ${F.num(st.sumVariance / st.count, 4)} (σ² = ${F.sig(law.variance, 4)}), average of SS/n ${F.num(st.sumBiased / st.count, 4)} (σ² (n - 1)/n = ${F.sig((law.variance * (st.n - 1)) / st.n, 4)}).`;
+    },
+    last: (sample) => {
+      const F = EN;
+      const shown = sample.values.slice(0, 12).map((v) => F.sig(v, 3)).join(', ');
+      return `Last sample (hacker ${F.int(sample.j + 1)}): ${shown}${sample.values.length > 12 ? ', ...' : ''}; mean ${F.num(sample.mean, 3)}, s² ${F.num(sample.variance, 3)}, SS/n ${F.num(sample.biased, 3)}.`;
+    },
+    limit: 'Reached the maximum of 20,000 samples: start again or change n.',
+  },
+  tryIntervals: {
+    intro: [
+      'A hundred samples of n scores, that is a hundred hackers with n systems, and for each its confidence interval: green those that contain the true value (the dashed line), red those that miss it. A 95% interval should miss it about 5 times in 100. n, the level, the parameter (μ with Student’s t, σ² with the chi-square) and the law can be changed, to see when the promise is kept; New 100 samples moves to the next hundred hackers and adds up the counts.',
+      'Two things to try: with the initial law and n = 2 the interval for μ misses the true value more often than declared; with the uniform law the interval for σ² almost never misses it, because with tails lighter than the normal ones it is too wide.',
+    ],
+    nLabel: (n) => `n = ${n} scores per sample`,
+    levelLabel: 'Level',
+    paramLabel: 'Parameter',
+    params: { mean: 'μ (Student’s t)', variance: 'σ² (chi-square)' },
+    lawLabel: 'Law',
+    newBatch: 'New 100 samples',
+    chartTitle: (b, lawName) => `${EN.pct(b.level, 0)} intervals for ${b.param === 'mean' ? 'μ' : 'σ²'} with n = ${b.n}, ${lawName}`,
+    legend: ['contains the true value', 'misses the true value', 'true value'],
+    counts: (misses, level, total, totalMisses) =>
+      `In this draw ${misses} of 100 intervals miss the true value (about ${Math.round(100 * (1 - level))} expected); over all the draws with these settings ${EN.int(totalMisses)} of ${EN.int(total)}, that is ${EN.pct(totalMisses / total, 1)}, against the declared ${EN.pct(1 - level, 0)}.`,
+  },
   stats: {
     verdict: { reject: 'H₀ rejected', notReject: 'H₀ not rejected' },
     expected: { reject: 'expected: rejection', notReject: 'expected: no rejection', either: 'depends on the power of the test' },
@@ -1100,6 +1266,8 @@ const en = {
     bin: (from, to, share, normal) => `From ${EN.sig(from, 4)} to ${EN.sig(to, 4)}: hackers ${EN.pct(share, 2)}${normal === null ? '' : `, normal ${EN.pct(normal, 2)}`}`,
     coverage: (r) => `n = ${EN.int(r.n)}: t interval ${EN.pct(r.t, 2)} (t = ${EN.num(r.tQuantile, 3)}), χ² interval ${EN.pct(r.chi2, 2)}`,
     hacker: (j, mean, variance) => `Hacker ${EN.int(j)}: M_n = ${EN.num(mean, 4)}, s_n² = ${EN.num(variance, 4)}`,
+    bessel: (count, variance, biased) => `${EN.int(count)} samples: average of s² ${EN.num(variance, 4)}, average of SS/n ${EN.num(biased, 4)}`,
+    interval: (r, param) => `Hacker ${EN.int(r.hacker)}: mean ${EN.num(r.mean, 3)}, s² ${EN.num(r.variance, 3)}; interval for ${param === 'mean' ? 'μ' : 'σ²'} from ${EN.num(r.lo, 3)} to ${EN.num(r.hi, 3)}, ${r.ok ? 'contains' : 'misses'} the true value`,
   },
   download: {
     title: 'Download the code',

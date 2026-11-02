@@ -12,10 +12,12 @@ export const SECTIONS = [
   { id: 'hw4-part1', key: 'part1', level: 0 },
   { id: 'hw4-knuth', key: 'knuth', level: 1 },
   { id: 'hw4-ss', key: 'ss', level: 1 },
+  { id: 'hw4-try-drag', key: 'tryDrag', level: 2 },
   { id: 'hw4-variance', key: 'variance', level: 1 },
   { id: 'hw4-code', key: 'code', level: 1 },
   { id: 'hw4-steps', key: 'steps', level: 1 },
   { id: 'hw4-stability', key: 'stability', level: 1 },
+  { id: 'hw4-try-digits', key: 'tryDigits', level: 2 },
   { id: 'hw4-checks', key: 'checks', level: 1 },
   { id: 'hw4-part2', key: 'part2', level: 0 },
   { id: 'hw4-scores', key: 'scores', level: 1 },
@@ -23,8 +25,10 @@ export const SECTIONS = [
   { id: 'hw4-trajectories', key: 'trajectories', level: 1 },
   { id: 'hw4-averages', key: 'averages', level: 1 },
   { id: 'hw4-comparison', key: 'comparison', level: 1 },
+  { id: 'hw4-try-bessel', key: 'tryBessel', level: 2 },
   { id: 'hw4-spread', key: 'spread', level: 1 },
   { id: 'hw4-inference', key: 'inference', level: 1 },
+  { id: 'hw4-try-intervals', key: 'tryIntervals', level: 2 },
   { id: 'hw4-tests', key: 'tests', level: 0 },
   { id: 'hw4-history', key: 'history', level: 0 },
   { id: 'hw4-conclusion', key: 'conclusion', level: 0 },
@@ -560,6 +564,221 @@ export function scatterData(s, g, decimal = '.') {
 }
 
 // ---------------------------------------------------------------------------
+// Gli esempi interattivi ("Prova")
+// ---------------------------------------------------------------------------
+
+/** The draggable data of section 1.2 as the page opens with them, and their range. */
+export const DRAG = Object.freeze({ values: hw.DEFAULT_DATA, lo: 0, hi: hw.SCORE_MAX });
+
+/** The two data sets of the live cancellation of section 1.6: the classic example and the first 1000 scores of hacker 1. */
+export const DIGIT_DATASETS = Object.freeze(['classic', 'scores']);
+export const DIGIT_POWERS = Object.freeze([0, 15]);
+
+let scoreSample = null;
+function digitBase(dataset) {
+  if (dataset === 'classic') return { values: [...hw.CANCELLATION_DATA], exact: 30 };
+  if (!scoreSample) {
+    const draw = hw.hackerScores(hw.DEFAULT_SEED, hw.scoreLaw(hw.DEFAULT_DIST, hw.DEFAULT_P), 0);
+    const y = Array.from({ length: hw.STABILITY_SIZE }, draw);
+    let s1 = 0;
+    let s2 = 0;
+    for (const v of y) {
+      s1 += v;
+      s2 += v * v;
+    }
+    const N = y.length;
+    scoreSample = { values: y, exact: (N * s2 - s1 * s1) / (N * (N - 1)) };
+  }
+  return scoreSample;
+}
+
+/**
+ * A number split into digits, each marked as right ('ok') or wrong ('bad')
+ * against the exact value at the same decimal position: the digits of the
+ * live cancellation. Values far from the exact one (another order of
+ * magnitude, or negative) are all wrong and shown in scientific notation.
+ */
+export function digitMarks(value, exact) {
+  const decimals = Math.max(0, 16 - Math.floor(Math.log10(Math.abs(exact))));
+  if (!Number.isFinite(value) || value <= 0 || Math.abs(value) >= 1e6 * Math.abs(exact) || Math.abs(value) < Math.abs(exact) / 1e6) {
+    return { parts: [{ text: Number.isFinite(value) ? value.toPrecision(6) : String(value), ok: false }], right: 0 };
+  }
+  const shown = value.toFixed(decimals).replace(/\.?0+$/, '') || '0';
+  const reference = exact.toFixed(decimals);
+  const [vi, vf = ''] = shown.split('.');
+  const [ei, ef = ''] = reference.split('.');
+  const parts = [];
+  let right = 0;
+  let wrongSeen = false;
+  // another number of integer digits: another order of magnitude, every digit is wrong
+  if (vi.length !== ei.length) wrongSeen = true;
+  const width = Math.max(vi.length, ei.length);
+  const vInt = vi.padStart(width, ' ');
+  const eInt = ei.padStart(width, ' ');
+  const mark = (ch, ref) => {
+    const ok = !wrongSeen && ch === ref;
+    if (!ok) wrongSeen = true;
+    else if (/\d/.test(ch)) right++;
+    parts.push({ text: ch, ok });
+  };
+  for (let i = 0; i < width; i++) if (vInt[i] !== ' ') mark(vInt[i], eInt[i]);
+  if (vf) {
+    parts.push({ text: '.', ok: !wrongSeen, point: true });
+    for (let i = 0; i < vf.length; i++) mark(vf[i], ef[i] || '0');
+  }
+  // the zeros that the exact value has and the shown one omits are right as well
+  if (!wrongSeen) right = Math.max(right, 16);
+  return { parts, right: Math.min(16, right) };
+}
+
+/** The common leading characters of two numbers written with 17 significant digits: what the subtraction cancels. */
+function commonPrefix(a, b) {
+  // the mantissas are compared digit by digit; the exponent, the same for both, is shown apart
+  const [x, ex = ''] = a.toPrecision(17).split('e');
+  const [y, ey = ''] = b.toPrecision(17).split('e');
+  let i = 0;
+  while (i < x.length && x[i] === y[i] && ex === ey) i++;
+  const digits = (t) => t.replace(/[^0-9]/g, '').length;
+  return { a: x, b: y, exponents: [ex ? `e${ex}` : '', ey ? `e${ey}` : ''], common: i, commonDigits: digits(x.slice(0, i)), total: digits(x) };
+}
+
+/**
+ * The live cancellation: the data of a set shifted by c = 10^power, the
+ * variance with the three formulas, each with its right and wrong digits,
+ * and, for the textbook formula, the two huge sums it subtracts.
+ */
+export function digitsReport(power, dataset) {
+  const base = digitBase(dataset);
+  const c = 10 ** power;
+  const x = base.values.map((v) => c + v);
+  let s1 = 0;
+  let s2 = 0;
+  for (const v of x) {
+    s1 += v;
+    s2 += v * v;
+  }
+  const n = x.length;
+  const values = { naive: hw.naiveVariance(x), twoPass: hw.twoPassVariance(x), welford: hw.welford(x).variance };
+  const rows = hw.FORMULAS.map((f) => ({ formula: f, value: values[f], error: Math.abs(values[f] - base.exact) / base.exact, ...digitMarks(values[f], base.exact) }));
+  return { power, dataset, n, exact: base.exact, rows, sums: commonPrefix(s2, (s1 * s1) / n) };
+}
+
+/** The values of n of the live examples of sections 2.5 and 2.7, and the levels of the intervals. */
+export const BESSEL_N = Object.freeze([2, 50]);
+export const BESSEL_MAX = 20000;
+export const INTERVAL_NS = Object.freeze([2, 3, 5, 10, 20, 30, 50, 100, 200]);
+export const LEVELS = Object.freeze([0.8, 0.9, 0.95, 0.99]);
+export const INTERVAL_SIZE = 100;
+
+/** A new live Bessel experiment: no samples yet. */
+export const besselStart = (params, n) => ({ seed: params.seed, dist: params.dist, p: params.p, n, count: 0, sumVariance: 0, sumBiased: 0, history: [], last: null });
+
+/**
+ * Draws `count` more samples of the live Bessel experiment: sample j is
+ * hacker j of the simulation, its first n scores. Returns the new state; the
+ * running averages are recorded at every sample at first, then every 4%.
+ */
+export function besselAdvance(state, count) {
+  const law = hw.scoreLaw(state.dist, state.p);
+  const next = { ...state, history: [...state.history] };
+  const target = Math.min(BESSEL_MAX, state.count + count);
+  while (next.count < target) {
+    const sample = hw.sampleStats(state.seed, law, next.count, state.n);
+    next.count += 1;
+    next.sumVariance += sample.variance;
+    next.sumBiased += sample.biased;
+    next.last = sample;
+    const lastRecorded = next.history.length ? next.history[next.history.length - 1][0] : 0;
+    if (next.count <= 20 || next.count >= lastRecorded * 1.04 || next.count === target) next.history.push([next.count, next.sumVariance / next.count, next.sumBiased / next.count]);
+  }
+  return next;
+}
+
+/** The chart of the live Bessel experiment: the two running averages against sigma^2 (with its 95% band) and sigma^2 (n - 1)/n. */
+export function besselChart(state, decimal = '.') {
+  const law = hw.scoreLaw(state.dist, state.p);
+  const T = hw.samplingTheory(law, state.n);
+  const counts = state.history.map((h) => h[0]);
+  const end = Math.max(10, ...counts);
+  const x = [...counts];
+  if (x.length === 0 || x[x.length - 1] < end) x.push(end);
+  if (x[0] > 1) x.unshift(1);
+  const at = (count) => state.history.find((h) => h[0] === count);
+  const pick = (i) => x.map((c) => (at(c) ? at(c)[i] : null));
+  const half = (c) => (Z95 * T.sdVariance) / Math.sqrt(c);
+  const averages = [...pick(1), ...pick(2)].filter((v) => v !== null);
+  const visibleBand = x.filter((c) => c >= 30).flatMap((c) => [law.variance - half(c), law.variance + half(c)]);
+  const range = rangeOf([...averages, law.variance, T.biased, ...visibleBand]);
+  return {
+    x,
+    logX: true,
+    xTicks: logTicks(end),
+    ...range,
+    decimal,
+    series: [
+      { values: x.map(() => law.variance), band: x.map((c) => [law.variance - half(c), law.variance + half(c)]), colorIndex: 2, dashed: true },
+      { values: x.map(() => T.biased), colorIndex: 1, dashed: true },
+      { values: pick(1), colorIndex: 0, dots: false },
+      { values: pick(2), colorIndex: 1, dots: false },
+    ],
+  };
+}
+
+/**
+ * One batch of the live intervals of section 2.7: the first n scores of
+ * hackers batch x 100, ..., batch x 100 + 99, and for each the interval at
+ * the chosen level for mu (Student's t) or sigma^2 (chi-square), green if it
+ * contains the true value.
+ */
+export function intervalBatch({ seed, dist, p, n, level, param, batch }) {
+  const law = hw.scoreLaw(dist, p);
+  const q = (1 + level) / 2;
+  const t = hw.studentQuantile(q, n - 1);
+  const chiLow = hw.chiSquareQuantile(1 - q, n - 1);
+  const chiHigh = hw.chiSquareQuantile(q, n - 1);
+  const truth = param === 'mean' ? law.mu : law.variance;
+  const rows = [];
+  for (let i = 0; i < INTERVAL_SIZE; i++) {
+    const s = hw.sampleStats(seed, law, batch * INTERVAL_SIZE + i, n);
+    let lo;
+    let hi;
+    let est;
+    if (param === 'mean') {
+      const half = t * Math.sqrt(s.variance / n);
+      lo = s.mean - half;
+      hi = s.mean + half;
+      est = s.mean;
+    } else {
+      lo = ((n - 1) * s.variance) / chiHigh;
+      hi = ((n - 1) * s.variance) / chiLow;
+      est = s.variance;
+    }
+    rows.push({ hacker: s.j + 1, mean: s.mean, variance: s.variance, lo, hi, est, ok: lo <= truth && truth <= hi });
+  }
+  return { rows, truth, misses: rows.filter((r) => !r.ok).length, law, param, n, level };
+}
+
+/** The chart of a batch: the axis holds most intervals, the longest ones end with an arrow. */
+export function intervalChart(batch, decimal = '.') {
+  const { rows, truth, param } = batch;
+  const sortedLo = rows.map((r) => r.lo).sort((a, b) => a - b);
+  const sortedHi = rows.map((r) => r.hi).sort((a, b) => a - b);
+  let x0 = Math.min(truth, sortedLo[Math.floor(0.05 * (rows.length - 1))]);
+  let x1 = Math.max(truth, sortedHi[Math.ceil(0.9 * (rows.length - 1))]);
+  if (param === 'mean') {
+    x0 = Math.max(0, x0);
+    x1 = Math.min(hw.SCORE_MAX, x1);
+  } else {
+    x0 = 0;
+    x1 = Math.max(x1, 2 * truth);
+  }
+  const pad = (x1 - x0) * 0.04 || 1;
+  x0 = param === 'mean' ? Math.max(0, x0 - pad) : x0;
+  x1 += pad;
+  return { rows, x0, x1, truth, xTicks: hw.niceTicks(x0, x1, 6), decimal };
+}
+
+// ---------------------------------------------------------------------------
 // Test
 // ---------------------------------------------------------------------------
 
@@ -670,6 +889,12 @@ export const tips = {
   },
   coverage: (s, T) => (hit) => T.coverage(inferenceRows(s)[hit.index]),
   scatter: (data, T) => (hit) => T.hacker(hit.index + 1, data.xs[hit.index], data.ys[hit.index]),
+  bessel: (state, data, T) => (hit) => {
+    const c = data.x[hit.index];
+    const h = state.history.find((row) => row[0] === c);
+    return h ? T.bessel(h[0], h[1], h[2]) : null;
+  },
+  intervals: (batch, T) => (hit) => T.interval(batch.rows[hit.index], batch.param),
 };
 
 // ---------------------------------------------------------------------------
