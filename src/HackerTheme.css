@@ -2017,6 +2017,61 @@ body.dark-mode .hw3-over {
     .hw3-summary th:nth-child(5) { width: 18%; }
 }
 
+/* ===== HOMEWORK #4 (Statistics) =====
+   Le sezioni hanno anche le classi hw1-section, hw2, hw3 e hw4: i campi, i
+   cursori, le scelte e le note dei grafici sono quelli dell'Homework #3; qui
+   solo gli elementi nuovi. */
+/* il campo dei dati della sezione 1.5: una lista di numeri, largo quanto serve */
+.hw4-data {
+    margin: 0.8em 0 0.4em;
+}
+.hw4-data input {
+    width: 100%;
+    max-width: 34em;
+}
+/* le tre righe di codice, in evidenza rispetto alla funzione completa */
+.hw4-core {
+    border-left: 4px solid #d52349;
+}
+body.dark-mode .hw4-core {
+    border-left-color: #e94560;
+}
+/* la riga con i numeri sostituiti nelle formule, al passo corrente */
+.hw4-line {
+    text-align: left;
+    overflow-wrap: anywhere;
+}
+/* il passo corrente della tabella, e i passi che devono ancora arrivare */
+.hw4-steps tr.is-current,
+.hw4-laws tr.is-current {
+    background: rgba(213, 35, 73, 0.1);
+}
+body.dark-mode .hw4-steps tr.is-current,
+body.dark-mode .hw4-laws tr.is-current {
+    background: rgba(233, 69, 96, 0.2);
+}
+.hw4-steps tr.is-future {
+    opacity: 0.4;
+}
+.hw4-list {
+    margin: 0 0 1em 1.2em;
+}
+.hw4-list li {
+    margin-bottom: 0.4em;
+    text-align: left;
+}
+/* intestazioni con formule: il maiuscolo del tema cambierebbe i simboli
+   (M_n diventerebbe M_N, mu una M greca, sigma una S greca) */
+.hw4-steps thead th,
+.hw4-cancellation thead th,
+.hw4-laws thead th,
+.hw4-averages thead th,
+.hw4-spread thead th,
+.hw4-inference thead th {
+    text-transform: none;
+    letter-spacing: 0.02em;
+}
+
 /* ===== Grafici degli homework: i valori del pezzo sotto il puntatore =====
    Il riquadro e il contorno li crea attachChartTooltip (homework1.js,
    homework2.js) dentro la figura, che per questo e' posizionata. */

@@ -1,0 +1,1234 @@
+// src/pages/statistics/hw4/standalone/app.js
+// L'interfaccia del programma scaricabile, in JavaScript puro: niente React,
+// niente dipendenze. Disegna le stesse sezioni della pagina del sito con gli
+// stessi testi (texts.js), la stessa logica di presentazione (view.js) e gli
+// stessi calcoli (homework4.js). La build (build/homework-standalone.js) lo
+// unisce a view.js e texts.js in un unico app.js, uno script classico che si
+// apre anche da file:// con un doppio clic su index.html.
+//
+// Da file:// i worker non partono: la simulazione gira qui, a fette di pochi
+// millisecondi, e la pagina resta reattiva mentre i numeri arrivano; intanto
+// la Part 1 e l'animazione, che non ne hanno bisogno, funzionano gia'.
+//
+// Ogni testo entra nella pagina con textContent, mai come HTML: nemmeno
+// quello che si scrive nei campi puo' diventare markup.
+import * as hw from '../homework4.js';
+import * as view from '../view.js';
+import { HW4_TEXTS, originalAssignment } from '../texts.js';
+
+const HEADINGS = ['h2', 'h3', 'h4'];
+const LANGUAGES = ['it', 'en'];
+
+const PALETTES = {
+  light: hw.DEFAULT_PALETTE,
+  dark: {
+    background: '#161616',
+    text: '#d6d6d6',
+    grid: '#262626',
+    bars: '#7986cb',
+    reference: '#ff6b81',
+    highlight: '#ff6b81',
+    series: ['#7986cb', '#ff6b81', '#4fb39c', '#ffca28', '#ba68c8', '#4dd0e1', '#9e9e9e'],
+  },
+};
+const darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
+const palette = () => (darkQuery.matches ? PALETTES.dark : PALETTES.light);
+
+// I campi non devono passare per correttori o completamenti.
+const PRIVATE_FIELD = {
+  autocomplete: 'off',
+  autocorrect: 'off',
+  autocapitalize: 'none',
+  spellcheck: 'false',
+  'data-gramm': 'false',
+  'data-lpignore': 'true',
+};
+
+// ---------------------------------------------------------------------------
+// Stato
+// ---------------------------------------------------------------------------
+
+// Si apre sempre in inglese, come la pagina sul sito; IT / EN cambia lingua
+// finche' la pagina resta aperta, senza salvare la scelta. Il sito, aprendo
+// la versione online, passa nell'indirizzo la lingua che si stava leggendo.
+function initialLanguage() {
+  const fromUrl = new URLSearchParams(window.location.search).get('lang');
+  return LANGUAGES.includes(fromUrl) ? fromUrl : 'en';
+}
+
+const state = {
+  lang: initialLanguage(),
+  fields: { ...view.DEFAULT_INPUTS },
+  // l'ultimo valore valido di ogni campo, e quelli dell'ultima simulazione partita
+  params: { ...view.DEFAULT_PARAMS },
+  target: { ...view.DEFAULT_PARAMS },
+  data: { text: view.DEFAULT_DATA_TEXT, values: [...hw.DEFAULT_DATA] },
+  steps: { g: null, playing: false },
+  spread: { g: null, playing: false, mode: 'fixed' },
+  inference: { g: null },
+  anim: { quantity: 'mean', speed: 1 },
+};
+let text = HW4_TEXTS[state.lang];
+const regions = {};
+const controls = { fields: {} };
+const timers = { compute: null, steps: null, spread: null };
+
+// I risultati gia' calcolati (gli ultimi), quelli mostrati e la simulazione in corso
+const results = new Map();
+const computation = { shown: null, error: null, running: null };
+let animation = null;
+
+// ---------------------------------------------------------------------------
+// DOM: un aiutante minimo, i grafici e il loro ridisegno
+// ---------------------------------------------------------------------------
+
+/** h('p', { class: 'note', text: '...' }, child, ...): text always via textContent. */
+function h(tag, attrs, ...children) {
+  const el = document.createElement(tag);
+  for (const [key, value] of Object.entries(attrs || {})) {
+    if (value === null || value === undefined || value === false) continue;
+    if (key === 'class') el.className = value;
+    else if (key === 'text') el.textContent = value;
+    else if (key === 'style') Object.assign(el.style, value);
+    else if (key.startsWith('on')) el.addEventListener(key.slice(2), value);
+    else el.setAttribute(key, value === true ? '' : String(value));
+  }
+  for (const child of children.flat(Infinity)) {
+    if (child === null || child === undefined || child === false) continue;
+    el.append(child instanceof Node ? child : document.createTextNode(String(child)));
+  }
+  return el;
+}
+
+const paras = (list) => list.filter(Boolean).map((t) => h('p', { text: t }));
+const title = (id, level, label) => h(HEADINGS[level], { id, tabindex: -1, class: 'anchor', text: label });
+const subtitle = (label) => h('p', { class: 'table-title' }, h('strong', { text: label }));
+const pending = () => (computation.error ? h('p', { class: 'note', text: text.ui.error(computation.error) }) : h('p', { class: 'note pending', role: 'status', text: text.ui.computing }));
+const check = (ok, label) => h('p', { class: ok ? 'check is-ok' : 'check is-bad' }, h('strong', { text: label }));
+const formulas = (content, label = null) => [label && subtitle(label), h('pre', { text: content })];
+
+// The width of every chart comes from the ResizeObserver, measured after
+// layout; the height is set at once, the drawing happens a few
+// milliseconds per frame.
+const charts = new Map(); // canvas -> { draw, data, width, detach }
+const resizer = new ResizeObserver((entries) => {
+  for (const entry of entries) {
+    const canvas = entry.target;
+    const chart = charts.get(canvas);
+    const width = Math.round(entry.contentRect.width);
+    if (!chart || width <= 0 || width === chart.width) continue;
+    chart.width = width;
+    canvas.style.height = `${hw.chartHeight(chart.draw, chart.data, width)}px`;
+    view.scheduleFrameJob(() => {
+      if (charts.get(canvas) === chart && chart.width === width) chart.draw(canvas, { ...chart.data, width }, palette());
+    });
+  }
+});
+
+/** The legend of a chart, in the page: { label, color?, dashed? }. */
+function legend(items) {
+  const pal = palette();
+  return h(
+    'ul',
+    { class: 'series-legend' },
+    items.map((item, i) => {
+      const color = pal.series[item.color ?? i];
+      return h('li', null, h('span', { class: item.dashed ? 'is-dashed' : null, 'aria-hidden': 'true', style: { borderColor: color, backgroundColor: item.dashed ? 'transparent' : color } }), item.label);
+    }),
+  );
+}
+
+function figure(caption, draw, data, { wide = false, tip = null, items = null, note = null } = {}) {
+  const canvas = h('canvas', { class: 'chart', role: 'img', 'aria-label': caption });
+  const fig = h('figure', { class: wide ? 'figure wide' : 'figure' }, canvas, items && legend(items), note && h('p', { class: 'figure-note', text: note }), h('figcaption', { text: caption }));
+  const detach = tip ? hw.attachChartTooltip(canvas, { draw, data, describe: tip }) : null;
+  charts.set(canvas, { draw, data, width: -1, detach });
+  resizer.observe(canvas);
+  return fig;
+}
+
+/** Replaces the content of a region, releasing the charts it contained and their labels. */
+function fill(region, ...nodes) {
+  for (const canvas of region.querySelectorAll('canvas.chart')) {
+    resizer.unobserve(canvas);
+    const chart = charts.get(canvas);
+    if (chart && chart.detach) chart.detach();
+    charts.delete(canvas);
+  }
+  region.replaceChildren(...nodes.flat(Infinity).filter((n) => n !== null && n !== undefined && n !== false));
+}
+
+/** A table: column headers, then rows of cells, each { text | node, class?, head? } (head: a row header, th). */
+function table(className, headers, rows) {
+  return h(
+    'table',
+    { class: `table ${className}` },
+    h('thead', null, h('tr', null, headers.map((x) => h('th', { text: x })))),
+    h(
+      'tbody',
+      null,
+      rows.map((row) => h(
+        'tr',
+        { class: row.class || null },
+        row.cells.map((cell, i) => h(cell.head ? 'th' : 'td', { 'data-label': cell.head ? null : headers[i], class: cell.class || null }, cell.node || cell.text)),
+      )),
+    ),
+  );
+}
+
+/** The hypothesis tests of one group, with what each should say. */
+function tests(group, s) {
+  const expected = view.expectedVerdicts(s);
+  return h(
+    'div',
+    { class: 'tests' },
+    view.statTests(s)[group].map(([key, t]) => {
+      const rejected = t.verdict === 'reject';
+      return h(
+        'div',
+        { class: `test ${rejected ? 'is-invalid' : 'is-valid'}` },
+        h(
+          'p',
+          { class: 'test-head' },
+          h('strong', { text: text.stats.labels[group][key] }),
+          ' ',
+          h('span', { class: `badge ${rejected ? 'is-invalid' : 'is-valid'}`, text: text.stats.verdict[rejected ? 'reject' : 'notReject'] }),
+          h('span', { class: 'note', text: ` (${text.stats.expected[expected[group][key]]})` }),
+        ),
+        h('p', { text: text.stats.testLine(t) }),
+      );
+    }),
+  );
+}
+
+/** A choice among a few values (law, quantity, axis): the pressed button is the active one. */
+function choices(label, options, value, onChange) {
+  const buttons = options.map(([key, name]) => h('button', { type: 'button', class: 'btn alt', 'aria-pressed': String(key === value), text: name, onclick: () => select(key) }));
+  function select(key) {
+    options.forEach(([k], i) => buttons[i].setAttribute('aria-pressed', String(k === key)));
+    onChange(key);
+  }
+  return h('div', { class: 'choices', role: 'group', 'aria-label': label }, h('span', { class: 'choices-label', text: label }), buttons);
+}
+
+/** A slider on indices (steps, checkpoints); set() moves it when the data, the results or the language change. */
+function slider(id, onChange) {
+  const label = h('label', { for: id });
+  const input = h('input', { id, type: 'range', min: 0, max: 0, step: 1, value: 0, oninput: (e) => onChange(Number(e.target.value)) });
+  return {
+    el: h('div', { class: 'slider' }, label, input),
+    set(max, value, labelText, enabled = true) {
+      input.max = String(max);
+      input.value = String(value);
+      input.disabled = !enabled;
+      label.textContent = labelText;
+      input.setAttribute('aria-valuetext', labelText);
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// I due cursori che si possono far scorrere: i passi della sezione 1.5 e gli n della 2.6
+// ---------------------------------------------------------------------------
+
+let stepRowsCache = { values: null, rows: [] };
+function stepRows() {
+  if (stepRowsCache.values !== state.data.values) stepRowsCache = { values: state.data.values, rows: hw.welfordSteps(state.data.values) };
+  return stepRowsCache.rows;
+}
+
+const lastIndex = () => (computation.shown ? computation.shown.points.length - 1 : 0);
+
+const players = {
+  steps: { last: () => stepRows().length - 1, fallback: () => stepRows().length - 1, delay: 1000, update: () => updateSteps() },
+  spread: { last: () => lastIndex(), fallback: () => 0, delay: 1100, update: () => updateSpread() },
+};
+
+/** The index shown by a player: the chosen one, or its default, within its range. */
+function playerIndex(name) {
+  const P = players[name];
+  const g = state[name].g === null ? P.fallback() : state[name].g;
+  return Math.max(0, Math.min(g, P.last()));
+}
+
+function stopPlayer(name) {
+  state[name].playing = false;
+  clearTimeout(timers[name]);
+}
+
+function choose(name, g) {
+  stopPlayer(name);
+  state[name].g = g;
+  players[name].update();
+}
+
+function togglePlayer(name) {
+  const P = players[name];
+  if (state[name].playing) {
+    stopPlayer(name);
+    P.update();
+    return;
+  }
+  if (playerIndex(name) >= P.last()) state[name].g = 0;
+  state[name].playing = true;
+  P.update();
+  const tick = () => {
+    timers[name] = setTimeout(() => {
+      if (!state[name].playing) return;
+      const end = P.last();
+      const g = Math.min(playerIndex(name) + 1, end);
+      state[name].g = g;
+      if (g >= end) state[name].playing = false;
+      P.update();
+      if (state[name].playing) tick();
+    }, P.delay);
+  };
+  tick();
+}
+
+// ---------------------------------------------------------------------------
+// 0. La consegna
+// ---------------------------------------------------------------------------
+
+function assignmentSection() {
+  return h(
+    'section',
+    { class: 'section' },
+    title('hw4-assignment', 0, text.sections.assignment),
+    paras(text.assignment.intro),
+    h(
+      'details',
+      { class: 'original', open: true },
+      h('summary', { text: text.assignment.originalTitle }),
+      h('p', { class: 'note', text: text.assignment.originalNote }),
+      h('blockquote', { lang: 'en' }, originalAssignment().map((block) => (block.type === 'h' ? h('p', null, h('strong', { text: block.text })) : h('p', { text: block.text })))),
+    ),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Part 1: le formule, il codice, i passi, la stabilita' e le verifiche
+// ---------------------------------------------------------------------------
+
+const derivation = (block, content) => [paras(block.intro), formulas(content, block.formulasTitle), paras(block.after)];
+
+function part1Section() {
+  const S = text.sections;
+  const C = text.code;
+  regions.verify = h('div');
+  return h(
+    'section',
+    { class: 'section' },
+    title('hw4-part1', 0, S.part1),
+    paras(text.part1.intro),
+    title('hw4-knuth', 1, S.knuth),
+    derivation(text.knuth, text.formulas.knuth),
+    title('hw4-ss', 1, S.ss),
+    derivation(text.ss, text.formulas.ss),
+    title('hw4-variance', 1, S.variance),
+    derivation(text.variance, text.formulas.variance),
+    title('hw4-code', 1, S.code),
+    paras(C.intro),
+    subtitle(C.coreTitle),
+    h('pre', { class: 'core', text: hw.WELFORD_LINES.join('\n') }),
+    subtitle(C.fullTitle),
+    h('pre', { text: view.welfordCode() }),
+    paras(C.after),
+    title('hw4-steps', 1, S.steps),
+    stepsBlock(),
+    title('hw4-stability', 1, S.stability),
+    stabilityBlock(),
+    title('hw4-checks', 1, S.checks),
+    regions.verify,
+  );
+}
+
+// --- 1.5 Passo per passo -------------------------------------------------------------
+
+function stepsBlock() {
+  const S = text.steps;
+  const input = h('input', {
+    id: 'hw4-data',
+    type: 'text',
+    inputmode: 'decimal',
+    ...PRIVATE_FIELD,
+    maxlength: view.DATA_LENGTH,
+    'aria-describedby': 'hw4-data-help',
+    oninput: (e) => changeData(e.target.value.slice(0, view.DATA_LENGTH)),
+  });
+  input.value = state.data.text;
+  controls.data = {
+    input,
+    help: h('p', { id: 'hw4-data-help', class: 'note', text: S.dataHint }),
+    restore: h('button', {
+      type: 'button',
+      class: 'btn alt',
+      text: S.restore,
+      onclick: () => {
+        input.value = view.DEFAULT_DATA_TEXT;
+        changeData(view.DEFAULT_DATA_TEXT);
+      },
+    }),
+    stale: h('p', { class: 'stale', role: 'status', text: S.stale }),
+  };
+  controls.stepsSlider = slider('hw4-step', (g) => choose('steps', g));
+  controls.stepsPlay = h('button', { type: 'button', class: 'btn', text: S.play, onclick: () => togglePlayer('steps') });
+  const stepButton = (label, target) => h('button', { type: 'button', class: 'btn alt', text: label, onclick: () => choose('steps', target()) });
+  regions.steps = h('div');
+  return [
+    paras(S.intro),
+    h('div', { class: 'param data' }, h('label', { for: 'hw4-data', text: S.dataLabel }), h('span', { class: 'param-row' }, input, controls.data.restore), controls.data.help),
+    controls.data.stale,
+    h(
+      'div',
+      { class: 'slider-row' },
+      controls.stepsSlider.el,
+      h(
+        'span',
+        { class: 'buttons' },
+        controls.stepsPlay,
+        stepButton(S.step, () => {
+          const g = playerIndex('steps');
+          return g >= players.steps.last() ? 0 : g + 1;
+        }),
+        stepButton(S.reset, () => 0),
+        stepButton(S.end, () => players.steps.last()),
+      ),
+    ),
+    regions.steps,
+    paras(S.after),
+  ];
+}
+
+function changeData(value) {
+  state.data.text = value;
+  const r = hw.parseData(value);
+  if (r.ok) {
+    state.data.values = r.value;
+    stopPlayer('steps');
+    state.steps.g = null;
+  }
+  updateSteps();
+}
+
+/** The chart, the line with the numbers, the table and the final check of section 1.5. */
+function updateSteps() {
+  const S = text.steps;
+  const F = text.fmt;
+  const read = hw.parseData(state.data.text);
+  const error = read.ok ? null : S.errors[read.error](read.text);
+  const D = controls.data;
+  D.input.setAttribute('aria-invalid', String(Boolean(error)));
+  D.help.className = error ? 'field-error' : 'note';
+  D.help.textContent = error || S.dataHint;
+  if (error) D.help.setAttribute('role', 'alert');
+  else D.help.removeAttribute('role');
+  D.restore.hidden = state.data.text === view.DEFAULT_DATA_TEXT;
+  D.stale.hidden = !error;
+
+  const rows = stepRows();
+  const last = rows.length - 1;
+  const g = playerIndex('steps');
+  const label = S.chart(g + 1, rows.length);
+  controls.stepsSlider.set(last, g, label);
+  let play = S.play;
+  if (state.steps.playing) play = S.pause;
+  else if (g > 0 && g < last) play = S.resume;
+  controls.stepsPlay.textContent = play;
+  const c = view.stepsCheck(state.data.values);
+  const cell = (v) => ({ text: F.sig(v) });
+  fill(
+    regions.steps,
+    figure(label, hw.drawWelfordChart, view.stepsChart(rows, g + 1, F.decimal), {
+      wide: true,
+      tip: view.tips.steps(rows, text.tips),
+      items: S.legend.map((item, i) => ({ label: item, color: i })),
+    }),
+    h('p', { class: 'caption line', 'aria-live': state.steps.playing ? 'off' : 'polite', text: S.line(rows[g], rows[g - 1]) }),
+    subtitle(S.tableTitle),
+    h(
+      'div',
+      { class: rows.length > 16 ? 'scroll' : null },
+      table(
+        'compact steps',
+        ['k', 'x', 'delta', 'mean', 'after', 'increment', 'ss', 'variance'].map((key) => S.cols[key]),
+        rows.map((r, i) => ({
+          class: i === g ? 'is-current' : i > g ? 'is-future' : null,
+          cells: [{ text: String(r.k), head: true }, cell(r.x), cell(r.delta), cell(r.mean), cell(r.after), cell(r.increment), cell(r.ss), { text: r.k > 1 ? F.sig(r.variance) : '-' }],
+        })),
+      ),
+    ),
+    check(c.welfordError < 1e-9, S.check(c)),
+  );
+}
+
+// --- 1.6 La stabilita' numerica --------------------------------------------------------
+
+let stability = null;
+
+function stabilityBlock() {
+  const S = text.stability;
+  const F = text.fmt;
+  if (!stability) stability = { rows: hw.cancellationRows(), curve: hw.stabilityCurve() };
+  const offset = (c) => (c === 0 ? '0' : F.pow(Math.round(Math.log10(c))));
+  return [
+    paras(S.intro),
+    subtitle(S.tableTitle),
+    h(
+      'div',
+      { class: 'scroll' },
+      table(
+        'compact cancellation',
+        [S.cols.offset, S.cols.naive, S.cols.twoPass, S.cols.welford],
+        stability.rows.map((r) => ({ cells: [{ text: offset(r.offset), head: true }, { text: F.sig(r.naive, 17), class: Math.abs(r.naive - 30) > 1e-9 ? 'over' : null }, { text: F.sig(r.twoPass, 17) }, { text: F.sig(r.welford, 17) }] })),
+      ),
+    ),
+    h(
+      'div',
+      { class: 'charts' },
+      figure(S.chartTitle(F.int(stability.curve.size)), hw.drawLineChart, view.stabilityChart(stability.curve, F.decimal), {
+        wide: true,
+        tip: view.tips.stability(stability.curve, text.tips),
+        items: [
+          { label: S.legend[0], color: 1 },
+          { label: S.legend[1], color: 3 },
+          { label: S.legend[2], color: 0 },
+        ],
+      }),
+    ),
+    paras(S.facts(view.stabilityFacts(stability.curve))),
+    paras(S.after),
+  ];
+}
+
+// --- 1.7 Verifiche -----------------------------------------------------------------
+
+let checkRows = null;
+
+function updateVerify() {
+  const V = text.checks;
+  if (!checkRows) {
+    fill(regions.verify, h('p', { text: V.intro }), h('p', { class: 'note pending', role: 'status', text: text.ui.computing }));
+    return;
+  }
+  const ok = checkRows.filter((r) => r.ok).length;
+  const groups = ['welford', 'generator', 'functions'].map((group) => ({ group, rows: checkRows.filter((r) => r.group === group) }));
+  fill(
+    regions.verify,
+    h('p', { text: V.intro }),
+    check(ok === checkRows.length, V.summary(ok, checkRows.length)),
+    h(
+      'details',
+      { class: 'details' },
+      h('summary', { text: V.details(checkRows.length) }),
+      groups.map((g) => [
+        subtitle(V.groups[g.group]),
+        table(
+          'discussion vectors',
+          [V.cols.check, V.cols.expected, V.cols.result],
+          g.rows.map((r) => ({ cells: [{ text: r.name, head: true }, { node: h('code', { text: r.expected }) }, { node: h('span', { 'aria-label': r.ok ? V.ok : V.failed, text: r.ok ? '✓' : '✗' }), class: r.ok ? 'is-ok' : 'is-bad' }] })),
+        ),
+      ]),
+    ),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Part 2: i punteggi, i campi, l'animazione e i risultati
+// ---------------------------------------------------------------------------
+
+function part2Section() {
+  const S = text.sections;
+  const I = text.input;
+  regions.scores = h('div');
+  regions.status = h('div');
+  regions.averages = h('div');
+  regions.comparison = h('div');
+  regions.spread = h('div');
+  regions.inference = h('div');
+  controls.spreadSlider = slider('hw4-spread-n', (g) => choose('spread', g));
+  controls.spreadPlay = h('button', { type: 'button', class: 'btn alt', text: text.spread.play, onclick: () => togglePlayer('spread') });
+  controls.inferenceSlider = slider('hw4-scatter-n', (g) => {
+    state.inference.g = g;
+    updateInference();
+  });
+  return h(
+    'section',
+    { class: 'section' },
+    title('hw4-part2', 0, S.part2),
+    paras(text.part2.intro),
+    title('hw4-scores', 1, S.scores),
+    regions.scores,
+    title('hw4-input', 1, S.input),
+    h('p', { text: I.intro }),
+    inputsBlock(),
+    regions.status,
+    title('hw4-trajectories', 1, S.trajectories),
+    trajectoriesBlock(),
+    title('hw4-averages', 1, S.averages),
+    regions.averages,
+    title('hw4-comparison', 1, S.comparison),
+    regions.comparison,
+    title('hw4-spread', 1, S.spread),
+    paras(text.spread.intro),
+    formulas(text.formulas.spread, text.spread.formulasTitle),
+    paras(text.spread.afterFormulas),
+    h(
+      'div',
+      { class: 'controls-block' },
+      choices(text.spread.axisLabel, view.AXIS_MODES.map((m) => [m, text.spread.axisNames[m]]), state.spread.mode, (mode) => {
+        state.spread.mode = mode;
+        updateSpread();
+      }),
+      h('div', { class: 'slider-row' }, controls.spreadSlider.el, controls.spreadPlay),
+    ),
+    regions.spread,
+    title('hw4-inference', 1, S.inference),
+    paras(text.inference.intro),
+    h('ul', { class: 'list' }, text.inference.list.map((item) => h('li', { text: item }))),
+    paras(text.inference.afterList),
+    h('div', { class: 'slider-row' }, controls.inferenceSlider.el),
+    regions.inference,
+  );
+}
+
+// --- 2.1 La distribuzione dei punteggi ------------------------------------------------------
+
+function updateScores() {
+  const S = text.scores;
+  const F = text.fmt;
+  const params = state.params;
+  const law = hw.scoreLaw(params.dist, params.p);
+  const s = computation.shown;
+  const data = view.scoresChart(law, s, F.decimal);
+  const simulated = Boolean(data.expected);
+  const items = S.legend(law.discrete, simulated)
+    .map((label, i) => label && { label, color: i, dashed: i === 1 })
+    .filter(Boolean);
+  fill(
+    regions.scores,
+    paras(S.intro(params.p)),
+    choices(S.chooseLabel, hw.DISTRIBUTIONS.map((d) => [d, text.distNames[d]]), params.dist, setDist),
+    subtitle(S.tableTitle(params.p)),
+    h(
+      'div',
+      { class: 'scroll' },
+      table(
+        'compact laws',
+        [S.cols.law, S.cols.values, S.cols.mu, S.cols.variance, S.cols.skewness, S.cols.kurtosis, S.cols.mu4],
+        view.lawRows(params.p).map((L) => ({
+          class: L.dist === params.dist ? 'is-current' : null,
+          cells: [{ text: text.distNames[L.dist], head: true }, { text: S.values[L.dist] }, { text: F.num(L.mu, 4) }, { text: F.num(L.variance, 4) }, { text: F.num(L.skewness, 4) }, { text: F.num(L.kurtosis, 4) }, { text: F.num(L.mu4, 3) }],
+        })),
+      ),
+    ),
+    paras(S.after),
+    h('div', { class: 'charts' }, figure(S.chartTitle(text.distNames[params.dist], simulated), hw.drawHistogram, data, { wide: true, tip: view.tips.scores(data, law.discrete, text.tips), items })),
+    s && simulated && tests('sim', s),
+  );
+}
+
+function setDist(dist) {
+  const next = view.applyInputs(view.readInputs(state.fields), state.params, dist);
+  if (next === state.params) return;
+  state.params = next;
+  updateScores();
+  scheduleComputation();
+  updateStatus();
+}
+
+// --- 2.2 I campi ----------------------------------------------------------------
+
+const FIELDS = [
+  ['p', 'pText', 'hw4-p', 'decimal'],
+  ['n', 'nText', 'hw4-n', 'numeric'],
+  ['m', 'mText', 'hw4-m', 'numeric'],
+  ['seed', 'seedText', 'hw4-seed', 'numeric'],
+];
+
+function inputsBlock() {
+  const I = text.input;
+  const labels = { p: [I.pLabel, I.pHint], n: [I.nLabel, I.nHint], m: [I.mLabel, I.mHint], seed: [I.seedLabel, I.seedHint] };
+  return h(
+    'div',
+    { class: 'params' },
+    FIELDS.map(([key, name, id, mode]) => {
+      const input = h('input', { id, type: 'text', inputmode: mode, ...PRIVATE_FIELD, maxlength: view.FIELD_LENGTH[key], 'aria-describedby': `${id}-help`, oninput: (e) => changeFields({ [name]: e.target.value.slice(0, view.FIELD_LENGTH[key]) }) });
+      input.value = state.fields[name];
+      const help = h('p', { id: `${id}-help`, class: 'note', text: labels[key][1] });
+      controls.fields[key] = { input, help, hint: labels[key][1] };
+      const extra = key === 'seed' ? h('button', { type: 'button', class: 'btn alt', text: I.randomSeed, onclick: () => changeFields({ seedText: String(hw.randomSeed()) }, true) }) : null;
+      return h('div', { class: 'param' }, h('label', { for: id, text: labels[key][0] }), h('span', { class: 'param-row' }, input, extra), help);
+    }),
+  );
+}
+
+function changeFields(patch, fromButton = false) {
+  Object.assign(state.fields, patch);
+  if (fromButton) syncFields();
+  updateInputs();
+}
+
+function syncFields() {
+  for (const [key, name] of FIELDS) {
+    const field = controls.fields[key];
+    if (field && field.input.value !== state.fields[name]) field.input.value = state.fields[name];
+  }
+}
+
+function restore() {
+  state.fields = { ...view.DEFAULT_INPUTS };
+  syncFields();
+  const next = view.applyInputs(view.readInputs(state.fields), state.params, view.DEFAULT_PARAMS.dist);
+  if (next !== state.params) {
+    state.params = next;
+    updateScores();
+    scheduleComputation();
+  }
+  updateInputs();
+}
+
+function fieldError(r, key) {
+  const I = text.input;
+  if (r.ok) return null;
+  if (r.error === 'range') return I.errors.range(...I.limits[key]);
+  return I.errors[r.error](r.text);
+}
+
+/** A new simulation when the parameters settle. */
+function scheduleComputation() {
+  clearTimeout(timers.compute);
+  timers.compute = setTimeout(() => {
+    state.target = { ...state.params };
+    startComputation();
+    createAnimation();
+  }, 400);
+}
+
+/** The fields read again: errors, the last valid value of each, and a new simulation when they settle. */
+function updateInputs() {
+  const read = view.readInputs(state.fields);
+  for (const [key] of FIELDS) {
+    const field = controls.fields[key];
+    const error = fieldError(read[key], key);
+    field.input.setAttribute('aria-invalid', String(Boolean(error)));
+    field.help.className = error ? 'field-error' : 'note';
+    field.help.textContent = error || field.hint;
+    if (error) field.help.setAttribute('role', 'alert');
+    else field.help.removeAttribute('role');
+  }
+  const next = view.applyInputs(read, state.params);
+  if (next !== state.params) {
+    state.params = next;
+    updateScores();
+    scheduleComputation();
+  }
+  updateStatus();
+}
+
+/** Under the fields: the errors, the values in use, the simulation running or the time it took. */
+function updateStatus() {
+  const I = text.input;
+  const read = view.readInputs(state.fields);
+  const badge = view.inputBadge(state.params, I);
+  const waiting = computation.running || view.paramsKey(state.params) !== view.paramsKey(state.target);
+  const s = computation.shown;
+  fill(
+    regions.status,
+    !view.allValid(read) && h('p', { class: 'stale', role: 'status', text: I.stale }),
+    h('p', { class: badge.known ? 'badge-line is-task' : 'badge-line is-custom' }, h('span', { text: badge.text }), badge.restore && h('button', { type: 'button', class: 'btn alt', text: I.restore, onclick: restore })),
+    waiting && s && h('p', { class: 'stale', role: 'status', text: I.pending }),
+    computation.error && h('p', { class: 'note', text: text.ui.error(computation.error) }),
+    s && !waiting && h('p', { class: 'note', role: 'status', text: I.run(s) }),
+  );
+}
+
+// --- 2.3 Le traiettorie -----------------------------------------------------------
+
+function trajectoriesBlock() {
+  const T = text.trajectories;
+  regions.trajectoriesIntro = h('div');
+  const button = (label, action) => h('button', { type: 'button', class: 'btn alt', text: label, onclick: () => animation && animation[action]() });
+  controls.play = h('button', {
+    type: 'button',
+    class: 'btn',
+    text: T.play,
+    onclick: () => {
+      if (!animation) return;
+      if (animation.status().playing) animation.pause();
+      else animation.play();
+    },
+  });
+  const speed = h(
+    'select',
+    {
+      onchange: (e) => {
+        state.anim.speed = Number(e.target.value);
+        if (animation) animation.setSpeed(view.ANIMATION.speeds[state.anim.speed]);
+      },
+    },
+    T.speeds.map((name, i) => h('option', { value: i, text: name, selected: i === state.anim.speed })),
+  );
+  controls.canvas = h('canvas', { class: 'anim', role: 'img', 'aria-label': text.sections.trajectories });
+  controls.caption = h('p', { class: 'caption', 'aria-live': 'polite' });
+  return [
+    regions.trajectoriesIntro,
+    choices(T.quantityLabel, hw.QUANTITIES.map((q) => [q, text.quantityNames[q]]), state.anim.quantity, (quantity) => {
+      state.anim.quantity = quantity;
+      if (animation) animation.setQuantity(quantity);
+    }),
+    h('div', { class: 'controls' }, h('label', null, T.speedLabel, speed), h('span', { class: 'buttons' }, controls.play, button(T.step, 'step'), button(T.reset, 'reset'), button(T.end, 'toEnd'))),
+    // posizionato: ci stanno dentro l'evidenziazione e l'etichetta sotto il puntatore
+    h('div', { class: 'figure' }, controls.canvas),
+    legend([{ label: T.legend[0], color: 0 }, { label: T.legend[1], color: 1 }, { label: T.legend[2], color: 2, dashed: true }, { label: T.legend[3], color: 3, dashed: true }]),
+    controls.caption,
+    paras(T.after),
+  ];
+}
+
+function updateCaption(st) {
+  const T = text.trajectories;
+  controls.caption.textContent = T.caption(st, text.quantityNames[st.quantity]);
+  controls.caption.setAttribute('aria-live', st.playing ? 'off' : 'polite');
+  let label = T.play;
+  if (st.playing) label = T.pause;
+  else if (st.k > 0 && !st.done) label = T.resume;
+  controls.play.textContent = label;
+}
+
+let canvasWidth = 0;
+const canvasResizer = new ResizeObserver(() => {
+  const canvas = controls.canvas;
+  if (!animation || !canvas || canvas.clientWidth === canvasWidth) return;
+  canvasWidth = canvas.clientWidth;
+  animation.redraw();
+});
+
+/** The animation of the hackers of the last simulation started. */
+function createAnimation() {
+  if (animation) animation.destroy();
+  animation = null;
+  const canvas = controls.canvas;
+  if (!canvas || !canvas.isConnected) return;
+  const options = view.animationOptions(state.target);
+  fill(regions.trajectoriesIntro, paras(text.trajectories.intro(options.shown, options.sample)));
+  animation = hw.createScoreAnimation(canvas, {
+    ...options,
+    quantity: state.anim.quantity,
+    speed: view.ANIMATION.speeds[state.anim.speed],
+    palette: palette(),
+    decimal: text.fmt.decimal,
+    describe: view.tips.trajectory(text),
+    onUpdate: updateCaption,
+  });
+  canvasWidth = canvas.clientWidth;
+  canvasResizer.disconnect();
+  canvasResizer.observe(canvas);
+}
+
+// --- 2.4 e 2.5 Le medie e il confronto -------------------------------------------------------
+
+const zCell = (z) => ({ text: text.fmt.num(z, 2), class: Math.abs(z) > 1.959963984540054 ? 'over' : null });
+
+function updateAverages() {
+  const A = text.averages;
+  const F = text.fmt;
+  const s = computation.shown;
+  if (!s) {
+    fill(regions.averages, paras(A.intro(null)), pending());
+    return;
+  }
+  fill(
+    regions.averages,
+    paras(A.intro(s)),
+    subtitle(A.tableTitle(s.m)),
+    h(
+      'div',
+      { class: 'scroll' },
+      table(
+        'compact averages',
+        ['n', 'mean', 'meanZ', 'variance', 'varianceZ', 'biased', 'biasedTheory'].map((k) => A.cols[k]),
+        view.averageRows(s).map((r) => ({ cells: [{ text: F.int(r.n), head: true }, { text: F.num(r.mean, 4) }, zCell(r.meanZ), { text: F.num(r.variance, 4) }, zCell(r.varianceZ), { text: F.num(r.biased, 4) }, { text: F.num(r.biasedTheory, 4) }] })),
+      ),
+    ),
+    h(
+      'div',
+      { class: 'charts' },
+      figure(A.meansChart(s.m), hw.drawLineChart, view.meansChart(s, F.decimal), { tip: view.tips.means(s, text.tips), items: [{ label: A.legendMeans[0], color: 2, dashed: true }, { label: A.legendMeans[1], color: 0 }] }),
+      figure(A.variancesChart(s.m), hw.drawLineChart, view.variancesChart(s, F.decimal), {
+        tip: view.tips.variances(s, text.tips),
+        items: [{ label: A.legendVariances[0], color: 2, dashed: true }, { label: A.legendVariances[1], color: 0 }, { label: A.legendVariances[2], color: 1, dashed: true }, { label: A.legendVariances[3], color: 1 }],
+      }),
+    ),
+    paras(A.facts(s)),
+    tests('averages', s),
+  );
+}
+
+function updateComparison() {
+  const C = text.comparison.paras(computation.shown);
+  fill(regions.comparison, paras(C.before), formulas(text.formulas.unbiased, text.comparison.formulasTitle), paras(C.after));
+}
+
+// --- 2.6 La variabilita' al crescere di n ---------------------------------------------------------
+
+function updateSpread() {
+  const S = text.spread;
+  const F = text.fmt;
+  const s = computation.shown;
+  controls.spreadPlay.textContent = state.spread.playing ? S.pause : S.play;
+  if (!s) {
+    controls.spreadSlider.set(0, 0, S.nLabel(0), false);
+    fill(regions.spread, pending());
+    return;
+  }
+  const g = playerIndex('spread');
+  const pt = s.points[g];
+  controls.spreadSlider.set(lastIndex(), g, S.nLabel(pt.n));
+  const mean = view.spreadHistogram(s, g, 'mean', state.spread.mode, F.decimal);
+  const variance = view.spreadHistogram(s, g, 'variance', state.spread.mode, F.decimal);
+  fill(
+    regions.spread,
+    h(
+      'div',
+      { class: 'charts' },
+      figure(S.histMean(pt.n, s.m), hw.drawHistogram, mean, { tip: view.tips.histogram(mean, text.tips), note: S.histNote(pt.meanStats, pt.theory, 'mean') }),
+      figure(S.histVariance(pt.n, s.m), hw.drawHistogram, variance, { tip: view.tips.histogram(variance, text.tips), note: S.histNote(pt.varStats, pt.theory, 'variance') }),
+    ),
+    legend([{ label: S.legendHist[0], color: 0 }, { label: S.legendHist[1], color: 2 }]),
+    h(
+      'div',
+      { class: 'charts' },
+      figure(S.chartTitle, hw.drawLineChart, view.spreadChart(s, F.decimal), {
+        wide: true,
+        tip: view.tips.spread(s, text.tips),
+        items: [
+          { label: S.legend[0], color: 0 },
+          { label: S.legend[1], color: 0, dashed: true },
+          { label: S.legend[2], color: 1 },
+          { label: S.legend[3], color: 1, dashed: true },
+          { label: S.legend[4], color: 3, dashed: true },
+        ],
+      }),
+    ),
+    subtitle(S.tableTitle),
+    h(
+      'div',
+      { class: 'scroll' },
+      table(
+        'compact spread',
+        ['n', 'varMean', 'varMeanTheory', 'varVariance', 'varVarianceTheory', 'normalVariance', 'skewMean'].map((k) => S.cols[k]),
+        view.spreadRows(s).map((r) => ({ cells: [{ text: F.int(r.n), head: true }, { text: F.sig(r.varMean, 4) }, { text: F.sig(r.varMeanTheory, 4) }, { text: F.sig(r.varVariance, 4) }, { text: F.sig(r.varVarianceTheory, 4) }, { text: F.sig(r.normalVariance, 4) }, { text: `${F.num(r.skewMean, 3)} (${F.num(r.skewMeanTheory, 3)})` }] })),
+      ),
+    ),
+    paras(S.facts(s)),
+    tests('spread', s),
+  );
+}
+
+// --- 2.7 Statistica inferenziale ---------------------------------------------------------------------
+
+function updateInference() {
+  const I = text.inference;
+  const F = text.fmt;
+  const s = computation.shown;
+  if (!s) {
+    controls.inferenceSlider.set(0, 0, I.nLabel(0), false);
+    fill(regions.inference, pending());
+    return;
+  }
+  const last = lastIndex();
+  const g = Math.min(state.inference.g === null ? last : state.inference.g, last);
+  const pt = s.points[g];
+  controls.inferenceSlider.set(last, g, I.nLabel(pt.n));
+  const scatter = view.scatterData(s, g, F.decimal);
+  fill(
+    regions.inference,
+    h(
+      'div',
+      { class: 'charts' },
+      figure(I.coverageTitle, hw.drawLineChart, view.coverageChart(s, F.decimal), {
+        tip: view.tips.coverage(s, text.tips),
+        items: [{ label: I.coverageLegend[0], color: 2, dashed: true }, { label: I.coverageLegend[1], color: 1, dashed: true }, { label: I.coverageLegend[2], color: 0 }, { label: I.coverageLegend[3], color: 1 }],
+      }),
+      figure(I.scatterTitle(pt.n, s.m), hw.drawScatter, scatter, { tip: view.tips.scatter(scatter, text.tips), items: [{ label: I.scatterLegend[0], color: 0 }, { label: I.scatterLegend[1], color: 1, dashed: true }, { label: I.scatterLegend[2], color: 2, dashed: true }] }),
+    ),
+    subtitle(I.tableTitle),
+    h(
+      'div',
+      { class: 'scroll' },
+      table(
+        'compact inference',
+        ['n', 't', 'tQuantile', 'chi2', 'corr', 'corrTheory'].map((k) => I.cols[k]),
+        view.inferenceRows(s).map((r) => ({ cells: [{ text: F.int(r.n), head: true }, { text: F.pct(r.t, 2) }, { text: F.num(r.tQuantile, 3) }, { text: F.pct(r.chi2, 2) }, { text: F.num(r.corr, 3) }, { text: F.num(r.corrTheory, 3) }] })),
+      ),
+    ),
+    paras(I.facts(s)),
+    tests('inference', s),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// 3, 4 e 5
+// ---------------------------------------------------------------------------
+
+function testsSection() {
+  regions.tests = h('div');
+  return h('section', { class: 'section' }, title('hw4-tests', 0, text.sections.tests), regions.tests);
+}
+
+function updateTests() {
+  const T = text.tests;
+  const F = text.fmt;
+  const s = computation.shown;
+  if (!s) {
+    fill(regions.tests, pending());
+    return;
+  }
+  const summary = view.testSummary(s);
+  fill(
+    regions.tests,
+    h('p', { text: T.intro(s) }),
+    table(
+      'discussion summary-tests',
+      [T.cols.subject, T.cols.hypothesis, T.cols.p, T.cols.verdict, T.cols.expected],
+      summary.all.map((t) => {
+        const rejected = t.result.verdict === 'reject';
+        return {
+          class: rejected ? 'is-rejected' : null,
+          cells: [{ text: text.stats.groups[t.group], head: true }, { text: text.stats.labels[t.group][t.key] }, { text: F.pval(t.result.pValue) }, { text: text.stats.verdict[rejected ? 'reject' : 'notReject'] }, { text: text.stats.expected[t.expected] }],
+        };
+      }),
+    ),
+    paras(T.after(summary, s)),
+  );
+}
+
+function historySection() {
+  const H = text.history;
+  return h(
+    'section',
+    { class: 'section' },
+    title('hw4-history', 0, text.sections.history),
+    h('p', { text: H.intro }),
+    h('p', { class: 'legend' }, h('span', { class: 'legend-task', text: H.legend.task }), h('span', { class: 'legend-context', text: H.legend.context })),
+    h(
+      'ol',
+      { class: 'timeline' },
+      H.events.map((e) => h('li', { class: e.task ? 'is-task' : 'is-context' }, h('span', { class: 'year', text: e.year }), h('div', null, h('strong', { text: e.title }), h('p', { text: e.text })))),
+    ),
+    h('p', { text: H.after }),
+  );
+}
+
+function conclusionSection() {
+  regions.conclusion = h('div');
+  return h('section', { class: 'section' }, title('hw4-conclusion', 0, text.sections.conclusion), regions.conclusion);
+}
+
+function updateConclusion() {
+  fill(regions.conclusion, paras(text.conclusion(computation.shown)));
+}
+
+// ---------------------------------------------------------------------------
+// La simulazione
+// ---------------------------------------------------------------------------
+
+const message = (error) => (error instanceof Error ? error.message : String(error));
+
+/** A generator that stops early, returning null, once its token is cancelled. */
+function* cancellable(steps, token) {
+  let step = steps.next();
+  while (!step.done) {
+    if (token.cancelled) return null;
+    yield;
+    step = steps.next();
+  }
+  return step.value;
+}
+
+// gli ultimi risultati restano in memoria (ognuno pesa circa un megabyte)
+function remember(key, value) {
+  results.delete(key);
+  results.set(key, value);
+  while (results.size > 4) results.delete(results.keys().next().value);
+}
+
+/** Simulates the parameters of state.target; the one still running for other parameters stops at its next slice. */
+function startComputation() {
+  const params = state.target;
+  const key = view.paramsKey(params);
+  if (computation.running) computation.running.token.cancelled = true;
+  computation.running = null;
+  if (results.has(key)) {
+    computation.shown = results.get(key);
+    computation.error = null;
+    updateResults();
+    return;
+  }
+  const token = { cancelled: false };
+  computation.running = { key, token };
+  updateStatus();
+  hw.runStepsAsync(() => cancellable(hw.exploreSteps(params), token)).then(
+    (value) => {
+      if (token.cancelled || value === null) return;
+      remember(key, value);
+      computation.running = null;
+      computation.shown = value;
+      computation.error = null;
+      updateResults();
+    },
+    (error) => {
+      if (token.cancelled) return;
+      computation.running = null;
+      computation.error = message(error);
+      updateResults();
+    },
+  );
+}
+
+function updateResults() {
+  updateStatus();
+  updateScores();
+  updateAverages();
+  updateComparison();
+  updateSpread();
+  updateInference();
+  updateTests();
+  updateConclusion();
+}
+
+// ---------------------------------------------------------------------------
+// Indice, lingua e avvio
+// ---------------------------------------------------------------------------
+
+const dialog = document.getElementById('index-dialog');
+const FOLLOW_MS = 2500;
+
+// Porta il titolo in cima e lo segue per un paio di secondi: se nel
+// frattempo qualcosa sopra cambia altezza (una sezione che finisce di
+// calcolarsi), lo scorrimento riparte verso la nuova posizione. Se l'utente
+// scorre da se', si smette subito di inseguire.
+function scrollToSection(target) {
+  const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+  const userEvents = ['wheel', 'touchstart', 'keydown', 'mousedown'];
+  const started = performance.now();
+  let stopped = false;
+  let lastTop = target.getBoundingClientRect().top + window.scrollY;
+  const stop = () => {
+    stopped = true;
+    userEvents.forEach((type) => window.removeEventListener(type, stop));
+  };
+  userEvents.forEach((type) => window.addEventListener(type, stop, { passive: true }));
+  target.scrollIntoView({ behavior, block: 'start' });
+  const follow = () => {
+    if (stopped) return;
+    if (performance.now() - started > FOLLOW_MS) {
+      stop();
+      return;
+    }
+    const top = target.getBoundingClientRect().top + window.scrollY;
+    if (Math.abs(top - lastTop) > 1) {
+      lastTop = top;
+      target.scrollIntoView({ behavior, block: 'start' });
+    }
+    requestAnimationFrame(follow);
+  };
+  requestAnimationFrame(follow);
+}
+
+function closeIndex() {
+  document.documentElement.classList.remove('index-open');
+  if (dialog.open) dialog.close();
+}
+
+function goTo(id) {
+  closeIndex();
+  const target = document.getElementById(id);
+  if (!target) return;
+  target.focus({ preventScroll: true });
+  scrollToSection(target);
+  target.classList.remove('flash');
+  void target.offsetWidth;
+  target.classList.add('flash');
+  target.addEventListener('animationend', () => target.classList.remove('flash'), { once: true });
+}
+
+// In cima alla pagina, con il focus sul titolo: chi usa la tastiera riparte
+// da li', non dal pulsante in fondo
+function backToTop() {
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
+  document.getElementById('page-title').focus({ preventScroll: true });
+}
+
+const toTopButton = () => h('p', { class: 'to-top' }, h('button', { type: 'button', class: 'btn alt', text: text.ui.backToTop, onclick: backToTop }));
+
+function renderChrome() {
+  const t = text;
+  document.documentElement.lang = state.lang;
+  document.title = 'Homework #4 - Statistics';
+  document.getElementById('subtitle').textContent = t.standalone.subtitle;
+  document.getElementById('course').textContent = t.standalone.course;
+  document.getElementById('open-index').textContent = t.ui.index;
+  document.getElementById('index-title').textContent = t.ui.indexTitle;
+  document.querySelector('.index-close').setAttribute('aria-label', t.ui.close);
+  document.getElementById('language').setAttribute('aria-label', t.ui.language);
+  document.getElementById('online-label').textContent = t.standalone.online;
+  for (const button of document.querySelectorAll('[data-lang]')) {
+    button.setAttribute('aria-pressed', String(button.dataset.lang === state.lang));
+  }
+  document.getElementById('index-list').replaceChildren(
+    ...view.tocEntries(t.sections).map((entry) => h('li', { class: `level-${entry.level}` }, h('button', { type: 'button', text: entry.title, onclick: () => goTo(entry.id) }))),
+  );
+}
+
+function render() {
+  text = HW4_TEXTS[state.lang];
+  stopPlayer('steps');
+  stopPlayer('spread');
+  renderChrome();
+  const app = document.getElementById('app');
+  fill(app, assignmentSection(), part1Section(), part2Section(), testsSection(), historySection(), conclusionSection(), toTopButton());
+  updateSteps();
+  updateScores();
+  updateInputs();
+  updateVerify();
+  updateResults();
+  createAnimation();
+}
+
+function boot() {
+  for (const button of document.querySelectorAll('[data-lang]')) {
+    button.addEventListener('click', () => {
+      if (button.dataset.lang === state.lang) return;
+      state.lang = LANGUAGES.includes(button.dataset.lang) ? button.dataset.lang : 'en';
+      render();
+    });
+  }
+  document.getElementById('open-index').addEventListener('click', () => {
+    document.documentElement.classList.add('index-open');
+    dialog.showModal();
+  });
+  document.querySelector('.index-close').addEventListener('click', closeIndex);
+  dialog.addEventListener('close', () => document.documentElement.classList.remove('index-open'));
+  dialog.addEventListener('click', (e) => {
+    if (e.target === dialog) closeIndex();
+  });
+  // i colori dei grafici, delle legende e dell'animazione seguono il tema del sistema
+  darkQuery.addEventListener('change', render);
+  render();
+  // le verifiche e la simulazione partono dopo il primo disegno della pagina
+  setTimeout(() => {
+    try {
+      checkRows = hw.verifyAll();
+    } catch (error) {
+      checkRows = [{ group: 'functions', name: text.ui.error(message(error)), expected: '', actual: '', ok: false }];
+    }
+    updateVerify();
+    startComputation();
+  }, 50);
+}
+
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+else boot();

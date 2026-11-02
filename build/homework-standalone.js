@@ -31,7 +31,7 @@ const STATIC_FILES = ['index.html', 'style.css', 'README.txt'];
  * calcoli, che diventa lo script globale `global`; `inner` sono i moduli che
  * la libreria importa e che finiscono dentro di lei (i parametri della
  * consegna dell'Exercise 1, la lista di parole di BIP-39 dell'Exercise 2, il
- * corpus dell'Homework #2; l'Homework #3 non ne ha).
+ * corpus dell'Homework #2; l'Homework #3 e l'Homework #4 non ne hanno).
  */
 export const HOMEWORKS = [
   {
@@ -73,6 +73,16 @@ export const HOMEWORKS = [
     inner: [],
     contents: 'Computations: xoshiro128** and SplitMix64, the m attackers of the Bernoulli and Rademacher models, the exact laws,\n * distances from the normal, hypothesis tests, charts, the animation and command line (node homework3.js [options]).',
     description: 'Homework #3 - Statistics: the penetration score of m attackers on n systems, the law of large numbers and the central limit theorem.',
+  },
+  {
+    number: '4',
+    name: 'Homework #4',
+    source: 'hw4',
+    library: 'homework4.js',
+    global: 'Homework4',
+    inner: [],
+    contents: 'Computations: the recurrences of Knuth and Welford, xoshiro128** and SplitMix64, the four laws of the scores,\n * the m hackers, the sampling mean and variance, hypothesis tests, charts, the animation and command line (node homework4.js [options]).',
+    description: 'Homework #4 - Statistics: Welford\'s recurrence formulas, and the sampling mean and variance of m hackers on n systems.',
   },
 ];
 

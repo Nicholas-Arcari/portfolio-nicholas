@@ -69,17 +69,16 @@ export const STATISTICS_HOMEWORK = [
     due: '2026-10-29T21:00:00+01:00',
   },
   {
-    // due parti, Part 1 e Part 2, in una sola pagina e con un solo indirizzo;
-    // finche' non arriva la consegna la pagina dice "Work in progress..."
+    // due parti, Part 1 e Part 2, in una sola pagina e con un solo indirizzo
     slug: 'homework-4',
     name: 'Homework #4',
     type: 'homework',
-    theory: false,
+    theory: true,
     description: {
-      it: 'Homework in due parti, Part 1 e Part 2, in preparazione.',
-      en: 'Homework in two parts, Part 1 and Part 2, in preparation.',
+      it: 'Due parti in una pagina. Part 1: le formule ricorsive di Knuth per la media e di Welford per la somma dei quadrati e la varianza, ricavate passo per passo, scritte in tre righe di codice, animate e confrontate con la formula da manuale (la cancellazione numerica). Part 2: l’Homework #3 con un punteggio da 0 a 10 per tentativo, media e varianza campionarie di m hacker su n sistemi, il confronto con μ e σ², la correzione di Bessel, la variabilità al crescere di n, gli intervalli di confidenza e la correlazione fra media e varianza, con test d’ipotesi e contesto storico.',
+      en: 'Two parts in one page. Part 1: Knuth’s recurrence for the mean and Welford’s for the sum of squares and the variance, derived step by step, written in three lines of code, animated and compared with the textbook formula (numerical cancellation). Part 2: Homework #3 with a score from 0 to 10 per attempt, the sampling mean and variance of m hackers on n systems, the comparison with μ and σ², Bessel’s correction, the variability as n grows, confidence intervals and the correlation between mean and variance, with hypothesis tests and historical context.',
     },
-    completed: null,
+    completed: '2026-11-02T18:26:00+01:00',
     due: '2026-11-05T21:00:00+01:00',
   },
   {
