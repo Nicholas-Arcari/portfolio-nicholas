@@ -28,10 +28,12 @@ const SECTIONS = [
   { id: 'hw4-part1', key: 'part1', level: 0 },
   { id: 'hw4-knuth', key: 'knuth', level: 1 },
   { id: 'hw4-ss', key: 'ss', level: 1 },
+  { id: 'hw4-try-drag', key: 'tryDrag', level: 2 },
   { id: 'hw4-variance', key: 'variance', level: 1 },
   { id: 'hw4-code', key: 'code', level: 1 },
   { id: 'hw4-steps', key: 'steps', level: 1 },
   { id: 'hw4-stability', key: 'stability', level: 1 },
+  { id: 'hw4-try-digits', key: 'tryDigits', level: 2 },
   { id: 'hw4-checks', key: 'checks', level: 1 },
   { id: 'hw4-part2', key: 'part2', level: 0 },
   { id: 'hw4-scores', key: 'scores', level: 1 },
@@ -39,8 +41,10 @@ const SECTIONS = [
   { id: 'hw4-trajectories', key: 'trajectories', level: 1 },
   { id: 'hw4-averages', key: 'averages', level: 1 },
   { id: 'hw4-comparison', key: 'comparison', level: 1 },
+  { id: 'hw4-try-bessel', key: 'tryBessel', level: 2 },
   { id: 'hw4-spread', key: 'spread', level: 1 },
   { id: 'hw4-inference', key: 'inference', level: 1 },
+  { id: 'hw4-try-intervals', key: 'tryIntervals', level: 2 },
   { id: 'hw4-tests', key: 'tests', level: 0 },
   { id: 'hw4-history', key: 'history', level: 0 },
   { id: 'hw4-conclusion', key: 'conclusion', level: 0 },
@@ -576,6 +580,221 @@ function scatterData(s, g, decimal = '.') {
 }
 
 // ---------------------------------------------------------------------------
+// Gli esempi interattivi ("Prova")
+// ---------------------------------------------------------------------------
+
+/** The draggable data of section 1.2 as the page opens with them, and their range. */
+const DRAG = Object.freeze({ values: hw.DEFAULT_DATA, lo: 0, hi: hw.SCORE_MAX });
+
+/** The two data sets of the live cancellation of section 1.6: the classic example and the first 1000 scores of hacker 1. */
+const DIGIT_DATASETS = Object.freeze(['classic', 'scores']);
+const DIGIT_POWERS = Object.freeze([0, 15]);
+
+let scoreSample = null;
+function digitBase(dataset) {
+  if (dataset === 'classic') return { values: [...hw.CANCELLATION_DATA], exact: 30 };
+  if (!scoreSample) {
+    const draw = hw.hackerScores(hw.DEFAULT_SEED, hw.scoreLaw(hw.DEFAULT_DIST, hw.DEFAULT_P), 0);
+    const y = Array.from({ length: hw.STABILITY_SIZE }, draw);
+    let s1 = 0;
+    let s2 = 0;
+    for (const v of y) {
+      s1 += v;
+      s2 += v * v;
+    }
+    const N = y.length;
+    scoreSample = { values: y, exact: (N * s2 - s1 * s1) / (N * (N - 1)) };
+  }
+  return scoreSample;
+}
+
+/**
+ * A number split into digits, each marked as right ('ok') or wrong ('bad')
+ * against the exact value at the same decimal position: the digits of the
+ * live cancellation. Values far from the exact one (another order of
+ * magnitude, or negative) are all wrong and shown in scientific notation.
+ */
+function digitMarks(value, exact) {
+  const decimals = Math.max(0, 16 - Math.floor(Math.log10(Math.abs(exact))));
+  if (!Number.isFinite(value) || value <= 0 || Math.abs(value) >= 1e6 * Math.abs(exact) || Math.abs(value) < Math.abs(exact) / 1e6) {
+    return { parts: [{ text: Number.isFinite(value) ? value.toPrecision(6) : String(value), ok: false }], right: 0 };
+  }
+  const shown = value.toFixed(decimals).replace(/\.?0+$/, '') || '0';
+  const reference = exact.toFixed(decimals);
+  const [vi, vf = ''] = shown.split('.');
+  const [ei, ef = ''] = reference.split('.');
+  const parts = [];
+  let right = 0;
+  let wrongSeen = false;
+  // another number of integer digits: another order of magnitude, every digit is wrong
+  if (vi.length !== ei.length) wrongSeen = true;
+  const width = Math.max(vi.length, ei.length);
+  const vInt = vi.padStart(width, ' ');
+  const eInt = ei.padStart(width, ' ');
+  const mark = (ch, ref) => {
+    const ok = !wrongSeen && ch === ref;
+    if (!ok) wrongSeen = true;
+    else if (/\d/.test(ch)) right++;
+    parts.push({ text: ch, ok });
+  };
+  for (let i = 0; i < width; i++) if (vInt[i] !== ' ') mark(vInt[i], eInt[i]);
+  if (vf) {
+    parts.push({ text: '.', ok: !wrongSeen, point: true });
+    for (let i = 0; i < vf.length; i++) mark(vf[i], ef[i] || '0');
+  }
+  // the zeros that the exact value has and the shown one omits are right as well
+  if (!wrongSeen) right = Math.max(right, 16);
+  return { parts, right: Math.min(16, right) };
+}
+
+/** The common leading characters of two numbers written with 17 significant digits: what the subtraction cancels. */
+function commonPrefix(a, b) {
+  // the mantissas are compared digit by digit; the exponent, the same for both, is shown apart
+  const [x, ex = ''] = a.toPrecision(17).split('e');
+  const [y, ey = ''] = b.toPrecision(17).split('e');
+  let i = 0;
+  while (i < x.length && x[i] === y[i] && ex === ey) i++;
+  const digits = (t) => t.replace(/[^0-9]/g, '').length;
+  return { a: x, b: y, exponents: [ex ? `e${ex}` : '', ey ? `e${ey}` : ''], common: i, commonDigits: digits(x.slice(0, i)), total: digits(x) };
+}
+
+/**
+ * The live cancellation: the data of a set shifted by c = 10^power, the
+ * variance with the three formulas, each with its right and wrong digits,
+ * and, for the textbook formula, the two huge sums it subtracts.
+ */
+function digitsReport(power, dataset) {
+  const base = digitBase(dataset);
+  const c = 10 ** power;
+  const x = base.values.map((v) => c + v);
+  let s1 = 0;
+  let s2 = 0;
+  for (const v of x) {
+    s1 += v;
+    s2 += v * v;
+  }
+  const n = x.length;
+  const values = { naive: hw.naiveVariance(x), twoPass: hw.twoPassVariance(x), welford: hw.welford(x).variance };
+  const rows = hw.FORMULAS.map((f) => ({ formula: f, value: values[f], error: Math.abs(values[f] - base.exact) / base.exact, ...digitMarks(values[f], base.exact) }));
+  return { power, dataset, n, exact: base.exact, rows, sums: commonPrefix(s2, (s1 * s1) / n) };
+}
+
+/** The values of n of the live examples of sections 2.5 and 2.7, and the levels of the intervals. */
+const BESSEL_N = Object.freeze([2, 50]);
+const BESSEL_MAX = 20000;
+const INTERVAL_NS = Object.freeze([2, 3, 5, 10, 20, 30, 50, 100, 200]);
+const LEVELS = Object.freeze([0.8, 0.9, 0.95, 0.99]);
+const INTERVAL_SIZE = 100;
+
+/** A new live Bessel experiment: no samples yet. */
+const besselStart = (params, n) => ({ seed: params.seed, dist: params.dist, p: params.p, n, count: 0, sumVariance: 0, sumBiased: 0, history: [], last: null });
+
+/**
+ * Draws `count` more samples of the live Bessel experiment: sample j is
+ * hacker j of the simulation, its first n scores. Returns the new state; the
+ * running averages are recorded at every sample at first, then every 4%.
+ */
+function besselAdvance(state, count) {
+  const law = hw.scoreLaw(state.dist, state.p);
+  const next = { ...state, history: [...state.history] };
+  const target = Math.min(BESSEL_MAX, state.count + count);
+  while (next.count < target) {
+    const sample = hw.sampleStats(state.seed, law, next.count, state.n);
+    next.count += 1;
+    next.sumVariance += sample.variance;
+    next.sumBiased += sample.biased;
+    next.last = sample;
+    const lastRecorded = next.history.length ? next.history[next.history.length - 1][0] : 0;
+    if (next.count <= 20 || next.count >= lastRecorded * 1.04 || next.count === target) next.history.push([next.count, next.sumVariance / next.count, next.sumBiased / next.count]);
+  }
+  return next;
+}
+
+/** The chart of the live Bessel experiment: the two running averages against sigma^2 (with its 95% band) and sigma^2 (n - 1)/n. */
+function besselChart(state, decimal = '.') {
+  const law = hw.scoreLaw(state.dist, state.p);
+  const T = hw.samplingTheory(law, state.n);
+  const counts = state.history.map((h) => h[0]);
+  const end = Math.max(10, ...counts);
+  const x = [...counts];
+  if (x.length === 0 || x[x.length - 1] < end) x.push(end);
+  if (x[0] > 1) x.unshift(1);
+  const at = (count) => state.history.find((h) => h[0] === count);
+  const pick = (i) => x.map((c) => (at(c) ? at(c)[i] : null));
+  const half = (c) => (Z95 * T.sdVariance) / Math.sqrt(c);
+  const averages = [...pick(1), ...pick(2)].filter((v) => v !== null);
+  const visibleBand = x.filter((c) => c >= 30).flatMap((c) => [law.variance - half(c), law.variance + half(c)]);
+  const range = rangeOf([...averages, law.variance, T.biased, ...visibleBand]);
+  return {
+    x,
+    logX: true,
+    xTicks: logTicks(end),
+    ...range,
+    decimal,
+    series: [
+      { values: x.map(() => law.variance), band: x.map((c) => [law.variance - half(c), law.variance + half(c)]), colorIndex: 2, dashed: true },
+      { values: x.map(() => T.biased), colorIndex: 1, dashed: true },
+      { values: pick(1), colorIndex: 0, dots: false },
+      { values: pick(2), colorIndex: 1, dots: false },
+    ],
+  };
+}
+
+/**
+ * One batch of the live intervals of section 2.7: the first n scores of
+ * hackers batch x 100, ..., batch x 100 + 99, and for each the interval at
+ * the chosen level for mu (Student's t) or sigma^2 (chi-square), green if it
+ * contains the true value.
+ */
+function intervalBatch({ seed, dist, p, n, level, param, batch }) {
+  const law = hw.scoreLaw(dist, p);
+  const q = (1 + level) / 2;
+  const t = hw.studentQuantile(q, n - 1);
+  const chiLow = hw.chiSquareQuantile(1 - q, n - 1);
+  const chiHigh = hw.chiSquareQuantile(q, n - 1);
+  const truth = param === 'mean' ? law.mu : law.variance;
+  const rows = [];
+  for (let i = 0; i < INTERVAL_SIZE; i++) {
+    const s = hw.sampleStats(seed, law, batch * INTERVAL_SIZE + i, n);
+    let lo;
+    let hi;
+    let est;
+    if (param === 'mean') {
+      const half = t * Math.sqrt(s.variance / n);
+      lo = s.mean - half;
+      hi = s.mean + half;
+      est = s.mean;
+    } else {
+      lo = ((n - 1) * s.variance) / chiHigh;
+      hi = ((n - 1) * s.variance) / chiLow;
+      est = s.variance;
+    }
+    rows.push({ hacker: s.j + 1, mean: s.mean, variance: s.variance, lo, hi, est, ok: lo <= truth && truth <= hi });
+  }
+  return { rows, truth, misses: rows.filter((r) => !r.ok).length, law, param, n, level };
+}
+
+/** The chart of a batch: the axis holds most intervals, the longest ones end with an arrow. */
+function intervalChart(batch, decimal = '.') {
+  const { rows, truth, param } = batch;
+  const sortedLo = rows.map((r) => r.lo).sort((a, b) => a - b);
+  const sortedHi = rows.map((r) => r.hi).sort((a, b) => a - b);
+  let x0 = Math.min(truth, sortedLo[Math.floor(0.05 * (rows.length - 1))]);
+  let x1 = Math.max(truth, sortedHi[Math.ceil(0.9 * (rows.length - 1))]);
+  if (param === 'mean') {
+    x0 = Math.max(0, x0);
+    x1 = Math.min(hw.SCORE_MAX, x1);
+  } else {
+    x0 = 0;
+    x1 = Math.max(x1, 2 * truth);
+  }
+  const pad = (x1 - x0) * 0.04 || 1;
+  x0 = param === 'mean' ? Math.max(0, x0 - pad) : x0;
+  x1 += pad;
+  return { rows, x0, x1, truth, xTicks: hw.niceTicks(x0, x1, 6), decimal };
+}
+
+// ---------------------------------------------------------------------------
 // Test
 // ---------------------------------------------------------------------------
 
@@ -686,6 +905,12 @@ const tips = {
   },
   coverage: (s, T) => (hit) => T.coverage(inferenceRows(s)[hit.index]),
   scatter: (data, T) => (hit) => T.hacker(hit.index + 1, data.xs[hit.index], data.ys[hit.index]),
+  bessel: (state, data, T) => (hit) => {
+    const c = data.x[hit.index];
+    const h = state.history.find((row) => row[0] === c);
+    return h ? T.bessel(h[0], h[1], h[2]) : null;
+  },
+  intervals: (batch, T) => (hit) => T.interval(batch.rows[hit.index], batch.param),
 };
 
 // ---------------------------------------------------------------------------
@@ -714,7 +939,7 @@ function scheduleFrameJob(job) {
   }
 }
 
-return { SECTIONS, tocEntries, welfordCode, DEFAULT_DATA_TEXT, DATA_LENGTH, stepsChart, stepsCheck, ERROR_FLOOR, ERROR_CEILING, stabilityChart, stabilityFacts, FIELD_LENGTH, DEFAULT_PARAMS, fieldsOf, DEFAULT_INPUTS, readInputs, sameParams, applyInputs, allValid, paramsKey, parseParamsKey, inputBadge, lawRows, scoresChart, ANIMATION, animationOptions, averageRows, averageFacts, comparisonFacts, meansChart, variancesChart, spreadRows, spreadChart, spreadFacts, latticeBins, normalCurve, AXIS_MODES, spreadHistogram, inferenceRows, coverageChart, inferenceFacts, scatterData, TEST_GROUPS, statTests, expectedVerdicts, testSummary, tips, scheduleFrameJob };
+return { SECTIONS, tocEntries, welfordCode, DEFAULT_DATA_TEXT, DATA_LENGTH, stepsChart, stepsCheck, ERROR_FLOOR, ERROR_CEILING, stabilityChart, stabilityFacts, FIELD_LENGTH, DEFAULT_PARAMS, fieldsOf, DEFAULT_INPUTS, readInputs, sameParams, applyInputs, allValid, paramsKey, parseParamsKey, inputBadge, lawRows, scoresChart, ANIMATION, animationOptions, averageRows, averageFacts, comparisonFacts, meansChart, variancesChart, spreadRows, spreadChart, spreadFacts, latticeBins, normalCurve, AXIS_MODES, spreadHistogram, inferenceRows, coverageChart, inferenceFacts, scatterData, DRAG, DIGIT_DATASETS, DIGIT_POWERS, digitMarks, digitsReport, BESSEL_N, BESSEL_MAX, INTERVAL_NS, LEVELS, INTERVAL_SIZE, besselStart, besselAdvance, besselChart, intervalBatch, intervalChart, TEST_GROUPS, statTests, expectedVerdicts, testSummary, tips, scheduleFrameJob };
 })();
 
 var texts$ = (function () {
@@ -907,6 +1132,10 @@ const it = {
     comparison: '2.5 Che cosa dice il confronto',
     spread: '2.6 La variabilità al crescere di n',
     inference: '2.7 Perché serve alla statistica inferenziale',
+    tryDrag: 'Prova: trascina i dati',
+    tryDigits: 'Prova: le cifre che si perdono',
+    tryBessel: 'Prova: Bessel in diretta',
+    tryIntervals: 'Prova: 100 intervalli di confidenza',
     tests: '3. Riepilogo dei test statistici',
     history: '4. Contesto storico',
     conclusion: '5. Conclusioni',
@@ -1219,6 +1448,84 @@ const it = {
       ];
     },
   },
+  tryDrag: {
+    intro: [
+      'Trascinate i punti con il mouse o con il dito: l’ultimo, in rosso, è il dato nuovo x_k (il cursore sotto lo sposta anche da tastiera). Sulla retta ci sono le due medie, M_(k-1) tratteggiata e M_k continua, e i due scarti del dato nuovo: δ in giallo e x_k - M_k in viola. In basso a sinistra il rettangolo che ha per lati i due scarti: la sua area è l’incremento di SS, ed è il quadrato δ × δ senza una striscia di 1/k, perché x_k - M_k = ((k - 1)/k) δ. A destra SS_(k-1) più quell’area, contro SS_k calcolata da capo: le due barre restano sempre lunghe uguali, ed è la formula di Welford.',
+    ],
+    sliderLabel: (k, v) => `Il dato nuovo x_${k} = ${v}`,
+    add: 'Aggiungi un dato',
+    remove: 'Togli l’ultimo',
+    reset: 'Ripristina',
+    legend: ['dati', 'dato nuovo x_k', 'M_(k-1) e M_k', 'δ = x_k - M_(k-1)', 'x_k - M_k', 'SS_(k-1)', 'SS_k calcolata da capo'],
+    caption: (st) => {
+      const F = IT;
+      return `Dato nuovo x_${st.k} = ${F.sig(st.x, 4)}: la media passa da M_${st.k - 1} = ${F.sig(st.previousMean, 4)} a M_${st.k} = ${F.sig(st.mean, 4)}; δ = ${F.sig(st.delta, 4)}, x_${st.k} - M_${st.k} = ${F.sig(st.after, 4)}, incremento ${F.sig(st.increment, 4)}. SS_${st.k} = ${F.sig(st.previousSS, 4)} + ${F.sig(st.increment, 4)} = ${F.sig(st.previousSS + st.increment, 4)}, come il calcolo diretto Σ (x_i - M_${st.k})² = ${F.sig(st.direct, 4)}; varianza campionaria s² = ${F.sig(st.variance, 4)}.`;
+    },
+    after: [
+      'Provate a portare il dato nuovo sopra la media vecchia: δ si annulla, il rettangolo sparisce e SS non cambia. Allontanatelo: l’area cresce come il quadrato della distanza, ed è per questo che un solo valore anomalo pesa tanto sulla varianza. Con molti dati la striscia 1/k diventa sottile e l’incremento è quasi δ².',
+    ],
+  },
+  tryDigits: {
+    intro: [
+      'Il cursore sposta i dati di c = 10^0, ..., 10^15: la varianza esatta non cambia. Per ciascuna delle tre formule le cifre uguali a quelle del valore esatto sono in verde e le altre in rosso. Sotto, i due numeri enormi che la formula da manuale sottrae: in grigio le cifre iniziali che hanno in comune e che la sottrazione cancella, in rosso quelle che restano, già sporcate dagli arrotondamenti.',
+    ],
+    powerLabel: (e) => `Spostamento c = 10^${e}`,
+    datasetLabel: 'Dati',
+    datasets: { classic: '4, 7, 13, 16', scores: '1.000 punteggi' },
+    rows: { naive: 'Formula da manuale', twoPass: 'Due passate', welford: 'Welford' },
+    exact: (v) => `Valore esatto della varianza: ${IT.sig(v, 15)}`,
+    right: (r) => (r === 0 ? 'nessuna cifra giusta' : r >= 16 ? 'tutte le cifre giuste' : `${r} cifre giuste su 16`),
+    error: (e) => (e === 0 ? 'errore nullo' : `errore relativo ${IT.sci(e)}`),
+    sumsTitle: 'Dentro la formula da manuale: Σx² e (Σx)²/n',
+    sumLabels: ['Σx²', '(Σx)²/n'],
+    common: (d, total) =>
+      d === 0
+        ? 'I due numeri non hanno cifre iniziali in comune: la sottrazione non perde niente.'
+        : d >= total
+          ? `I due numeri sono identici in tutte le ${total} cifre: la differenza vale zero, e con lei la varianza.`
+          : `I due numeri hanno in comune le prime ${d} cifre su ${total}: la sottrazione le cancella, e alla differenza restano ${total - d} cifre, quelle già sporcate dagli arrotondamenti.`,
+  },
+  tryBessel: {
+    intro: [
+      'Ogni pressione estrae altri campioni di n punteggi dalla legge della sezione 2.1: il campione j sono i primi n punteggi dell’hacker j della simulazione. Il grafico segue, al crescere del numero di campioni, la media delle s² (blu) e quella di SS/n (rossa): la prima si avvicina a σ², la seconda a σ² (n - 1)/n, e la distanza fra le due è proprio ciò che la correzione di Bessel toglie. La fascia verde è dove la media delle s² deve stare al 95% se s² è corretta, e si stringe come 1/√(numero di campioni). Con n piccolo le due medie restano lontane, con n grande quasi si toccano.',
+    ],
+    nLabel: (n) => `n = ${n} punteggi per campione`,
+    one: '+1 campione',
+    hundred: '+100',
+    thousand: '+1.000',
+    play: 'Avvia',
+    pause: 'Pausa',
+    reset: 'Ricomincia',
+    chartTitle: (n) => `Media delle varianze di campioni di ${n} punteggi, al crescere del numero di campioni (scala logaritmica)`,
+    legend: ['σ², con la fascia al 95%', 'σ² (n - 1)/n', 'media delle s²', 'media di SS/n'],
+    status: (st, law) => {
+      const F = IT;
+      if (st.count === 0) return 'Nessun campione ancora: premete +1 campione o Avvia.';
+      return `${F.int(st.count)} campioni: media delle s² ${F.num(st.sumVariance / st.count, 4)} (σ² = ${F.sig(law.variance, 4)}), media di SS/n ${F.num(st.sumBiased / st.count, 4)} (σ² (n - 1)/n = ${F.sig((law.variance * (st.n - 1)) / st.n, 4)}).`;
+    },
+    last: (sample) => {
+      const F = IT;
+      const shown = sample.values.slice(0, 12).map((v) => F.sig(v, 3)).join(', ');
+      return `Ultimo campione (hacker ${F.int(sample.j + 1)}): ${shown}${sample.values.length > 12 ? ', ...' : ''}; media ${F.num(sample.mean, 3)}, s² ${F.num(sample.variance, 3)}, SS/n ${F.num(sample.biased, 3)}.`;
+    },
+    limit: 'Raggiunto il massimo di 20.000 campioni: Ricomincia o cambiate n.',
+  },
+  tryIntervals: {
+    intro: [
+      'Cento campioni di n punteggi, cioè cento hacker con n sistemi, e per ciascuno l’intervallo di confidenza: in verde quelli che contengono il valore vero (la linea tratteggiata), in rosso quelli che lo mancano. Un intervallo al 95% dovrebbe mancarlo circa 5 volte su 100. Si possono cambiare n, il livello, il parametro (μ con la t di Student, σ² con il chi quadrato) e la legge, e vedere quando la promessa è mantenuta; Nuovi 100 campioni passa ai cento hacker successivi e somma i conteggi.',
+      'Due prove da fare: con la legge iniziale e n = 2 l’intervallo per μ manca il valore vero più spesso del dichiarato; con la legge uniforme l’intervallo per σ² non lo manca quasi mai, perché con code più leggere della normale è troppo largo.',
+    ],
+    nLabel: (n) => `n = ${n} punteggi per campione`,
+    levelLabel: 'Livello',
+    paramLabel: 'Parametro',
+    params: { mean: 'μ (t di Student)', variance: 'σ² (chi quadrato)' },
+    lawLabel: 'Legge',
+    newBatch: 'Nuovi 100 campioni',
+    chartTitle: (b, lawName) => `Intervalli al ${IT.pct(b.level, 0)} per ${b.param === 'mean' ? 'μ' : 'σ²'} con n = ${b.n}, ${lawName}`,
+    legend: ['contiene il valore vero', 'manca il valore vero', 'valore vero'],
+    counts: (misses, level, total, totalMisses) =>
+      `In questa estrazione ${misses} intervalli su 100 mancano il valore vero (attesi circa ${Math.round(100 * (1 - level))}); in tutte le estrazioni con queste impostazioni ${IT.int(totalMisses)} su ${IT.int(total)}, cioè il ${IT.pct(totalMisses / total, 1)}, contro il ${IT.pct(1 - level, 0)} dichiarato.`,
+  },
   stats: {
     verdict: { reject: 'H₀ rifiutata', notReject: 'H₀ non rifiutata' },
     expected: { reject: 'atteso: rifiuto', notReject: 'atteso: nessun rifiuto', either: 'dipende dalla potenza del test' },
@@ -1323,6 +1630,8 @@ const it = {
     bin: (from, to, share, normal) => `Da ${IT.sig(from, 4)} a ${IT.sig(to, 4)}: hacker ${IT.pct(share, 2)}${normal === null ? '' : `, normale ${IT.pct(normal, 2)}`}`,
     coverage: (r) => `n = ${IT.int(r.n)}: intervallo t ${IT.pct(r.t, 2)} (t = ${IT.num(r.tQuantile, 3)}), intervallo χ² ${IT.pct(r.chi2, 2)}`,
     hacker: (j, mean, variance) => `Hacker ${IT.int(j)}: M_n = ${IT.num(mean, 4)}, s_n² = ${IT.num(variance, 4)}`,
+    bessel: (count, variance, biased) => `${IT.int(count)} campioni: media delle s² ${IT.num(variance, 4)}, media di SS/n ${IT.num(biased, 4)}`,
+    interval: (r, param) => `Hacker ${IT.int(r.hacker)}: media ${IT.num(r.mean, 3)}, s² ${IT.num(r.variance, 3)}; intervallo per ${param === 'mean' ? 'μ' : 'σ²'} da ${IT.num(r.lo, 3)} a ${IT.num(r.hi, 3)}, ${r.ok ? 'contiene' : 'manca'} il valore vero`,
   },
   download: {
     title: 'Scarica il codice',
@@ -1406,6 +1715,10 @@ const en = {
     comparison: '2.5 What the comparison says',
     spread: '2.6 Variability as n grows',
     inference: '2.7 Why it matters for inferential statistics',
+    tryDrag: 'Try it: drag the data',
+    tryDigits: 'Try it: the digits that get lost',
+    tryBessel: 'Try it: Bessel live',
+    tryIntervals: 'Try it: 100 confidence intervals',
     tests: '3. Summary of the statistical tests',
     history: '4. Historical context',
     conclusion: '5. Conclusions',
@@ -1718,6 +2031,84 @@ const en = {
       ];
     },
   },
+  tryDrag: {
+    intro: [
+      'Drag the points with the mouse or a finger: the last one, in red, is the new value x_k (the slider below moves it from the keyboard too). On the line are the two means, M_(k-1) dashed and M_k solid, and the two deviations of the new value: δ in yellow and x_k - M_k in purple. Below on the left is the rectangle whose sides are the two deviations: its area is the increment of SS, and it is the square δ × δ without a strip of 1/k, because x_k - M_k = ((k - 1)/k) δ. On the right, SS_(k-1) plus that area against SS_k computed from scratch: the two bars always stay equally long, and that is Welford’s formula.',
+    ],
+    sliderLabel: (k, v) => `The new value x_${k} = ${v}`,
+    add: 'Add a value',
+    remove: 'Remove the last',
+    reset: 'Restore',
+    legend: ['data', 'new value x_k', 'M_(k-1) and M_k', 'δ = x_k - M_(k-1)', 'x_k - M_k', 'SS_(k-1)', 'SS_k computed from scratch'],
+    caption: (st) => {
+      const F = EN;
+      return `New value x_${st.k} = ${F.sig(st.x, 4)}: the mean goes from M_${st.k - 1} = ${F.sig(st.previousMean, 4)} to M_${st.k} = ${F.sig(st.mean, 4)}; δ = ${F.sig(st.delta, 4)}, x_${st.k} - M_${st.k} = ${F.sig(st.after, 4)}, increment ${F.sig(st.increment, 4)}. SS_${st.k} = ${F.sig(st.previousSS, 4)} + ${F.sig(st.increment, 4)} = ${F.sig(st.previousSS + st.increment, 4)}, as the direct computation Σ (x_i - M_${st.k})² = ${F.sig(st.direct, 4)}; sample variance s² = ${F.sig(st.variance, 4)}.`;
+    },
+    after: [
+      'Try bringing the new value onto the old mean: δ vanishes, the rectangle disappears and SS does not change. Move it away: the area grows like the square of the distance, which is why a single outlier weighs so much on the variance. With many values the 1/k strip gets thin and the increment is almost δ².',
+    ],
+  },
+  tryDigits: {
+    intro: [
+      'The slider shifts the data by c = 10^0, ..., 10^15: the exact variance does not change. For each of the three formulas the digits equal to those of the exact value are green and the others red. Below are the two huge numbers that the textbook formula subtracts: in grey the leading digits they share, which the subtraction cancels, in red those that remain, already spoiled by rounding.',
+    ],
+    powerLabel: (e) => `Shift c = 10^${e}`,
+    datasetLabel: 'Data',
+    datasets: { classic: '4, 7, 13, 16', scores: '1,000 scores' },
+    rows: { naive: 'Textbook formula', twoPass: 'Two passes', welford: 'Welford' },
+    exact: (v) => `Exact value of the variance: ${EN.sig(v, 15)}`,
+    right: (r) => (r === 0 ? 'no right digit' : r >= 16 ? 'all digits right' : `${r} of 16 digits right`),
+    error: (e) => (e === 0 ? 'no error' : `relative error ${EN.sci(e)}`),
+    sumsTitle: 'Inside the textbook formula: Σx² and (Σx)²/n',
+    sumLabels: ['Σx²', '(Σx)²/n'],
+    common: (d, total) =>
+      d === 0
+        ? 'The two numbers share no leading digit: the subtraction loses nothing.'
+        : d >= total
+          ? `The two numbers are identical in all ${total} digits: their difference is zero, and so is the variance.`
+          : `The two numbers share their first ${d} of ${total} digits: the subtraction cancels them, and the difference keeps ${total - d} digits, those already spoiled by rounding.`,
+  },
+  tryBessel: {
+    intro: [
+      'Every press draws more samples of n scores from the law of section 2.1: sample j is the first n scores of hacker j of the simulation. As the number of samples grows, the chart follows the average of s² (blue) and that of SS/n (red): the first approaches σ², the second σ² (n - 1)/n, and the gap between them is exactly what Bessel’s correction removes. The green band is where the average of s² must lie at 95% if s² is unbiased, and it narrows like 1/√(number of samples). With small n the two averages stay apart, with large n they almost touch.',
+    ],
+    nLabel: (n) => `n = ${n} scores per sample`,
+    one: '+1 sample',
+    hundred: '+100',
+    thousand: '+1,000',
+    play: 'Play',
+    pause: 'Pause',
+    reset: 'Start again',
+    chartTitle: (n) => `Average of the variances of samples of ${n} scores, as the number of samples grows (logarithmic scale)`,
+    legend: ['σ², with the 95% band', 'σ² (n - 1)/n', 'average of s²', 'average of SS/n'],
+    status: (st, law) => {
+      const F = EN;
+      if (st.count === 0) return 'No samples yet: press +1 sample or Play.';
+      return `${F.int(st.count)} samples: average of s² ${F.num(st.sumVariance / st.count, 4)} (σ² = ${F.sig(law.variance, 4)}), average of SS/n ${F.num(st.sumBiased / st.count, 4)} (σ² (n - 1)/n = ${F.sig((law.variance * (st.n - 1)) / st.n, 4)}).`;
+    },
+    last: (sample) => {
+      const F = EN;
+      const shown = sample.values.slice(0, 12).map((v) => F.sig(v, 3)).join(', ');
+      return `Last sample (hacker ${F.int(sample.j + 1)}): ${shown}${sample.values.length > 12 ? ', ...' : ''}; mean ${F.num(sample.mean, 3)}, s² ${F.num(sample.variance, 3)}, SS/n ${F.num(sample.biased, 3)}.`;
+    },
+    limit: 'Reached the maximum of 20,000 samples: start again or change n.',
+  },
+  tryIntervals: {
+    intro: [
+      'A hundred samples of n scores, that is a hundred hackers with n systems, and for each its confidence interval: green those that contain the true value (the dashed line), red those that miss it. A 95% interval should miss it about 5 times in 100. n, the level, the parameter (μ with Student’s t, σ² with the chi-square) and the law can be changed, to see when the promise is kept; New 100 samples moves to the next hundred hackers and adds up the counts.',
+      'Two things to try: with the initial law and n = 2 the interval for μ misses the true value more often than declared; with the uniform law the interval for σ² almost never misses it, because with tails lighter than the normal ones it is too wide.',
+    ],
+    nLabel: (n) => `n = ${n} scores per sample`,
+    levelLabel: 'Level',
+    paramLabel: 'Parameter',
+    params: { mean: 'μ (Student’s t)', variance: 'σ² (chi-square)' },
+    lawLabel: 'Law',
+    newBatch: 'New 100 samples',
+    chartTitle: (b, lawName) => `${EN.pct(b.level, 0)} intervals for ${b.param === 'mean' ? 'μ' : 'σ²'} with n = ${b.n}, ${lawName}`,
+    legend: ['contains the true value', 'misses the true value', 'true value'],
+    counts: (misses, level, total, totalMisses) =>
+      `In this draw ${misses} of 100 intervals miss the true value (about ${Math.round(100 * (1 - level))} expected); over all the draws with these settings ${EN.int(totalMisses)} of ${EN.int(total)}, that is ${EN.pct(totalMisses / total, 1)}, against the declared ${EN.pct(1 - level, 0)}.`,
+  },
   stats: {
     verdict: { reject: 'H₀ rejected', notReject: 'H₀ not rejected' },
     expected: { reject: 'expected: rejection', notReject: 'expected: no rejection', either: 'depends on the power of the test' },
@@ -1822,6 +2213,8 @@ const en = {
     bin: (from, to, share, normal) => `From ${EN.sig(from, 4)} to ${EN.sig(to, 4)}: hackers ${EN.pct(share, 2)}${normal === null ? '' : `, normal ${EN.pct(normal, 2)}`}`,
     coverage: (r) => `n = ${EN.int(r.n)}: t interval ${EN.pct(r.t, 2)} (t = ${EN.num(r.tQuantile, 3)}), χ² interval ${EN.pct(r.chi2, 2)}`,
     hacker: (j, mean, variance) => `Hacker ${EN.int(j)}: M_n = ${EN.num(mean, 4)}, s_n² = ${EN.num(variance, 4)}`,
+    bessel: (count, variance, biased) => `${EN.int(count)} samples: average of s² ${EN.num(variance, 4)}, average of SS/n ${EN.num(biased, 4)}`,
+    interval: (r, param) => `Hacker ${EN.int(r.hacker)}: mean ${EN.num(r.mean, 3)}, s² ${EN.num(r.variance, 3)}; interval for ${param === 'mean' ? 'μ' : 'σ²'} from ${EN.num(r.lo, 3)} to ${EN.num(r.hi, 3)}, ${r.ok ? 'contains' : 'misses'} the true value`,
   },
   download: {
     title: 'Download the code',
@@ -1915,11 +2308,16 @@ const state = {
   spread: { g: null, playing: false, mode: 'fixed' },
   inference: { g: null },
   anim: { quantity: 'mean', speed: 1 },
+  // gli esempi interattivi
+  drag: { values: null },
+  digits: { power: 8, dataset: 'classic' },
+  bessel: { n: 5, run: null, playing: false },
+  intervals: { g: 3, level: 0.95, param: 'mean', dist: null, batch: 0, misses: [] },
 };
 let text = HW4_TEXTS[state.lang];
 const regions = {};
 const controls = { fields: {} };
-const timers = { compute: null, steps: null, spread: null };
+const timers = { compute: null, steps: null, spread: null, bessel: null };
 
 // I risultati gia' calcolati (gli ultimi), quelli mostrati e la simulazione in corso
 const results = new Map();
@@ -2173,6 +2571,7 @@ function part1Section() {
     derivation(text.knuth, text.formulas.knuth),
     title('hw4-ss', 1, S.ss),
     derivation(text.ss, text.formulas.ss),
+    tryDragBlock(),
     title('hw4-variance', 1, S.variance),
     derivation(text.variance, text.formulas.variance),
     title('hw4-code', 1, S.code),
@@ -2186,6 +2585,7 @@ function part1Section() {
     stepsBlock(),
     title('hw4-stability', 1, S.stability),
     stabilityBlock(),
+    tryDigitsBlock(),
     title('hw4-checks', 1, S.checks),
     regions.verify,
   );
@@ -2417,6 +2817,7 @@ function part2Section() {
     regions.averages,
     title('hw4-comparison', 1, S.comparison),
     regions.comparison,
+    tryBesselBlock(),
     title('hw4-spread', 1, S.spread),
     paras(text.spread.intro),
     formulas(text.formulas.spread, text.spread.formulasTitle),
@@ -2437,6 +2838,7 @@ function part2Section() {
     paras(text.inference.afterList),
     h('div', { class: 'slider-row' }, controls.inferenceSlider.el),
     regions.inference,
+    tryIntervalsBlock(),
   );
 }
 
@@ -2550,6 +2952,8 @@ function scheduleComputation() {
     state.target = { ...state.params };
     startComputation();
     createAnimation();
+    resetBessel();
+    resetIntervals();
   }, 400);
 }
 
@@ -2817,6 +3221,322 @@ function updateInference() {
 }
 
 // ---------------------------------------------------------------------------
+// Gli esempi interattivi ("Prova")
+// ---------------------------------------------------------------------------
+
+/** Redraws a chart in place, with new data and labels, without replacing its canvas (no flicker while it plays). */
+function refreshFigure(fig, caption, data, tip) {
+  const canvas = fig.querySelector('canvas.chart');
+  const chart = charts.get(canvas);
+  if (!chart) return;
+  if (chart.detach) chart.detach();
+  chart.data = data;
+  chart.detach = tip ? hw.attachChartTooltip(canvas, { draw: chart.draw, data, describe: tip }) : null;
+  canvas.setAttribute('aria-label', caption);
+  fig.querySelector('figcaption').textContent = caption;
+  if (chart.width > 0) {
+    canvas.style.height = `${hw.chartHeight(chart.draw, data, chart.width)}px`;
+    chart.draw(canvas, { ...data, width: chart.width }, palette());
+  }
+}
+
+// --- 1.2 I dati da trascinare ---------------------------------------------------------
+
+let drag = null;
+let dragWidth = 0;
+const dragResizer = new ResizeObserver(() => {
+  const canvas = controls.dragCanvas;
+  if (!drag || !canvas || canvas.clientWidth === dragWidth) return;
+  dragWidth = canvas.clientWidth;
+  drag.redraw();
+});
+
+function tryDragBlock() {
+  const D = text.tryDrag;
+  const span = 10 * (view.DRAG.hi - view.DRAG.lo);
+  controls.dragCanvas = h('canvas', { class: 'drag', role: 'img', 'aria-label': text.sections.tryDrag });
+  controls.dragCaption = h('p', { class: 'caption line', 'aria-live': 'polite' });
+  controls.dragSlider = slider('hw4-drag-x', (v) => drag && drag.setValue(drag.stats().k - 1, view.DRAG.lo + v / 10));
+  controls.dragAdd = h('button', { type: 'button', class: 'btn alt', text: D.add, onclick: () => drag && drag.add(view.DRAG.lo + Math.round(Math.random() * span) / 10) });
+  controls.dragRemove = h('button', { type: 'button', class: 'btn alt', text: D.remove, onclick: () => drag && drag.removeLast() });
+  const reset = h('button', { type: 'button', class: 'btn alt', text: D.reset, onclick: () => drag && drag.reset() });
+  return h(
+    'div',
+    { class: 'try' },
+    title('hw4-try-drag', 2, text.sections.tryDrag),
+    paras(D.intro),
+    h('div', { class: 'slider-row' }, controls.dragSlider.el, h('span', { class: 'buttons' }, controls.dragAdd, controls.dragRemove, reset)),
+    // posizionato: ci stanno dentro l'evidenziazione e l'etichetta sotto il puntatore
+    h('div', { class: 'figure' }, controls.dragCanvas),
+    legend([
+      { label: D.legend[0], color: 0 },
+      { label: D.legend[1], color: 1 },
+      { label: D.legend[2], color: 1, dashed: true },
+      { label: D.legend[3], color: 3 },
+      { label: D.legend[4], color: 4 },
+      { label: D.legend[5], color: 0 },
+      { label: D.legend[6], color: 2 },
+    ]),
+    controls.dragCaption,
+    paras(D.after),
+  );
+}
+
+function updateDrag(st) {
+  const D = text.tryDrag;
+  state.drag.values = st.values;
+  controls.dragCaption.textContent = D.caption(st);
+  controls.dragSlider.set(10 * (view.DRAG.hi - view.DRAG.lo), Math.round(10 * (st.x - view.DRAG.lo)), D.sliderLabel(st.k, text.fmt.sig(st.x, 3)));
+  controls.dragAdd.disabled = st.k >= hw.DATA_MAX;
+  controls.dragRemove.disabled = st.k <= 2;
+}
+
+/** The draggable data, again after every new drawing of the page (the data moved so far stay). */
+function createDrag() {
+  if (drag) drag.destroy();
+  drag = null;
+  const canvas = controls.dragCanvas;
+  if (!canvas || !canvas.isConnected) return;
+  drag = hw.createWelfordDrag(canvas, { ...view.DRAG, initial: view.DRAG.values, values: state.drag.values || view.DRAG.values, palette: palette(), decimal: text.fmt.decimal, onChange: updateDrag });
+  dragWidth = canvas.clientWidth;
+  dragResizer.disconnect();
+  dragResizer.observe(canvas);
+}
+
+// --- 1.6 Le cifre che si perdono -------------------------------------------------------
+
+function tryDigitsBlock() {
+  const D = text.tryDigits;
+  regions.digits = h('div');
+  controls.digitsSlider = slider('hw4-digits-c', (e) => {
+    state.digits.power = e;
+    updateDigits();
+  });
+  return h(
+    'div',
+    { class: 'try' },
+    title('hw4-try-digits', 2, text.sections.tryDigits),
+    paras(D.intro),
+    choices(D.datasetLabel, view.DIGIT_DATASETS.map((d) => [d, D.datasets[d]]), state.digits.dataset, (d) => {
+      state.digits.dataset = d;
+      updateDigits();
+    }),
+    h('div', { class: 'slider-row' }, controls.digitsSlider.el),
+    regions.digits,
+  );
+}
+
+function updateDigits() {
+  const D = text.tryDigits;
+  const r = view.digitsReport(state.digits.power, state.digits.dataset);
+  controls.digitsSlider.set(view.DIGIT_POWERS[1], state.digits.power, D.powerLabel(state.digits.power));
+  const row = (name, ...value) => h('div', { class: 'digit-row' }, h('span', { class: 'digit-name', text: name }), ...value);
+  fill(
+    regions.digits,
+    h('p', { class: 'note', text: D.exact(r.exact) }),
+    h(
+      'div',
+      { class: 'digits' },
+      r.rows.map((x) => row(D.rows[x.formula], h('span', { class: 'digit-value' }, x.parts.map((part) => h('span', { class: part.ok ? 'digit-ok' : 'digit-bad', text: part.text }))), h('span', { class: 'digit-note', text: `${D.right(x.right)}, ${D.error(x.error)}` }))),
+    ),
+    subtitle(D.sumsTitle),
+    h(
+      'div',
+      { class: 'digits' },
+      [r.sums.a, r.sums.b].map((num, i) => row(D.sumLabels[i], h('span', { class: 'digit-value' }, h('span', { class: 'digit-common', text: num.slice(0, r.sums.common) }), h('span', { class: 'digit-bad', text: num.slice(r.sums.common) }), h('span', { class: 'digit-common', text: r.sums.exponents[i] })))),
+    ),
+    h('p', { text: D.common(r.sums.commonDigits, r.sums.total) }),
+  );
+}
+
+// --- 2.5 Bessel in diretta -----------------------------------------------------------------
+
+function tryBesselBlock() {
+  const B = text.tryBessel;
+  regions.bessel = h('div');
+  controls.besselSlider = slider('hw4-bessel-n', (v) => {
+    state.bessel.n = view.BESSEL_N[0] + v;
+    resetBessel();
+  });
+  controls.besselPlay = h('button', { type: 'button', class: 'btn', text: B.play, onclick: toggleBessel });
+  controls.besselSteps = [
+    [B.one, 1],
+    [B.hundred, 100],
+    [B.thousand, 1000],
+  ].map(([label, count]) => h('button', { type: 'button', class: 'btn alt', text: label, onclick: () => advanceBessel(count) }));
+  const reset = h('button', { type: 'button', class: 'btn alt', text: B.reset, onclick: resetBessel });
+  const data = view.besselChart(view.besselStart(state.target, state.bessel.n), text.fmt.decimal);
+  controls.besselFigure = figure(B.chartTitle(state.bessel.n), hw.drawLineChart, data, {
+    wide: true,
+    items: [
+      { label: B.legend[0], color: 2, dashed: true },
+      { label: B.legend[1], color: 1, dashed: true },
+      { label: B.legend[2], color: 0 },
+      { label: B.legend[3], color: 1 },
+    ],
+  });
+  return h(
+    'div',
+    { class: 'try' },
+    title('hw4-try-bessel', 2, text.sections.tryBessel),
+    paras(B.intro),
+    h('div', { class: 'slider-row' }, controls.besselSlider.el, h('span', { class: 'buttons' }, controls.besselPlay, controls.besselSteps, reset)),
+    h('div', { class: 'charts' }, controls.besselFigure),
+    regions.bessel,
+  );
+}
+
+function stopBessel() {
+  state.bessel.playing = false;
+  clearTimeout(timers.bessel);
+}
+
+function resetBessel() {
+  stopBessel();
+  state.bessel.run = view.besselStart(state.target, state.bessel.n);
+  updateBessel();
+}
+
+function advanceBessel(count) {
+  state.bessel.run = view.besselAdvance(state.bessel.run, count);
+  updateBessel();
+}
+
+function toggleBessel() {
+  if (state.bessel.playing) {
+    stopBessel();
+    updateBessel();
+    return;
+  }
+  state.bessel.playing = true;
+  const tick = () => {
+    timers.bessel = setTimeout(() => {
+      if (!state.bessel.playing) return;
+      const run = state.bessel.run;
+      if (run.count >= view.BESSEL_MAX) {
+        stopBessel();
+        updateBessel();
+        return;
+      }
+      state.bessel.run = view.besselAdvance(run, Math.max(1, Math.ceil(run.count * 0.06)));
+      updateBessel();
+      tick();
+    }, 70);
+  };
+  updateBessel();
+  tick();
+}
+
+function updateBessel() {
+  const B = text.tryBessel;
+  const run = state.bessel.run;
+  if (!run || !controls.besselFigure) return;
+  const law = hw.scoreLaw(run.dist, run.p);
+  const full = run.count >= view.BESSEL_MAX;
+  controls.besselSlider.set(view.BESSEL_N[1] - view.BESSEL_N[0], run.n - view.BESSEL_N[0], B.nLabel(run.n));
+  controls.besselPlay.textContent = state.bessel.playing ? B.pause : B.play;
+  controls.besselPlay.disabled = full;
+  controls.besselSteps.forEach((b) => {
+    b.disabled = full;
+  });
+  const data = view.besselChart(run, text.fmt.decimal);
+  refreshFigure(controls.besselFigure, B.chartTitle(run.n), data, view.tips.bessel(run, data, text.tips));
+  fill(
+    regions.bessel,
+    h('p', { class: 'caption line', 'aria-live': state.bessel.playing ? 'off' : 'polite', text: B.status(run, law) }),
+    run.last && h('p', { class: 'note', text: B.last(run.last) }),
+    full && h('p', { class: 'note', text: B.limit }),
+  );
+}
+
+// --- 2.7 Cento intervalli di confidenza ------------------------------------------------
+
+function tryIntervalsBlock() {
+  const I = text.tryIntervals;
+  const F = text.fmt;
+  const S = state.intervals;
+  regions.intervals = h('div');
+  regions.intervalLaw = h('div');
+  controls.intervalSlider = slider('hw4-intervals-n', (g) => {
+    S.g = g;
+    resetIntervals();
+  });
+  controls.intervalButton = h('button', {
+    type: 'button',
+    class: 'btn',
+    text: I.newBatch,
+    onclick: () => {
+      S.batch += 1;
+      updateIntervals();
+    },
+  });
+  return h(
+    'div',
+    { class: 'try' },
+    title('hw4-try-intervals', 2, text.sections.tryIntervals),
+    paras(I.intro),
+    choices(I.paramLabel, ['mean', 'variance'].map((v) => [v, I.params[v]]), S.param, (v) => {
+      S.param = v;
+      resetIntervals();
+    }),
+    choices(I.levelLabel, view.LEVELS.map((l) => [l, F.pct(l, 0)]), S.level, (v) => {
+      S.level = v;
+      resetIntervals();
+    }),
+    regions.intervalLaw,
+    h('div', { class: 'slider-row' }, controls.intervalSlider.el, controls.intervalButton),
+    regions.intervals,
+  );
+}
+
+function resetIntervals() {
+  state.intervals.batch = 0;
+  state.intervals.misses = [];
+  updateIntervals();
+}
+
+function updateIntervals() {
+  const I = text.tryIntervals;
+  const S = state.intervals;
+  if (!regions.intervals) return;
+  const dist = S.dist || state.target.dist;
+  const n = view.INTERVAL_NS[S.g];
+  fill(
+    regions.intervalLaw,
+    choices(I.lawLabel, hw.DISTRIBUTIONS.map((d) => [d, text.distNames[d]]), dist, (d) => {
+      S.dist = d;
+      resetIntervals();
+    }),
+  );
+  controls.intervalSlider.set(view.INTERVAL_NS.length - 1, S.g, I.nLabel(n));
+  controls.intervalButton.disabled = S.batch >= 99;
+  const settings = { seed: state.target.seed, dist, p: state.target.p, n, level: S.level, param: S.param };
+  const current = view.intervalBatch({ ...settings, batch: S.batch });
+  for (let b = 0; b < S.batch; b++) if (S.misses[b] === undefined) S.misses[b] = view.intervalBatch({ ...settings, batch: b }).misses;
+  S.misses[S.batch] = current.misses;
+  let total = 0;
+  for (let b = 0; b <= S.batch; b++) total += S.misses[b];
+  const data = view.intervalChart(current, text.fmt.decimal);
+  fill(
+    regions.intervals,
+    h(
+      'div',
+      { class: 'charts' },
+      figure(I.chartTitle(current, text.distNames[dist]), hw.drawIntervals, data, {
+        wide: true,
+        tip: view.tips.intervals(current, text.tips),
+        items: [
+          { label: I.legend[0], color: 2 },
+          { label: I.legend[1], color: 1 },
+          { label: I.legend[2], color: 6, dashed: true },
+        ],
+      }),
+    ),
+    h('p', { class: 'caption line', 'aria-live': 'polite', text: I.counts(current.misses, S.level, (S.batch + 1) * view.INTERVAL_SIZE, total) }),
+  );
+}
+
+// ---------------------------------------------------------------------------
 // 3, 4 e 5
 // ---------------------------------------------------------------------------
 
@@ -3035,6 +3755,7 @@ function render() {
   text = HW4_TEXTS[state.lang];
   stopPlayer('steps');
   stopPlayer('spread');
+  stopBessel();
   renderChrome();
   const app = document.getElementById('app');
   fill(app, assignmentSection(), part1Section(), part2Section(), testsSection(), historySection(), conclusionSection(), toTopButton());
@@ -3044,6 +3765,11 @@ function render() {
   updateVerify();
   updateResults();
   createAnimation();
+  createDrag();
+  updateDigits();
+  if (!state.bessel.run || state.bessel.run.seed !== state.target.seed || state.bessel.run.dist !== state.target.dist || state.bessel.run.p !== state.target.p) resetBessel();
+  else updateBessel();
+  updateIntervals();
 }
 
 function boot() {

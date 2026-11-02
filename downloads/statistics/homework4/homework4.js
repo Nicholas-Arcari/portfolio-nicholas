@@ -634,6 +634,13 @@ function* simulateSteps({ dist = DEFAULT_DIST, p = DEFAULT_P, n = DEFAULT_N, m =
   return { dist, p, n, m, seed, law, grid, means, variances, counts, lagSum, pairs: m * (n - 1), draws: m * n, ms: now() - started };
 }
 
+/** The first n scores of hacker j, summarized with the three lines of Part 1: the scores, their mean, their sample variance and SS/n (the interactive examples of sections 2.5 and 2.7). */
+function sampleStats(seed, law, j, n) {
+  const values = Array.from({ length: n }, hackerScores(seed, law, j));
+  const w = welford(values);
+  return { j, values, mean: w.mean, variance: w.variance, biased: w.population };
+}
+
 /** Runs one of the generators of this file to the end, in one go (a worker, the command line). */
 function runSteps(steps) {
   let step = steps.next();
@@ -1615,12 +1622,99 @@ function drawWelfordChart(canvas, { rows, k, yMin, yMax, yTicks = [], decimal = 
   ctx.restore();
 }
 
+const INTERVAL_ASPECT = 0.7;
+const INTERVAL_MARGIN = { left: 36, right: 12, top: 8, bottom: 24 };
+
+/** Where the plot of drawIntervals lies on a canvas of this width, and the height of a row. */
+function intervalLayout(data, width) {
+  const height = Math.round(width * INTERVAL_ASPECT);
+  const margin = INTERVAL_MARGIN;
+  const w = width - margin.left - margin.right;
+  const h = height - margin.top - margin.bottom;
+  const rowH = h / Math.max(1, data.rows.length);
+  const px = (v) => margin.left + (w * (v - data.x0)) / (data.x1 - data.x0);
+  const py = (i) => margin.top + rowH * (i + 0.5);
+  return { margin, w, h, height, rowH, px, py };
+}
+
+/**
+ * Confidence intervals, one per row: rows [{ lo, hi, est, ok }] as
+ * segments, green when they contain the true value and red when they miss
+ * it, with a dot at the estimate and a dashed line at the true value
+ * (`truth`). A segment that goes beyond the axis ends with an arrow.
+ */
+function drawIntervals(canvas, { rows, x0, x1, truth, xTicks = [], decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
+  const pal = { ...DEFAULT_PALETTE, ...palette };
+  const { ctx, width, height } = setupCanvas(canvas, INTERVAL_ASPECT, knownWidth);
+  const { margin, w, h, rowH, px, py } = intervalLayout({ rows, x0, x1 }, width);
+  ctx.fillStyle = pal.background;
+  ctx.fillRect(0, 0, width, height);
+  ctx.font = '11px sans-serif';
+  ctx.strokeStyle = pal.grid;
+  ctx.lineWidth = 1;
+  ctx.fillStyle = pal.text;
+  ctx.textAlign = 'center';
+  for (const v of xTicks) {
+    ctx.beginPath();
+    ctx.moveTo(px(v), margin.top);
+    ctx.lineTo(px(v), margin.top + h);
+    ctx.stroke();
+    xTickLabel(ctx, axisLabel(v, decimal), px(v), margin.top + h + 15, width);
+  }
+  ctx.textAlign = 'right';
+  for (const i of [0, Math.floor(rows.length / 2) - 1, rows.length - 1]) if (i >= 0) ctx.fillText(String(i + 1), margin.left - 5, py(i) + 4);
+  ctx.strokeRect(margin.left, margin.top, w, h);
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(margin.left, margin.top, w, h);
+  ctx.clip();
+  const thick = Math.max(1, Math.min(3, rowH * 0.55));
+  rows.forEach((r, i) => {
+    const y = py(i);
+    const color = r.ok ? pal.series[2] : pal.series[1];
+    const a = px(Math.max(r.lo, x0));
+    const b = px(Math.min(r.hi, x1));
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = thick;
+    ctx.beginPath();
+    ctx.moveTo(a, y);
+    ctx.lineTo(b, y);
+    ctx.stroke();
+    const arrow = (X, dir) => {
+      ctx.beginPath();
+      ctx.moveTo(X, y);
+      ctx.lineTo(X - dir * 5, y - 3);
+      ctx.lineTo(X - dir * 5, y + 3);
+      ctx.closePath();
+      ctx.fill();
+    };
+    if (r.lo < x0) arrow(px(x0), -1);
+    if (r.hi > x1) arrow(px(x1), 1);
+    if (r.est >= x0 && r.est <= x1) {
+      ctx.beginPath();
+      ctx.arc(px(r.est), y, Math.max(1.5, thick), 0, 2 * Math.PI);
+      ctx.fill();
+    }
+  });
+  ctx.strokeStyle = pal.text;
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([5, 4]);
+  ctx.beginPath();
+  ctx.moveTo(px(truth), margin.top);
+  ctx.lineTo(px(truth), margin.top + h);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
 /** The height that a chart function gives a canvas of this width, to reserve the space before drawing. */
 function chartHeight(draw, data, width) {
   if (draw === drawLineChart) return lineLayout(data, width).height;
   if (draw === drawWelfordChart) return lineLayout(welfordAxis(data), width).height;
   if (draw === drawQQ) return qqLayout(data, width).height;
   if (draw === drawScatter) return scatterLayout(data, width).height;
+  if (draw === drawIntervals) return intervalLayout(data, width).height;
   return histLayout(data, width).height;
 }
 
@@ -1647,6 +1741,12 @@ function chartHitTest(draw, data, width, x, y) {
     let index = 0;
     for (let i = 1; i < data.k; i++) if (Math.abs(px(i + 1) - x) < Math.abs(px(index + 1) - x)) index = i;
     return { kind: 'point', index, rect: { x: px(index + 1) - 3, y: margin.top, width: 6, height: h } };
+  }
+  if (draw === drawIntervals) {
+    const { margin, w, h, rowH, py } = intervalLayout(data, width);
+    if (x < margin.left || x > margin.left + w || y < margin.top || y > margin.top + h) return null;
+    const index = Math.min(data.rows.length - 1, Math.max(0, Math.floor((y - margin.top) / rowH)));
+    return { kind: 'row', index, rect: { x: margin.left, y: py(index) - Math.max(2, rowH / 2), width: w, height: Math.max(4, rowH) } };
   }
   if (draw === drawScatter) {
     const { margin, w, h, px, py } = scatterLayout(data, width);
@@ -2258,6 +2358,336 @@ function createScoreAnimation(canvas, options) {
 }
 
 // ---------------------------------------------------------------------------
+// 8b. Welford to drag (browser, <canvas>)
+// ---------------------------------------------------------------------------
+
+const DRAG_ASPECT = 0.62;
+const DRAG_RADIUS = 7;
+
+/**
+ * The recurrences of Part 1 under the fingers. The data are points on a line
+ * from lo to hi, which can be dragged with the mouse or a finger; the last
+ * one is the new value x_k. Every move recomputes M_(k-1), M_k, the two
+ * deviations delta = x_k - M_(k-1) and x_k - M_k and the increment of SS,
+ * and draws: on the line the two means (the old one dashed) and the two
+ * deviations as arrows; below on the left the rectangle delta x (x_k - M_k),
+ * that is the square delta x delta without a strip 1/k of it; on the right
+ * SS_(k-1) plus the increment against SS_k computed directly, two bars of
+ * the same length. onChange(stats) follows every change. Returns the
+ * controls.
+ */
+function createWelfordDrag(canvas, options = {}) {
+  const lo = options.lo ?? 0;
+  const hi = options.hi ?? SCORE_MAX;
+  // `initial`: the data that reset() restores; `values`: those to start from (the same, unless the page is drawn again)
+  const initial = (options.initial || options.values || DEFAULT_DATA).map(Number);
+  let values = (options.values || initial).map(Number);
+  let palette = { ...DEFAULT_PALETTE, ...(options.palette || {}) };
+  let decimal = options.decimal || '.';
+  const onChange = options.onChange || (() => {});
+  let dragging = -1;
+  let positions = [];
+  let geometry = null;
+
+  const clamp = (v) => Math.min(hi, Math.max(lo, Math.round(v * 10) / 10));
+  const fmt = (v, digits = 2) => {
+    const t = Number(v.toFixed(digits));
+    return decimal === '.' ? String(t) : String(t).replace('.', decimal);
+  };
+
+  const stats = () => {
+    const k = values.length;
+    const before = welford(values.slice(0, k - 1));
+    const all = welford(values);
+    const x = values[k - 1];
+    const delta = x - before.mean;
+    const after = x - all.mean;
+    let direct = 0;
+    for (const v of values) direct += (v - all.mean) * (v - all.mean);
+    return { k, x, values: [...values], previousMean: before.mean, mean: all.mean, delta, after, increment: delta * after, previousSS: before.ss, ss: all.ss, direct, variance: all.variance };
+  };
+
+  const layout = () => {
+    const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
+    const width = canvas.clientWidth || 640;
+    // on a phone the rectangle and the bars do not fit side by side: a taller canvas, the bars below
+    const narrow = width < 520;
+    const height = Math.round(width * (narrow ? 1.15 : DRAG_ASPECT));
+    canvas.width = Math.round(width * dpr);
+    canvas.height = Math.round(height * dpr);
+    canvas.style.height = `${height}px`;
+    const left = 26;
+    const right = width - 26;
+    return {
+      dpr,
+      width,
+      height,
+      left,
+      right,
+      narrow,
+      lineY: Math.round(height * (narrow ? 0.24 : 0.34)),
+      lowerTop: Math.round(height * (narrow ? 0.46 : 0.56)),
+      px: (v) => left + ((v - lo) / (hi - lo)) * (right - left),
+      value: (X) => lo + ((X - left) / (right - left)) * (hi - lo),
+    };
+  };
+
+  const arrow = (ctx, x0, x1, y, color, label) => {
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(x0, y);
+    ctx.lineTo(x1, y);
+    ctx.stroke();
+    if (Math.abs(x1 - x0) > 6) {
+      const dir = Math.sign(x1 - x0);
+      ctx.beginPath();
+      ctx.moveTo(x1, y);
+      ctx.lineTo(x1 - dir * 8, y - 5);
+      ctx.lineTo(x1 - dir * 8, y + 5);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 12px sans-serif';
+    const mid = Math.min(geometry.right - 40, Math.max(geometry.left + 40, (x0 + x1) / 2));
+    ctx.fillText(label, mid, y - 6);
+  };
+
+  const render = () => {
+    if (!geometry) geometry = layout();
+    const G = geometry;
+    const S = stats();
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(G.dpr, 0, 0, G.dpr, 0, 0);
+    ctx.fillStyle = palette.background;
+    ctx.fillRect(0, 0, G.width, G.height);
+    ctx.font = '11px sans-serif';
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = palette.text;
+    ctx.fillStyle = palette.text;
+
+    // the line and its ticks
+    ctx.beginPath();
+    ctx.moveTo(G.left, G.lineY);
+    ctx.lineTo(G.right, G.lineY);
+    ctx.stroke();
+    ctx.textAlign = 'center';
+    for (let v = Math.ceil(lo); v <= hi; v++) {
+      ctx.beginPath();
+      ctx.moveTo(G.px(v), G.lineY - 3);
+      ctx.lineTo(G.px(v), G.lineY + 3);
+      ctx.stroke();
+      ctx.fillText(String(v), G.px(v), G.lineY + 15);
+    }
+
+    // the two means: the old one dashed, the new one solid
+    const top = 14;
+    const bottom = G.lineY + 58;
+    ctx.strokeStyle = palette.series[1];
+    ctx.fillStyle = palette.series[1];
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([5, 4]);
+    ctx.beginPath();
+    ctx.moveTo(G.px(S.previousMean), top);
+    ctx.lineTo(G.px(S.previousMean), bottom);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(G.px(S.mean), top);
+    ctx.lineTo(G.px(S.mean), bottom);
+    ctx.stroke();
+    ctx.font = '11px sans-serif';
+    const leftFirst = S.previousMean <= S.mean;
+    ctx.textAlign = leftFirst ? 'right' : 'left';
+    ctx.fillText(`M_${S.k - 1} = ${fmt(S.previousMean)}`, G.px(S.previousMean) + (leftFirst ? -4 : 4), top + 2);
+    ctx.textAlign = leftFirst ? 'left' : 'right';
+    ctx.fillText(`M_${S.k} = ${fmt(S.mean)}`, G.px(S.mean) + (leftFirst ? 4 : -4), top + 2);
+
+    // the two deviations of the new value
+    arrow(ctx, G.px(S.previousMean), G.px(S.x), G.lineY + 34, palette.series[3], `δ = ${fmt(S.delta)}`);
+    arrow(ctx, G.px(S.mean), G.px(S.x), G.lineY + 56, palette.series[4], `x_${S.k} - M_${S.k} = ${fmt(S.after)}`);
+
+    // the points, stacked when they overlap
+    positions = [];
+    values.forEach((v, i) => {
+      const X = G.px(v);
+      let level = 0;
+      for (const q of positions) if (Math.abs(q.x - X) < 2 * DRAG_RADIUS + 1) level = Math.max(level, q.level + 1);
+      positions.push({ i, x: X, y: G.lineY - DRAG_RADIUS - 3 - level * (2 * DRAG_RADIUS + 2), level });
+    });
+    for (const q of positions) {
+      const isNew = q.i === values.length - 1;
+      ctx.fillStyle = isNew ? palette.highlight : palette.series[0];
+      ctx.beginPath();
+      ctx.arc(q.x, q.y, q.i === dragging ? DRAG_RADIUS + 2 : DRAG_RADIUS, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.strokeStyle = palette.background;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+
+    // below on the left: the rectangle delta x (x_k - M_k), the square delta x delta without a strip of 1/k
+    const lowerH = G.height - G.lowerTop - 10;
+    const side = G.narrow ? Math.max(30, Math.min(G.width * 0.32, lowerH * 0.36)) : Math.max(30, Math.min(lowerH - 30, G.width / 2 - 90));
+    const bx = G.left + (G.narrow ? 50 : 70);
+    const by = G.lowerTop + 18;
+    const kept = side * ((S.k - 1) / S.k);
+    ctx.setLineDash([4, 3]);
+    ctx.strokeStyle = palette.text;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(bx, by, side, side);
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 0.35;
+    ctx.fillStyle = palette.series[3];
+    ctx.fillRect(bx, by + side - kept, side, kept);
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = palette.series[4];
+    ctx.lineWidth = 2;
+    ctx.strokeRect(bx, by + side - kept, side, kept);
+    ctx.fillStyle = palette.series[3];
+    ctx.fillRect(bx, by - 4, side, 4);
+    ctx.fillStyle = palette.series[4];
+    ctx.fillRect(bx - 4, by + side - kept, 4, kept);
+    ctx.font = 'bold 11px sans-serif';
+    ctx.fillStyle = palette.text;
+    ctx.textAlign = 'center';
+    ctx.fillText(`|δ| = ${fmt(Math.abs(S.delta))}`, bx + side / 2, by - 8);
+    ctx.textAlign = 'right';
+    ctx.fillText(`${fmt(Math.abs(S.after))}`, bx - 8, by + side - kept / 2 + 4);
+    ctx.textAlign = 'center';
+    ctx.fillText(fmt(S.increment), bx + side / 2, by + side - kept / 2 + 4);
+    ctx.font = '11px sans-serif';
+    ctx.fillText(`1/${S.k}`, bx + side / 2, by + Math.max(9, (side - kept) / 2 + 4));
+
+    // below on the right: SS_(k-1) + increment against SS_k computed directly
+    const barX = G.narrow ? G.left : G.width / 2 + 10;
+    const barW = G.right - barX;
+    const maxSS = Math.max(S.previousSS + S.increment, S.direct, 1e-9);
+    const scale = (v) => (barW * 0.92 * v) / maxSS;
+    const row = (y, parts, label, total) => {
+      ctx.fillStyle = palette.text;
+      ctx.textAlign = 'left';
+      ctx.font = '11px sans-serif';
+      ctx.fillText(label, barX, y - 5);
+      let X = barX;
+      for (const [v, color] of parts) {
+        ctx.fillStyle = color;
+        ctx.fillRect(X, y, Math.max(0, scale(v)), 14);
+        X += Math.max(0, scale(v));
+      }
+      ctx.fillStyle = palette.text;
+      ctx.textAlign = X > G.right - 40 ? 'right' : 'left';
+      ctx.fillText(fmt(total), X > G.right - 40 ? X - 4 : X + 4, y + 11);
+    };
+    const y1 = G.narrow ? by + side + 28 : G.lowerTop + Math.round(lowerH * 0.32);
+    const y2 = G.narrow ? y1 + 40 : G.lowerTop + Math.round(lowerH * 0.72);
+    row(y1, [[S.previousSS, palette.series[0]], [S.increment, palette.series[3]]], `SS_${S.k - 1} + δ (x_${S.k} - M_${S.k})`, S.previousSS + S.increment);
+    row(y2, [[S.direct, palette.series[2]]], `Σ (x_i - M_${S.k})² = SS_${S.k}`, S.direct);
+  };
+
+  const locate = (x, y) => {
+    let best = -1;
+    let dist = (DRAG_RADIUS + 8) ** 2;
+    for (const q of positions) {
+      const d = (q.x - x) ** 2 + (q.y - y) ** 2;
+      if (d <= dist) {
+        dist = d;
+        best = q.i;
+      }
+    }
+    return best;
+  };
+  const point = (e) => {
+    const r = canvas.getBoundingClientRect();
+    return [e.clientX - r.left, e.clientY - r.top];
+  };
+  const changed = () => {
+    render();
+    onChange(stats());
+  };
+  const onDown = (e) => {
+    const [x, y] = point(e);
+    const i = locate(x, y);
+    if (i < 0) return;
+    dragging = i;
+    if (canvas.setPointerCapture) canvas.setPointerCapture(e.pointerId);
+    e.preventDefault();
+    render();
+  };
+  const onMove = (e) => {
+    const [x, y] = point(e);
+    if (dragging < 0) {
+      canvas.style.cursor = locate(x, y) >= 0 ? 'grab' : 'default';
+      return;
+    }
+    canvas.style.cursor = 'grabbing';
+    const v = clamp(geometry.value(x));
+    if (values[dragging] !== v) {
+      values = values.slice();
+      values[dragging] = v;
+      changed();
+    }
+  };
+  const onUp = () => {
+    if (dragging < 0) return;
+    dragging = -1;
+    render();
+  };
+  canvas.addEventListener('pointerdown', onDown);
+  canvas.addEventListener('pointermove', onMove);
+  canvas.addEventListener('pointerup', onUp);
+  canvas.addEventListener('pointercancel', onUp);
+
+  const controls = {
+    stats,
+    setValue(i, v) {
+      if (i < 0 || i >= values.length) return;
+      values = values.slice();
+      values[i] = clamp(v);
+      changed();
+    },
+    add(v) {
+      if (values.length >= DATA_MAX) return;
+      values = [...values, clamp(v)];
+      changed();
+    },
+    removeLast() {
+      if (values.length <= 2) return;
+      values = values.slice(0, -1);
+      changed();
+    },
+    reset() {
+      values = [...initial];
+      changed();
+    },
+    setPalette(next) {
+      palette = { ...DEFAULT_PALETTE, ...next };
+      render();
+    },
+    setDecimal(d) {
+      decimal = d;
+      render();
+    },
+    redraw() {
+      geometry = null;
+      render();
+    },
+    destroy() {
+      canvas.removeEventListener('pointerdown', onDown);
+      canvas.removeEventListener('pointermove', onMove);
+      canvas.removeEventListener('pointerup', onUp);
+      canvas.removeEventListener('pointercancel', onUp);
+    },
+  };
+  render();
+  onChange(stats());
+  return controls;
+}
+
+// ---------------------------------------------------------------------------
 // 9. Checks, printed report and command line
 // ---------------------------------------------------------------------------
 
@@ -2462,7 +2892,7 @@ function runCli(argv, print = console.log) {
 /** True under Node, where the downloadable program can run runCli. */
 const isNode = typeof process !== 'undefined' && !!(process.versions && process.versions.node);
 
-return { DISTRIBUTIONS, QUANTITIES, DEFAULT_DIST, DEFAULT_P, DEFAULT_N, DEFAULT_M, DEFAULT_SEED, SCORE_MAX, BINOMIAL, BETA, LIMITS, N_GRID, checkpoints, SMALL_N, SIGNIFICANCE, CONFIDENCE, parseInteger, parseProbability, checkParams, WELFORD_LINES, welford, welfordSteps, naiveVariance, twoPassVariance, DEFAULT_DATA, DATA_MAX, DATA_LIMIT, parseData, CANCELLATION_DATA, CANCELLATION_OFFSETS, cancellationRows, STABILITY_POWERS, STABILITY_SIZE, stabilityCurve, FORMULAS, splitMix64, xoshiro128ss, STREAMS, hackerState, hackerGenerator, randomSeed, betaCdf, betaDensity, scoreLaw, samplingTheory, chiSquareCoverageLimit, hackerScores, simulateSteps, runSteps, runStepsAsync, chiSquarePValue, twoSidedNormalTail, normalPdf, normalSf, normalCdf, normalQuantile, betaIncomplete, studentCdf, studentQuantile, chiSquareQuantile, sampleMoments, goodnessOfFit, meanTest, varianceTest, jarqueBera, spreadTest, proportionTest, correlationTest, lagTest, correlation, fitLine, pointAt, exploreSteps, explore, exploreAsync, statisticalTests, TEST_LABELS, DEFAULT_PALETTE, axisLabel, niceTicks, drawLineChart, drawHistogram, drawQQ, drawScatter, drawWelfordChart, chartHeight, chartHitTest, attachChartTooltip, attachPointerLabel, iteratedLogarithm, quantityTheory, createScoreAnimation, CHECK_VECTORS, verifyAll, runCli, isNode };
+return { DISTRIBUTIONS, QUANTITIES, DEFAULT_DIST, DEFAULT_P, DEFAULT_N, DEFAULT_M, DEFAULT_SEED, SCORE_MAX, BINOMIAL, BETA, LIMITS, N_GRID, checkpoints, SMALL_N, SIGNIFICANCE, CONFIDENCE, parseInteger, parseProbability, checkParams, WELFORD_LINES, welford, welfordSteps, naiveVariance, twoPassVariance, DEFAULT_DATA, DATA_MAX, DATA_LIMIT, parseData, CANCELLATION_DATA, CANCELLATION_OFFSETS, cancellationRows, STABILITY_POWERS, STABILITY_SIZE, stabilityCurve, FORMULAS, splitMix64, xoshiro128ss, STREAMS, hackerState, hackerGenerator, randomSeed, betaCdf, betaDensity, scoreLaw, samplingTheory, chiSquareCoverageLimit, hackerScores, simulateSteps, sampleStats, runSteps, runStepsAsync, chiSquarePValue, twoSidedNormalTail, normalPdf, normalSf, normalCdf, normalQuantile, betaIncomplete, studentCdf, studentQuantile, chiSquareQuantile, sampleMoments, goodnessOfFit, meanTest, varianceTest, jarqueBera, spreadTest, proportionTest, correlationTest, lagTest, correlation, fitLine, pointAt, exploreSteps, explore, exploreAsync, statisticalTests, TEST_LABELS, DEFAULT_PALETTE, axisLabel, niceTicks, drawLineChart, drawHistogram, drawQQ, drawScatter, drawWelfordChart, drawIntervals, chartHeight, chartHitTest, attachChartTooltip, attachPointerLabel, iteratedLogarithm, quantityTheory, createScoreAnimation, createWelfordDrag, CHECK_VECTORS, verifyAll, runCli, isNode };
 })();
 
 // src/pages/statistics/hw3/standalone/cli.js
