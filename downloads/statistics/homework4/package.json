@@ -1,0 +1,15 @@
+{
+  "name": "homework4-statistics",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Homework #4 - Statistics: Welford's recurrence formulas, and the sampling mean and variance of m hackers on n systems.",
+  "author": "Nicholas Arcari",
+  "type": "commonjs",
+  "main": "homework4.js",
+  "scripts": {
+    "start": "node homework4.js"
+  },
+  "engines": {
+    "node": ">=14"
+  }
+}
