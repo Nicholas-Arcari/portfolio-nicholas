@@ -3065,13 +3065,33 @@ function attachChartTooltip(canvas, { draw, data, describe: explain, link = null
   // the marked row of the linked table, and whether the outline on the canvas comes from a row
   let marked = null;
   let fromRow = false;
-  const markRow = (index) => {
+  // a row marked from the chart and hidden in the scrolling box of its table comes into view,
+  // just inside the edge; only the box scrolls, never the page, so the chart stays under the pointer
+  const revealRow = (row) => {
+    const table = row.closest('table');
+    const area = table && table.parentElement;
+    if (!area || !/auto|scroll/.test(getComputedStyle(area).overflowY)) return;
+    const a = area.getBoundingClientRect();
+    // the part of the box on screen, below the header that stays on top
+    const top = Math.max(a.top + area.clientTop + (table.tHead ? table.tHead.offsetHeight : 0), 0);
+    const bottom = Math.min(a.top + area.clientTop + area.clientHeight, window.innerHeight);
+    if (bottom <= top) return;
+    const r = row.getBoundingClientRect();
+    let by = 0;
+    if (r.top < top || r.height > bottom - top) by = r.top - top;
+    else if (r.bottom > bottom) by = r.bottom - bottom;
+    if (Math.abs(by) < 1) return;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    area.scrollTo({ top: area.scrollTop + by, behavior: reduced ? 'auto' : 'smooth' });
+  };
+  const markRow = (index, reveal = false) => {
     const table = link && link.table();
     const row = (table && index >= 0 && table.tBodies[0] && table.tBodies[0].rows[index]) || null;
     if (row === marked) return;
     if (marked) marked.classList.remove('is-marked');
     if (row) row.classList.add('is-marked');
     marked = row;
+    if (row && reveal) revealRow(row);
   };
   const hide = () => {
     mark.hidden = true;
@@ -3104,7 +3124,7 @@ function attachChartTooltip(canvas, { draw, data, describe: explain, link = null
     const left = canvas.offsetLeft;
     const top = canvas.offsetTop;
     place(hit.rect);
-    markRow(link ? link.row(hit) : -1);
+    markRow(link ? link.row(hit) : -1, true);
     if (text !== shown) {
       tip.textContent = text;
       shown = text;
