@@ -94,8 +94,9 @@ const Legend = ({ items, palette }) => (
 );
 
 // Un grafico su canvas, ridisegnato quando cambia la larghezza, con i valori
-// del pezzo sotto il puntatore: il disegno vero e' in homework2a.js.
-const Figure = ({ title, draw, data, palette, tip = null, wide = false, legend = null }) => {
+// del pezzo sotto il puntatore e, con `link` (view.links), la riga della
+// tabella legata: il disegno vero e' in homework2a.js.
+const Figure = ({ title, draw, data, palette, tip = null, wide = false, legend = null, link = null }) => {
   const ref = useRef(null);
   useEffect(() => {
     const canvas = ref.current;
@@ -110,13 +111,13 @@ const Figure = ({ title, draw, data, palette, tip = null, wide = false, legend =
       });
     });
     observer.observe(canvas);
-    const detach = tip ? hw.attachChartTooltip(canvas, { draw, data, describe: tip }) : null;
+    const detach = tip ? hw.attachChartTooltip(canvas, { draw, data, describe: tip, link }) : null;
     return () => {
       drawn = -2;
       observer.disconnect();
       if (detach) detach();
     };
-  }, [draw, data, palette, tip]);
+  }, [draw, data, palette, tip, link]);
   return (
     <figure className={wide ? 'hw1-figure hw1-figure-wide' : 'hw1-figure'}>
       <canvas ref={ref} className="hw1-canvas" role="img" aria-label={title} />
@@ -483,6 +484,8 @@ const Algorithm = React.memo(function Algorithm({ crack, models, shift, stats, t
   const chart = useMemo(() => (crack ? view.posteriorChart(crack, F.decimal) : null), [crack, F]);
   const tip = useMemo(() => (crack ? view.tips.posterior(crack, text.tips) : null), [crack, text]);
   const checks = useMemo(() => (crack && models ? view.fitChecks(crack, models) : null), [crack, models]);
+  const candidates = useMemo(() => (crack ? view.candidateRows(crack) : null), [crack]);
+  const link = useMemo(() => (candidates ? view.links.candidates(candidates) : null), [candidates]);
   return (
     <>
       <Paras list={A.intro} />
@@ -493,14 +496,14 @@ const Algorithm = React.memo(function Algorithm({ crack, models, shift, stats, t
       ) : (
         <>
           <Check ok={crack.key === shift}>{A.live(crack, shift)}</Check>
-          <Figure wide title={A.posteriorChart} draw={hw.drawBarChart} data={chart} palette={palette} tip={tip} />
+          <Figure wide title={A.posteriorChart} draw={hw.drawBarChart} data={chart} palette={palette} tip={tip} link={link} />
           <p className="hw1-table-title"><strong>{A.candidatesTitle}</strong></p>
-          <table className="hw1-table hw1-discussion-table hw2a-candidates">
+          <table id={view.LINKED_TABLES.candidates} className="hw1-table hw1-discussion-table hw2a-candidates">
             <thead>
               <tr><th>{A.candidateCols.shift}</th><th>{A.candidateCols.perLetter}</th><th>{A.candidateCols.posterior}</th><th>{A.candidateCols.text}</th></tr>
             </thead>
             <tbody>
-              {view.candidateRows(crack).map((c) => (
+              {candidates.map((c) => (
                 <tr key={c.shift} className={c.shift === crack.key ? 'is-current' : ''}>
                   <th>{c.shift}</th>
                   <td data-label={A.candidateCols.perLetter}>{F.num(c.perLetter, 3)}</td>
@@ -530,10 +533,10 @@ const Lengths = React.memo(function Lengths({ stats, text, palette }) {
   return (
     <>
       <Paras list={L.intro(s)} />
-      <Figure wide title={L.chart} draw={hw.drawLineChart} data={chart} palette={palette} tip={tip} legend={[{ label: L.legend[0] }, { label: L.legend[1], dashed: true }]} />
+      <Figure wide title={L.chart} draw={hw.drawLineChart} data={chart} palette={palette} tip={tip} link={view.links.lengths} legend={[{ label: L.legend[0] }, { label: L.legend[1], dashed: true }]} />
       <p className="hw1-table-title"><strong>{L.tableTitle}</strong></p>
       <div className="hw1-scroll">
-        <table className="hw1-table hw1-compact hw2a-lengths">
+        <table id={view.LINKED_TABLES.lengths} className="hw1-table hw1-compact hw2a-lengths">
           <thead>
             <tr><th>{L.cols.length}</th><th>{L.cols.trials}</th><th>{L.cols.rate}</th><th>{L.cols.interval}</th><th>{L.cols.bound}</th></tr>
           </thead>

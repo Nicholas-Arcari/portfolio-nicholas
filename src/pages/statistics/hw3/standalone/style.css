@@ -444,6 +444,22 @@ canvas.has-tip {
   border-width: 1px;
 }
 
+/* la riga di una tabella legata a un grafico: quella del punto sotto il
+   puntatore, o quella sotto il puntatore, con il bordo e il fondo del segno */
+.table tr.is-marked > th,
+.table tr.is-marked > td {
+  background: var(--accent-soft);
+  box-shadow: inset 0 2px var(--accent), inset 0 -2px var(--accent);
+}
+
+.table tr.is-marked > :first-child {
+  box-shadow: inset 2px 0 var(--accent), inset 0 2px var(--accent), inset 0 -2px var(--accent);
+}
+
+.table tr.is-marked > :last-child {
+  box-shadow: inset -2px 0 var(--accent), inset 0 2px var(--accent), inset 0 -2px var(--accent);
+}
+
 .chart-tip {
   position: absolute;
   z-index: 5;
@@ -1020,6 +1036,24 @@ dialog.index::backdrop {
   .table.discussion td::before {
     content: attr(data-label) ": ";
     font-weight: 600;
+  }
+
+  /* la riga segnata e' una scheda: il bordo va attorno alla scheda, che si
+     allarga ai lati quanto il suo margine, cosi' il testo resta dov'e' */
+  .table.discussion tr.is-marked {
+    width: auto;
+    margin: 0 -0.5rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+    background: var(--accent-soft);
+  }
+
+  .table.discussion tr.is-marked > th,
+  .table.discussion tr.is-marked > td {
+    background: none;
+    box-shadow: none;
   }
 }
 

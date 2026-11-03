@@ -484,6 +484,31 @@ export const tips = {
   },
 };
 
+// ---------------------------------------------------------------------------
+// Tables tied to a chart
+// ---------------------------------------------------------------------------
+
+/** The id of every table tied to a chart: the page and the program find it by id. */
+export const LINKED_TABLES = Object.freeze({ candidates: 'hw2a-candidates-table', lengths: 'hw2a-lengths-table' });
+
+const tableById = (id) => () => document.getElementById(id);
+
+/**
+ * The links of hw.attachChartTooltip, { table, row, point }: the bar or
+ * the point under the pointer marks its row of the table, and a row under
+ * the pointer outlines its bar or point.
+ */
+export const links = {
+  // the 26 shifts against the best candidates (candidateRows): a shift without a row marks nothing
+  candidates: (rows) => ({
+    table: tableById(LINKED_TABLES.candidates),
+    row: ({ from }) => rows.findIndex((r) => r.shift === from),
+    point: (row) => (rows[row] ? rows[row].shift : -1),
+  }),
+  // one row per length, in the order of the chart
+  lengths: Object.freeze({ table: tableById(LINKED_TABLES.lengths), row: ({ index }) => index, point: (row) => row }),
+};
+
 // --- Drawing many charts without freezing the page ---------------------------
 
 const frameJobs = [];

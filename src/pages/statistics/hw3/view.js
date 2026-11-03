@@ -668,6 +668,23 @@ export const tips = {
 };
 
 // ---------------------------------------------------------------------------
+// Tabelle legate ai grafici
+// ---------------------------------------------------------------------------
+
+/** The id of every table tied to a chart: the page and the program find it by id. */
+export const LINKED_TABLES = Object.freeze({ lln: 'hw3-lln-table' });
+
+/**
+ * The links of hw.attachChartTooltip, { table, row, point }: the point
+ * under the pointer marks its row of the table, and a row under the
+ * pointer outlines its point. The table of section 3 has one row per
+ * point of both charts, in the same order.
+ */
+export const links = {
+  lln: Object.freeze({ table: () => document.getElementById(LINKED_TABLES.lln), row: (hit) => hit.index, point: (row) => row }),
+};
+
+// ---------------------------------------------------------------------------
 // Disegno a fette
 // ---------------------------------------------------------------------------
 

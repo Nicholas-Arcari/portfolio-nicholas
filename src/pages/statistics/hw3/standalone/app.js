@@ -137,10 +137,10 @@ function legend(items) {
   );
 }
 
-function figure(caption, draw, data, { wide = false, tip = null, items = null, note = null } = {}) {
+function figure(caption, draw, data, { wide = false, tip = null, items = null, note = null, link = null } = {}) {
   const canvas = h('canvas', { class: 'chart', role: 'img', 'aria-label': caption });
   const fig = h('figure', { class: wide ? 'figure wide' : 'figure' }, canvas, items && legend(items), note && h('p', { class: 'figure-note', text: note }), h('figcaption', { text: caption }));
-  const detach = tip ? hw.attachChartTooltip(canvas, { draw, data, describe: tip }) : null;
+  const detach = tip ? hw.attachChartTooltip(canvas, { draw, data, describe: tip, link }) : null;
   charts.set(canvas, { draw, data, width: -1, detach });
   resizer.observe(canvas);
   return fig;
@@ -157,11 +157,11 @@ function fill(region, ...nodes) {
   region.replaceChildren(...nodes.flat(Infinity).filter((n) => n !== null && n !== undefined && n !== false));
 }
 
-/** A table: column headers, then rows of cells, each { text | node, class?, head? } (head: a row header, th). */
-function table(className, headers, rows) {
+/** A table: column headers, then rows of cells, each { text | node, class?, head? } (head: a row header, th); `id` for a table tied to a chart (view.LINKED_TABLES). */
+function table(className, headers, rows, id = null) {
   return h(
     'table',
-    { class: `table ${className}` },
+    { id, class: `table ${className}` },
     h('thead', null, h('tr', null, headers.map((x) => h('th', { text: x })))),
     h(
       'tbody',
@@ -744,7 +744,7 @@ function updateConvergence() {
   const R = text.modelNames.rademacher;
   fill(
     regions.convergence,
-    h('div', { class: 'charts' }, hw.MODELS.map((model) => figure(C.chart(text.modelNames[model], eps), hw.drawLineChart, view.llnChart(rows[model], F.decimal), { tip: view.tips.lln(rows[model], text.tips) }))),
+    h('div', { class: 'charts' }, hw.MODELS.map((model) => figure(C.chart(text.modelNames[model], eps), hw.drawLineChart, view.llnChart(rows[model], F.decimal), { tip: view.tips.lln(rows[model], text.tips), link: view.links.lln }))),
     legend([{ label: C.legend[0], color: 0 }, { label: C.legend[1], color: 2 }, { label: C.legend[2], color: 3, dashed: true }, { label: C.legend[3], color: 4, dashed: true }]),
     subtitle(C.tableTitle(eps)),
     h(
@@ -754,6 +754,7 @@ function updateConvergence() {
         'compact lln',
         [C.cols.n, `${B}: ${C.cols.simulated}`, `${B}: ${C.cols.exact}`, `${R}: ${C.cols.simulated}`, `${R}: ${C.cols.exact}`],
         rows.bernoulli.map((b, i) => ({ cells: [{ text: F.int(b.n) }, { node: cell(b) }, { text: F.small(b.exact) }, { node: cell(rows.rademacher[i]) }, { text: F.small(rows.rademacher[i].exact) }] })),
+        view.LINKED_TABLES.lln,
       ),
     ),
     paras(C.after(s, eps)),

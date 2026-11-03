@@ -284,6 +284,24 @@ export function chartTips(s, P) {
   };
 }
 
+/**
+ * The id of the frequency table of an analysis (prefix: the one of its
+ * sections, since the page has two analyses), tied to its frequency
+ * charts: the page and the program find it by id.
+ */
+export const frequencyTable = (prefix) => `${prefix}-frequency-table`;
+
+/**
+ * The link of hw.attachChartTooltip for the frequency charts of an
+ * analysis, { table, row, point }: the bar under the pointer marks its row
+ * of the frequency table (one row per value, as the bars), and a row under
+ * the pointer outlines its bar.
+ */
+export function frequencyLink(prefix) {
+  const id = frequencyTable(prefix);
+  return { table: () => document.getElementById(id), row: ({ from }) => from, point: (row) => row };
+}
+
 // --- Drawing many charts without freezing the page ---------------------------
 
 const frameJobs = [];

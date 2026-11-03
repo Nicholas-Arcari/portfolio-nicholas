@@ -898,6 +898,52 @@ export const tips = {
 };
 
 // ---------------------------------------------------------------------------
+// Tabelle legate ai grafici
+// ---------------------------------------------------------------------------
+
+/** The id of every table tied to a chart: the page and the program find it by id. */
+export const LINKED_TABLES = Object.freeze({
+  steps: 'hw4-steps-table',
+  cancellation: 'hw4-cancellation-table',
+  averages: 'hw4-averages-table',
+  spread: 'hw4-spread-table',
+  inference: 'hw4-inference-table',
+});
+
+const tableById = (id) => () => document.getElementById(id);
+
+// one row per point of the chart, in the same order
+const rowPerPoint = (id) => Object.freeze({ table: tableById(id), row: (hit) => hit.index, point: (row) => row });
+
+// the cancellation table has five offsets, the stability curve every power from 10^0 to 10^14: a
+// row stands at its power (the offset 0 at 10^0, exact for both), a point marks the nearest row
+const CANCELLATION_POWERS = hw.CANCELLATION_OFFSETS.map((c) => (c > 0 ? Math.round(Math.log10(c)) : 0));
+
+/**
+ * The links of hw.attachChartTooltip, { table, row, point }: the point
+ * under the pointer marks its row of the table, and a row under the
+ * pointer outlines its point.
+ */
+export const links = {
+  steps: rowPerPoint(LINKED_TABLES.steps),
+  cancellation: Object.freeze({
+    table: tableById(LINKED_TABLES.cancellation),
+    row: (hit) => {
+      const power = hw.STABILITY_POWERS[hit.index];
+      let best = 0;
+      CANCELLATION_POWERS.forEach((p, i) => {
+        if (Math.abs(p - power) < Math.abs(CANCELLATION_POWERS[best] - power)) best = i;
+      });
+      return best;
+    },
+    point: (row) => hw.STABILITY_POWERS.indexOf(CANCELLATION_POWERS[row]),
+  }),
+  averages: rowPerPoint(LINKED_TABLES.averages),
+  spread: rowPerPoint(LINKED_TABLES.spread),
+  inference: rowPerPoint(LINKED_TABLES.inference),
+};
+
+// ---------------------------------------------------------------------------
 // Disegno a fette
 // ---------------------------------------------------------------------------
 

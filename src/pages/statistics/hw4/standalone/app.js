@@ -143,10 +143,10 @@ function legend(items) {
   );
 }
 
-function figure(caption, draw, data, { wide = false, tip = null, items = null, note = null } = {}) {
+function figure(caption, draw, data, { wide = false, tip = null, items = null, note = null, link = null } = {}) {
   const canvas = h('canvas', { class: 'chart', role: 'img', 'aria-label': caption });
   const fig = h('figure', { class: wide ? 'figure wide' : 'figure' }, canvas, items && legend(items), note && h('p', { class: 'figure-note', text: note }), h('figcaption', { text: caption }));
-  const detach = tip ? hw.attachChartTooltip(canvas, { draw, data, describe: tip }) : null;
+  const detach = tip ? hw.attachChartTooltip(canvas, { draw, data, describe: tip, link }) : null;
   charts.set(canvas, { draw, data, width: -1, detach });
   resizer.observe(canvas);
   return fig;
@@ -163,11 +163,11 @@ function fill(region, ...nodes) {
   region.replaceChildren(...nodes.flat(Infinity).filter((n) => n !== null && n !== undefined && n !== false));
 }
 
-/** A table: column headers, then rows of cells, each { text | node, class?, head? } (head: a row header, th). */
-function table(className, headers, rows) {
+/** A table: column headers, then rows of cells, each { text | node, class?, head? } (head: a row header, th); `id` for a table tied to a chart (view.LINKED_TABLES). */
+function table(className, headers, rows, id = null) {
   return h(
     'table',
-    { class: `table ${className}` },
+    { id, class: `table ${className}` },
     h('thead', null, h('tr', null, headers.map((x) => h('th', { text: x })))),
     h(
       'tbody',
@@ -449,6 +449,7 @@ function updateSteps() {
     figure(label, hw.drawWelfordChart, view.stepsChart(rows, g + 1, F.decimal), {
       wide: true,
       tip: view.tips.steps(rows, text.tips),
+      link: view.links.steps,
       items: S.legend.map((item, i) => ({ label: item, color: i })),
     }),
     h('p', { class: 'caption line', 'aria-live': state.steps.playing ? 'off' : 'polite', text: S.line(rows[g], rows[g - 1]) }),
@@ -463,6 +464,7 @@ function updateSteps() {
           class: i === g ? 'is-current' : i > g ? 'is-future' : null,
           cells: [{ text: String(r.k), head: true }, cell(r.x), cell(r.delta), cell(r.mean), cell(r.after), cell(r.increment), cell(r.ss), { text: r.k > 1 ? F.sig(r.variance) : '-' }],
         })),
+        view.LINKED_TABLES.steps,
       ),
     ),
     check(c.welfordError < 1e-9, S.check(c)),
@@ -488,6 +490,7 @@ function stabilityBlock() {
         'compact cancellation',
         [S.cols.offset, S.cols.naive, S.cols.twoPass, S.cols.welford],
         stability.rows.map((r) => ({ cells: [{ text: offset(r.offset), head: true }, { text: F.sig(r.naive, 17), class: Math.abs(r.naive - 30) > 1e-9 ? 'over' : null }, { text: F.sig(r.twoPass, 17) }, { text: F.sig(r.welford, 17) }] })),
+        view.LINKED_TABLES.cancellation,
       ),
     ),
     h(
@@ -496,6 +499,7 @@ function stabilityBlock() {
       figure(S.chartTitle(F.int(stability.curve.size)), hw.drawLineChart, view.stabilityChart(stability.curve, F.decimal), {
         wide: true,
         tip: view.tips.stability(stability.curve, text.tips),
+        link: view.links.cancellation,
         items: [
           { label: S.legend[0], color: 1 },
           { label: S.legend[1], color: 3 },
@@ -860,14 +864,16 @@ function updateAverages() {
         'compact averages',
         ['n', 'mean', 'meanZ', 'variance', 'varianceZ', 'biased', 'biasedTheory'].map((k) => A.cols[k]),
         view.averageRows(s).map((r) => ({ cells: [{ text: F.int(r.n), head: true }, { text: F.num(r.mean, 4) }, zCell(r.meanZ), { text: F.num(r.variance, 4) }, zCell(r.varianceZ), { text: F.num(r.biased, 4) }, { text: F.num(r.biasedTheory, 4) }] })),
+        view.LINKED_TABLES.averages,
       ),
     ),
     h(
       'div',
       { class: 'charts' },
-      figure(A.meansChart(s.m), hw.drawLineChart, view.meansChart(s, F.decimal), { tip: view.tips.means(s, text.tips), items: [{ label: A.legendMeans[0], color: 2, dashed: true }, { label: A.legendMeans[1], color: 0 }] }),
+      figure(A.meansChart(s.m), hw.drawLineChart, view.meansChart(s, F.decimal), { tip: view.tips.means(s, text.tips), link: view.links.averages, items: [{ label: A.legendMeans[0], color: 2, dashed: true }, { label: A.legendMeans[1], color: 0 }] }),
       figure(A.variancesChart(s.m), hw.drawLineChart, view.variancesChart(s, F.decimal), {
         tip: view.tips.variances(s, text.tips),
+        link: view.links.averages,
         items: [{ label: A.legendVariances[0], color: 2, dashed: true }, { label: A.legendVariances[1], color: 0 }, { label: A.legendVariances[2], color: 1, dashed: true }, { label: A.legendVariances[3], color: 1 }],
       }),
     ),
@@ -913,6 +919,7 @@ function updateSpread() {
       figure(S.chartTitle, hw.drawLineChart, view.spreadChart(s, F.decimal), {
         wide: true,
         tip: view.tips.spread(s, text.tips),
+        link: view.links.spread,
         items: [
           { label: S.legend[0], color: 0 },
           { label: S.legend[1], color: 0, dashed: true },
@@ -930,6 +937,7 @@ function updateSpread() {
         'compact spread',
         ['n', 'varMean', 'varMeanTheory', 'varVariance', 'varVarianceTheory', 'normalVariance', 'skewMean'].map((k) => S.cols[k]),
         view.spreadRows(s).map((r) => ({ cells: [{ text: F.int(r.n), head: true }, { text: F.sig(r.varMean, 4) }, { text: F.sig(r.varMeanTheory, 4) }, { text: F.sig(r.varVariance, 4) }, { text: F.sig(r.varVarianceTheory, 4) }, { text: F.sig(r.normalVariance, 4) }, { text: `${F.num(r.skewMean, 3)} (${F.num(r.skewMeanTheory, 3)})` }] })),
+        view.LINKED_TABLES.spread,
       ),
     ),
     paras(S.facts(s)),
@@ -960,6 +968,7 @@ function updateInference() {
       { class: 'charts' },
       figure(I.coverageTitle, hw.drawLineChart, view.coverageChart(s, F.decimal), {
         tip: view.tips.coverage(s, text.tips),
+        link: view.links.inference,
         items: [{ label: I.coverageLegend[0], color: 2, dashed: true }, { label: I.coverageLegend[1], color: 1, dashed: true }, { label: I.coverageLegend[2], color: 0 }, { label: I.coverageLegend[3], color: 1 }],
       }),
       figure(I.scatterTitle(pt.n, s.m), hw.drawScatter, scatter, { tip: view.tips.scatter(scatter, text.tips), items: [{ label: I.scatterLegend[0], color: 0 }, { label: I.scatterLegend[1], color: 1, dashed: true }, { label: I.scatterLegend[2], color: 2, dashed: true }] }),
@@ -972,6 +981,7 @@ function updateInference() {
         'compact inference',
         ['n', 't', 'tQuantile', 'chi2', 'corr', 'corrTheory'].map((k) => I.cols[k]),
         view.inferenceRows(s).map((r) => ({ cells: [{ text: F.int(r.n), head: true }, { text: F.pct(r.t, 2) }, { text: F.num(r.tQuantile, 3) }, { text: F.pct(r.chi2, 2) }, { text: F.num(r.corr, 3) }, { text: F.num(r.corrTheory, 3) }] })),
+        view.LINKED_TABLES.inference,
       ),
     ),
     paras(I.facts(s)),

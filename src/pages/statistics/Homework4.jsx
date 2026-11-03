@@ -84,8 +84,9 @@ const Legend = ({ items, palette }) => (
 );
 
 // Un grafico su canvas, ridisegnato quando cambia la larghezza, con i valori
-// del pezzo sotto il puntatore: il disegno vero e' in homework4.js.
-const Figure = ({ title, draw, data, palette, tip = null, wide = false, legend = null, note = null }) => {
+// del pezzo sotto il puntatore e, con `link` (view.links), la riga della
+// tabella legata: il disegno vero e' in homework4.js.
+const Figure = ({ title, draw, data, palette, tip = null, wide = false, legend = null, note = null, link = null }) => {
   const ref = useRef(null);
   useEffect(() => {
     const canvas = ref.current;
@@ -100,13 +101,13 @@ const Figure = ({ title, draw, data, palette, tip = null, wide = false, legend =
       });
     });
     observer.observe(canvas);
-    const detach = tip ? hw.attachChartTooltip(canvas, { draw, data, describe: tip }) : null;
+    const detach = tip ? hw.attachChartTooltip(canvas, { draw, data, describe: tip, link }) : null;
     return () => {
       drawn = -2;
       observer.disconnect();
       if (detach) detach();
     };
-  }, [draw, data, palette, tip]);
+  }, [draw, data, palette, tip, link]);
   return (
     <figure className={wide ? 'hw1-figure hw1-figure-wide' : 'hw1-figure'}>
       <canvas ref={ref} className="hw1-canvas" role="img" aria-label={title} />
@@ -293,6 +294,7 @@ const Steps = ({ text, palette }) => {
         data={data}
         palette={palette}
         tip={tip}
+        link={view.links.steps}
         wide
         legend={[
           { label: S.legend[0], color: 0 },
@@ -305,7 +307,7 @@ const Steps = ({ text, palette }) => {
       <p className="hw1-caption hw4-line" aria-live={playing ? 'off' : 'polite'}>{S.line(row, rows[index - 1])}</p>
       <p className="hw1-table-title"><strong>{S.tableTitle}</strong></p>
       <div className={rows.length > 16 ? 'hw1-scroll' : 'hw4-table'}>
-        <table className="hw1-table hw1-compact hw4-steps">
+        <table id={view.LINKED_TABLES.steps} className="hw1-table hw1-compact hw4-steps">
           <thead>
             <tr>{['k', 'x', 'delta', 'mean', 'after', 'increment', 'ss', 'variance'].map((key) => <th key={key}>{S.cols[key]}</th>)}</tr>
           </thead>
@@ -346,7 +348,7 @@ const Stability = React.memo(function Stability({ text, palette }) {
       <Paras list={S.intro} />
       <p className="hw1-table-title"><strong>{S.tableTitle}</strong></p>
       <div className="hw1-scroll">
-        <table className="hw1-table hw1-compact hw4-cancellation">
+        <table id={view.LINKED_TABLES.cancellation} className="hw1-table hw1-compact hw4-cancellation">
           <thead>
             <tr><th>{S.cols.offset}</th><th>{S.cols.naive}</th><th>{S.cols.twoPass}</th><th>{S.cols.welford}</th></tr>
           </thead>
@@ -369,6 +371,7 @@ const Stability = React.memo(function Stability({ text, palette }) {
           data={data}
           palette={palette}
           tip={tip}
+          link={view.links.cancellation}
           wide
           legend={[
             { label: S.legend[0], color: 1 },
@@ -618,7 +621,7 @@ const Averages = React.memo(function Averages({ s, job, text, palette }) {
         <>
           <p className="hw1-table-title"><strong>{A.tableTitle(s.m)}</strong></p>
           <div className="hw1-scroll">
-            <table className="hw1-table hw1-compact hw4-averages">
+            <table id={view.LINKED_TABLES.averages} className="hw1-table hw1-compact hw4-averages">
               <thead>
                 <tr>{['n', 'mean', 'meanZ', 'variance', 'varianceZ', 'biased', 'biasedTheory'].map((key) => <th key={key}>{A.cols[key]}</th>)}</tr>
               </thead>
@@ -638,13 +641,14 @@ const Averages = React.memo(function Averages({ s, job, text, palette }) {
             </table>
           </div>
           <div className="hw1-charts">
-            <Figure title={A.meansChart(s.m)} draw={hw.drawLineChart} data={charts.means.data} palette={palette} tip={charts.means.tip} legend={[{ label: A.legendMeans[0], color: 2, dashed: true }, { label: A.legendMeans[1], color: 0 }]} />
+            <Figure title={A.meansChart(s.m)} draw={hw.drawLineChart} data={charts.means.data} palette={palette} tip={charts.means.tip} link={view.links.averages} legend={[{ label: A.legendMeans[0], color: 2, dashed: true }, { label: A.legendMeans[1], color: 0 }]} />
             <Figure
               title={A.variancesChart(s.m)}
               draw={hw.drawLineChart}
               data={charts.variances.data}
               palette={palette}
               tip={charts.variances.tip}
+              link={view.links.averages}
               legend={[{ label: A.legendVariances[0], color: 2, dashed: true }, { label: A.legendVariances[1], color: 0 }, { label: A.legendVariances[2], color: 1, dashed: true }, { label: A.legendVariances[3], color: 1 }]}
             />
           </div>
@@ -714,6 +718,7 @@ const Spread = React.memo(function Spread({ s, job, text, palette }) {
               data={charts.spread.data}
               palette={palette}
               tip={charts.spread.tip}
+              link={view.links.spread}
               wide
               legend={[
                 { label: S.legend[0], color: 0 },
@@ -726,7 +731,7 @@ const Spread = React.memo(function Spread({ s, job, text, palette }) {
           </div>
           <p className="hw1-table-title"><strong>{S.tableTitle}</strong></p>
           <div className="hw1-scroll">
-            <table className="hw1-table hw1-compact hw4-spread">
+            <table id={view.LINKED_TABLES.spread} className="hw1-table hw1-compact hw4-spread">
               <thead>
                 <tr>{['n', 'varMean', 'varMeanTheory', 'varVariance', 'varVarianceTheory', 'normalVariance', 'skewMean'].map((key) => <th key={key}>{S.cols[key]}</th>)}</tr>
               </thead>
@@ -791,13 +796,14 @@ const Inference = React.memo(function Inference({ s, job, text, palette }) {
               data={charts.coverage.data}
               palette={palette}
               tip={charts.coverage.tip}
+              link={view.links.inference}
               legend={[{ label: I.coverageLegend[0], color: 2, dashed: true }, { label: I.coverageLegend[1], color: 1, dashed: true }, { label: I.coverageLegend[2], color: 0 }, { label: I.coverageLegend[3], color: 1 }]}
             />
             <Figure title={I.scatterTitle(s.points[g].n, s.m)} draw={hw.drawScatter} data={charts.scatter.data} palette={palette} tip={charts.scatter.tip} legend={[{ label: I.scatterLegend[0], color: 0 }, { label: I.scatterLegend[1], color: 1, dashed: true }, { label: I.scatterLegend[2], color: 2, dashed: true }]} />
           </div>
           <p className="hw1-table-title"><strong>{I.tableTitle}</strong></p>
           <div className="hw1-scroll">
-            <table className="hw1-table hw1-compact hw4-inference">
+            <table id={view.LINKED_TABLES.inference} className="hw1-table hw1-compact hw4-inference">
               <thead>
                 <tr>{['n', 't', 'tQuantile', 'chi2', 'corr', 'corrTheory'].map((key) => <th key={key}>{I.cols[key]}</th>)}</tr>
               </thead>

@@ -81,8 +81,9 @@ const Legend = ({ items, palette }) => (
 );
 
 // Un grafico su canvas, ridisegnato quando cambia la larghezza, con i valori
-// del pezzo sotto il puntatore: il disegno vero e' in homework3.js.
-const Figure = ({ title, draw, data, palette, tip = null, wide = false, legend = null, note = null }) => {
+// del pezzo sotto il puntatore e, con `link` (view.links), la riga della
+// tabella legata: il disegno vero e' in homework3.js.
+const Figure = ({ title, draw, data, palette, tip = null, wide = false, legend = null, note = null, link = null }) => {
   const ref = useRef(null);
   useEffect(() => {
     const canvas = ref.current;
@@ -97,13 +98,13 @@ const Figure = ({ title, draw, data, palette, tip = null, wide = false, legend =
       });
     });
     observer.observe(canvas);
-    const detach = tip ? hw.attachChartTooltip(canvas, { draw, data, describe: tip }) : null;
+    const detach = tip ? hw.attachChartTooltip(canvas, { draw, data, describe: tip, link }) : null;
     return () => {
       drawn = -2;
       observer.disconnect();
       if (detach) detach();
     };
-  }, [draw, data, palette, tip]);
+  }, [draw, data, palette, tip, link]);
   return (
     <figure className={wide ? 'hw1-figure hw1-figure-wide' : 'hw1-figure'}>
       <canvas ref={ref} className="hw1-canvas" role="img" aria-label={title} />
@@ -590,13 +591,13 @@ const Convergence = React.memo(function Convergence({ s, job, epsilon, setEpsilo
       </div>
       <div className="hw1-charts">
         {charts.map((c) => (
-          <Figure key={c.model} title={C.chart(text.modelNames[c.model], epsilon)} draw={hw.drawLineChart} data={c.data} palette={palette} tip={c.tip} />
+          <Figure key={c.model} title={C.chart(text.modelNames[c.model], epsilon)} draw={hw.drawLineChart} data={c.data} palette={palette} tip={c.tip} link={view.links.lln} />
         ))}
       </div>
       <Legend items={[{ label: C.legend[0], color: 0 }, { label: C.legend[1], color: 2 }, { label: C.legend[2], color: 3, dashed: true }, { label: C.legend[3], color: 4, dashed: true }]} palette={palette} />
       <p className="hw1-table-title"><strong>{C.tableTitle(epsilon)}</strong></p>
       <div className="hw1-scroll">
-        <table className="hw1-table hw1-compact hw3-lln">
+        <table id={view.LINKED_TABLES.lln} className="hw1-table hw1-compact hw3-lln">
           <thead>
             <tr>
               <th rowSpan={2}>{C.cols.n}</th>

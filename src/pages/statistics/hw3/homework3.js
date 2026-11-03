@@ -1422,24 +1422,54 @@ export function chartHitTest(draw, data, width, x, y) {
 }
 
 /**
+ * The reverse of chartHitTest: what the pointer would hit on the point
+ * `index` of a line chart; null for any other chart or index. A row of a
+ * table uses it to outline its point.
+ */
+export function chartHitAt(draw, data, width, index) {
+  if (draw !== drawLineChart) return null;
+  const { margin, h, xs } = lineLayout(data, width);
+  if (!(index >= 0 && index < xs.length)) return null;
+  return { kind: 'point', index, rect: { x: xs[index] - 3, y: margin.top, width: 6, height: h } };
+}
+
+/**
  * Explains a chart under the pointer: the bar or the point below the
  * mouse, or below the finger after a tap, gets an outline and a label with
  * the text describe(hit), inserted as plain text. Both stay inside the
- * canvas's parent, which must be positioned. Returns the function that
- * removes them.
+ * canvas's parent, which must be positioned. `link` ties the chart to a
+ * table, as { table() (the element, or null), row(hit) (the index of the
+ * row in the body, -1 for none), point(row) (the index of its point) }:
+ * the row of the point under the pointer gets the outline too, and a row
+ * under the pointer, or tapped, outlines its point. Returns the function
+ * that removes them.
  */
-export const attachChartTooltip = (canvas, { draw, data, describe: explain }) =>
-  attachPointerLabel(canvas, (x, y, width) => {
-    const hit = chartHitTest(draw, data, width, x, y);
-    const text = hit && explain(hit);
-    return text ? { rect: hit.rect, text } : null;
-  });
+export const attachChartTooltip = (canvas, { draw, data, describe: explain, link = null }) =>
+  attachPointerLabel(
+    canvas,
+    (x, y, width) => {
+      const hit = chartHitTest(draw, data, width, x, y);
+      const text = hit && explain(hit);
+      return text ? { rect: hit.rect, text, row: link ? link.row(hit) : -1 } : null;
+    },
+    link && {
+      table: link.table,
+      locate: (row, width) => {
+        const hit = chartHitAt(draw, data, width, link.point(row));
+        return hit && hit.rect;
+      },
+    },
+  );
 
 /**
  * The same label for any canvas: locate(x, y, width) says what is under
- * the point, as { rect, text }, or null. The animation uses it directly.
+ * the point, as { rect, text, row? }, or null. The animation uses it
+ * directly. With `link`, { table(), locate(row, width) }, the row `row` of
+ * the table's body is marked (class is-marked) while its point is under
+ * the pointer, and the other way round: locate(row, width) gives the
+ * rectangle of a row on the canvas, or null.
  */
-export function attachPointerLabel(canvas, locate) {
+export function attachPointerLabel(canvas, locate, link = null) {
   const box = canvas.parentElement;
   const mark = document.createElement('div');
   const tip = document.createElement('div');
@@ -1456,14 +1486,38 @@ export function attachPointerLabel(canvas, locate) {
   let shown = null;
   // where the pointer is while the label is on screen: refresh() asks again what is under it
   let pointer = null;
+  // the marked row of the linked table, and whether the outline on the canvas comes from a row
+  let marked = null;
+  let fromRow = false;
+  const markRow = (index) => {
+    const table = link && link.table();
+    const row = (table && index >= 0 && table.tBodies[0] && table.tBodies[0].rows[index]) || null;
+    if (row === marked) return;
+    if (marked) marked.classList.remove('is-marked');
+    if (row) row.classList.add('is-marked');
+    marked = row;
+  };
   const hide = () => {
     mark.hidden = true;
     tip.hidden = true;
     shown = null;
     pointer = null;
+    fromRow = false;
+    markRow(-1);
+  };
+  const place = (rect) => {
+    Object.assign(mark.style, {
+      left: `${canvas.offsetLeft + rect.x}px`,
+      top: `${canvas.offsetTop + rect.y}px`,
+      width: `${Math.max(2, rect.width)}px`,
+      height: `${rect.height}px`,
+    });
+    mark.classList.toggle('is-thin', rect.width < 6);
+    mark.hidden = false;
   };
   const show = (clientX, clientY) => {
     pointer = { clientX, clientY };
+    fromRow = false;
     const r = canvas.getBoundingClientRect();
     const x = clientX - r.left;
     const y = clientY - r.top;
@@ -1472,19 +1526,14 @@ export function attachPointerLabel(canvas, locate) {
       mark.hidden = true;
       tip.hidden = true;
       shown = null;
+      markRow(-1);
       return;
     }
     const { text } = hit;
     const left = canvas.offsetLeft;
     const top = canvas.offsetTop;
-    Object.assign(mark.style, {
-      left: `${left + hit.rect.x}px`,
-      top: `${top + hit.rect.y}px`,
-      width: `${Math.max(2, hit.rect.width)}px`,
-      height: `${hit.rect.height}px`,
-    });
-    mark.classList.toggle('is-thin', hit.rect.width < 6);
-    mark.hidden = false;
+    place(hit.rect);
+    markRow(hit.row ?? -1);
     if (text !== shown) {
       tip.textContent = text;
       shown = text;
@@ -1498,6 +1547,22 @@ export function attachPointerLabel(canvas, locate) {
     tip.style.left = `${tx}px`;
     tip.style.top = `${ty}px`;
   };
+  // the other way round: a row of the linked table under the mouse, or tapped, outlines its point
+  const rowAt = (target) => {
+    const table = link && link.table();
+    const row = table && target instanceof Element ? target.closest('tr') : null;
+    return row && row.parentElement.tagName === 'TBODY' && row.parentElement.parentElement === table ? row : null;
+  };
+  const showRow = (row) => {
+    const rect = link.locate(row.sectionRowIndex, canvas.getBoundingClientRect().width);
+    tip.hidden = true;
+    shown = null;
+    pointer = null;
+    fromRow = true;
+    if (rect) place(rect);
+    else mark.hidden = true;
+    markRow(rect ? row.sectionRowIndex : -1);
+  };
   const onMove = (e) => {
     if (e.pointerType === 'touch') return;
     const { clientX, clientY } = e;
@@ -1506,24 +1571,37 @@ export function attachPointerLabel(canvas, locate) {
   };
   // a finger leaves the canvas as soon as it is lifted: the label stays until a tap elsewhere
   const onLeave = (e) => {
-    if (e.pointerType !== 'touch') hide();
+    if (e.pointerType === 'touch') return;
+    cancelAnimationFrame(frame);
+    hide();
   };
   const onDown = (e) => {
     if (e.pointerType === 'touch') show(e.clientX, e.clientY);
   };
   const onDocumentDown = (e) => {
-    if (e.target !== canvas) hide();
+    const row = rowAt(e.target);
+    if (row) showRow(row);
+    else if (e.target !== canvas) hide();
+  };
+  const onDocumentOver = (e) => {
+    if (e.pointerType === 'touch') return;
+    const row = rowAt(e.target);
+    if (row) showRow(row);
+    else if (fromRow) hide();
   };
   canvas.addEventListener('pointermove', onMove);
   canvas.addEventListener('pointerleave', onLeave);
   canvas.addEventListener('pointerdown', onDown);
   document.addEventListener('pointerdown', onDocumentDown);
+  if (link) document.addEventListener('pointerover', onDocumentOver);
   const detach = () => {
     cancelAnimationFrame(frame);
     canvas.removeEventListener('pointermove', onMove);
     canvas.removeEventListener('pointerleave', onLeave);
     canvas.removeEventListener('pointerdown', onDown);
     document.removeEventListener('pointerdown', onDocumentDown);
+    document.removeEventListener('pointerover', onDocumentOver);
+    markRow(-1);
     canvas.classList.remove('has-tip');
     mark.remove();
     tip.remove();

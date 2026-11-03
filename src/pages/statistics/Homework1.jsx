@@ -65,7 +65,7 @@ const Pending = ({ text }) => <p className="hw1-note hw1-pending" role="status">
 // che un altro grafico si e' appena ridimensionato costringerebbe il browser
 // a ricalcolare l'intera pagina, una volta per grafico. L'altezza e' fissata
 // subito, il disegno avviene qualche millisecondo per fotogramma.
-const Figure = ({ title, draw, data, palette, tip = null, wide = false }) => {
+const Figure = ({ title, draw, data, palette, tip = null, wide = false, link = null }) => {
   const ref = useRef(null);
   useEffect(() => {
     const canvas = ref.current;
@@ -80,14 +80,15 @@ const Figure = ({ title, draw, data, palette, tip = null, wide = false }) => {
       });
     });
     observer.observe(canvas);
-    // il riquadro con i valori della barra o della cella sotto il puntatore
-    const detach = tip ? hw.attachChartTooltip(canvas, { draw, data, describe: tip }) : null;
+    // il riquadro con i valori della barra o della cella sotto il puntatore,
+    // e con `link` (view.links) la riga della tabella legata
+    const detach = tip ? hw.attachChartTooltip(canvas, { draw, data, describe: tip, link }) : null;
     return () => {
       drawn = -2;
       observer.disconnect();
       if (detach) detach();
     };
-  }, [draw, data, palette, tip]);
+  }, [draw, data, palette, tip, link]);
   return (
     <figure className={wide ? 'hw1-figure hw1-figure-wide' : 'hw1-figure'}>
       <canvas ref={ref} className="hw1-canvas" role="img" aria-label={title} />
@@ -211,6 +212,7 @@ const Analyses = ({ prefix, result, text, palette }) => {
     [s, T, F],
   );
   const tips = useMemo(() => (s ? view.chartTips(s, T.tips) : null), [s, T]);
+  const link = useMemo(() => view.frequencyLink(prefix), [prefix]);
   const titles = view.ANALYSES.map((key) => (
     <Title key={key} id={`${prefix}-${key}`} level={2}>{text.sections[key]}</Title>
   ));
@@ -239,14 +241,14 @@ const Analyses = ({ prefix, result, text, palette }) => {
       {titles[1]}
       <p>{T.frequency.intro}</p>
       <div className="hw1-charts">
-        <Figure title={T.frequency.chartX} draw={hw.drawBarChart} data={charts.freqX} palette={palette} tip={tips.freqX} />
-        <Figure title={T.frequency.chartY} draw={hw.drawBarChart} data={charts.freqY} palette={palette} tip={tips.freqY} />
+        <Figure title={T.frequency.chartX} draw={hw.drawBarChart} data={charts.freqX} palette={palette} tip={tips.freqX} link={link} />
+        <Figure title={T.frequency.chartY} draw={hw.drawBarChart} data={charts.freqY} palette={palette} tip={tips.freqY} link={link} />
       </div>
       {s.p <= view.FREQUENCY_TABLE_MAX_P ? (
         <>
           <p className="hw1-table-title"><strong>{T.frequency.tableTitle}</strong> <span className="hw1-note">{T.frequency.tableNote(s.p)}</span></p>
           <div className="hw1-scroll">
-            <table className="hw1-table hw1-compact">
+            <table id={view.frequencyTable(prefix)} className="hw1-table hw1-compact">
               <thead>
                 <tr><th>{T.frequency.colValue}</th><th>{T.frequency.colX}</th><th>{T.frequency.colY}</th></tr>
               </thead>
