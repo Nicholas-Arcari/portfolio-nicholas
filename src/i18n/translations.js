@@ -169,6 +169,12 @@ export const translations = {
       loading: 'Caricamento...',
     },
 
+    pageError: {
+      title: 'La pagina non si è caricata',
+      text: 'Controlla la connessione e riprova.',
+      reload: 'Ricarica',
+    },
+
     notFound: {
       title: 'Pagina Non Trovata',
       text: 'La pagina che stai cercando non esiste o \u00e8 stata spostata.',
@@ -1947,6 +1953,12 @@ export const translations = {
       backToList: 'All exercises',
       backToTop: 'Back to top',
       loading: 'Loading...',
+    },
+
+    pageError: {
+      title: 'This page did not load',
+      text: 'Check your connection and try again.',
+      reload: 'Reload',
     },
 
     notFound: {

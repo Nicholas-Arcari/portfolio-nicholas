@@ -132,7 +132,7 @@ const About = () => {
                   </li>
 
                   <li>
-                    <i className="icon brands fa-github" style={{ width: '30px', color: '#333', fontSize: '1.2em' }}></i>
+                    <i className="icon brands fa-github is-ink" style={{ width: '30px', fontSize: '1.2em' }}></i>
                     <a href="https://github.com/Nicholas-Arcari" target="_blank" rel="noreferrer">GitHub</a>
                   </li>
 
@@ -142,13 +142,18 @@ const About = () => {
                   </li>
 
                   <li>
-                    <i className="icon solid fa-bug" style={{ width: '30px', color: '#333', fontSize: '1.2em' }}></i>
+                    <i className="icon solid fa-bug is-ink" style={{ width: '30px', fontSize: '1.2em' }}></i>
                     <a href="https://hackerone.com/arcari" target="_blank" rel="noreferrer">HackerOne</a>
                   </li>
 
                   <li>
                     <i className="icon brands fa-instagram" style={{ width: '30px', color: '#E4405F', fontSize: '1.2em' }}></i>
                     <a href="https://www.instagram.com/diokaneki_/" target="_blank" rel="noreferrer">Instagram</a>
+                  </li>
+
+                  <li>
+                    <i className="icon brands fa-tiktok" style={{ width: '30px', fontSize: '1.2em' }}></i>
+                    <a href="https://www.tiktok.com/@diokaneki_" target="_blank" rel="noreferrer">TikTok</a>
                   </li>
 
                   <li>
