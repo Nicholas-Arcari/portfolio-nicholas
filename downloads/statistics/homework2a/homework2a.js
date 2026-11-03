@@ -3016,13 +3016,38 @@ function chartHitTest(draw, data, width, x, y) {
 }
 
 /**
+ * The reverse of chartHitTest: what the pointer would hit on the bar or
+ * the point `index`; null if the chart has no such bar or point. A row of
+ * a table uses it to outline its bar or point.
+ */
+function chartHitAt(draw, data, width, index) {
+  if (draw === drawLineChart) {
+    const { margin, h, xs } = lineLayout(data, width);
+    if (!(index >= 0 && index < xs.length)) return null;
+    return { kind: 'point', index, rect: { x: xs[index] - 3, y: margin.top, width: 6, height: h } };
+  }
+  if (!(index >= 0 && index < data.values.length)) return null;
+  const { margin, h, columns, perColumn, colW } = barLayout(data.values.length, width);
+  // the pixel column of the bar: the last one that starts at or before it
+  let column = Math.min(columns - 1, Math.floor(index / perColumn));
+  while (column + 1 < columns && Math.floor((column + 1) * perColumn) <= index) column += 1;
+  const from = Math.floor(column * perColumn);
+  const to = Math.max(Math.floor((column + 1) * perColumn), from + 1);
+  return { kind: 'bar', from, to, rect: { x: margin.left + column * colW, y: margin.top, width: colW, height: h } };
+}
+
+/**
  * Explains a chart under the pointer: the bar or the point below the
  * mouse, or below the finger after a tap, gets an outline and a label with
  * the text describe(hit), inserted as plain text. Both stay inside the
- * canvas's parent, which must be positioned. Returns the function that
- * removes them.
+ * canvas's parent, which must be positioned. `link` ties the chart to a
+ * table, as { table() (the element, or null), row(hit) (the index of the
+ * row in the body, -1 for none), point(row) (the index of its bar or
+ * point) }: the row of what is under the pointer gets the outline too
+ * (class is-marked), and a row under the pointer, or tapped, outlines its
+ * bar or point. Returns the function that removes them.
  */
-function attachChartTooltip(canvas, { draw, data, describe: explain }) {
+function attachChartTooltip(canvas, { draw, data, describe: explain, link = null }) {
   const box = canvas.parentElement;
   const mark = document.createElement('div');
   const tip = document.createElement('div');
@@ -3037,10 +3062,33 @@ function attachChartTooltip(canvas, { draw, data, describe: explain }) {
   canvas.classList.add('has-tip');
   let frame = 0;
   let shown = null;
+  // the marked row of the linked table, and whether the outline on the canvas comes from a row
+  let marked = null;
+  let fromRow = false;
+  const markRow = (index) => {
+    const table = link && link.table();
+    const row = (table && index >= 0 && table.tBodies[0] && table.tBodies[0].rows[index]) || null;
+    if (row === marked) return;
+    if (marked) marked.classList.remove('is-marked');
+    if (row) row.classList.add('is-marked');
+    marked = row;
+  };
   const hide = () => {
     mark.hidden = true;
     tip.hidden = true;
     shown = null;
+    fromRow = false;
+    markRow(-1);
+  };
+  const place = (rect) => {
+    Object.assign(mark.style, {
+      left: `${canvas.offsetLeft + rect.x}px`,
+      top: `${canvas.offsetTop + rect.y}px`,
+      width: `${Math.max(2, rect.width)}px`,
+      height: `${rect.height}px`,
+    });
+    mark.classList.toggle('is-thin', rect.width < 6);
+    mark.hidden = false;
   };
   const show = (clientX, clientY) => {
     const r = canvas.getBoundingClientRect();
@@ -3052,16 +3100,11 @@ function attachChartTooltip(canvas, { draw, data, describe: explain }) {
       hide();
       return;
     }
+    fromRow = false;
     const left = canvas.offsetLeft;
     const top = canvas.offsetTop;
-    Object.assign(mark.style, {
-      left: `${left + hit.rect.x}px`,
-      top: `${top + hit.rect.y}px`,
-      width: `${Math.max(2, hit.rect.width)}px`,
-      height: `${hit.rect.height}px`,
-    });
-    mark.classList.toggle('is-thin', hit.rect.width < 6);
-    mark.hidden = false;
+    place(hit.rect);
+    markRow(link ? link.row(hit) : -1);
     if (text !== shown) {
       tip.textContent = text;
       shown = text;
@@ -3075,6 +3118,21 @@ function attachChartTooltip(canvas, { draw, data, describe: explain }) {
     tip.style.left = `${tx}px`;
     tip.style.top = `${ty}px`;
   };
+  // the other way round: a row of the linked table under the mouse, or tapped, outlines its bar or point
+  const rowAt = (target) => {
+    const table = link && link.table();
+    const row = table && target instanceof Element ? target.closest('tr') : null;
+    return row && row.parentElement.tagName === 'TBODY' && row.parentElement.parentElement === table ? row : null;
+  };
+  const showRow = (row) => {
+    const hit = chartHitAt(draw, data, canvas.getBoundingClientRect().width, link.point(row.sectionRowIndex));
+    tip.hidden = true;
+    shown = null;
+    fromRow = true;
+    if (hit) place(hit.rect);
+    else mark.hidden = true;
+    markRow(hit ? row.sectionRowIndex : -1);
+  };
   const onMove = (e) => {
     if (e.pointerType === 'touch') return;
     const { clientX, clientY } = e;
@@ -3083,24 +3141,37 @@ function attachChartTooltip(canvas, { draw, data, describe: explain }) {
   };
   // a finger leaves the canvas as soon as it is lifted: the label stays until a tap elsewhere
   const onLeave = (e) => {
-    if (e.pointerType !== 'touch') hide();
+    if (e.pointerType === 'touch') return;
+    cancelAnimationFrame(frame);
+    hide();
   };
   const onDown = (e) => {
     if (e.pointerType === 'touch') show(e.clientX, e.clientY);
   };
   const onDocumentDown = (e) => {
-    if (e.target !== canvas) hide();
+    const row = rowAt(e.target);
+    if (row) showRow(row);
+    else if (e.target !== canvas) hide();
+  };
+  const onDocumentOver = (e) => {
+    if (e.pointerType === 'touch') return;
+    const row = rowAt(e.target);
+    if (row) showRow(row);
+    else if (fromRow) hide();
   };
   canvas.addEventListener('pointermove', onMove);
   canvas.addEventListener('pointerleave', onLeave);
   canvas.addEventListener('pointerdown', onDown);
   document.addEventListener('pointerdown', onDocumentDown);
+  if (link) document.addEventListener('pointerover', onDocumentOver);
   return () => {
     cancelAnimationFrame(frame);
     canvas.removeEventListener('pointermove', onMove);
     canvas.removeEventListener('pointerleave', onLeave);
     canvas.removeEventListener('pointerdown', onDown);
     document.removeEventListener('pointerdown', onDocumentDown);
+    document.removeEventListener('pointerover', onDocumentOver);
+    markRow(-1);
     canvas.classList.remove('has-tip');
     mark.remove();
     tip.remove();
@@ -3304,7 +3375,7 @@ function runCli(argv, print = console.log) {
 /** True under Node, where the downloadable program can run runCli. */
 const isNode = typeof process !== 'undefined' && !!(process.versions && process.versions.node);
 
-return { toHex, fromHex, utf8, utf8Decode, concat, ser32, ser256, bytesToBigInt, secureRandomBytes, sha256, SECP256K1, G, multiplyG, multiply, addPoints, negate, subtractPoints, pointsEqual, isOnSecp256k1, encodeCompressed, decodeCompressed, pointHex, KEY_BITS, KEY_MAX, DEFAULT_KEY, DEFAULT_MESSAGE, MESSAGE_MAX_BYTES, NONCE_SEED, parsePrivateKey, randomPrivateKey, encodeByte, decodeByte, seededNonce, randomNonce, toyScheme, ciphertextBytes, ALPHABET, DEFAULT_SHIFT, caesar, caesarDecrypt, parseShift, letterIndices, letterCounts, wordsOf, SPLIT, corpusChapters, corpusText, MAX_ORDER, SMOOTHING_GRID, chooseSmoothingSteps, languageModels, trainingFrequencies, entropyBits, coincidenceIndex, METHODS, analyzeCiphertext, shiftScores, bestShifts, posteriorOf, crackCaesar, letterFit, EXHAUSTIVE_LIMIT, ATTACK_SEED, exhaustiveSteps, bsgsSteps, kangarooSteps, runSteps, runStepsAsync, publicKeyFromHex, attackSteps, REUSED_NONCE, nonceReuseAttack, shiftCiphertext, SIGNIFICANCE, EXPLORE_SEED, SAMPLES, LENGTHS, SCALING, THEORY, prng, chiSquarePValue, twoSidedNormalTail, binomialTest, goodnessOfFit, independenceTest, wilsonInterval, chernoffRates, chernoffSuccess, exploreSteps, explore, exploreAsync, scalingSteps, scaling, scalingAsync, statisticalTests, TEST_LABELS, DEFAULT_PALETTE, drawBarChart, drawLineChart, chartHeight, chartHitTest, attachChartTooltip, DEFAULT_PUBLIC_KEY, CHECK_VECTORS, verifyAll, reportLines, humanDuration, runCli, isNode };
+return { toHex, fromHex, utf8, utf8Decode, concat, ser32, ser256, bytesToBigInt, secureRandomBytes, sha256, SECP256K1, G, multiplyG, multiply, addPoints, negate, subtractPoints, pointsEqual, isOnSecp256k1, encodeCompressed, decodeCompressed, pointHex, KEY_BITS, KEY_MAX, DEFAULT_KEY, DEFAULT_MESSAGE, MESSAGE_MAX_BYTES, NONCE_SEED, parsePrivateKey, randomPrivateKey, encodeByte, decodeByte, seededNonce, randomNonce, toyScheme, ciphertextBytes, ALPHABET, DEFAULT_SHIFT, caesar, caesarDecrypt, parseShift, letterIndices, letterCounts, wordsOf, SPLIT, corpusChapters, corpusText, MAX_ORDER, SMOOTHING_GRID, chooseSmoothingSteps, languageModels, trainingFrequencies, entropyBits, coincidenceIndex, METHODS, analyzeCiphertext, shiftScores, bestShifts, posteriorOf, crackCaesar, letterFit, EXHAUSTIVE_LIMIT, ATTACK_SEED, exhaustiveSteps, bsgsSteps, kangarooSteps, runSteps, runStepsAsync, publicKeyFromHex, attackSteps, REUSED_NONCE, nonceReuseAttack, shiftCiphertext, SIGNIFICANCE, EXPLORE_SEED, SAMPLES, LENGTHS, SCALING, THEORY, prng, chiSquarePValue, twoSidedNormalTail, binomialTest, goodnessOfFit, independenceTest, wilsonInterval, chernoffRates, chernoffSuccess, exploreSteps, explore, exploreAsync, scalingSteps, scaling, scalingAsync, statisticalTests, TEST_LABELS, DEFAULT_PALETTE, drawBarChart, drawLineChart, chartHeight, chartHitTest, chartHitAt, attachChartTooltip, DEFAULT_PUBLIC_KEY, CHECK_VECTORS, verifyAll, reportLines, humanDuration, runCli, isNode };
 })();
 
 // src/pages/statistics/hw2a/standalone/cli.js

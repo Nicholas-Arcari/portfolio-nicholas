@@ -500,6 +500,31 @@ const tips = {
   },
 };
 
+// ---------------------------------------------------------------------------
+// Tables tied to a chart
+// ---------------------------------------------------------------------------
+
+/** The id of every table tied to a chart: the page and the program find it by id. */
+const LINKED_TABLES = Object.freeze({ candidates: 'hw2a-candidates-table', lengths: 'hw2a-lengths-table' });
+
+const tableById = (id) => () => document.getElementById(id);
+
+/**
+ * The links of hw.attachChartTooltip, { table, row, point }: the bar or
+ * the point under the pointer marks its row of the table, and a row under
+ * the pointer outlines its bar or point.
+ */
+const links = {
+  // the 26 shifts against the best candidates (candidateRows): a shift without a row marks nothing
+  candidates: (rows) => ({
+    table: tableById(LINKED_TABLES.candidates),
+    row: ({ from }) => rows.findIndex((r) => r.shift === from),
+    point: (row) => (rows[row] ? rows[row].shift : -1),
+  }),
+  // one row per length, in the order of the chart
+  lengths: Object.freeze({ table: tableById(LINKED_TABLES.lengths), row: ({ index }) => index, point: (row) => row }),
+};
+
 // --- Drawing many charts without freezing the page ---------------------------
 
 const frameJobs = [];
@@ -525,7 +550,7 @@ function scheduleFrameJob(job) {
   }
 }
 
-return { SECTIONS, tocEntries, KEY_MAX_LENGTH, MESSAGE_MAX_LENGTH, SHIFT_MAX_LENGTH, DEFAULT_INPUTS, parseMessage, readInputs, isDefaultInput, inputBadge, shortHex, charOf, keyFacts, blockRows, firstBlock, ciphertextSize, cipherSummary, checkGroups, substitution, caesarFacts, letterChart, cipherRows, ecBytesChart, chapterRows, corpusChart, modelRows, candidateRows, posteriorChart, fitChecks, LENGTH_TICKS, successChart, methodsChart, LEVELS, thresholds, rateAt, lengthRows, exhaustiveSummary, bsgsSummary, scalingBits, ATTACKS, scalingChart, EXTRAPOLATION_BITS, FAST_RATE, extrapolationRows, reuseDemo, augustusDemo, TEST_GROUPS, EXPECTED_VERDICTS, statTests, testSummary, tips, scheduleFrameJob };
+return { SECTIONS, tocEntries, KEY_MAX_LENGTH, MESSAGE_MAX_LENGTH, SHIFT_MAX_LENGTH, DEFAULT_INPUTS, parseMessage, readInputs, isDefaultInput, inputBadge, shortHex, charOf, keyFacts, blockRows, firstBlock, ciphertextSize, cipherSummary, checkGroups, substitution, caesarFacts, letterChart, cipherRows, ecBytesChart, chapterRows, corpusChart, modelRows, candidateRows, posteriorChart, fitChecks, LENGTH_TICKS, successChart, methodsChart, LEVELS, thresholds, rateAt, lengthRows, exhaustiveSummary, bsgsSummary, scalingBits, ATTACKS, scalingChart, EXTRAPOLATION_BITS, FAST_RATE, extrapolationRows, reuseDemo, augustusDemo, TEST_GROUPS, EXPECTED_VERDICTS, statTests, testSummary, tips, LINKED_TABLES, links, scheduleFrameJob };
 })();
 
 var texts$ = (function () {
@@ -2061,10 +2086,10 @@ function legend(items) {
   );
 }
 
-function figure(caption, draw, data, { wide = false, tip = null, items = null } = {}) {
+function figure(caption, draw, data, { wide = false, tip = null, items = null, link = null } = {}) {
   const canvas = h('canvas', { class: 'chart', role: 'img', 'aria-label': caption });
   const fig = h('figure', { class: wide ? 'figure wide' : 'figure' }, canvas, items && legend(items), h('figcaption', { text: caption }));
-  const detach = tip ? hw.attachChartTooltip(canvas, { draw, data, describe: tip }) : null;
+  const detach = tip ? hw.attachChartTooltip(canvas, { draw, data, describe: tip, link }) : null;
   charts.set(canvas, { draw, data, width: -1, detach });
   resizer.observe(canvas);
   return fig;
@@ -2090,11 +2115,11 @@ function redrawAll() {
   updateScaling();
 }
 
-/** A table: column headers, then rows of cells, each { text | node, class?, head? } (head: a row header, th). */
-function table(className, headers, rows) {
+/** A table: column headers, then rows of cells, each { text | node, class?, head? } (head: a row header, th); `id` for a table tied to a chart (view.LINKED_TABLES). */
+function table(className, headers, rows, id = null) {
   return h(
     'table',
-    { class: `table ${className}` },
+    { id, class: `table ${className}` },
     h('thead', null, h('tr', null, headers.map((x) => h('th', { text: x })))),
     h(
       'tbody',
@@ -2611,15 +2636,16 @@ function updateAlgorithm() {
   const shift = state.applied.shift;
   const crack = hw.crackCaesar(c.caesar.cipher, models);
   const chart = view.posteriorChart(crack, F.decimal);
+  const candidates = view.candidateRows(crack);
   fill(
     regions.algorithmLive,
     check(crack.key === shift, A.live(crack, shift)),
-    figure(A.posteriorChart, hw.drawBarChart, chart, { wide: true, tip: view.tips.posterior(crack, text.tips) }),
+    figure(A.posteriorChart, hw.drawBarChart, chart, { wide: true, tip: view.tips.posterior(crack, text.tips), link: view.links.candidates(candidates) }),
     subtitle(A.candidatesTitle),
-    table('discussion candidates', [A.candidateCols.shift, A.candidateCols.perLetter, A.candidateCols.posterior, A.candidateCols.text], view.candidateRows(crack).map((r) => ({
+    table('discussion candidates', [A.candidateCols.shift, A.candidateCols.perLetter, A.candidateCols.posterior, A.candidateCols.text], candidates.map((r) => ({
       class: r.shift === crack.key ? 'is-current' : null,
       cells: [{ head: true, text: r.shift }, { text: F.num(r.perLetter, 3) }, { text: F.prob(r.posterior) }, { node: h('code', { text: r.text.length > 60 ? `${r.text.slice(0, 60)}...` : r.text }) }],
-    }))),
+    })), view.LINKED_TABLES.candidates),
     paras(A.fit(view.fitChecks(crack, models))),
   );
 }
@@ -2636,11 +2662,11 @@ function updateLengths() {
   fill(
     regions.lengths,
     paras(L.intro(s)),
-    figure(L.chart, hw.drawLineChart, chart, { wide: true, tip: view.tips.success(s, text.tips), items: [{ label: L.legend[0] }, { label: L.legend[1], dashed: true }] }),
+    figure(L.chart, hw.drawLineChart, chart, { wide: true, tip: view.tips.success(s, text.tips), link: view.links.lengths, items: [{ label: L.legend[0] }, { label: L.legend[1], dashed: true }] }),
     subtitle(L.tableTitle),
     h('div', { class: 'scroll' }, table('compact lengths', [L.cols.length, L.cols.trials, L.cols.rate, L.cols.interval, L.cols.bound], view.lengthRows(s).map((r) => ({
       cells: [{ text: r.length }, { text: F.int(r.trials) }, { text: F.pct(r.rates.unigram) }, { text: `${F.pct(r.interval[0])} - ${F.pct(r.interval[1])}` }, { text: F.pct(r.bound) }],
-    })))),
+    })), view.LINKED_TABLES.lengths)),
     paras(L.explain(s)),
   );
 }

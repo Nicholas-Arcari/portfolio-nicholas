@@ -300,6 +300,24 @@ function chartTips(s, P) {
   };
 }
 
+/**
+ * The id of the frequency table of an analysis (prefix: the one of its
+ * sections, since the page has two analyses), tied to its frequency
+ * charts: the page and the program find it by id.
+ */
+const frequencyTable = (prefix) => `${prefix}-frequency-table`;
+
+/**
+ * The link of hw.attachChartTooltip for the frequency charts of an
+ * analysis, { table, row, point }: the bar under the pointer marks its row
+ * of the frequency table (one row per value, as the bars), and a row under
+ * the pointer outlines its bar.
+ */
+function frequencyLink(prefix) {
+  const id = frequencyTable(prefix);
+  return { table: () => document.getElementById(id), row: ({ from }) => from, point: (row) => row };
+}
+
 // --- Drawing many charts without freezing the page ---------------------------
 
 const frameJobs = [];
@@ -325,7 +343,7 @@ function scheduleFrameJob(job) {
   }
 }
 
-return { ANALYSES, SECTIONS, tocEntries, VIZ_PRIMES, LIST_LIMIT, K_MAX, K_INPUT_MAX_LENGTH, parseK, testStatus, uniformityBlock, avalancheBlocks, factorize, formatFactors, curveFacts, pooledSize, basePointOptions, parseBase, bitsBeyond, worstBit, binLabels, correlationRange, frequencyRows, FREQUENCY_TABLE_MAX_P, chartData, chartTips, scheduleFrameJob };
+return { ANALYSES, SECTIONS, tocEntries, VIZ_PRIMES, LIST_LIMIT, K_MAX, K_INPUT_MAX_LENGTH, parseK, testStatus, uniformityBlock, avalancheBlocks, factorize, formatFactors, curveFacts, pooledSize, basePointOptions, parseBase, bitsBeyond, worstBit, binLabels, correlationRange, frequencyRows, FREQUENCY_TABLE_MAX_P, chartData, chartTips, frequencyTable, frequencyLink, scheduleFrameJob };
 })();
 
 var texts$ = (function () {
@@ -1660,11 +1678,11 @@ const resizer = new ResizeObserver((entries) => {
   }
 });
 
-function figure(caption, draw, data, wide = false, tip = null) {
+function figure(caption, draw, data, wide = false, tip = null, link = null) {
   const canvas = h('canvas', { class: 'chart', role: 'img', 'aria-label': caption });
   const fig = h('figure', { class: wide ? 'figure wide' : 'figure' }, canvas, h('figcaption', { text: caption }));
-  // the label with the values of the bar or the cell under the pointer
-  const detach = tip ? hw.attachChartTooltip(canvas, { draw, data, describe: tip }) : null;
+  // the label with the values of the bar or the cell under the pointer, and with `link` (view.links) the row of the table tied to the chart
+  const detach = tip ? hw.attachChartTooltip(canvas, { draw, data, describe: tip, link }) : null;
   charts.set(canvas, { draw, data, width: -1, detach });
   resizer.observe(canvas);
   return fig;
@@ -2097,6 +2115,7 @@ function analyses(prefix, result) {
   }
   const data = view.chartData(s, { kBits: T.correlation.kBits, flipBits: T.avalanche.kBits, decimal: F.decimal });
   const tips = view.chartTips(s, T.tips);
+  const link = view.frequencyLink(prefix);
   const C = T.correlation;
   const A = T.avalanche;
   const valueRows = ['pearsonKX', 'pearsonKY', 'spearmanKX', 'spearmanKY'];
@@ -2108,7 +2127,7 @@ function analyses(prefix, result) {
 
     titles[1],
     h('p', { text: T.frequency.intro }),
-    h('div', { class: 'charts' }, figure(T.frequency.chartX, hw.drawBarChart, data.freqX, false, tips.freqX), figure(T.frequency.chartY, hw.drawBarChart, data.freqY, false, tips.freqY)),
+    h('div', { class: 'charts' }, figure(T.frequency.chartX, hw.drawBarChart, data.freqX, false, tips.freqX, link), figure(T.frequency.chartY, hw.drawBarChart, data.freqY, false, tips.freqY, link)),
     s.p <= view.FREQUENCY_TABLE_MAX_P
       ? [
         h('p', { class: 'table-title' }, h('strong', { text: T.frequency.tableTitle }), ' ', h('span', { class: 'note', text: T.frequency.tableNote(s.p) })),
@@ -2117,7 +2136,7 @@ function analyses(prefix, result) {
           { class: 'scroll' },
           h(
             'table',
-            { class: 'table compact' },
+            { id: view.frequencyTable(prefix), class: 'table compact' },
             h('thead', null, h('tr', null, h('th', { text: T.frequency.colValue }), h('th', { text: T.frequency.colX }), h('th', { text: T.frequency.colY }))),
             h('tbody', null, view.frequencyRows(s).map((r) => h('tr', { class: r.x || r.y ? null : 'is-empty' }, h('td', { text: r.v }), h('td', { text: r.x }), h('td', { text: r.y })))),
           ),
