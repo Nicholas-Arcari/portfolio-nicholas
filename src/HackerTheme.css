@@ -1092,9 +1092,14 @@ body.dark-mode .hw1-scroll {
     margin: 0;
     font-family: monospace;
 }
-.hw1-compact thead th {
+/* l'intestazione resta in cima tutta intera: con due righe (la legge dei
+   grandi numeri, Homework #3) la seconda non copre la prima */
+.hw1-compact thead {
     position: sticky;
     top: 0;
+    z-index: 1;
+}
+.hw1-compact thead th {
     background: #878787;
 }
 .hw1-compact tr.is-empty td {
