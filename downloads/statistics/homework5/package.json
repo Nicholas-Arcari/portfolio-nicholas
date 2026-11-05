@@ -1,0 +1,15 @@
+{
+  "name": "homework5-statistics",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Homework #5 - Statistics: the distribution function of the normal law by numerical integration, and the Riemann and Lebesgue integrals computed numerically.",
+  "author": "Nicholas Arcari",
+  "type": "commonjs",
+  "main": "homework5.js",
+  "scripts": {
+    "start": "node homework5.js"
+  },
+  "engines": {
+    "node": ">=14"
+  }
+}
