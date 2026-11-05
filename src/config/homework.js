@@ -82,6 +82,19 @@ export const STATISTICS_HOMEWORK = [
     due: '2026-11-05T21:00:00+01:00',
   },
   {
+    // finche' non arriva la consegna la pagina dice solo "Work in progress..."
+    slug: 'homework-5',
+    name: 'Homework #5',
+    type: 'homework',
+    theory: false,
+    description: {
+      it: 'Homework in preparazione.',
+      en: 'Homework in preparation.',
+    },
+    completed: null,
+    due: '2026-11-12T21:00:00+01:00',
+  },
+  {
     // progetto di gruppo: per ora la pagina dice solo "Work in progress...";
     // il codice stara' in un repository a parte, ancora da creare
     slug: 'project-1',
