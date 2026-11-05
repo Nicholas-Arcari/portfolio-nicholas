@@ -82,16 +82,16 @@ export const STATISTICS_HOMEWORK = [
     due: '2026-11-05T21:00:00+01:00',
   },
   {
-    // finche' non arriva la consegna la pagina dice solo "Work in progress..."
+    // due parti, Part 1 e Part 2, in una sola pagina e con un solo indirizzo
     slug: 'homework-5',
     name: 'Homework #5',
     type: 'homework',
-    theory: false,
+    theory: true,
     description: {
-      it: 'Homework in preparazione.',
-      en: 'Homework in preparation.',
+      it: 'Due parti in una pagina. Part 1: la funzione di ripartizione della normale per integrazione numerica, con cinque regole scritte da zero (rettangoli, punti medi, trapezi, Simpson, Gauss-Legendre), tre modi di aggirare il -∞, la tavola dei libri ricostruita, i quantili con il metodo di Newton, le code lontane e le soglie d’allarme di un sistema che segnala anomalie, la prova di Kolmogorov-Smirnov. Part 2: gli integrali di Riemann e di Lebesgue di sei funzioni e di una scritta da chi legge, le monete di Lebesgue, chi vince e quando, il traffico di un server, Monte Carlo e la funzione di Dirichlet, con test d’ipotesi e contesto storico.',
+      en: 'Two parts in one page. Part 1: the distribution function of the normal law by numerical integration, with five rules written from scratch (rectangles, midpoints, trapezoids, Simpson, Gauss-Legendre), three ways around -∞, the table of the books rebuilt, the quantiles with Newton’s method, the far tails and the alarm thresholds of a system that flags anomalies, the Kolmogorov-Smirnov test. Part 2: the Riemann and Lebesgue integrals of six functions and of one typed by the reader, Lebesgue’s coins, who wins and when, the traffic of a server, Monte Carlo and Dirichlet’s function, with hypothesis tests and historical context.',
     },
-    completed: null,
+    completed: '2026-11-05T22:33:00+01:00',
     due: '2026-11-12T21:00:00+01:00',
   },
   {

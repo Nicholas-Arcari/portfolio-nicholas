@@ -31,7 +31,7 @@ const STATIC_FILES = ['index.html', 'style.css', 'README.txt'];
  * calcoli, che diventa lo script globale `global`; `inner` sono i moduli che
  * la libreria importa e che finiscono dentro di lei (i parametri della
  * consegna dell'Exercise 1, la lista di parole di BIP-39 dell'Exercise 2, il
- * corpus dell'Homework #2; l'Homework #3 e l'Homework #4 non ne hanno).
+ * corpus dell'Homework #2; gli Homework #3, #4 e #5 non ne hanno).
  */
 export const HOMEWORKS = [
   {
@@ -83,6 +83,16 @@ export const HOMEWORKS = [
     inner: [],
     contents: 'Computations: the recurrences of Knuth and Welford, xoshiro128** and SplitMix64, the four laws of the scores,\n * the m hackers, the sampling mean and variance, hypothesis tests, charts, the animation and command line (node homework4.js [options]).',
     description: 'Homework #4 - Statistics: Welford\'s recurrence formulas, and the sampling mean and variance of m hackers on n systems.',
+  },
+  {
+    number: '5',
+    name: 'Homework #5',
+    source: 'hw5',
+    library: 'homework5.js',
+    global: 'Homework5',
+    inner: [],
+    contents: 'Computations: five quadrature rules, the normal CDF, its table, quantiles and tails, Riemann, Darboux and Lebesgue sums,\n * a formula reader, Monte Carlo, xoshiro128** and SplitMix64, Box-Muller, hypothesis tests, charts and command line (node homework5.js [options]).',
+    description: 'Homework #5 - Statistics: the distribution function of the normal law by numerical integration, and the Riemann and Lebesgue integrals computed numerically.',
   },
 ];
 

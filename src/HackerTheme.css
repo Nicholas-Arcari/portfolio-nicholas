@@ -2176,6 +2176,119 @@ body.dark-mode .hw4-digit-common {
     letter-spacing: 0.02em;
 }
 
+/* ===== HOMEWORK #5 ===== */
+/* intestazioni con formule (Φ(z), z_p, μ{f ≥ y}): il maiuscolo del tema
+   cambierebbe i simboli, come negli Homework #3 e #4 */
+.hw5 thead th {
+    text-transform: none;
+    letter-spacing: 0.02em;
+}
+/* la formula scritta da chi legge: tutta la riga dei campi */
+.hw5-field-wide {
+    grid-column: 1 / -1;
+}
+.hw5-field-wide input {
+    width: 100%;
+}
+/* le tabelle di numeri in notazione scientifica: un corpo piu' piccolo, perche' stiano su una riga */
+.hw5-tails,
+.hw5-newton {
+    font-size: 0.85em;
+}
+/* la tavola della normale: cifre incolonnate, le celle dei quantili evidenziate */
+.hw5-ztable {
+    font-variant-numeric: tabular-nums;
+}
+.hw5-ztable td.is-mark {
+    background: rgba(213, 35, 73, 0.12);
+    font-weight: 700;
+}
+body.dark-mode .hw5-ztable td.is-mark {
+    background: rgba(233, 69, 96, 0.22);
+}
+/* nel confronto, il metodo che vince a ogni n */
+.hw5-compare td.hw5-win {
+    color: #2e7d6b;
+    font-weight: 700;
+}
+body.dark-mode .hw5-compare td.hw5-win {
+    color: #4fb39c;
+}
+/* le monete di Lebesgue: rame per 1, 2 e 5 centesimi, oro nordico per 10, 20
+   e 50, i due metalli per 1 e 2 euro */
+.hw5-coins {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6em 0.5em;
+    margin: 0.4em 0 0.6em;
+    padding: 0;
+    list-style: none;
+}
+.hw5-coins li {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15em;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+.hw5-coins small {
+    font-size: 0.7em;
+    color: #888;
+    white-space: nowrap;
+}
+.hw5-coin {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 2.7em;
+    height: 2.7em;
+    border-radius: 50%;
+    font-size: 0.78em;
+    font-weight: 700;
+    line-height: 1;
+    color: #3a2a12;
+    box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.18);
+}
+.hw5-coin.is-copper {
+    background: #c47a4a;
+    color: #fff;
+}
+.hw5-coin.is-gold {
+    background: #e2c35b;
+}
+.hw5-coin.is-bimetal {
+    background: radial-gradient(circle, #e2c35b 0 55%, #bfc4c9 57% 100%);
+}
+.hw5-coin-groups {
+    margin: 0.4em 0 0.6em;
+    padding: 0;
+    list-style: none;
+}
+.hw5-coin-groups li {
+    display: flex;
+    align-items: center;
+    gap: 0.8em;
+    margin: 0.35em 0;
+    padding: 0;
+    border: 0;
+    text-align: left;
+}
+/* i campi della funzione scritta da chi legge */
+.hw5-custom {
+    margin: 0.6em 0 1.2em;
+}
+@media screen and (min-width: 737px) {
+    .hw5-rules th:nth-child(1) { width: 20%; }
+    .hw5-functions th:nth-child(1) { width: 17%; }
+    .hw5-functions th:nth-child(2) { width: 10%; }
+    .hw5-functions th:nth-child(3) { width: 30%; }
+    .hw5-traffic th:nth-child(4) { width: 42%; }
+    .hw5-dirichlet th:nth-child(2) { width: 60%; }
+}
+
 /* ===== Grafici degli homework: i valori del pezzo sotto il puntatore =====
    Il riquadro e il contorno li crea attachChartTooltip (homework1.js,
    homework2.js) dentro la figura, che per questo e' posizionata. */
