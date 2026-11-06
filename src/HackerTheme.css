@@ -2192,8 +2192,31 @@ body.dark-mode .hw4-digit-common {
 }
 /* le tabelle di numeri in notazione scientifica: un corpo piu' piccolo, perche' stiano su una riga */
 .hw5-tails,
-.hw5-newton {
+.hw5-newton,
+.hw5-results,
+.hw5-efficiency,
+.hw5-reference,
+.hw5-methods,
+.hw5-series {
     font-size: 0.85em;
+}
+.hw5-results td,
+.hw5-reference td,
+.hw5-methods td,
+.hw5-thomae td,
+.hw5-liouville td,
+.hw5-erf td {
+    font-variant-numeric: tabular-nums;
+}
+/* la cella sbagliata della tavola del NIST, e il metodo della pagina fra gli altri */
+.hw5-reference tr.hw5-misprint > * {
+    background: rgba(213, 35, 73, 0.12);
+}
+body.dark-mode .hw5-reference tr.hw5-misprint > * {
+    background: rgba(233, 69, 96, 0.22);
+}
+.hw5-methods tr.hw5-ours > * {
+    font-weight: 700;
 }
 /* la tavola della normale: cifre incolonnate, le celle dei quantili evidenziate */
 .hw5-ztable {

@@ -9,30 +9,39 @@ import * as hw from './homework5.js';
 /** The sections of the homework, in page order: ids for the anchors, keys for the titles. */
 export const SECTIONS = [
   { id: 'hw5-assignment', key: 'assignment', level: 0 },
-  { id: 'hw5-part1', key: 'part1', level: 0 },
-  { id: 'hw5-area', key: 'area', level: 1 },
-  { id: 'hw5-try-area', key: 'tryArea', level: 2 },
-  { id: 'hw5-rules', key: 'rules', level: 1 },
-  { id: 'hw5-infinity', key: 'infinity', level: 1 },
-  { id: 'hw5-convergence', key: 'convergence', level: 1 },
-  { id: 'hw5-table', key: 'table', level: 1 },
-  { id: 'hw5-quantiles', key: 'quantiles', level: 1 },
-  { id: 'hw5-tails', key: 'tails', level: 1 },
-  { id: 'hw5-try-alarm', key: 'tryAlarm', level: 2 },
-  { id: 'hw5-data', key: 'data', level: 1 },
-  { id: 'hw5-checks', key: 'checks', level: 1 },
-  { id: 'hw5-part2', key: 'part2', level: 0 },
+  { id: 'hw5-exercise1', key: 'exercise1', level: 0 },
   { id: 'hw5-idea', key: 'idea', level: 1 },
   { id: 'hw5-try-coins', key: 'tryCoins', level: 2 },
   { id: 'hw5-functions', key: 'functions', level: 1 },
   { id: 'hw5-riemann', key: 'riemann', level: 1 },
   { id: 'hw5-lebesgue', key: 'lebesgue', level: 1 },
   { id: 'hw5-try-slices', key: 'trySlices', level: 2 },
+  { id: 'hw5-results', key: 'results', level: 1 },
   { id: 'hw5-compare', key: 'compare', level: 1 },
+  { id: 'hw5-efficiency', key: 'efficiency', level: 1 },
+  { id: 'hw5-pathological', key: 'pathological', level: 1 },
   { id: 'hw5-traffic', key: 'traffic', level: 1 },
   { id: 'hw5-montecarlo', key: 'montecarlo', level: 1 },
   { id: 'hw5-try-mc', key: 'tryMc', level: 2 },
-  { id: 'hw5-dirichlet', key: 'dirichlet', level: 1 },
+  { id: 'hw5-exercise2', key: 'exercise2', level: 0 },
+  { id: 'hw5-liouville', key: 'liouville', level: 1 },
+  { id: 'hw5-erf', key: 'erf', level: 1 },
+  { id: 'hw5-area', key: 'area', level: 1 },
+  { id: 'hw5-try-area', key: 'tryArea', level: 2 },
+  { id: 'hw5-rules', key: 'rules', level: 1 },
+  { id: 'hw5-infinity', key: 'infinity', level: 1 },
+  { id: 'hw5-convergence', key: 'convergence', level: 1 },
+  { id: 'hw5-series', key: 'series', level: 1 },
+  { id: 'hw5-approximations', key: 'approximations', level: 1 },
+  { id: 'hw5-ours', key: 'ours', level: 1 },
+  { id: 'hw5-reference', key: 'reference', level: 1 },
+  { id: 'hw5-methods', key: 'methods', level: 1 },
+  { id: 'hw5-table', key: 'table', level: 1 },
+  { id: 'hw5-quantiles', key: 'quantiles', level: 1 },
+  { id: 'hw5-tails', key: 'tails', level: 1 },
+  { id: 'hw5-try-alarm', key: 'tryAlarm', level: 2 },
+  { id: 'hw5-data', key: 'data', level: 1 },
+  { id: 'hw5-checks', key: 'checks', level: 0 },
   { id: 'hw5-tests', key: 'tests', level: 0 },
   { id: 'hw5-history', key: 'history', level: 0 },
   { id: 'hw5-conclusion', key: 'conclusion', level: 0 },
@@ -398,10 +407,10 @@ export function ecdfChart(report, decimal = '.') {
 }
 
 // ---------------------------------------------------------------------------
-// Part 2: le funzioni, la funzione scritta da chi legge, i grafici di Riemann e di Lebesgue
+// Exercise 1: le funzioni, la funzione scritta da chi legge, i grafici di Riemann e di Lebesgue
 // ---------------------------------------------------------------------------
 
-/** The functions of the choice of Part 2: the six of the library and the reader's. */
+/** The functions of the choice of Exercise 1: the nine of the library and the reader's. */
 export const FUNCTION_KEYS = Object.freeze([...hw.FUNCTIONS, hw.CUSTOM]);
 
 /** The fields of the reader's function, as the page opens. */
@@ -536,7 +545,7 @@ export function compareChart(study, decimal = '.') {
     yMin: 10 ** lo,
     yMax: 10 ** hi,
     yTicks,
-    xTicks: [2, 8, 32, 128, 512],
+    xTicks: hw.COMPARE_N,
     decimal,
     series: [
       { values: study.rows.map((r) => pick(r.errors.riemann)), colorIndex: 1 },
@@ -551,10 +560,7 @@ export function compareChart(study, decimal = '.') {
 export function compareFacts(study) {
   const rows = study.rows;
   const last = rows[rows.length - 1];
-  const slope = (pick) => {
-    const pts = rows.filter((r) => r.n >= 8 && Number.isFinite(pick(r)) && pick(r) > 1e-13);
-    return pts.length >= 3 ? -hw.fitLine(pts.map((r) => Math.log10(r.n)), pts.map((r) => Math.log10(pick(r)))).slope : NaN;
-  };
+  const slope = (pick) => hw.measuredOrder(rows.map((r) => r.n), rows.map(pick));
   const winner = last.errors.lebesgue < last.errors.riemann ? 'lebesgue' : 'riemann';
   return {
     n: last.n,
@@ -569,14 +575,153 @@ export function compareFacts(study) {
   };
 }
 
-/** The overview of section 2.5: every function, its two errors at n = K = 8 and 1024, and the winner. */
+/** The second and the last n of the comparison: the overview of section 1.6 shows the errors at these two. */
+export const SUMMARY_N = Object.freeze([hw.COMPARE_N[1], hw.COMPARE_N[hw.COMPARE_N.length - 1]]);
+
+/** The overview of section 1.6: every function, its two errors at n = K = 9 and 729, the orders measured on all six n, and the winner. */
 export const summaryRows = (s) =>
   hw.FUNCTIONS.map((key) => {
     const st = s.compare[key];
-    const small = st.rows.find((r) => r.n === 8);
+    const small = st.rows.find((r) => r.n === SUMMARY_N[0]);
     const facts = compareFacts(st);
-    return { key, small: small.errors, large: { riemann: facts.riemann, lebesgue: facts.lebesgue }, winner: facts.winner, ratio: facts.ratio };
+    return { key, small: small.errors, large: { riemann: facts.riemann, lebesgue: facts.lebesgue }, orders: st.orders, winner: facts.winner, ratio: facts.ratio };
   });
+
+// ---------------------------------------------------------------------------
+// Exercise 1, sezione 1.5: i risultati fianco a fianco
+// ---------------------------------------------------------------------------
+
+/**
+ * The answer of every function to the question of the assignment, do the
+ * two approaches reach the same value? Yes for every function Riemann can
+ * integrate; for 1/sqrt(x) only as an improper limit; for Dirichlet's
+ * function Riemann has no value at all.
+ */
+export const SAME_LIMIT = Object.freeze({ sine: 'yes', square: 'yes', jump: 'yes', vee: 'yes', unbounded: 'improper', indicator: 'yes', sinc: 'yes', oscillating: 'yes', traffic: 'yes', custom: 'unknown', dirichlet: 'noRiemann', thomae: 'yes' });
+
+/**
+ * The table of section 1.5: every function with its integral and the two
+ * midpoint sums with 729 strips and 729 levels, with their errors and the
+ * verdict; the typed function when there is one; then Dirichlet and Thomae
+ * from the exact fractions of section 1.8 (their Riemann value is the
+ * upper sum with 10,000 strips: the lower one is always 0).
+ */
+export function resultsRows(s, customStudy = null, patho = null) {
+  const row = (key, st) => {
+    const last = st.rows[st.rows.length - 1];
+    return { key, kind: 'regular', n: last.n, reference: st.reference, exact: st.exact !== null, method: st.referenceMethod, uncertainty: st.uncertainty, riemann: last.riemann.midpoint, lebesgue: last.lebesgue.midpoint, errors: last.errors, verdict: SAME_LIMIT[key], capped: st.capped, cap: st.cap };
+  };
+  const rows = s ? hw.FUNCTIONS.map((key) => row(key, s.compare[key])) : [];
+  if (customStudy) rows.push(row(hw.CUSTOM, customStudy));
+  if (patho) {
+    const d = patho.dirichlet[patho.dirichlet.length - 1];
+    const t = patho.thomae[patho.thomae.length - 1];
+    rows.push({ key: 'dirichlet', kind: 'dirichlet', n: d.n, reference: 0, exact: true, riemann: null, lower: d.lower, upper: d.upper, lebesgue: 0, errors: { riemann: null, lebesgue: 0 }, verdict: SAME_LIMIT.dirichlet });
+    rows.push({ key: 'thomae', kind: 'thomae', n: t.n, reference: 0, exact: true, riemann: t.upper, lower: t.lower, upper: t.upper, lebesgue: 0, errors: { riemann: t.upper, lebesgue: 0 }, verdict: SAME_LIMIT.thomae });
+  }
+  return rows;
+}
+
+// ---------------------------------------------------------------------------
+// Exercise 1, sezione 1.7: quanto costano
+// ---------------------------------------------------------------------------
+
+/** The table of section 1.7: for every function, the first n that brings each approach within each relative accuracy. */
+export const efficiencyRows = (s) => hw.FUNCTIONS.map((key) => ({ key, reference: s.efficiency[key].reference, targets: s.efficiency[key].targets }));
+
+/**
+ * The numbers the text of section 1.7 quotes, for a relative error of 1%:
+ * how many times the values of f of Riemann Lebesgue needs, where both get
+ * there; where Lebesgue needs fewer levels than Riemann needs strips; where
+ * only one of the two gets there with 729.
+ */
+export function efficiencyFacts(s) {
+  const rows = hw.FUNCTIONS.map((key) => {
+    const t = s.efficiency[key].targets[0];
+    return { key, r: t.riemann, l: t.lebesgue };
+  });
+  const both = rows.filter((x) => x.r && x.l);
+  const ratios = both.map((x) => x.l.lebesgue.evaluations / x.r.riemann.evaluations);
+  return {
+    minRatio: ratios.length ? Math.min(...ratios) : NaN,
+    maxRatio: ratios.length ? Math.max(...ratios) : NaN,
+    fewerLevels: both.filter((x) => x.l.n < x.r.n).map((x) => x.key),
+    onlyLebesgue: rows.filter((x) => !x.r && x.l).map((x) => x.key),
+    onlyRiemann: rows.filter((x) => x.r && !x.l).map((x) => x.key),
+  };
+}
+
+/** The chart of section 1.7: the relative error of the two approaches against the values of f they took, on logarithmic scales. */
+export function efficiencyChart(study, decimal = '.') {
+  const ref = Math.abs(study.reference) || 1;
+  const x = [...new Set(study.rows.flatMap((r) => [r.riemann.evaluations, r.lebesgue.evaluations]))].sort((p, q) => p - q);
+  const along = (method) =>
+    x.map((v) => {
+      const row = study.rows.find((r) => r[method].evaluations === v);
+      return row && Number.isFinite(row[method].error) ? Math.max(1e-16, row[method].error / ref) : NaN;
+    });
+  const riemann = along('riemann');
+  const lebesgue = along('lebesgue');
+  const values = [...riemann, ...lebesgue].filter((v) => Number.isFinite(v));
+  const lo = Math.floor(Math.log10(Math.min(...values)));
+  const hi = Math.max(lo + 1, Math.ceil(Math.log10(Math.max(...values))));
+  const every = Math.max(1, Math.ceil((hi - lo) / 5));
+  const yTicks = [];
+  for (let e = hi; e >= lo; e -= every) yTicks.unshift(10 ** e);
+  const xTicks = [];
+  for (let e = 0; 10 ** e <= x[x.length - 1] * 10; e++) xTicks.push(10 ** e);
+  return {
+    x,
+    logX: true,
+    logY: true,
+    yMin: 10 ** lo,
+    yMax: 10 ** hi,
+    yTicks,
+    xTicks,
+    decimal,
+    series: [
+      { values: riemann, colorIndex: 1 },
+      { values: lebesgue, colorIndex: 0 },
+    ],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Exercise 1, sezione 1.8: Dirichlet e Thomae
+// ---------------------------------------------------------------------------
+
+/** The fractions in the picture of Thomae's function, and the strips of its upper sum there. */
+export const THOMAE_Q = 40;
+export const THOMAE_STRIPS = 10;
+
+let pathologicalCache = null;
+
+/** The sums of section 1.8, computed once: they do not depend on anything the reader changes. */
+export const pathological = () => {
+  if (!pathologicalCache) pathologicalCache = hw.pathologicalStudy();
+  return pathologicalCache;
+};
+
+/** Thomae's function in a picture: a stem of height 1/q on every p/q with q up to THOMAE_Q, and the staircase of the upper sum with THOMAE_STRIPS strips. */
+export function thomaeChart(decimal = '.') {
+  const bars = [];
+  for (let q = 1; q <= THOMAE_Q; q++) {
+    for (let p = 0; p <= q; p++) if (hw.gcd(p, q) === 1) bars.push({ from: p / q - 0.0015, to: p / q + 0.0015, value: 1 / q });
+  }
+  const curve = [];
+  for (let i = 0; i < THOMAE_STRIPS; i++) {
+    const top = 1 / hw.smallestDenominator(i, THOMAE_STRIPS);
+    curve.push([i / THOMAE_STRIPS, top], [(i + 1) / THOMAE_STRIPS, top]);
+  }
+  return { x0: 0, x1: 1, bars, curve, yMax: 1.05, xTicks: [0, 0.2, 0.4, 0.6, 0.8, 1], decimal };
+}
+
+/** The upper sum of the picture: the area under the staircase. */
+export const thomaeUpper = () => {
+  let s = 0;
+  for (let i = 0; i < THOMAE_STRIPS; i++) s += 1 / hw.smallestDenominator(i, THOMAE_STRIPS);
+  return s / THOMAE_STRIPS;
+};
 
 // ---------------------------------------------------------------------------
 // 2.6 Il traffico
@@ -710,6 +855,134 @@ export const DIRICHLET_NUMBERS = Object.freeze([
   Object.freeze({ key: 'sqrt2', value: Math.SQRT2 }),
   Object.freeze({ key: 'e', value: Math.E }),
 ]);
+
+// ---------------------------------------------------------------------------
+// Exercise 2, sezioni 2.1, 2.2 e 2.7 - 2.11: Liouville, erf, le serie, le approssimazioni, il metodo, il confronto
+// ---------------------------------------------------------------------------
+
+/** The values of z the chart of the series offers, and how many terms it follows. */
+export const SERIES_CHOICES = Object.freeze([1, 3, 5, 8]);
+export const SERIES_TERMS = 120;
+
+/** The chart of section 2.7: the error of the two series against the number of terms at one z, with the bound of the alternating series. */
+export function seriesChart(z, decimal = '.') {
+  const path = hw.seriesPath(z, SERIES_TERMS);
+  const pick = (v) => (Number.isFinite(v) ? Math.max(1e-17, v) : NaN);
+  const values = path.flatMap((p) => [p.alternating, p.bound, p.positive]).filter((v) => Number.isFinite(v) && v > 0);
+  const hi = Math.min(16, Math.max(0, Math.ceil(Math.log10(Math.max(...values)))));
+  const lo = -17;
+  const every = Math.max(1, Math.ceil((hi - lo) / 6));
+  const yTicks = [];
+  for (let e = hi; e >= lo; e -= every) yTicks.unshift(10 ** e);
+  return {
+    x: path.map((p) => p.terms),
+    logY: true,
+    yMin: 10 ** lo,
+    yMax: 10 ** hi,
+    yTicks,
+    xTicks: [1, 20, 40, 60, 80, 100, 120],
+    decimal,
+    series: [
+      { values: path.map((p) => pick(p.alternating)), colorIndex: 1, dots: false },
+      { values: path.map((p) => pick(p.bound)), colorIndex: 1, dashed: true },
+      { values: path.map((p) => pick(p.positive)), colorIndex: 0, dots: false },
+    ],
+  };
+}
+
+/** The grid of the chart of the approximations: z from -6 to 6 by 0.02. */
+const APPROX_Z = Array.from({ length: 601 }, (_, i) => -6 + i * 0.02);
+
+/** The chart of section 2.8: the signed error of the two formulas of Abramowitz and Stegun along z, with their published bound. */
+export function approximationChart(decimal = '.') {
+  const bound = hw.CDF_ZS.bound;
+  return {
+    x: APPROX_Z,
+    yMin: -1e-7,
+    yMax: 1e-7,
+    yTicks: [-1e-7, -5e-8, 0, 5e-8, 1e-7],
+    xTicks: [-6, -4, -2, 0, 2, 4, 6],
+    decimal,
+    series: [
+      { values: APPROX_Z.map((z) => hw.cdfAS(z) - hw.normalCdf(z)), colorIndex: 0, dots: false },
+      { values: APPROX_Z.map((z) => hw.cdfZS(z) - hw.normalCdf(z)), colorIndex: 1, dots: false },
+      { values: APPROX_Z.map(() => bound), colorIndex: 6, dashed: true },
+      { values: APPROX_Z.map(() => -bound), colorIndex: 6, dashed: true },
+    ],
+  };
+}
+
+/** The largest errors of the two approximations, for the text. */
+export function approximationFacts() {
+  const as = hw.accuracyOf(hw.cdfAS);
+  const zs = hw.accuracyOf(hw.cdfZS);
+  return { as: as.absolute, asAt: as.absAt, zs: zs.absolute, zsAt: zs.absAt, asBound: hw.ERF_AS.bound / 2, zsBound: hw.CDF_ZS.bound, zsRelative: zs.relative, asTail: hw.cdfAS(-9) };
+}
+
+/** The colors and dashes of the methods in the chart of section 2.11. */
+export const METHOD_STYLE = Object.freeze({
+  trapezoid: { colorIndex: 6 },
+  simpson: { colorIndex: 3 },
+  gauss: { colorIndex: 2 },
+  alternating: { colorIndex: 4 },
+  positive: { colorIndex: 5 },
+  abramowitz: { colorIndex: 0 },
+  zelen: { colorIndex: 0, dashed: true },
+  ours: { colorIndex: 1 },
+});
+
+/** The grid of mpmath: z = -8, -7.9, ..., 8. */
+const GRID_Z = Array.from({ length: 161 }, (_, i) => (i - 80) / 10);
+
+/** The chart of section 2.11: the error of every method against mpmath along z, on a logarithmic axis. */
+export function methodsChart(decimal = '.') {
+  const pick = (v) => (Number.isFinite(v) ? Math.min(1, Math.max(1e-17, v)) : 1);
+  return {
+    x: GRID_Z,
+    logY: true,
+    yMin: 1e-17,
+    yMax: 1,
+    yTicks: [1e-16, 1e-12, 1e-8, 1e-4, 1],
+    xTicks: [-8, -6, -4, -2, 0, 2, 4, 6, 8],
+    decimal,
+    series: hw.CDF_METHODS.map((key) => ({ values: GRID_Z.map((z) => pick(Math.abs(hw.cdfBy[key](z) - hw.referencePhi(z)))), dots: false, ...METHOD_STYLE[key] })),
+  };
+}
+
+let methodsCache = null;
+
+/** The accuracy and the cost of every method, computed once; the times come from the experiments, when they are there. */
+export function methodsRows(s) {
+  if (!methodsCache) methodsCache = hw.CDF_METHODS.map((key) => ({ key, ...hw.accuracyOf(hw.cdfBy[key]), exp: hw.EXP_CALLS[key], terms: hw.termsOf(key) }));
+  return methodsCache.map((row) => ({ ...row, time: s ? s.timing[row.key] : null }));
+}
+
+/** The numbers the texts of sections 2.9 - 2.11 quote. */
+export function methodsFacts(s) {
+  const rows = methodsRows(s);
+  const by = Object.fromEntries(rows.map((r) => [r.key, r]));
+  const timed = s ? rows.filter((r) => r.time) : [];
+  const fastest = timed.length ? timed.reduce((p, q) => (q.time.median < p.time.median ? q : p)) : null;
+  return {
+    ours: by.ours,
+    gauss: by.gauss,
+    abramowitz: by.abramowitz,
+    fastest: fastest ? fastest.key : null,
+    speedup: s ? by.gauss.time.median / by.ours.time.median : null,
+    slowdown: s ? by.ours.time.median / by.abramowitz.time.median : null,
+    coverage: s ? by.ours.time.coverage : null,
+    switchZ: hw.SWITCH_Z,
+    seriesTerms: Math.max(...Array.from({ length: 2 * hw.SWITCH_Z * 10 - 1 }, (_, i) => hw.cdfOursDetail((i + 1 - hw.SWITCH_Z * 10) / 10).terms)),
+  };
+}
+
+let referenceCache = null;
+
+/** Section 2.10, computed once: the points against NIST and mpmath, and every cell of the NIST table. */
+export function referenceFacts() {
+  if (!referenceCache) referenceCache = { rows: hw.referenceRows(), nist: hw.nistComparison() };
+  return referenceCache;
+}
 
 // ---------------------------------------------------------------------------
 // I test

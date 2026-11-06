@@ -1,29 +1,37 @@
 /* global process */
 /**
- * Homework #5 - The normal CDF by numerical integration, and the Riemann
- *               and Lebesgue integrals computed numerically
+ * Homework #5 - Riemann and Lebesgue integration, and the numerical
+ *               computation of the normal CDF
  * Sapienza University of Rome - MSc in Cybersecurity (LM-66) - Statistics
  * Nicholas Arcari
  *
- * Part 1 computes the cumulative distribution function of a normal law,
- * F(x) = integral from -infinity to x of its density, with five quadrature
- * rules written from scratch (left rectangles, midpoints, trapezoids,
- * Simpson's parabolas, Gauss-Legendre nodes) and three ways around the
- * infinite lower limit, and then uses it: the table of the standard normal,
- * the quantiles found backwards with Newton's method, the far tails behind
- * an alarm threshold, and a Kolmogorov-Smirnov test against simulated data.
- * Part 2 integrates a choice of functions in the two ways: Riemann's, which
- * cuts the x axis into strips, and Lebesgue's, which cuts the y axis into
- * levels and measures the set where the function stays above each of them;
- * then Monte Carlo, the statistical version of the second. Everything is
- * written from scratch, with no dependencies:
+ * Exercise 1 integrates a collection of functions in the two ways:
+ * Riemann's, which cuts the x axis into strips, and Lebesgue's, which cuts
+ * the y axis into levels and measures the set where the function stays
+ * above each of them; it compares their accuracy, their convergence and
+ * their cost, and computes Dirichlet's and Thomae's functions, which no
+ * double can show, with exact fractions; then Monte Carlo, the statistical
+ * version of the second.
+ * Exercise 2 computes the distribution function of the standard normal,
+ * Phi(z) = integral from -infinity to z of its density, which has no
+ * elementary formula (Liouville): five quadrature rules written from
+ * scratch, three ways around the infinite lower limit, two power series,
+ * Laplace's continued fraction, two classic approximations based on erf,
+ * and an efficient method made of the best two pieces, checked against the
+ * NIST table and mpmath; then it puts Phi to work: its table, its
+ * quantiles, the far tails behind an alarm threshold, and a
+ * Kolmogorov-Smirnov test against simulated data. Everything is written
+ * from scratch, with no dependencies (the library keeps the code of
+ * Exercise 2 first, because Exercise 1 uses its normal law):
  *
  *   0. Parameters and input validation
- *   1. Part 1: the normal density and five quadrature rules
- *   2. Part 1: the CDF, its table, its quantiles and its tails
- *   3. Part 2: the functions, and a parser for the one typed in the page
- *   4. Part 2: Riemann and Darboux sums
- *   5. Part 2: Lebesgue sums, level sets and the rearrangement
+ *   1. Exercise 2: the normal density and five quadrature rules
+ *   2. Exercise 2: the CDF, its table, its quantiles and its tails
+ *  2b. Exercise 2: series, continued fraction, erf and the method of the page
+ *   3. Exercise 1: the functions, and a parser for the one typed in the page
+ *   4. Exercise 1: Riemann and Darboux sums
+ *   5. Exercise 1: Lebesgue sums, level sets, results and costs
+ *  5b. Exercise 1: Dirichlet's and Thomae's functions, with exact fractions
  *   6. Random numbers: SplitMix64, xoshiro128**, Box-Muller, Monte Carlo
  *   7. Statistics: special functions and hypothesis tests
  *   8. The experiments
@@ -90,7 +98,7 @@ export function checkParams({ seed = DEFAULT_SEED, sample = DEFAULT_SAMPLE, poin
 }
 
 // ---------------------------------------------------------------------------
-// 1. Part 1: the normal density and five quadrature rules
+// 1. Exercise 2: the normal density and five quadrature rules
 // ---------------------------------------------------------------------------
 
 /*
@@ -274,7 +282,7 @@ export function rulePieces(f, a, b, rule, n) {
 }
 
 // ---------------------------------------------------------------------------
-// 2. Part 1: the CDF, its table, its quantiles and its tails
+// 2. Exercise 2: the CDF, its table, its quantiles and its tails
 // ---------------------------------------------------------------------------
 
 /*
@@ -497,37 +505,505 @@ export function alarmThreshold(target, options = PRECISE) {
   return { target, k, steps: steps + 1, reference: -normalQuantile(target) };
 }
 
+/** The points of the curve F(x): 201 values of x from mu - 4 sigma to mu + 4 sigma, every integer z among them. */
+export const CURVE_POINTS = 201;
+export const CURVE_SPAN = 4;
+
+/**
+ * The CDF as a function, which is what the assignment asks for: F(x) of
+ * N(mu, sigma^2) by numerical integration at CURVE_POINTS values of x from
+ * mu - 4 sigma to mu + 4 sigma, with one rule, n and strategy, next to the
+ * reference and the error at every point. Every value is its own integral
+ * from -infinity, not a running sum, so the error of one point does not
+ * carry over to the next.
+ */
+export function cdfCurve({ mu = 0, sigma = 1, rule = 'simpson', n = 16, strategy = 'symmetry', points = CURVE_POINTS, span = CURVE_SPAN } = {}) {
+  if (!Number.isFinite(mu) || !Number.isFinite(sigma) || !(sigma > 0)) fail('mu must be a real number and sigma a positive one');
+  if (!Number.isInteger(points) || points < 2) fail('the curve needs at least two points');
+  const options = { rule, n: validN(rule, n), strategy };
+  const zs = [];
+  const xs = [];
+  const numeric = [];
+  const exact = [];
+  const errors = [];
+  let maxError = 0;
+  let at = mu;
+  for (let i = 0; i < points; i++) {
+    const z = -span + (2 * span * i) / (points - 1);
+    const value = cdfStandard(z, options);
+    const reference = normalCdf(z);
+    const error = Math.abs(value - reference);
+    zs.push(z);
+    xs.push(mu + sigma * z);
+    numeric.push(value);
+    exact.push(reference);
+    errors.push(error);
+    if (error > maxError) {
+      maxError = error;
+      at = mu + sigma * z;
+    }
+  }
+  return { mu, sigma, ...options, zs, xs, numeric, exact, errors, maxError, at, evaluations: points * evaluationsOf(rule, options.n) };
+}
+
 // ---------------------------------------------------------------------------
-// 3. Part 2: the functions, and a parser for the one typed in the page
+// 2b. Exercise 2: series, continued fraction, erf and the method of the page
 // ---------------------------------------------------------------------------
 
 /*
- * Six functions, chosen to show where the two integrals differ:
- *   square       x^2 on [0, 1], smooth: both are easy;
- *   bell         the density of Part 1 on [-3, 3], smooth, with a peak;
- *   steps        a step function on [0, 1]: a simple function, the bread and
- *                butter of Lebesgue, whose jumps Riemann's strips straddle;
- *   oscillating  sin(1/x) on (0, 1]: infinitely many waves near 0, bounded;
+ * Liouville (1835), in Rosenlicht's form: with f and g rational and g not
+ * constant, the integral of f e^g is elementary only if it equals R e^g for
+ * a rational R with R' + g' R = f. For the bell, f = 1 and g = -x^2/2, so
+ * R' - x R = 1. A polynomial R of degree d leaves -x R of degree d + 1,
+ * which nothing cancels; a pole of order m of R gives R' a pole of order
+ * m + 1, which nothing cancels either. No rational R exists, so Phi has no
+ * elementary formula. The solutions are S + C e^(x^2/2), with
+ *   S(x) = (Phi(x) - 1/2)/phi(x) = x + x^3/3 + x^5/(3 5) + x^7/(3 5 7) + ...,
+ * which grows like e^(x^2/2), faster than any rational function: the same
+ * S is the series the page computes Phi with.
+ *
+ * Phi(z) = (1 + erf(z/sqrt 2))/2 is exact, but erf only names the integral:
+ * every erf of every library is itself a program (series near 0, continued
+ * fractions or rational approximations in the tails). JavaScript has none.
+ */
+
+/**
+ * The series of the notes of the course (Hogg, McKean and Craig, 3.4), from
+ * the Taylor series of e^(-z^2/2) integrated term by term:
+ *   Phi(z) = 1/2 + (1/sqrt(2 pi)) sum (-1)^k z^(2k+1)/(2^k (2k+1) k!).
+ * Alternating: the first term left out bounds the error, in exact
+ * arithmetic. In floating point the terms grow to about e^(z^2/2) before
+ * they shrink, and their cancellation eats the digits. With `terms` the
+ * sum stops there; otherwise when a term no longer changes it.
+ */
+export function cdfAlternating(z, { terms: limit = Infinity, tolerance = 1e-17, maxTerms = 2000 } = {}) {
+  let power = z;
+  let sum = z;
+  let largest = Math.abs(z);
+  let k = 1;
+  for (; k < Math.min(limit, maxTerms); k++) {
+    power *= (-z * z) / (2 * k);
+    const term = power / (2 * k + 1);
+    sum += term;
+    largest = Math.max(largest, Math.abs(term));
+    if (limit === Infinity && Math.abs(term) <= tolerance * Math.abs(sum)) {
+      k++;
+      break;
+    }
+  }
+  const omitted = Math.abs((power * (-z * z)) / (2 * k) / (2 * k + 1));
+  return { value: 0.5 + sum / SQRT_2PI, terms: k, largest: largest / SQRT_2PI, bound: omitted / SQRT_2PI };
+}
+
+/**
+ * The same function written with positive terms (Marsaglia, 2004):
+ *   Phi(z) = 1/2 + phi(z) S(z),  S(z) = z + z^3/3 + z^5/(3 5) + ...
+ * S is Liouville's function above: no cancellation inside the sum, one
+ * exponential outside it. Below the mean the 1/2 still cancels against
+ * phi S, so far in the lower tail the relative error grows.
+ */
+export function cdfPositive(z, { terms: limit = Infinity, tolerance = 1e-17, maxTerms = 2000 } = {}) {
+  let term = z;
+  let sum = z;
+  let k = 1;
+  for (; k < Math.min(limit, maxTerms); k++) {
+    term *= (z * z) / (2 * k + 1);
+    sum += term;
+    if (limit === Infinity && Math.abs(term) <= tolerance * Math.abs(sum)) {
+      k++;
+      break;
+    }
+  }
+  return { value: 0.5 + phi(z) * sum, terms: k, S: sum };
+}
+
+/**
+ * Mills' ratio R(w) = P(Z > w)/phi(w) = 1/(w + 1/(w + 2/(w + 3/(w + ...)))),
+ * Laplace's continued fraction (1805), by Lentz's method: it converges for
+ * every w > 0, slowly near 0 and fast in the tail, where it keeps every
+ * digit of probabilities as small as 10^-300.
+ */
+export function millsRatio(w, { tolerance = 1e-16, maxTerms = 5000 } = {}) {
+  if (!(w > 0)) fail('the continued fraction needs w > 0');
+  const tiny = 1e-300;
+  let f = w;
+  let C = w;
+  let D = 0;
+  let terms = 0;
+  for (let k = 1; k <= maxTerms; k++) {
+    D = w + k * D;
+    D = 1 / (D === 0 ? tiny : D);
+    C = w + k / C;
+    if (C === 0) C = tiny;
+    const delta = C * D;
+    f *= delta;
+    terms = k;
+    if (Math.abs(delta - 1) < tolerance) break;
+  }
+  return { R: 1 / f, terms };
+}
+
+/** Abramowitz and Stegun 7.1.26 (Hastings, 1955): erf(x) = 1 - t (a1 + a2 t + ... + a5 t^4) e^(-x^2), t = 1/(1 + p x), x >= 0, with |error| <= 1.5e-7. */
+export const ERF_AS = Object.freeze({ p: 0.3275911, a: Object.freeze([0.254829592, -0.284496736, 1.421413741, -1.453152027, 1.061405429]), bound: 1.5e-7 });
+
+export function erfAS(x) {
+  const ax = Math.abs(x);
+  const t = 1 / (1 + ERF_AS.p * ax);
+  const [a1, a2, a3, a4, a5] = ERF_AS.a;
+  const e = 1 - t * (a1 + t * (a2 + t * (a3 + t * (a4 + t * a5)))) * Math.exp(-ax * ax);
+  return x < 0 ? -e : e;
+}
+
+/** Phi through 7.1.26: (1 + erf(z/sqrt 2))/2, so its error is at most half that of erf. */
+export const cdfAS = (z) => 0.5 * (1 + erfAS(z / Math.SQRT2));
+
+/** Abramowitz and Stegun 26.2.17 (Zelen and Severo, 1964): P(Z > w) = phi(w) t (b1 + b2 t + ... + b5 t^4), t = 1/(1 + p w), w >= 0, with |error| < 7.5e-8. */
+export const CDF_ZS = Object.freeze({ p: 0.2316419, b: Object.freeze([0.31938153, -0.356563782, 1.781477937, -1.821255978, 1.330274429]), bound: 7.5e-8 });
+
+export function cdfZS(z) {
+  const w = Math.abs(z);
+  const t = 1 / (1 + CDF_ZS.p * w);
+  const [b1, b2, b3, b4, b5] = CDF_ZS.b;
+  const q = phi(w) * t * (b1 + t * (b2 + t * (b3 + t * (b4 + t * b5))));
+  return z < 0 ? q : 1 - q;
+}
+
+/** Where the method of the page leaves the series for the continued fraction. */
+export const SWITCH_Z = 2;
+
+/**
+ * The method of the page, made of the best two pieces: the positive series
+ * for |z| < 2, which never cancels inside and needs at most 25 terms there,
+ * and Laplace's continued fraction beyond, which needs at most 106 terms
+ * and keeps the relative accuracy of the smallest probabilities. One
+ * exponential either way, about 15 correct digits everywhere.
+ */
+export function cdfOursDetail(z) {
+  if (Number.isNaN(z)) return { value: NaN, branch: 'series', terms: 0 };
+  const w = Math.abs(z);
+  if (w < SWITCH_Z) {
+    const s = cdfPositive(z);
+    return { value: s.value, branch: 'series', terms: s.terms };
+  }
+  if (w > 40) return { value: z < 0 ? 0 : 1, branch: 'fraction', terms: 0 };
+  const m = millsRatio(w);
+  const q = phi(w) * m.R;
+  return { value: z < 0 ? q : 1 - q, branch: 'fraction', terms: m.terms };
+}
+
+export const cdfOurs = (z) => cdfOursDetail(z).value;
+
+/** The methods of Exercise 2, in the order of the page; the three rules of integration use n = 64 and the symmetry around 0. */
+export const CDF_METHODS = Object.freeze(['trapezoid', 'simpson', 'gauss', 'alternating', 'positive', 'abramowitz', 'zelen', 'ours']);
+export const METHOD_N = 64;
+
+export const cdfBy = Object.freeze({
+  trapezoid: (z) => cdfStandard(z, { rule: 'trapezoid', n: METHOD_N }),
+  simpson: (z) => cdfStandard(z, { rule: 'simpson', n: METHOD_N }),
+  gauss: (z) => cdfStandard(z, { rule: 'gauss', n: METHOD_N }),
+  alternating: (z) => cdfAlternating(z).value,
+  positive: (z) => cdfPositive(z).value,
+  abramowitz: cdfAS,
+  zelen: cdfZS,
+  ours: cdfOurs,
+});
+
+/** Phi(z) from mpmath with 60 digits, rounded to the nearest double, at z = -8, -7.9, ..., 0; for z > 0, Phi(z) = 1 - Phi(-z). */
+export const MPMATH_PHI = Object.freeze([
+  6.220960574271784e-16, 1.3945171466592683e-15, 3.0953587719586956e-15, 6.8033115407739706e-15, 1.4806537490048047e-14, 3.1908916729108963e-14,
+  6.809224890620033e-14, 1.4388386381575857e-13, 3.0106279811174375e-13, 6.237844463331576e-13, 1.279812543885835e-12, 2.600126965638173e-12,
+  5.2309575441445875e-12, 1.0420976987965194e-11, 2.055788909399518e-11, 4.016000583859118e-11, 7.76884758170983e-11, 1.4882282217623108e-10,
+  2.8231580370432744e-10, 5.30342326294883e-10, 9.86587645037698e-10, 1.8175078630994324e-09, 3.3157459783261613e-09, 5.9903714010635345e-09,
+  1.0717590258310907e-08, 1.8989562465887718e-08, 3.3320448485428574e-08, 5.790134039964589e-08, 9.96442631693348e-08, 1.6982674071475982e-07,
+  2.866515718791939e-07, 4.791832765903198e-07, 7.933281519755946e-07, 1.300807453917282e-06, 2.11245470250285e-06, 3.3976731247300603e-06,
+  5.41254390770386e-06, 8.539905470991804e-06, 1.3345749015906338e-05, 2.0657506912546737e-05, 3.1671241833119924e-05, 4.8096344017602716e-05,
+  7.234804392511998e-05, 0.00010779973347738834, 0.00015910859015753388, 0.00023262907903552504, 0.00033692926567688097, 0.0004834241423837772,
+  0.0006871379379158485, 0.0009676032132183569, 0.0013498980316300946, 0.001865813300384038, 0.002555130330427933, 0.0034669738030406686,
+  0.00466118802371875, 0.006209665325776135, 0.00819753592459613, 0.010724110021675805, 0.013903447513498611, 0.017864420562816556,
+  0.02275013194817921, 0.0287165598160018, 0.0359303191129258, 0.04456546275854304, 0.054799291699557995, 0.06680720126885807,
+  0.08075665923377105, 0.09680048458561033, 0.11506967022170826, 0.13566606094638267, 0.15865525393145705, 0.1840601253467595,
+  0.2118553985833967, 0.241963652223073, 0.2742531177500736, 0.3085375387259869, 0.3445782583896758, 0.3820885778110474,
+  0.42074029056089696, 0.460172162722971, 0.5,
+]);
+
+/** The same far in the lower tail, where only the relative error makes sense: [z, Phi(z)]. */
+export const MPMATH_TAILS = Object.freeze([[-9, 1.1285884059538405e-19], [-10, 7.619853024160525e-24], [-12, 1.776482112077679e-33], [-15, 3.670966199312751e-51], [-20, 2.7536241186062337e-89], [-25, 3.056696706382561e-138], [-30, 4.906713927148187e-198], [-37, 5.725571222524577e-300]].map((pair) => Object.freeze(pair)));
+
+/** The points of the comparison with the references, with Phi(z) from mpmath (60 digits, rounded to the nearest double). */
+export const REFERENCE_POINTS = Object.freeze([[-6, 9.86587645037698e-10], [-5, 2.866515718791939e-07], [-4, 3.1671241833119924e-05], [-3, 0.0013498980316300946], [-2.5, 0.006209665325776135], [-1.96, 0.024997895148220435], [-1.5, 0.06680720126885807], [-1, 0.15865525393145705], [-0.5, 0.3085375387259869], [0, 0.5], [0.5, 0.6914624612740131], [1, 0.8413447460685429], [1.36, 0.913085038052915], [1.5, 0.9331927987311419], [1.96, 0.9750021048517795], [2, 0.9772498680518208], [2.5, 0.9937903346742238], [3, 0.9986501019683699], [4, 0.9999683287581669], [5, 0.9999997133484281], [6, 0.9999999990134123]].map((pair) => Object.freeze(pair)));
+
+/** The table of the NIST/SEMATECH e-Handbook of Statistical Methods, section 1.3.6.7.1: P(0 <= Z <= z) in units of 10^-5, one row for every tenth of z from 0.0 to 4.0, one column for every hundredth. */
+export const NIST_ROWS = Object.freeze([
+  '0 399 798 1197 1595 1994 2392 2790 3188 3586',
+  '3983 4380 4776 5172 5567 5962 6356 6749 7142 7535',
+  '7926 8317 8706 9095 9483 9871 10257 10642 11026 11409',
+  '11791 12172 12552 12930 13307 13683 14058 14431 14803 15173',
+  '15542 15910 16276 16640 17003 17364 17724 18082 18439 18793',
+  '19146 19497 19847 20194 20540 20884 21226 21566 21904 22240',
+  '22575 22907 23237 23565 23891 24215 24537 24857 25175 25490',
+  '25804 26115 26424 26730 27035 27337 27637 27935 28230 28524',
+  '28814 29103 29389 29673 29955 30234 30511 30785 31057 31327',
+  '31594 31859 32121 32381 32639 32894 33147 33398 33646 33891',
+  '34134 34375 34614 34849 35083 35314 35543 35769 35993 36214',
+  '36433 36650 36864 37076 37286 37493 37698 37900 38100 38298',
+  '38493 38686 38877 39065 39251 39435 39617 39796 39973 40147',
+  '40320 40490 40658 40824 40988 41149 41308 41466 41621 41774',
+  '41924 42073 42220 42364 42507 42647 42785 42922 43056 43189',
+  '43319 43448 43574 43699 43822 43943 44062 44179 44295 44408',
+  '44520 44630 44738 44845 44950 45053 45154 45254 45352 45449',
+  '45543 45637 45728 45818 45907 45994 46080 46164 46246 46327',
+  '46407 46485 46562 46638 46712 46784 46856 46926 46995 47062',
+  '47128 47193 47257 47320 47381 47441 47500 47558 47615 47670',
+  '47725 47778 47831 47882 47932 47982 48030 48077 48124 48169',
+  '48214 48257 48300 48341 48382 48422 48461 48500 48537 48574',
+  '48610 48645 48679 48713 48745 48778 48809 48840 48870 48899',
+  '48928 48956 48983 49010 49036 49061 49086 49111 49134 49158',
+  '49180 49202 49224 49245 49266 49286 49305 49324 49343 49361',
+  '49379 49396 49413 49430 49446 49461 49477 49492 49506 49520',
+  '49534 49547 49560 49573 49585 49598 49609 49621 49632 49643',
+  '49653 49664 49674 49683 49693 49702 49711 49720 49728 49736',
+  '49744 49752 49760 49767 49774 49781 49788 49795 49801 49807',
+  '49813 49819 49825 49831 49836 49841 49846 49851 49856 49861',
+  '49865 49869 49874 49878 49882 49886 49889 49893 49896 49900',
+  '49903 49906 49910 49913 49916 49918 49921 49924 49926 49929',
+  '49931 49934 49936 49938 49940 49942 49944 49946 49948 49950',
+  '49952 49953 49955 49957 49958 49960 49961 49962 49964 49965',
+  '49966 49968 49969 49970 49971 49972 49973 49974 49975 49976',
+  '49977 49978 49978 49979 49980 49981 49981 49982 49983 49983',
+  '49984 49985 49985 49986 49986 49987 49987 49988 49988 49989',
+  '49989 49990 49990 49990 49991 49991 49992 49992 49992 49992',
+  '49993 49993 49993 49994 49994 49994 49994 49995 49995 49995',
+  '49995 49995 49996 49996 49996 49996 49996 49996 49997 49997',
+  '49997 49997 49997 49997 49997 49997 49998 49998 49998 49998',
+]);
+
+/** Where the NIST table lives. */
+export const NIST_URL = 'https://www.itl.nist.gov/div898/handbook/eda/section3/eda3671.htm';
+
+/** Phi(z) as the NIST table gives it, 1/2 plus or minus the cell of |z| (5 decimals), for |z| <= 4.09; null beyond. */
+export function nistPhi(z) {
+  const cell = Math.round(Math.abs(z) * 100);
+  if (cell > 409) return null;
+  const units = Number(NIST_ROWS[Math.floor(cell / 10)].split(' ')[cell % 10]);
+  return z >= 0 ? 0.5 + units / 1e5 : 0.5 - units / 1e5;
+}
+
+/** The reference Phi(z) from mpmath: on the grid of 0.1 from -8 to 8, far in the tail, or at the points of the comparison; null elsewhere. */
+export function referencePhi(z) {
+  const i = Math.round(Math.abs(z) * 10);
+  if (i <= 80 && Math.abs(Math.abs(z) * 10 - i) < 1e-9) return z <= 0 ? MPMATH_PHI[80 - i] : 1 - MPMATH_PHI[80 - i];
+  const known = [...MPMATH_TAILS, ...REFERENCE_POINTS].find(([t]) => t === z);
+  return known ? known[1] : null;
+}
+
+/**
+ * The accuracy of a method against mpmath: the largest absolute error on
+ * z = -8, -7.9, ..., 8, and the largest relative error below the mean,
+ * where Phi is small, down to z = -37 (Phi = 5.7e-300).
+ */
+export function accuracyOf(compute) {
+  let absolute = 0;
+  let absAt = 0;
+  let relative = 0;
+  let relAt = 0;
+  const check = (z, ref) => {
+    const v = compute(z);
+    const e = Number.isFinite(v) ? Math.abs(v - ref) : Infinity;
+    if (z >= -8 && e > absolute) {
+      absolute = e;
+      absAt = z;
+    }
+    if (z <= 0 && e / ref > relative) {
+      relative = e / ref;
+      relAt = z;
+    }
+  };
+  for (let i = -80; i <= 80; i++) check(i / 10, referencePhi(i / 10));
+  for (const [z, ref] of MPMATH_TAILS) check(z, ref);
+  return { absolute, absAt, relative, relAt };
+}
+
+/** Every cell of the NIST table against a method rounded to 5 decimals: how many agree, and the ones that do not. */
+export function nistComparison(compute = cdfOurs) {
+  const mismatches = [];
+  let agree = 0;
+  NIST_ROWS.forEach((row, r) => {
+    row.split(' ').forEach((text, c) => {
+      const z = (r * 10 + c) / 100;
+      const area = compute(z) - 0.5;
+      const units = Number(text);
+      if (Math.round(area * 1e5) === units) agree++;
+      else mismatches.push({ z, table: units / 1e5, ours: area, rounded: Math.round(area * 1e5) / 1e5 });
+    });
+  });
+  return { total: NIST_ROWS.length * 10, agree, mismatches };
+}
+
+/** The comparison at the points of REFERENCE_POINTS: the NIST value when the table covers z, mpmath, a method, and their errors. */
+export function referenceRows(compute = cdfOurs) {
+  return REFERENCE_POINTS.map(([z, mpmath]) => {
+    const value = compute(z);
+    const nist = nistPhi(z);
+    return { z, mpmath, nist, value, error: Math.abs(value - mpmath), relative: Math.abs(value - mpmath) / mpmath, nistError: nist === null ? null : Math.abs(nist - mpmath) };
+  });
+}
+
+/** The points of the table of the two series. */
+export const SERIES_Z = Object.freeze([1, 2, 3, 4, 5, 6, 7, 8]);
+
+/** The two series at every z of SERIES_Z: the terms they need, the largest term of the alternating one, the digits it loses to cancellation, and the error of each. */
+export function seriesRows() {
+  return SERIES_Z.map((z) => {
+    const reference = 1 - MPMATH_PHI[80 - z * 10];
+    const alt = cdfAlternating(z);
+    const pos = cdfPositive(z);
+    return {
+      z,
+      reference,
+      alternating: { terms: alt.terms, largest: alt.largest, lost: Math.max(0, Math.log10(alt.largest / (reference - 0.5))), error: Math.abs(alt.value - reference) },
+      positive: { terms: pos.terms, error: Math.abs(pos.value - reference) },
+    };
+  });
+}
+
+/** The two series at one z with 1, 2, ..., `count` terms: the error of each and the bound of the alternating series. */
+export function seriesPath(z, count) {
+  const reference = referencePhi(z) ?? cdfOurs(z);
+  return Array.from({ length: count }, (_, i) => {
+    const alt = cdfAlternating(z, { terms: i + 1 });
+    const pos = cdfPositive(z, { terms: i + 1 });
+    return { terms: i + 1, alternating: Math.abs(alt.value - reference), bound: alt.bound, positive: Math.abs(pos.value - reference) };
+  });
+}
+
+/** The points of the table of Liouville's S. */
+export const LIOUVILLE_X = Object.freeze([1, 2, 4, 6, 8, 10]);
+
+/**
+ * S(x) = (Phi(x) - 1/2)/phi(x), the only kind of candidate of Liouville's
+ * test, at the points of LIOUVILLE_X: its ratio to e^(x^2/2), which tends
+ * to sqrt(pi/2), and its apparent degree x S'(x)/S(x) = x (1 + x S)/S. A
+ * rational function has a fixed degree at infinity; S has none.
+ */
+export function liouvilleRows() {
+  return LIOUVILLE_X.map((x) => {
+    const S = cdfPositive(x).S;
+    return { x, S, ratio: S / Math.exp((x * x) / 2), degree: (x * (1 + x * S)) / S };
+  });
+}
+
+/** The thresholds of the 68-95-99.7 rule. */
+export const RULE_K = Object.freeze([1, 2, 3]);
+
+/** P(|Z| < k) = erf(k/sqrt 2) = 1 - 2 Phi(-k) with the method of the page, as the notes get it from a table of 4 decimals (2 Phi(k) - 1 after rounding), and from mpmath. */
+export function empiricalRuleRows() {
+  return RULE_K.map((k) => ({ k, value: 1 - 2 * cdfOurs(-k), rounded: (2 * Math.round(cdfOurs(k) * 1e4) - 1e4) / 1e4, reference: 1 - 2 * MPMATH_PHI[80 - k * 10] }));
+}
+
+/** The largest number of terms a method takes on z = -8, -7.9, ..., 8 (0 for the methods without terms). */
+export function termsOf(key) {
+  const count = { alternating: (z) => cdfAlternating(z).terms, positive: (z) => cdfPositive(z).terms, ours: (z) => cdfOursDetail(z).terms }[key];
+  if (!count) return 0;
+  let most = 0;
+  for (let i = -80; i <= 80; i++) most = Math.max(most, count(i / 10));
+  return most;
+}
+
+/** How many times each method calls exp: the rules once per node, the series of the notes never, the others once. */
+export const EXP_CALLS = Object.freeze({ trapezoid: METHOD_N + 1, simpson: METHOD_N + 1, gauss: METHOD_N, alternating: 0, positive: 1, abramowitz: 1, zelen: 1, ours: 1 });
+
+/** The z of the measures of time: 1001 points from -8 to 8, and how many measures of each method. */
+export const TIMING_Z = Object.freeze(Array.from({ length: 1001 }, (_, i) => -8 + i * 0.016));
+export const TIMING_RUNS = 11;
+
+/** Nanoseconds per call of a method over TIMING_Z, the calls repeated until they take at least 8 ms. */
+function nanosecondsPerCall(compute) {
+  const r = timeIt(() => {
+    let s = 0;
+    for (const z of TIMING_Z) s += compute(z);
+    return s;
+  }, 8);
+  return (r.ms * 1e6) / TIMING_Z.length;
+}
+
+/**
+ * The median of a sample with its confidence interval from the order
+ * statistics: [x_(k), x_(n+1-k)] for the largest k whose binomial coverage
+ * 1 - 2 P(Bin(n, 1/2) <= k - 1) is still at least `confidence`. No
+ * hypothesis on the shape of the times, which are anything but normal.
+ */
+export function medianInterval(values, confidence = CONFIDENCE) {
+  const x = [...values].sort((p, q) => p - q);
+  const n = x.length;
+  const median = n % 2 ? x[(n - 1) / 2] : (x[n / 2 - 1] + x[n / 2]) / 2;
+  let pmf = 0.5 ** n;
+  let cum = 0;
+  let k = 0;
+  let coverage = 1;
+  for (let j = 0; j < n; j++) {
+    cum += pmf;
+    if (1 - 2 * cum < confidence) break;
+    k = j + 1;
+    coverage = 1 - 2 * cum;
+    pmf = (pmf * (n - j)) / (j + 1);
+  }
+  if (k === 0) return { median, lo: x[0], hi: x[n - 1], coverage: 1 - 2 * 0.5 ** n };
+  return { median, lo: x[k - 1], hi: x[n - k], coverage };
+}
+
+// ---------------------------------------------------------------------------
+// 3. Exercise 1: the functions, and a parser for the one typed in the page
+// ---------------------------------------------------------------------------
+
+/*
+ * The seven functions of the assignment, and two more of the page:
+ *   sine         sin(x) on [0, pi], smooth: both are easy;
+ *   square       x^2 on [0, 1], smooth and monotone;
+ *   jump         1 on [0, 0.5), 3 on [0.5, 1]: a simple function, the bread
+ *                and butter of Lebesgue, whose jump Riemann's strips straddle;
+ *   vee          |x - 0.5| on [0, 1]: continuous, with a corner;
  *   unbounded    1/sqrt(x) on (0, 1]: infinite at 0, with a finite integral;
  *                Riemann's integral exists only as a limit (improper), the
  *                Lebesgue integral directly;
+ *   indicator    1 on [0, 0.5), 0 on [0.5, 1]: the indicator of a set;
+ *   sinc         sin(x)/x on [0, pi], smooth once its value 1 at 0 is set;
+ *   oscillating  sin(1/x) on (0, 1]: infinitely many waves near 0, bounded;
  *   traffic      the traffic of a server over a day, in Mb/s, with an attack
  *                at 21:00: Riemann gives the total, Lebesgue the time spent
  *                above every threshold.
- * Plus the function typed in the page, read by a small parser and never
- * passed to eval: the site's security policy would not allow it anyway.
+ * Dirichlet's and Thomae's functions, the pathological ones, live in
+ * section 5b: on a computer every number is a fraction, so they need exact
+ * arithmetic. Plus the function typed in the page, read by a small parser
+ * and never passed to eval: the site's security policy would not allow it.
  */
 
-export const FUNCTIONS = Object.freeze(['square', 'bell', 'steps', 'oscillating', 'unbounded', 'traffic']);
+export const FUNCTIONS = Object.freeze(['sine', 'square', 'jump', 'vee', 'unbounded', 'indicator', 'sinc', 'oscillating', 'traffic']);
+export const PATHOLOGICAL = Object.freeze(['dirichlet', 'thomae']);
 export const CUSTOM = 'custom';
 
-/** The step function: its jumps and its values on [0, 0.3), [0.3, 0.5), [0.5, 0.85), [0.85, 1]. */
-export const STEPS = Object.freeze({ jumps: Object.freeze([0.3, 0.5, 0.85]), values: Object.freeze([1, 3, 2, 0.5]) });
+/** Where the two step functions of the assignment jump. */
+export const JUMP_AT = 0.5;
 
-export function stepFunction(x) {
-  let i = 0;
-  while (i < STEPS.jumps.length && x >= STEPS.jumps[i]) i++;
-  return STEPS.values[i];
+/** 1 before 0.5, 3 from 0.5 on. */
+export const jump = (x) => (x < JUMP_AT ? 1 : 3);
+
+/** 1 before 0.5, 0 from 0.5 on: the indicator of [0, 0.5). */
+export const indicator = (x) => (x < JUMP_AT ? 1 : 0);
+
+/** sin(x)/x, with its limit 1 at x = 0. */
+export const sinc = (x) => (x === 0 ? 1 : Math.sin(x) / x);
+
+/** Si(x) = sum (-1)^k x^(2k+1)/((2k+1) (2k+1)!), the sine integral, for the exact value of the integral of sin(x)/x. */
+export function sineIntegral(x) {
+  let term = x;
+  let sum = x;
+  for (let k = 1; k < 60; k++) {
+    term *= (-x * x) / (2 * k * (2 * k + 1));
+    const add = term / (2 * k + 1);
+    sum += add;
+    if (Math.abs(add) < 1e-17 * Math.abs(sum)) break;
+  }
+  return sum;
 }
 
 /** The traffic of a day, in Mb/s: 100 at night, a bell of 300 around 15:00, and an attack of 850 at 21:00 lasting a quarter of an hour. */
@@ -560,11 +1036,14 @@ export function cosineIntegral(x) {
  * and the cap of the values when the function is unbounded.
  */
 export const FUNCTION_DEFS = Object.freeze({
+  sine: Object.freeze({ a: 0, b: Math.PI, formula: 'sin(x)', f: Math.sin, exact: 2 }),
   square: Object.freeze({ a: 0, b: 1, formula: 'x^2', f: (x) => x * x, exact: 1 / 3 }),
-  bell: Object.freeze({ a: -3, b: 3, formula: 'exp(-x^2/2)/sqrt(2 pi)', f: phi, exact: 1 - 2 * normalSf(3) }),
-  steps: Object.freeze({ a: 0, b: 1, formula: '1 on [0, 0.3), 3 on [0.3, 0.5), 2 on [0.5, 0.85), 0.5 on [0.85, 1]', f: stepFunction, exact: 0.3 * 1 + 0.2 * 3 + 0.35 * 2 + 0.15 * 0.5 }),
+  jump: Object.freeze({ a: 0, b: 1, formula: '1 if x < 0.5, 3 if x >= 0.5', f: jump, exact: 2 }),
+  vee: Object.freeze({ a: 0, b: 1, formula: '|x - 0.5|', f: (x) => Math.abs(x - 0.5), exact: 0.25 }),
+  unbounded: Object.freeze({ a: 0, b: 1, formula: '1/sqrt(x)', f: (x) => 1 / Math.sqrt(x), exact: 2, cap: 100, improper: true }),
+  indicator: Object.freeze({ a: 0, b: 1, formula: '1 if x < 0.5, 0 if x >= 0.5', f: indicator, exact: 0.5 }),
+  sinc: Object.freeze({ a: 0, b: Math.PI, formula: 'sin(x)/x, with 1 at x = 0', f: sinc, exact: sineIntegral(Math.PI) }),
   oscillating: Object.freeze({ a: 0, b: 1, formula: 'sin(1/x), with 0 at x = 0', f: (x) => (x > 0 ? Math.sin(1 / x) : 0), exact: Math.sin(1) - cosineIntegral(1) }),
-  unbounded: Object.freeze({ a: 0, b: 1, formula: '1/sqrt(x)', f: (x) => 1 / Math.sqrt(x), exact: 2, cap: 100 }),
   traffic: Object.freeze({ a: 0, b: 24, formula: '100 + 300 exp(-((t - 15)/4)^2) + 850 exp(-((t - 21)/0.12)^2)', f: traffic, exact: TRAFFIC.base * 24 + TRAFFIC.day * bellIntegral(TRAFFIC.peak, TRAFFIC.width) + TRAFFIC.attack * bellIntegral(TRAFFIC.at, TRAFFIC.duration) }),
 });
 
@@ -854,7 +1333,7 @@ export function referenceIntegral(f, a, b) {
 }
 
 // ---------------------------------------------------------------------------
-// 4. Part 2: Riemann and Darboux sums
+// 4. Exercise 1: Riemann and Darboux sums
 // ---------------------------------------------------------------------------
 
 /*
@@ -907,7 +1386,7 @@ export function riemannSums(f, a, b, n) {
 }
 
 // ---------------------------------------------------------------------------
-// 5. Part 2: Lebesgue sums, level sets and the rearrangement
+// 5. Exercise 1: Lebesgue sums, level sets and the rearrangement
 // ---------------------------------------------------------------------------
 
 /*
@@ -1028,21 +1507,35 @@ export function lebesgueSums(f, a, b, K, { cap = Infinity, grid = null, collect 
   return { K, m, M, levels, measures, lower, upper, midpoint: (lower + upper) / 2, sets, evaluations, cap, capped: M >= cap };
 }
 
-/** The values of n (strips) and K (levels) of the comparison of section 2.5. */
-export const COMPARE_N = Object.freeze(Array.from({ length: 10 }, (_, i) => 2 ** (i + 1)));
+/**
+ * The values of n (strips) and K (levels) of the comparison: 3, 9, ..., 729.
+ * Odd on purpose: the jump at 0.5 of the two step functions then falls
+ * inside a strip, as a jump whose place nobody knows would; with an even n
+ * it would sit on the edge of two strips and Riemann would be exact by luck.
+ */
+export const COMPARE_N = Object.freeze(Array.from({ length: 6 }, (_, i) => 3 ** (i + 1)));
+
+/** The order of convergence measured on a list of errors: minus the slope of log error against log n, on the errors above the rounding floor. */
+export function measuredOrder(ns, errors) {
+  const points = ns.map((n, i) => [n, errors[i]]).filter(([, e]) => Number.isFinite(e) && e > 1e-13);
+  if (points.length < 3) return NaN;
+  return -fitLine(points.map(([n]) => Math.log10(n)), points.map(([, e]) => Math.log10(e))).slope;
+}
 
 /**
- * Riemann against Lebesgue on one function, for n = K = 2, 4, ..., 1024:
- * the Riemann sums, and the Lebesgue sums read off one set of 1024 levels
- * (the levels for K = 512 are every other one, and so on). Errors against
- * the exact integral when it is known, against adaptive Simpson otherwise.
+ * Riemann against Lebesgue on one function, for n = K = 3, 9, ..., 729:
+ * the Riemann sums, and the Lebesgue sums read off one set of 729 levels
+ * (the levels for K = 243 are one every three, and so on). Errors against
+ * the exact integral when it is known, against a reference integral
+ * otherwise, and the orders of convergence measured on them.
  */
 export function comparisonStudy(spec) {
   const { f, a, b, cap } = spec;
   const grid = sampleGrid(f, a, b);
   const top = COMPARE_N[COMPARE_N.length - 1];
   const full = lebesgueSums(f, a, b, top, { cap, grid });
-  const reference = spec.exact ?? referenceIntegral(f, a, b).value;
+  const ref = spec.exact === null ? referenceIntegral(f, a, b) : { value: spec.exact, method: 'exact', uncertainty: 0 };
+  const reference = ref.value;
   const width = b - a;
   const rows = COMPARE_N.map((n) => {
     const r = riemannSums(f, a, b, n);
@@ -1064,7 +1557,53 @@ export function comparisonStudy(spec) {
       gaps: { riemann: r.upper - r.lower, lebesgue: upper - lower },
     };
   });
-  return { key: spec.key, reference, exact: spec.exact, rows, m: full.m, M: full.M, capped: full.capped, cap };
+  const orders = {
+    riemann: measuredOrder(COMPARE_N, rows.map((r) => r.errors.riemann)),
+    lebesgue: measuredOrder(COMPARE_N, rows.map((r) => r.errors.lebesgue)),
+  };
+  return { key: spec.key, reference, exact: spec.exact, referenceMethod: ref.method, uncertainty: ref.uncertainty, rows, orders, m: full.m, M: full.M, capped: full.capped, cap };
+}
+
+/** Runs a task until at least `minMs` milliseconds have passed, and returns its result with the time of one run. */
+function timeIt(task, minMs = 4) {
+  const start = now();
+  let runs = 0;
+  let value;
+  let elapsed;
+  do {
+    value = task();
+    runs++;
+    elapsed = now() - start;
+  } while (elapsed < minMs);
+  return { value, ms: elapsed / runs, runs };
+}
+
+/** The relative accuracies of the table of costs: the error divided by the integral. */
+export const EFFICIENCY_TARGETS = Object.freeze([1e-2, 1e-4]);
+
+/**
+ * What each approach costs on one function, for n = K = 3, 9, ..., 729. The
+ * Riemann sum with midpoints takes n values of f. The Lebesgue sum takes
+ * the values that measuring its level sets needs: a grid of 4097 points,
+ * then 44 halvings on every crossing of every level. For each, the error,
+ * the values of f and the time of one sum, averaged over repeated runs;
+ * then, for every relative accuracy of EFFICIENCY_TARGETS, the first n
+ * whose error is within that share of the integral.
+ */
+export function efficiencyStudy(spec, reference = spec.exact) {
+  const { f, a, b, cap } = spec;
+  const err = (v) => (Number.isFinite(v) ? Math.abs(v - reference) : Infinity);
+  const rows = COMPARE_N.map((n) => {
+    const r = timeIt(() => integrate(f, a, b, 'midpoint', n));
+    const l = timeIt(() => lebesgueSums(f, a, b, n, { cap }));
+    return {
+      n,
+      riemann: { value: r.value, error: err(r.value), evaluations: n, ms: r.ms },
+      lebesgue: { value: l.value.midpoint, error: err(l.value.midpoint), evaluations: l.value.evaluations, ms: l.ms },
+    };
+  });
+  const reach = (method, target) => rows.find((row) => row[method].error <= target * Math.abs(reference)) ?? null;
+  return { key: spec.key, reference, rows, targets: EFFICIENCY_TARGETS.map((target) => ({ target, riemann: reach('riemann', target), lebesgue: reach('lebesgue', target) })) };
 }
 
 /**
@@ -1105,6 +1644,104 @@ export function trafficReport() {
   const riemann = riemannSums(d.f, d.a, d.b, 24 * 60).midpoint;
   // 1 Mb/s for one hour is 3600 megabits, 450 megabytes, 0.45 gigabytes
   return { rows, total, riemann, quietTotal, attackShare: (total - quietTotal) / total, gigabytes: total * 0.45, peak: d.f(TRAFFIC.at) };
+}
+
+// ---------------------------------------------------------------------------
+// 5b. Exercise 1: Dirichlet's and Thomae's functions, with exact fractions
+// ---------------------------------------------------------------------------
+
+/*
+ * Dirichlet's function is 1 on the rationals and 0 on the irrationals;
+ * Thomae's is 1/q at p/q in lowest terms and 0 on the irrationals. No
+ * double can show them: every double is a fraction m/2^e, so a program
+ * that asks "is x rational?" gets yes every time. Here the tags of the
+ * Riemann sums are exact fractions i/n, or the irrational numbers
+ * (i + 1/sqrt 2)/n, written down as such; the largest value of Thomae's
+ * function on a strip is 1/q, with q the smallest denominator inside it.
+ *   Dirichlet  every strip holds rationals and irrationals: lower sums 0,
+ *              upper sums 1, for every n. No Riemann integral. The level
+ *              set {f >= t}, 0 < t <= 1, is the set of the rationals of
+ *              [0, 1]: countable, of measure 0. Lebesgue integral 0.
+ *   Thomae     upper sums go to 0, lower sums are 0: Riemann integral 0.
+ *              The level set {f >= 1/Q} is the finite set of the fractions
+ *              with q <= Q (Farey's): measure 0. Lebesgue integral 0.
+ */
+
+/** Euclid's algorithm. */
+export function gcd(a, b) {
+  let x = Math.abs(a);
+  let y = Math.abs(b);
+  while (y) [x, y] = [y, x % y];
+  return x;
+}
+
+/** The smallest denominator q of a fraction p/q in [i/n, (i + 1)/n], in integer arithmetic: 1/q is the largest value of Thomae's function on that strip. */
+export function smallestDenominator(i, n) {
+  for (let q = 1; q < n; q++) {
+    const lo = i * q;
+    const hi = (i + 1) * q;
+    const pLo = (lo - (lo % n)) / n + (lo % n ? 1 : 0);
+    const pHi = (hi - (hi % n)) / n;
+    if (pLo <= pHi) return q;
+  }
+  return n;
+}
+
+/** Thomae's function as a program that trusts the doubles sees it: x = m/2^e in lowest terms gives 1/2^e. */
+export function thomaeOnDoubles(x) {
+  if (!Number.isFinite(x)) return 0;
+  let v = Math.abs(x);
+  let q = 1;
+  while (!Number.isInteger(v)) {
+    v *= 2;
+    q *= 2;
+  }
+  return 1 / q;
+}
+
+/** Dirichlet's function as the same program sees it: always 1, since every double is a fraction. */
+export const dirichletOnDoubles = () => 1;
+
+/** The numbers of strips of the two pathological functions. */
+export const PATHOLOGICAL_N = Object.freeze([10, 100, 1000, 10000]);
+
+/** How many fractions of [0, 1] have a denominator up to Q: 1 + phi(1) + ... + phi(Q), the length of Farey's sequence, with Euler's phi from a sieve. */
+export function fareyLength(Q) {
+  const totient = Array.from({ length: Q + 1 }, (_, i) => i);
+  for (let p = 2; p <= Q; p++) {
+    if (totient[p] !== p) continue;
+    for (let k = p; k <= Q; k += p) totient[k] -= totient[k] / p;
+  }
+  let total = 1;
+  for (let q = 1; q <= Q; q++) total += totient[q];
+  return total;
+}
+
+/** The denominators of the level sets of Thomae's function shown by the page: {f >= 1/Q} for these Q. */
+export const FAREY_Q = Object.freeze([10, 100, 1000]);
+
+/**
+ * The sums of the two functions for every n of PATHOLOGICAL_N: Riemann with
+ * rational tags i/n and with irrational tags, the lower and upper Darboux
+ * sums, the Lebesgue sum, and the left sum of a program that trusts the
+ * doubles. Dirichlet's sums need no loop: every strip holds both kinds of
+ * numbers. Thomae's upper sums are added up strip by strip.
+ */
+export function pathologicalStudy(ns = PATHOLOGICAL_N) {
+  const dirichlet = ns.map((n) => ({ n, rational: 1, irrational: 0, lower: 0, upper: 1, lebesgue: 0, doubles: 1 }));
+  const thomae = ns.map((n) => {
+    let rational = 0;
+    let upper = 0;
+    let doubles = 0;
+    for (let i = 0; i < n; i++) {
+      rational += gcd(i, n);
+      upper += 1 / smallestDenominator(i, n);
+      doubles += thomaeOnDoubles(i / n);
+    }
+    return { n, rational: rational / (n * n), irrational: 0, lower: 0, upper: upper / n, lebesgue: 0, doubles: doubles / n };
+  });
+  const farey = FAREY_Q.map((Q) => ({ Q, level: 1 / Q, points: fareyLength(Q), measure: 0 }));
+  return { dirichlet, thomae, farey, upperOrder: measuredOrder(ns, thomae.map((r) => r.upper)) };
 }
 
 // ---------------------------------------------------------------------------
@@ -1407,12 +2044,12 @@ export function twoSidedNormalTail(z) {
   return gammaQ(0.5, (z * z) / 2);
 }
 
-/** P(Z > x), accurate also far in the upper tail: erfc(x/sqrt(2))/2 = Q(1/2, x^2/2)/2. The reference of Part 1. */
+/** P(Z > x), accurate also far in the upper tail: erfc(x/sqrt(2))/2 = Q(1/2, x^2/2)/2. The reference of Exercise 2. */
 export function normalSf(x) {
   return x >= 0 ? 0.5 * gammaQ(0.5, (x * x) / 2) : 1 - 0.5 * gammaQ(0.5, (x * x) / 2);
 }
 
-/** Phi(x) = P(Z <= x), the reference of Part 1: no quadrature inside. */
+/** Phi(x) = P(Z <= x), the reference of Exercise 2: no quadrature inside. */
 export function normalCdf(x) {
   return normalSf(-x);
 }
@@ -1651,7 +2288,7 @@ function lowerBound(sorted, x) {
 /**
  * Everything random of the page, step by step (the browser draws between
  * steps): a normal sample by Box-Muller and a heavy-tailed one, both against
- * the numerical Phi; then, for every function of Part 2, `reps` Monte Carlo
+ * the numerical Phi; then, for every function of Exercise 1, `reps` Monte Carlo
  * estimates with `points` points each, their spread, and how often their
  * 95% intervals contain the exact integral.
  */
@@ -1706,13 +2343,28 @@ export function* exploreSteps(params = {}) {
     compare[key] = comparisonStudy(functionOf(key));
     yield;
   }
-  return { params: p, normal: normalReport, heavy: heavyReport, mc, compare, heavyDistance: heavyDistance(), simMs: now() - started, draws: 2 * p.sample + FUNCTIONS.length * p.reps * p.points };
+  // what the two approaches cost, in values of f and in time
+  const efficiency = {};
+  for (const key of FUNCTIONS) {
+    efficiency[key] = efficiencyStudy(functionOf(key), compare[key].reference);
+    yield;
+  }
+  // the methods of Exercise 2 against the clock, in turns, so that a slow moment of the computer weighs on all of them alike
+  const runs = Object.fromEntries(CDF_METHODS.map((key) => [key, []]));
+  for (let r = 0; r < TIMING_RUNS; r++) {
+    for (const key of CDF_METHODS) {
+      runs[key].push(nanosecondsPerCall(cdfBy[key]));
+      yield;
+    }
+  }
+  const timing = Object.fromEntries(CDF_METHODS.map((key) => [key, { ...medianInterval(runs[key]), runs: runs[key] }]));
+  return { params: p, normal: normalReport, heavy: heavyReport, mc, compare, efficiency, timing, heavyDistance: heavyDistance(), simMs: now() - started, draws: 2 * p.sample + FUNCTIONS.length * p.reps * p.points };
 }
 
 export const explore = (options) => runSteps(exploreSteps(options));
 export const exploreAsync = (options, scheduling) => runStepsAsync(() => exploreSteps(options), scheduling);
 
-/** The hypothesis tests of the page, by group: the model of Part 1, and Monte Carlo on every function of Part 2. */
+/** The hypothesis tests of the page, by group: the model of Exercise 2, and Monte Carlo on every function of Exercise 1. */
 export function statisticalTests(s) {
   const model = [
     ['ksNormal', s.normal.ks],
@@ -2022,7 +2674,7 @@ const parabolaAt = (p, x) => {
 };
 
 /**
- * The integral of Part 1 in a picture: the curve of a density, the area
+ * The integral of Exercise 2 in a picture: the curve of a density, the area
  * under it between `from` and `to` shaded, the pieces that a rule adds up
  * (rulePieces: rectangles, trapezoids, parabolas, Gauss's strips with their
  * nodes as dots) and a dashed marker at `to`.
@@ -2115,7 +2767,7 @@ function complement(intervals, a, b) {
 }
 
 /**
- * The integral of Part 2 in a picture: the graph of f, and under it either
+ * The integral of Exercise 1 in a picture: the graph of f, and under it either
  * Riemann's strips (rectangles standing on the x axis, as high as f at the
  * chosen point, `kind`) or Lebesgue's layers: for every level y_k the set
  * where f >= y_k, drawn as a band between y_(k-1) and y_k (its negative part
@@ -2486,7 +3138,7 @@ export function attachPointerLabel(canvas, locate, link = null) {
  * Independent checks: the Gauss-Legendre rule against its closed form and
  * NumPy's leggauss, the rules on polynomials they integrate exactly, Phi,
  * its tails and its quantiles against mpmath at 40 digits, the exact
- * integrals of Part 2 against mpmath and Python, the tail of Student's t
+ * integrals of Exercise 1 against mpmath and Python, the tail of Student's t
  * and Kolmogorov's law against SciPy 1.17.1, the generators against their
  * reference C code (Homework #4) and against an independent Python
  * implementation of the streams of this page, and the exact fractions
@@ -2510,17 +3162,26 @@ export const CHECK_VECTORS = Object.freeze([
   { group: 'normal', name: 'Alarm threshold for P(Z > k) = 10^-6 (mpmath)', expected: 4.753424308822899, compute: () => alarmThreshold(1e-6).k },
   { group: 'normal', name: 'Table of the normal at z = 1.00, Simpson step by step (mpmath)', expected: 0.8413447460685429, compute: () => zTable().table[10].cells[0].value },
   { group: 'normal', name: 'The reference Phi(1.96), incomplete gamma (mpmath)', expected: 0.9750021048517796, compute: () => normalCdf(1.96) },
-  { group: 'part2', name: 'Ci(1), the cosine integral (mpmath)', expected: 0.33740392290096816, compute: () => cosineIntegral(1) },
-  { group: 'part2', name: 'Integral of sin(1/x) over (0, 1], sin(1) - Ci(1) (mpmath)', expected: 0.5040670619069284, compute: () => FUNCTION_DEFS.oscillating.exact },
-  { group: 'part2', name: 'Integral of the bell over [-3, 3] (mpmath)', expected: 0.9973002039367398, compute: () => FUNCTION_DEFS.bell.exact },
-  { group: 'part2', name: 'Traffic: the integral of the day, closed form (mpmath quad)', expected: 4706.179234345086, compute: () => FUNCTION_DEFS.traffic.exact },
-  { group: 'part2', name: 'Lebesgue on the step function with the levels 0.5, 1, ..., 3: exact', expected: 1.675, compute: () => lebesgueSums(stepFunction, 0, 1, 5).lower },
-  { group: 'part2', name: 'Heavy tails: P(X > 3), Student t with 3 df at 3 sqrt(3) (SciPy t.sf)', expected: 0.006923416494429522, compute: () => heavySf(3) },
-  { group: 'part2', name: 'Kolmogorov: P(K > 1.3580986393225507) (SciPy kolmogi)', expected: 0.05, compute: () => kolmogorovSf(1.3580986393225507) },
-  { group: 'part2', name: 'Parser: 2x^2 - 3(x + 1) at x = 2', expected: -1, compute: () => parseFormula('2x^2 - 3(x + 1)').f(2) },
-  { group: 'part2', name: 'Parser: |x - 1| + sqrt(4) at x = -1', expected: 4, compute: () => parseFormula('|x - 1| + sqrt(4)').f(-1) },
-  { group: 'part2', name: 'Exact fraction of 0.1 (Python fractions)', expected: '3602879701896397/2^55', compute: () => { const r = exactFraction(0.1); return `${r.numerator}/2^${r.power}`; } },
-  { group: 'part2', name: 'Exact fraction of pi/4 (Python fractions)', expected: '884279719003555/2^50', compute: () => { const r = exactFraction(Math.PI / 4); return `${r.numerator}/2^${r.power}`; } },
+  { group: 'integrals', name: 'Ci(1), the cosine integral (mpmath)', expected: 0.33740392290096816, compute: () => cosineIntegral(1) },
+  { group: 'integrals', name: 'Integral of sin(1/x) over (0, 1], sin(1) - Ci(1) (mpmath)', expected: 0.5040670619069284, compute: () => FUNCTION_DEFS.oscillating.exact },
+  { group: 'integrals', name: 'Integral of sin(x)/x over [0, pi], Si(pi), the sine integral (mpmath)', expected: 1.8519370519824663, compute: () => FUNCTION_DEFS.sinc.exact },
+  { group: 'integrals', name: 'Traffic: the integral of the day, closed form (mpmath quad)', expected: 4706.179234345086, compute: () => FUNCTION_DEFS.traffic.exact },
+  { group: 'integrals', name: 'Lebesgue on the jump 1-3 with the levels 1, 1.5, ..., 3: the lower sum is exact', expected: 2, compute: () => lebesgueSums(jump, 0, 1, 4).lower },
+  { group: 'integrals', name: 'Thomae: the left sum with n = 1000, (1/n^2) sum of gcd(i, n) (Python, exact)', expected: 0.0085, compute: () => pathologicalStudy([1000]).thomae[0].rational },
+  { group: 'integrals', name: 'Farey: the fractions of [0, 1] with denominator up to 100 (Python)', expected: 3045, compute: () => fareyLength(100) },
+  { group: 'integrals', name: 'Heavy tails: P(X > 3), Student t with 3 df at 3 sqrt(3) (SciPy t.sf)', expected: 0.006923416494429522, compute: () => heavySf(3) },
+  { group: 'integrals', name: 'Kolmogorov: P(K > 1.3580986393225507) (SciPy kolmogi)', expected: 0.05, compute: () => kolmogorovSf(1.3580986393225507) },
+  { group: 'integrals', name: 'Parser: 2x^2 - 3(x + 1) at x = 2', expected: -1, compute: () => parseFormula('2x^2 - 3(x + 1)').f(2) },
+  { group: 'integrals', name: 'Parser: |x - 1| + sqrt(4) at x = -1', expected: 4, compute: () => parseFormula('|x - 1| + sqrt(4)').f(-1) },
+  { group: 'integrals', name: 'Exact fraction of 0.1 (Python fractions)', expected: '3602879701896397/2^55', compute: () => { const r = exactFraction(0.1); return `${r.numerator}/2^${r.power}`; } },
+  { group: 'integrals', name: 'Exact fraction of pi/4 (Python fractions)', expected: '884279719003555/2^50', compute: () => { const r = exactFraction(Math.PI / 4); return `${r.numerator}/2^${r.power}`; } },
+  { group: 'cdf', name: 'The series of the notes: Phi(1) (mpmath)', expected: 0.8413447460685429, compute: () => cdfAlternating(1).value },
+  { group: 'cdf', name: 'The positive series: Phi(1.96) (mpmath)', expected: 0.9750021048517796, compute: () => cdfPositive(1.96).value },
+  { group: 'cdf', name: 'The method of the page: Phi(-2), continued fraction (mpmath)', expected: 0.02275013194817921, compute: () => cdfOurs(-2) },
+  { group: 'cdf', name: 'The method of the page: Phi(-37) (mpmath)', expected: 5.725571222524577e-300, compute: () => cdfOurs(-37) },
+  { group: 'cdf', name: 'Abramowitz and Stegun 7.1.26: largest error on [-8, 8] within 7.5e-8, half the bound of erf', expected: 'yes', compute: () => (accuracyOf(cdfAS).absolute <= ERF_AS.bound / 2 ? 'yes' : 'no') },
+  { group: 'cdf', name: 'Zelen and Severo 26.2.17: largest error on [-8, 8] within 7.5e-8', expected: 'yes', compute: () => (accuracyOf(cdfZS).absolute <= CDF_ZS.bound ? 'yes' : 'no') },
+  { group: 'cdf', name: 'NIST table: cells that agree with the method of the page (z = 1.36 is misprinted)', expected: 409, compute: () => nistComparison().agree },
   { group: 'generator', name: 'xoshiro128** from (1, 2, 3, 4)', expected: '11520 0 5927040 70819200 2031721883 1637235492', compute: () => { const g = xoshiro128ss(1, 2, 3, 4); return Array.from({ length: 6 }, g).join(' '); } },
   { group: 'generator', name: 'SplitMix64 from 0', expected: '16294208416658607535 7960286522194355700 487617019471545679', compute: () => { const g = splitMix64(0); return Array.from({ length: 3 }, g).join(' '); } },
   { group: 'generator', name: 'Normal stream, seed 2026 (independent Python code)', expected: '1441997221 504457382 1212262897 368519188', compute: () => { const g = generator(2026, 'normal', 0); return Array.from({ length: 4 }, g).join(' '); } },
@@ -2570,7 +3231,7 @@ export const TEST_LABELS = Object.freeze({
 export function runCli(argv, print = console.log) {
   const usage = () => {
     print('usage: node homework5.js [--z 1.96] [--mu 0] [--sigma 1] [--rule left|midpoint|trapezoid|simpson|gauss] [--n 16]');
-    print('       [--function square|bell|steps|oscillating|unbounded|traffic] [--formula "x*sin(1/x)" --a 0 --b 1]');
+    print(`       [--function ${FUNCTIONS.join('|')}] [--formula "x*sin(1/x)" --a 0 --b 1]`);
     print(`       [--seed 2026 | --random-seed] [--sample ${DEFAULT_SAMPLE}] [--points ${DEFAULT_POINTS}] [--reps ${DEFAULT_REPS}]`);
     print(`       n from 1 to 100000 (Simpson even, Gauss at most ${GAUSS_MAX}); sigma > 0; sample from ${LIMITS.sample[0]} to ${LIMITS.sample[1]}, points from ${LIMITS.points[0]} to ${LIMITS.points[1]}, reps from ${LIMITS.reps[0]} to ${LIMITS.reps[1]}.`);
     return 1;
@@ -2627,9 +3288,80 @@ export function runCli(argv, print = console.log) {
   failed.forEach((r) => print(`  FAILED ${r.name}: expected ${r.expected}, got ${r.actual}`));
   print('');
 
-  // --- Part 1
+  const s = explore(options);
+  const ord = (v) => (Number.isFinite(v) ? v.toFixed(2) : '-');
+
+  // --- Exercise 1
+  print('EXERCISE 1 - Riemann and Lebesgue integration.');
+  let custom = null;
+  if (formula !== null) {
+    custom = customFunction(formula, a, b);
+    if (!custom.ok) {
+      print(`  The formula "${formula}" cannot be used (${custom.error}${custom.at !== undefined ? ` at ${custom.at}` : ''}).`);
+      return 1;
+    }
+  }
+  const keys = custom ? [CUSTOM] : only ? [only] : FUNCTIONS;
+  const studies = {};
+  for (const key of keys) {
+    const spec = functionOf(key, custom);
+    const st = key === CUSTOM ? comparisonStudy(spec) : s.compare[key];
+    studies[key] = st;
+    const how = { exact: 'exact', adaptive: 'adaptive Simpson', composite: `composite Gauss +- ${sci(st.uncertainty)}` }[st.referenceMethod];
+    print(`  ${key === CUSTOM ? `f(x) = ${spec.formula}` : `${key}: ${spec.formula}`} on [${Number(spec.a.toPrecision(12))}, ${Number(spec.b.toPrecision(12))}], ${how} ${st.reference.toPrecision(12)}${Number.isFinite(spec.cap) ? `, values cut at ${spec.cap}` : ''}`);
+    for (const row of st.rows.filter((_, i) => i % 2 === 1)) {
+      const r = row.riemann;
+      const l = row.lebesgue;
+      print(`    n = K = ${pad(row.n, 3)}  Riemann left ${fixed(r.left, 6)}, mid ${fixed(r.midpoint, 6)}, lower ${fixed(r.lower, 6)}, upper ${fixed(r.upper, 6)} | Lebesgue lower ${fixed(l.lower, 6)}, upper ${fixed(l.upper, 6)}, mid ${fixed(l.midpoint, 6)}`);
+    }
+    print(`    measured orders of the midpoint sums, n = K = ${COMPARE_N[0]} to ${COMPARE_N[COMPARE_N.length - 1]}: Riemann ${ord(st.orders.riemann)}, Lebesgue ${ord(st.orders.lebesgue)}`);
+  }
+  print('');
+  const top = COMPARE_N[COMPARE_N.length - 1];
+  print(`Results side by side, ${top} strips and ${top} levels, midpoints:`);
+  print(`  ${'function'.padEnd(12)} ${'integral'.padStart(18)} ${'Riemann'.padStart(18)} ${'Lebesgue'.padStart(18)} ${'error R'.padStart(9)} ${'error L'.padStart(9)}`);
+  for (const key of keys) {
+    const last = studies[key].rows[studies[key].rows.length - 1];
+    print(`  ${key.padEnd(12)} ${studies[key].reference.toPrecision(12).padStart(18)} ${last.riemann.midpoint.toPrecision(12).padStart(18)} ${last.lebesgue.midpoint.toPrecision(12).padStart(18)} ${sci(last.errors.riemann).padStart(9)} ${sci(last.errors.lebesgue).padStart(9)}`);
+  }
+  print('');
+  if (!custom) {
+    print(`Cost of reaching a relative error of ${EFFICIENCY_TARGETS.map((t) => t.toExponential(0)).join(' and ')}: values of f and time of one sum (Riemann with midpoints, Lebesgue with its level sets):`);
+    for (const key of keys) {
+      const e = s.efficiency[key];
+      const cell = (hit) => (hit ? `n = ${pad(hit.n, 3)}, ${pad(hit.evaluations, 7)} values, ${hit.ms.toFixed(3)} ms` : 'not reached with 729');
+      for (const t of e.targets) print(`  ${key.padEnd(12)} ${t.target.toExponential(0)}  Riemann ${cell(t.riemann && t.riemann.riemann ? { n: t.riemann.n, ...t.riemann.riemann } : null).padEnd(42)} Lebesgue ${cell(t.lebesgue && t.lebesgue.lebesgue ? { n: t.lebesgue.n, ...t.lebesgue.lebesgue } : null)}`);
+    }
+    print('');
+  }
+  const pat = pathologicalStudy();
+  print("Dirichlet's function (1 on the rationals, 0 elsewhere), with exact fractions: for every n the rational tags give 1, the irrational ones 0, lower sums 0, upper sums 1, so there is no Riemann integral; the level sets are the rationals, a countable set of measure 0, so the Lebesgue integral is 0. On doubles every number is a fraction: the left sums give 1.");
+  print("Thomae's function (1/q at p/q, 0 elsewhere):");
+  print(`  ${'n'.padStart(6)}  ${'rational tags'.padStart(14)}  ${'irrational'.padStart(10)}  ${'lower'.padStart(6)}  ${'upper'.padStart(10)}  ${'on doubles'.padStart(10)}`);
+  for (const r of pat.thomae) print(`  ${pad(r.n, 6)}  ${r.rational.toPrecision(6).padStart(14)}  ${pad(0, 10)}  ${pad(0, 6)}  ${r.upper.toPrecision(6).padStart(10)}  ${r.doubles.toPrecision(6).padStart(10)}`);
+  print(`  upper sums fall with order ${ord(pat.upperOrder)}: Riemann integral 0. Level sets {f >= 1/Q}: ${pat.farey.map((r) => `Q = ${r.Q}: ${r.points} points`).join(', ')}, finite, of measure 0: Lebesgue integral 0.`);
+  print('');
+  const tr = trafficReport();
+  print(`The traffic of the day: ${tr.total.toFixed(1)} Mb/s x hours = ${tr.gigabytes.toFixed(0)} GB (Riemann, minute by minute: ${tr.riemann.toFixed(1)}); the attack is ${(100 * tr.attackShare).toFixed(1)}% of it. Hours above each threshold (Lebesgue):`);
+  print(`  ${tr.rows.map((r) => `${r.y} Mb/s: ${r.hours.toFixed(3)} h`).join(', ')}`);
+  print('');
+  print(`Monte Carlo: ${s.params.reps} estimates of ${s.params.points} points for every function, seed ${s.params.seed} (all the experiments: ${seconds(s.simMs)}):`);
+  for (const key of FUNCTIONS) {
+    const m = s.mc[key];
+    print(`  ${key.padEnd(12)} exact ${m.exact.toPrecision(8).padStart(12)}  mean ${m.mean.toPrecision(8).padStart(12)}  sd ${sci(m.sd).padStart(9)}  coverage ${(100 * m.coverage).toFixed(1)}%`);
+  }
+  print('');
+
+  // --- Exercise 2
+  print('EXERCISE 2 - The normal CDF.');
+  print("Liouville: R' - x R = 1 would need a rational R; its solutions are S + C e^(x^2/2), with S(x) = (Phi(x) - 1/2)/phi(x):");
+  for (const r of liouvilleRows()) print(`  x = ${pad(r.x, 2)}  S(x) = ${r.S.toPrecision(10).padStart(16)}  S/e^(x^2/2) = ${r.ratio.toFixed(6)}  apparent degree ${r.degree.toFixed(2)}`);
+  print(`  S/e^(x^2/2) tends to sqrt(pi/2) = ${Math.sqrt(Math.PI / 2).toFixed(6)} and the degree keeps growing: no rational function does that, so Phi has no elementary formula.`);
+  print('erf: P(|Z| < k) = erf(k/sqrt 2) = 1 - 2 Phi(-k):');
+  for (const r of empiricalRuleRows()) print(`  k = ${r.k}  method of the page ${r.value.toPrecision(16)}  mpmath ${r.reference.toPrecision(16)}  from a table of 4 decimals ${r.rounded.toFixed(4)}`);
+  print('');
   const x = mu + sigma * z;
-  print(`PART 1 - The normal CDF by numerical integration. X ~ N(${mu}, ${sigma}^2), x = ${Number(x.toPrecision(12))}, z = (x - mu)/sigma = ${z}.`);
+  print(`Numerical integration: X ~ N(${mu}, ${sigma}^2), x = ${Number(x.toPrecision(12))}, z = (x - mu)/sigma = ${z}.`);
   print(`  F(x) = Phi(z), reference (incomplete gamma, no quadrature): ${normalCdf(z).toPrecision(17)}`);
   print(`  ${'rule'.padEnd(10)} ${'n'.padStart(6)}  ${'F(x)'.padStart(20)}  ${'error'.padStart(9)}`);
   for (const r of RULES) {
@@ -2649,6 +3381,25 @@ export function runCli(argv, print = console.log) {
   for (const row of conv.rows) print(`  ${pad(row.n, 6)}  ${RULES.map((r) => (row.errors[r] === null ? '-' : sci(row.errors[r])).padStart(10)).join(' ')}`);
   print(`  measured orders: ${RULES.map((r) => `${r} ${Number.isFinite(conv.orders[r]) ? conv.orders[r].toFixed(2) : '-'}`).join(', ')} (theory 1, 2, 2, 4, exponential)`);
   print(`  values of phi for 10 correct decimals: ${RULES.map((r) => `${r} ${conv.enough[r] ?? '> 16384'}`).join(', ')}`);
+  print('');
+  print('The two series: terms needed, largest term of the alternating one, digits it loses, errors:');
+  print(`  ${'z'.padStart(2)}  ${'notes: terms'.padStart(12)} ${'largest'.padStart(9)} ${'lost'.padStart(5)} ${'error'.padStart(9)}   ${'positive: terms'.padStart(15)} ${'error'.padStart(9)}`);
+  for (const r of seriesRows()) print(`  ${pad(r.z, 2)}  ${pad(r.alternating.terms, 12)} ${sci(r.alternating.largest).padStart(9)} ${r.alternating.lost.toFixed(1).padStart(5)} ${sci(r.alternating.error).padStart(9)}   ${pad(r.positive.terms, 15)} ${sci(r.positive.error).padStart(9)}`);
+  print('');
+  print(`Every method against mpmath (largest absolute error on [-8, 8], largest relative error below the mean down to z = -37), with its cost and its time per call (median of ${TIMING_RUNS} runs, ${Math.round(100 * s.timing.ours.coverage)}% interval):`);
+  print(`  ${'method'.padEnd(12)} ${'absolute'.padStart(9)} ${'relative'.padStart(9)} ${'exp'.padStart(4)} ${'terms'.padStart(6)} ${'ns per call'.padStart(26)}`);
+  for (const key of CDF_METHODS) {
+    const acc = accuracyOf(cdfBy[key]);
+    const t = s.timing[key];
+    print(`  ${key.padEnd(12)} ${sci(acc.absolute).padStart(9)} ${(acc.relative >= 1 ? '>= 1' : sci(acc.relative)).padStart(9)} ${pad(EXP_CALLS[key], 4)} ${pad(termsOf(key), 6)} ${`${t.median.toFixed(0)} [${t.lo.toFixed(0)}, ${t.hi.toFixed(0)}]`.padStart(26)}`);
+  }
+  print('');
+  const nist = nistComparison();
+  print(`The NIST/SEMATECH table (${NIST_URL}): ${nist.agree} of ${nist.total} cells agree with the method of the page rounded to 5 decimals.`);
+  for (const m of nist.mismatches) print(`  z = ${m.z.toFixed(2)}: the table prints ${m.table.toFixed(5)}, the method gives ${m.ours.toFixed(10)}, which rounds to ${m.rounded.toFixed(5)}; mpmath agrees with the method.`);
+  print('At several points, against NIST and mpmath:');
+  print(`  ${'z'.padStart(5)}  ${'NIST'.padStart(7)}  ${'mpmath'.padStart(22)}  ${'method of the page'.padStart(22)}  ${'error'.padStart(9)}`);
+  for (const r of referenceRows()) print(`  ${String(r.z).padStart(5)}  ${(r.nist === null ? '-' : r.nist.toFixed(5)).padStart(7)}  ${r.mpmath.toPrecision(16).padStart(22)}  ${r.value.toPrecision(16).padStart(22)}  ${sci(r.error).padStart(9)}`);
   print('');
   const zt = zTable();
   print(`The table of the standard normal, Phi(z), z = row + column (one Simpson parabola per step of 0.01, ${zt.evaluations} values of phi; largest error ${sci(zt.maxError)} at z = ${zt.at.toFixed(2)}):`);
@@ -2671,41 +3422,6 @@ export function runCli(argv, print = console.log) {
   }
   print('');
 
-  // --- Part 2
-  print('PART 2 - Riemann and Lebesgue.');
-  let custom = null;
-  if (formula !== null) {
-    custom = customFunction(formula, a, b);
-    if (!custom.ok) {
-      print(`  The formula "${formula}" cannot be used (${custom.error}${custom.at !== undefined ? ` at ${custom.at}` : ''}).`);
-      return 1;
-    }
-  }
-  const keys = custom ? [CUSTOM] : only ? [only] : FUNCTIONS;
-  for (const key of keys) {
-    const spec = functionOf(key, custom);
-    const ref = spec.exact === null ? referenceIntegral(spec.f, spec.a, spec.b) : { value: spec.exact, method: 'exact' };
-    const how = { exact: 'exact', adaptive: 'adaptive Simpson', composite: `composite Gauss +- ${sci(ref.uncertainty)}` }[ref.method];
-    print(`  ${key === CUSTOM ? `f(x) = ${spec.formula}` : `${key}: ${spec.formula}`} on [${spec.a}, ${spec.b}], ${how} ${ref.value.toPrecision(12)}${Number.isFinite(spec.cap) ? `, values cut at ${spec.cap}` : ''}`);
-    for (const k of [10, 100, 1000]) {
-      const r = riemannSums(spec.f, spec.a, spec.b, k);
-      const l = lebesgueSums(spec.f, spec.a, spec.b, k, { cap: spec.cap });
-      print(`    n = K = ${pad(k, 4)}  Riemann left ${fixed(r.left, 6)}, mid ${fixed(r.midpoint, 6)}, lower ${fixed(r.lower, 6)}, upper ${fixed(r.upper, 6)} | Lebesgue lower ${fixed(l.lower, 6)}, upper ${fixed(l.upper, 6)}`);
-    }
-  }
-  print('');
-  const tr = trafficReport();
-  print(`The traffic of the day: ${tr.total.toFixed(1)} Mb/s x hours = ${tr.gigabytes.toFixed(0)} GB (Riemann, minute by minute: ${tr.riemann.toFixed(1)}); the attack is ${(100 * tr.attackShare).toFixed(1)}% of it. Hours above each threshold (Lebesgue):`);
-  print(`  ${tr.rows.map((r) => `${r.y} Mb/s: ${r.hours.toFixed(3)} h`).join(', ')}`);
-  print('');
-
-  const s = explore(options);
-  print(`Monte Carlo: ${s.params.reps} estimates of ${s.params.points} points for every function, seed ${s.params.seed} (${seconds(s.simMs)}):`);
-  for (const key of FUNCTIONS) {
-    const m = s.mc[key];
-    print(`  ${key.padEnd(12)} exact ${m.exact.toPrecision(8).padStart(12)}  mean ${m.mean.toPrecision(8).padStart(12)}  sd ${sci(m.sd).padStart(9)}  coverage ${(100 * m.coverage).toFixed(1)}%`);
-  }
-  print('');
   print(`Simulated data, ${s.params.sample} values: Box-Muller D = ${s.normal.ks.D.toFixed(4)}, share above 3 sd ${(s.normal.tail.rate * 100).toFixed(3)}%; heavy tails D = ${s.heavy.ks.D.toFixed(4)}, share above 3 sd ${(s.heavy.tail.rate * 100).toFixed(3)}% (normal law ${(100 * tailDirect(ALARM_K)).toFixed(3)}%)`);
   print('');
   const all = Object.entries(statisticalTests(s)).flatMap(([group, list]) => list.map(([k, test]) => ({ group, key: k, test })));

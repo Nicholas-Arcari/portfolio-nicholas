@@ -1225,6 +1225,33 @@ canvas.drag {
   font-weight: 700;
 }
 
+/* le tabelle nuove dei due esercizi: numeri lunghi, un corpo piu' piccolo e cifre incolonnate */
+.table.results,
+.table.efficiency,
+.table.reference,
+.table.methods,
+.table.series {
+  font-size: 0.85rem;
+}
+
+.table.results td,
+.table.reference td,
+.table.methods td,
+.table.thomae td,
+.table.liouville td,
+.table.erf td {
+  font-variant-numeric: tabular-nums;
+}
+
+/* la cella sbagliata della tavola del NIST, e il metodo della pagina fra gli altri */
+.table tr.misprint > * {
+  background: var(--accent-soft);
+}
+
+.table tr.ours > * {
+  font-weight: 700;
+}
+
 /* nel confronto, il metodo che vince a ogni n */
 .table td.win {
   color: var(--ok);

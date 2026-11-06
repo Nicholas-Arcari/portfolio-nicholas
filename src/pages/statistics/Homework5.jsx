@@ -1,13 +1,14 @@
 // src/pages/statistics/Homework5.jsx
-// Homework #5 di Statistics, in due parti con un solo indirizzo. La Part 1
-// calcola la funzione di ripartizione della normale per integrazione
-// numerica, con cinque regole e tre modi di aggirare il -infinito, e la usa:
-// la tavola dei libri, i quantili trovati all'indietro, le code lontane e le
-// soglie d'allarme, la prova contro dati simulati. La Part 2 calcola gli
-// integrali di Riemann e di Lebesgue di sei funzioni e di una scritta da chi
-// legge, li confronta, li applica al traffico di un server e chiude con Monte
-// Carlo e con la funzione di Dirichlet; poi i test, il contesto storico e le
-// conclusioni.
+// Homework #5 di Statistics, in due esercizi con un solo indirizzo.
+// L'Esercizio 1 integra le funzioni della consegna (e due della pagina, piu'
+// quella scritta da chi legge) alla Riemann e alla Lebesgue, ne mette i
+// risultati fianco a fianco, misura convergenza e costo, calcola Dirichlet e
+// Thomae con le frazioni esatte, e chiude con il traffico di un server e
+// Monte Carlo. L'Esercizio 2 calcola la funzione di ripartizione della
+// normale: Liouville, erf, integrazione numerica, serie, le formule dei
+// manuali, un metodo efficiente, il confronto con il NIST e con mpmath, poi
+// la tavola, i quantili, le soglie d'allarme e la prova contro dati
+// simulati; poi verifiche, test, contesto storico e conclusioni.
 //
 // Qui c'e' solo la pagina React. Le regole, gli integrali, i generatori, la
 // statistica e i grafici stanno in hw5/homework5.js, i testi in hw5/texts.js
@@ -235,7 +236,12 @@ const Assignment = React.memo(function Assignment({ text }) {
         <summary>{text.assignment.originalTitle}</summary>
         <p className="hw1-note">{text.assignment.originalNote}</p>
         <blockquote lang="en">
-          {originalAssignment().map((block, i) => <p key={i}>{block.text}</p>)}
+          {originalAssignment().map((block, i) => {
+            if (block.type === 'title') return <p key={i}><strong>{block.text}</strong></p>;
+            if (block.type === 'list') return <ul key={i}>{block.items.map((item) => <li key={item}>{item}</li>)}</ul>;
+            if (block.type === 'link') return <p key={i}><a href={block.href} target="_blank" rel="noopener noreferrer">{block.text}</a></p>;
+            return <p key={i}>{block.text}</p>;
+          })}
         </blockquote>
       </details>
     </section>
@@ -627,7 +633,7 @@ const Verify = React.memo(function Verify({ text }) {
   const V = text.checks;
   const rows = useMemo(() => hw.verifyAll(), []);
   const ok = rows.filter((r) => r.ok).length;
-  const groups = ['quadrature', 'normal', 'part2', 'generator'].map((group) => ({ group, rows: rows.filter((r) => r.group === group) }));
+  const groups = ['quadrature', 'normal', 'cdf', 'integrals', 'generator'].map((group) => ({ group, rows: rows.filter((r) => r.group === group) }));
   return (
     <>
       <p>{V.intro}</p>
@@ -877,12 +883,12 @@ const TrySlices = ({ spec, reference, text, palette }) => {
 
 // --- 2.5 Il confronto -------------------------------------------------------------------------------
 
-const Compare = ({ s, job, spec, fnKey, text, palette }) => {
+const Compare = ({ s, job, fnKey, customStudy, text, palette }) => {
   const C = text.compare;
   const F = text.fmt;
   const name = text.functionNames[fnKey];
-  // le sei funzioni arrivano dal worker; quella scritta da chi legge si confronta qui
-  const study = useMemo(() => (fnKey === hw.CUSTOM ? hw.comparisonStudy(spec) : s ? s.compare[fnKey] : null), [fnKey, spec, s]);
+  // le nove funzioni arrivano dal worker; quella scritta da chi legge si confronta nella pagina
+  const study = fnKey === hw.CUSTOM ? customStudy : s ? s.compare[fnKey] : null;
   const data = useMemo(() => (study ? view.compareChart(study, F.decimal) : null), [study, F]);
   const tip = useMemo(() => (study ? view.tips.compare(study, text.tips) : null), [study, text]);
   const summary = useMemo(() => (s ? view.summaryRows(s) : null), [s]);
@@ -938,16 +944,18 @@ const Compare = ({ s, job, spec, fnKey, text, palette }) => {
           <p className="hw1-table-title"><strong>{C.summaryTitle}</strong></p>
           <table className="hw1-table hw1-discussion-table hw5-summary">
             <thead>
-              <tr><th>{C.summaryCols.name}</th><th>{C.summaryCols.riemann8}</th><th>{C.summaryCols.lebesgue8}</th><th>{C.summaryCols.riemann1024}</th><th>{C.summaryCols.lebesgue1024}</th><th>{C.summaryCols.winner}</th></tr>
+              <tr><th>{C.summaryCols.name}</th><th>{C.summaryCols.riemannSmall}</th><th>{C.summaryCols.lebesgueSmall}</th><th>{C.summaryCols.riemannLarge}</th><th>{C.summaryCols.lebesgueLarge}</th><th>{C.summaryCols.orderRiemann}</th><th>{C.summaryCols.orderLebesgue}</th><th>{C.summaryCols.winner}</th></tr>
             </thead>
             <tbody>
               {summary.map((r) => (
                 <tr key={r.key}>
                   <th data-label={C.summaryCols.name}>{text.functionNames[r.key]}</th>
-                  <td data-label={C.summaryCols.riemann8}>{F.err(r.small.riemann)}</td>
-                  <td data-label={C.summaryCols.lebesgue8}>{F.err(r.small.lebesgue)}</td>
-                  <td data-label={C.summaryCols.riemann1024}>{F.err(r.large.riemann)}</td>
-                  <td data-label={C.summaryCols.lebesgue1024}>{F.err(r.large.lebesgue)}</td>
+                  <td data-label={C.summaryCols.riemannSmall}>{F.err(r.small.riemann)}</td>
+                  <td data-label={C.summaryCols.lebesgueSmall}>{F.err(r.small.lebesgue)}</td>
+                  <td data-label={C.summaryCols.riemannLarge}>{F.err(r.large.riemann)}</td>
+                  <td data-label={C.summaryCols.lebesgueLarge}>{F.err(r.large.lebesgue)}</td>
+                  <td data-label={C.summaryCols.orderRiemann}>{C.orderCell(r.orders.riemann)}</td>
+                  <td data-label={C.summaryCols.orderLebesgue}>{C.orderCell(r.orders.lebesgue)}</td>
                   <td data-label={C.summaryCols.winner}>{r.winner === 'lebesgue' ? 'Lebesgue' : 'Riemann'}</td>
                 </tr>
               ))}
@@ -1087,30 +1095,345 @@ const TryMc = ({ seed, text, palette }) => {
   );
 };
 
-const Dirichlet = React.memo(function Dirichlet({ text }) {
-  const D = text.dirichlet;
-  const rows = useMemo(() => view.DIRICHLET_NUMBERS.map((d) => ({ ...d, fraction: hw.exactFraction(d.value) })), []);
+// --- 1.5 I risultati fianco a fianco ---------------------------------------------------------
+
+const Results = ({ s, job, customStudy, text }) => {
+  const R = text.results;
+  const rows = useMemo(() => view.resultsRows(s, customStudy, view.pathological()), [s, customStudy]);
   return (
     <>
-      <Paras list={D.intro} />
+      <Paras list={R.intro} />
+      {!s && <Pending text={text} result={job} />}
+      <p className="hw1-table-title"><strong>{R.tableTitle}</strong></p>
+      <div className="hw1-scroll">
+        <table className="hw1-table hw1-compact hw5-results">
+          <thead>
+            <tr><th>{R.cols.name}</th><th>{R.cols.integral}</th><th>{R.cols.riemann}</th><th>{R.cols.lebesgue}</th><th>{R.cols.riemannError}</th><th>{R.cols.lebesgueError}</th><th>{R.cols.verdict}</th></tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.key}>
+                <th>{text.functionNames[r.key]}</th>
+                <td>{R.integralCell(r)}</td>
+                <td>{R.riemannCell(r)}</td>
+                <td>{R.lebesgueCell(r)}</td>
+                <td>{R.errorCell(r.errors.riemann)}</td>
+                <td>{R.errorCell(r.errors.lebesgue)}</td>
+                <td>{R.verdicts[r.verdict]}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {s && <Paras list={R.after(rows)} />}
+    </>
+  );
+};
+
+// --- 1.7 Quanto costano --------------------------------------------------------------------
+
+const Efficiency = ({ s, job, spec, fnKey, customStudy, text, palette }) => {
+  const E = text.efficiency;
+  const F = text.fmt;
+  // le nove funzioni arrivano dal worker; quella scritta da chi legge si misura qui
+  const study = useMemo(() => {
+    if (fnKey === hw.CUSTOM) return customStudy ? hw.efficiencyStudy(spec, customStudy.reference) : null;
+    return s ? s.efficiency[fnKey] : null;
+  }, [fnKey, spec, customStudy, s]);
+  const data = useMemo(() => (study ? view.efficiencyChart(study, F.decimal) : null), [study, F]);
+  const rows = useMemo(() => (s ? view.efficiencyRows(s) : null), [s]);
+  const facts = useMemo(() => (s ? view.efficiencyFacts(s) : null), [s]);
+  return (
+    <>
+      <Paras list={E.intro} />
+      {!study ? (
+        <Pending text={text} result={job} />
+      ) : (
+        <div className="hw1-charts">
+          <Figure title={E.chartTitle(text.functionNames[fnKey])} draw={hw.drawLineChart} data={data} palette={palette} wide legend={[{ label: E.legend[0], color: 1 }, { label: E.legend[1], color: 0 }]} />
+        </div>
+      )}
+      {rows && (
+        <>
+          <p className="hw1-table-title"><strong>{E.tableTitle}</strong></p>
+          <div className="hw1-scroll">
+            <table className="hw1-table hw1-compact hw5-efficiency">
+              <thead>
+                <tr><th>{E.cols.name}</th><th>{E.cols.target}</th><th>{E.cols.riemann}</th><th>{E.cols.lebesgue}</th></tr>
+              </thead>
+              <tbody>
+                {rows.flatMap((r) =>
+                  r.targets.map((t, i) => (
+                    <tr key={`${r.key}-${i}`}>
+                      {i === 0 && <th rowSpan={r.targets.length}>{text.functionNames[r.key]}</th>}
+                      <td>{F.pow(Math.round(Math.log10(t.target)))}</td>
+                      <td>{E.cell(t.riemann, 'riemann')}</td>
+                      <td>{E.cell(t.lebesgue, 'lebesgue')}</td>
+                    </tr>
+                  )),
+                )}
+              </tbody>
+            </table>
+          </div>
+          <Paras list={E.after(facts)} />
+        </>
+      )}
+    </>
+  );
+};
+
+// --- 1.8 Dirichlet e Thomae -----------------------------------------------------------------
+
+const Pathological = React.memo(function Pathological({ text, palette }) {
+  const P = text.pathological;
+  const F = text.fmt;
+  const numbers = useMemo(() => view.DIRICHLET_NUMBERS.map((d) => ({ ...d, fraction: hw.exactFraction(d.value) })), []);
+  const study = useMemo(() => view.pathological(), []);
+  const data = useMemo(() => view.thomaeChart(F.decimal), [F]);
+  const upper = useMemo(() => view.thomaeUpper(), []);
+  return (
+    <>
+      <Paras list={P.intro} />
       <table className="hw1-table hw1-discussion-table hw5-dirichlet">
         <thead>
-          <tr><th>{D.cols.number}</th><th>{D.cols.fraction}</th><th>{D.cols.value}</th></tr>
+          <tr><th>{P.cols.number}</th><th>{P.cols.fraction}</th><th>{P.cols.value}</th></tr>
         </thead>
         <tbody>
-          {rows.map((r) => (
+          {numbers.map((r) => (
             <tr key={r.key}>
-              <th data-label={D.cols.number}>{D.numbers[r.key]}</th>
-              <td data-label={D.cols.fraction}><code>{`${r.fraction.numerator}/2^${r.fraction.power}`}</code></td>
-              <td data-label={D.cols.value}>1</td>
+              <th data-label={P.cols.number}>{P.numbers[r.key]}</th>
+              <td data-label={P.cols.fraction}><code>{`${r.fraction.numerator}/2^${r.fraction.power}`}</code></td>
+              <td data-label={P.cols.value}>1</td>
             </tr>
           ))}
         </tbody>
       </table>
-      <p>{D.after}</p>
+      <p>{P.thomaeIntro}</p>
+      <div className="hw1-charts">
+        <Figure title={P.chartTitle(upper)} draw={hw.drawHistogram} data={data} palette={palette} wide />
+      </div>
+      <p className="hw1-table-title"><strong>{P.tableTitle}</strong></p>
+      <div className="hw1-scroll">
+        <table className="hw1-table hw1-compact hw5-thomae">
+          <thead>
+            <tr><th>{P.thomaeCols.n}</th><th>{P.thomaeCols.rational}</th><th>{P.thomaeCols.irrational}</th><th>{P.thomaeCols.lower}</th><th>{P.thomaeCols.upper}</th><th>{P.thomaeCols.doubles}</th></tr>
+          </thead>
+          <tbody>
+            {study.thomae.map((r) => (
+              <tr key={r.n}>
+                <th>{F.int(r.n)}</th>
+                <td>{F.sig(r.rational, 4)}</td>
+                <td>{F.int(r.irrational)}</td>
+                <td>{F.int(r.lower)}</td>
+                <td>{F.sig(r.upper, 4)}</td>
+                <td>{F.sig(r.doubles, 4)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <Paras list={P.after(study)} />
     </>
   );
 });
+
+// --- 2.1 Liouville e 2.2 erf -----------------------------------------------------------------
+
+const Liouville = React.memo(function Liouville({ text }) {
+  const L = text.liouville;
+  const F = text.fmt;
+  const rows = useMemo(() => hw.liouvilleRows(), []);
+  return (
+    <>
+      <Paras list={L.intro} />
+      <Formulas>{L.formulas}</Formulas>
+      <p className="hw1-table-title"><strong>{L.tableTitle}</strong></p>
+      <div className="hw1-scroll">
+        <table className="hw1-table hw1-compact hw5-liouville">
+          <thead>
+            <tr><th>{L.cols.x}</th><th>{L.cols.S}</th><th>{L.cols.ratio}</th><th>{L.cols.degree}</th></tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.x}><th>{F.int(r.x)}</th><td>{r.S >= 1e5 ? F.sci(r.S, 6) : F.sig(r.S, 7)}</td><td>{F.num(r.ratio, 6)}</td><td>{F.num(r.degree, 2)}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <Paras list={L.after(rows)} />
+    </>
+  );
+});
+
+const Erf = React.memo(function Erf({ text }) {
+  const E = text.erf;
+  const F = text.fmt;
+  const rows = useMemo(() => hw.empiricalRuleRows(), []);
+  return (
+    <>
+      <Paras list={E.intro} />
+      <Formulas>{E.formulas}</Formulas>
+      <p className="hw1-table-title"><strong>{E.tableTitle}</strong></p>
+      <div className="hw1-scroll">
+        <table className="hw1-table hw1-compact hw5-erf">
+          <thead>
+            <tr><th>{E.cols.k}</th><th>{E.cols.value}</th><th>{E.cols.reference}</th><th>{E.cols.rounded}</th></tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.k}><th>{r.k}</th><td>{F.num(r.value, 16)}</td><td>{F.num(r.reference, 16)}</td><td>{F.num(r.rounded, 4)}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <Paras list={E.after(rows)} />
+    </>
+  );
+});
+
+// --- 2.7 - 2.11 Le serie, le approssimazioni, il metodo, il riferimento, il confronto -------------
+
+const Series = React.memo(function Series({ text, palette }) {
+  const S = text.series;
+  const F = text.fmt;
+  const rows = useMemo(() => hw.seriesRows(), []);
+  const [z, setZ] = useState(view.SERIES_CHOICES[2]);
+  const data = useMemo(() => view.seriesChart(z, F.decimal), [z, F]);
+  return (
+    <>
+      <Paras list={S.intro} />
+      <Formulas>{S.formulas}</Formulas>
+      <p className="hw1-table-title"><strong>{S.tableTitle}</strong></p>
+      <div className="hw1-scroll">
+        <table className="hw1-table hw1-compact hw5-series">
+          <thead>
+            <tr><th>{S.cols.z}</th><th>{S.cols.altTerms}</th><th>{S.cols.largest}</th><th>{S.cols.lost}</th><th>{S.cols.altError}</th><th>{S.cols.posTerms}</th><th>{S.cols.posError}</th></tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.z}>
+                <th>{r.z}</th>
+                <td>{r.alternating.terms}</td>
+                <td>{F.sci(r.alternating.largest)}</td>
+                <td>{F.num(r.alternating.lost, 1)}</td>
+                <td>{F.err(r.alternating.error)}</td>
+                <td>{r.positive.terms}</td>
+                <td>{F.err(r.positive.error)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <Choices label={S.chooseLabel} options={view.SERIES_CHOICES.map((v) => [v, F.plain(v)])} value={z} onChange={setZ} />
+      <div className="hw1-charts">
+        <Figure title={S.chartTitle(z)} draw={hw.drawLineChart} data={data} palette={palette} wide legend={[{ label: S.legend[0], color: 1 }, { label: S.legend[1], color: 1, dashed: true }, { label: S.legend[2], color: 0 }]} />
+      </div>
+      <Paras list={S.after(rows)} />
+    </>
+  );
+});
+
+const Approximations = React.memo(function Approximations({ text, palette }) {
+  const A = text.approximations;
+  const F = text.fmt;
+  const data = useMemo(() => view.approximationChart(F.decimal), [F]);
+  const facts = useMemo(() => view.approximationFacts(), []);
+  return (
+    <>
+      <Paras list={A.intro} />
+      <div className="hw1-charts">
+        <Figure title={A.chartTitle} draw={hw.drawLineChart} data={data} palette={palette} wide legend={[{ label: A.legend[0], color: 0 }, { label: A.legend[1], color: 1 }, { label: A.legend[2], color: 6, dashed: true }]} />
+      </div>
+      <Paras list={A.after(facts)} />
+    </>
+  );
+});
+
+const Ours = ({ s, text }) => {
+  const O = text.ours;
+  const facts = useMemo(() => view.methodsFacts(s), [s]);
+  return (
+    <>
+      <Paras list={O.intro(facts)} />
+      <Formulas>{O.formulas}</Formulas>
+      <Paras list={O.after(facts)} />
+    </>
+  );
+};
+
+const Reference = React.memo(function Reference({ text }) {
+  const R = text.reference;
+  const F = text.fmt;
+  const { rows, nist } = useMemo(() => view.referenceFacts(), []);
+  return (
+    <>
+      <Paras list={R.intro} />
+      <p><a href={hw.NIST_URL} target="_blank" rel="noopener noreferrer">{R.link}</a></p>
+      <p className="hw1-table-title"><strong>{R.tableTitle}</strong></p>
+      <div className="hw1-scroll">
+        <table className="hw1-table hw1-compact hw5-reference">
+          <thead>
+            <tr><th>{R.cols.z}</th><th>{R.cols.nist}</th><th>{R.cols.mpmath}</th><th>{R.cols.ours}</th><th>{R.cols.error}</th><th>{R.cols.nistError}</th></tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.z} className={nist.mismatches.some((m) => m.z === r.z) ? 'hw5-misprint' : undefined}>
+                <th>{F.plain(r.z)}</th>
+                <td>{r.nist === null ? '-' : F.num(r.nist, 5)}</td>
+                <td>{F.sig(r.mpmath, 16)}</td>
+                <td>{F.sig(r.value, 16)}</td>
+                <td>{F.err(r.error)}</td>
+                <td>{r.nistError === null ? '-' : F.err(r.nistError)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p>{R.nist(nist)}</p>
+      {nist.mismatches.map((m) => <p key={m.z}>{R.mismatch(m)}</p>)}
+      <Paras list={R.after(rows)} />
+    </>
+  );
+});
+
+const Methods = ({ s, job, text, palette }) => {
+  const M = text.methods;
+  const F = text.fmt;
+  const rows = useMemo(() => view.methodsRows(s), [s]);
+  const data = useMemo(() => view.methodsChart(F.decimal), [F]);
+  const facts = useMemo(() => view.methodsFacts(s), [s]);
+  const legend = useMemo(() => hw.CDF_METHODS.map((key) => ({ label: text.methodNames[key], color: view.METHOD_STYLE[key].colorIndex, dashed: !!view.METHOD_STYLE[key].dashed })), [text]);
+  return (
+    <>
+      <Paras list={M.intro} />
+      <p className="hw1-table-title"><strong>{M.tableTitle}</strong></p>
+      <div className="hw1-scroll">
+        <table className="hw1-table hw1-compact hw5-methods">
+          <thead>
+            <tr><th>{M.cols.method}</th><th>{M.cols.absolute}</th><th>{M.cols.relative}</th><th>{M.cols.exp}</th><th>{M.cols.terms}</th><th>{M.cols.time}</th></tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.key} className={r.key === 'ours' ? 'hw5-ours' : undefined}>
+                <th>{text.methodNames[r.key]}</th>
+                <td>{F.err(r.absolute)}</td>
+                <td>{M.relativeCell(r.relative)}</td>
+                <td>{F.int(r.exp)}</td>
+                <td>{r.terms ? F.int(r.terms) : '-'}</td>
+                <td>{M.timeCell(r.time)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {!s && <Pending text={text} result={job} />}
+      <div className="hw1-charts">
+        <Figure title={M.chartTitle} draw={hw.drawLineChart} data={data} palette={palette} wide legend={legend} />
+      </div>
+      <Paras list={M.after(facts)} />
+    </>
+  );
+};
 
 // --- 3, 4 e 5 --------------------------------------------------------------------------------------------------
 
@@ -1220,7 +1543,7 @@ const Homework5 = () => {
   const waiting = s !== null && !job.error && (view.paramsKey(params) !== key || !job.value);
   const run = { s, job, fields, read, change, restore, waiting, valid: view.allValid(read), badge: view.inputBadge(params, text.data) };
 
-  // --- la funzione della Part 2: una delle sei, o quella scritta da chi legge (l'ultima valida) ---
+  // --- la funzione dell'Esercizio 1: una delle nove, o quella scritta da chi legge (l'ultima valida) ---
   const [fnKey, setFnKey] = useState('square');
   const [custom, setCustom] = useState(view.DEFAULT_CUSTOM);
   const customRead = useMemo(() => view.readCustom(custom), [custom]);
@@ -1228,9 +1551,11 @@ const Homework5 = () => {
   if (customRead.ok && customRead !== validCustom) setValidCustom(customRead);
   const spec = useMemo(() => view.specOf(fnKey, validCustom), [fnKey, validCustom]);
   const reference = useMemo(() => view.referenceOf(spec), [spec]);
+  // il confronto della funzione scritta da chi legge si calcola qui, una volta, per le sezioni 1.5 - 1.7
+  const customStudy = useMemo(() => (fnKey === hw.CUSTOM ? hw.comparisonStudy(spec) : null), [fnKey, spec]);
 
   // i fatti delle conclusioni che non dipendono dalle simulazioni
-  const facts = useMemo(() => ({ ...view.convergenceFacts(hw.convergenceStudy()), tailTotal: view.tailFacts(hw.tailRows()).total }), []);
+  const facts = useMemo(() => ({ ...view.convergenceFacts(hw.convergenceStudy()), tailTotal: view.tailFacts(hw.tailRows()).total, nist: view.referenceFacts().nist }), []);
 
   const toc = useMemo(
     () => ({
@@ -1260,45 +1585,10 @@ const Homework5 = () => {
     <HomeworkShell slug="homework-5" sidebar={sidebar} toc={toc}>
       <Assignment text={text} />
 
-      {/* PART 1: la funzione di ripartizione della normale */}
+      {/* ESERCIZIO 1: Riemann e Lebesgue */}
       <section className="hw1-section hw2 hw3 hw4 hw5">
-        <Title id="hw5-part1" level={0}>{S.part1}</Title>
-        <Paras list={text.part1.intro} />
-
-        <Title id="hw5-area" level={1}>{S.area}</Title>
-        <Area text={text} palette={palette} />
-        <TryArea text={text} palette={palette} />
-
-        <Title id="hw5-rules" level={1}>{S.rules}</Title>
-        <Rules text={text} />
-
-        <Title id="hw5-infinity" level={1}>{S.infinity}</Title>
-        <MinusInfinity text={text} />
-
-        <Title id="hw5-convergence" level={1}>{S.convergence}</Title>
-        <Convergence text={text} palette={palette} />
-
-        <Title id="hw5-table" level={1}>{S.table}</Title>
-        <ZTableSection text={text} />
-
-        <Title id="hw5-quantiles" level={1}>{S.quantiles}</Title>
-        <Quantiles text={text} palette={palette} />
-
-        <Title id="hw5-tails" level={1}>{S.tails}</Title>
-        <Tails text={text} palette={palette} />
-        <TryAlarm text={text} palette={palette} />
-
-        <Title id="hw5-data" level={1}>{S.data}</Title>
-        <DataSection run={run} text={text} palette={palette} />
-
-        <Title id="hw5-checks" level={1}>{S.checks}</Title>
-        <Verify text={text} />
-      </section>
-
-      {/* PART 2: Riemann e Lebesgue */}
-      <section className="hw1-section hw2 hw3 hw4 hw5">
-        <Title id="hw5-part2" level={0}>{S.part2}</Title>
-        <Paras list={text.part2.intro} />
+        <Title id="hw5-exercise1" level={0}>{S.exercise1}</Title>
+        <Paras list={text.exercise1.intro} />
 
         <Title id="hw5-idea" level={1}>{S.idea}</Title>
         <Paras list={text.idea.intro} />
@@ -1314,8 +1604,17 @@ const Homework5 = () => {
         <LebesgueSection spec={spec} reference={reference} fnKey={fnKey} text={text} palette={palette} />
         <TrySlices spec={spec} reference={reference} text={text} palette={palette} />
 
+        <Title id="hw5-results" level={1}>{S.results}</Title>
+        <Results s={s} job={job} customStudy={customStudy} text={text} />
+
         <Title id="hw5-compare" level={1}>{S.compare}</Title>
-        <Compare s={s} job={job} spec={spec} fnKey={fnKey} text={text} palette={palette} />
+        <Compare s={s} job={job} fnKey={fnKey} customStudy={customStudy} text={text} palette={palette} />
+
+        <Title id="hw5-efficiency" level={1}>{S.efficiency}</Title>
+        <Efficiency s={s} job={job} spec={spec} fnKey={fnKey} customStudy={customStudy} text={text} palette={palette} />
+
+        <Title id="hw5-pathological" level={1}>{S.pathological}</Title>
+        <Pathological text={text} palette={palette} />
 
         <Title id="hw5-traffic" level={1}>{S.traffic}</Title>
         <Traffic text={text} palette={palette} />
@@ -1323,9 +1622,64 @@ const Homework5 = () => {
         <Title id="hw5-montecarlo" level={1}>{S.montecarlo}</Title>
         <MonteCarlo run={run} text={text} palette={palette} />
         <TryMc seed={settled.seed} text={text} palette={palette} />
+      </section>
 
-        <Title id="hw5-dirichlet" level={1}>{S.dirichlet}</Title>
-        <Dirichlet text={text} />
+      {/* ESERCIZIO 2: la funzione di ripartizione della normale */}
+      <section className="hw1-section hw2 hw3 hw4 hw5">
+        <Title id="hw5-exercise2" level={0}>{S.exercise2}</Title>
+        <Paras list={text.exercise2.intro} />
+
+        <Title id="hw5-liouville" level={1}>{S.liouville}</Title>
+        <Liouville text={text} />
+
+        <Title id="hw5-erf" level={1}>{S.erf}</Title>
+        <Erf text={text} />
+
+        <Title id="hw5-area" level={1}>{S.area}</Title>
+        <Area text={text} palette={palette} />
+        <TryArea text={text} palette={palette} />
+
+        <Title id="hw5-rules" level={1}>{S.rules}</Title>
+        <Rules text={text} />
+
+        <Title id="hw5-infinity" level={1}>{S.infinity}</Title>
+        <MinusInfinity text={text} />
+
+        <Title id="hw5-convergence" level={1}>{S.convergence}</Title>
+        <Convergence text={text} palette={palette} />
+
+        <Title id="hw5-series" level={1}>{S.series}</Title>
+        <Series text={text} palette={palette} />
+
+        <Title id="hw5-approximations" level={1}>{S.approximations}</Title>
+        <Approximations text={text} palette={palette} />
+
+        <Title id="hw5-ours" level={1}>{S.ours}</Title>
+        <Ours s={s} text={text} />
+
+        <Title id="hw5-reference" level={1}>{S.reference}</Title>
+        <Reference text={text} />
+
+        <Title id="hw5-methods" level={1}>{S.methods}</Title>
+        <Methods s={s} job={job} text={text} palette={palette} />
+
+        <Title id="hw5-table" level={1}>{S.table}</Title>
+        <ZTableSection text={text} />
+
+        <Title id="hw5-quantiles" level={1}>{S.quantiles}</Title>
+        <Quantiles text={text} palette={palette} />
+
+        <Title id="hw5-tails" level={1}>{S.tails}</Title>
+        <Tails text={text} palette={palette} />
+        <TryAlarm text={text} palette={palette} />
+
+        <Title id="hw5-data" level={1}>{S.data}</Title>
+        <DataSection run={run} text={text} palette={palette} />
+      </section>
+
+      <section className="hw1-section hw2 hw3 hw4 hw5">
+        <Title id="hw5-checks" level={0}>{S.checks}</Title>
+        <Verify text={text} />
       </section>
 
       <TestsSummary s={s} job={job} text={text} />

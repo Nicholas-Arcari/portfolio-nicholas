@@ -8,7 +8,7 @@
 //
 // Da file:// i worker non partono: le simulazioni girano qui, a fette di
 // pochi millisecondi, e la pagina resta reattiva mentre i numeri arrivano;
-// intanto la Part 1 e gli esempi interattivi, che non ne hanno bisogno,
+// intanto l'Esercizio 2 e gli esempi interattivi, che non ne hanno bisogno,
 // funzionano gia'.
 //
 // Ogni testo entra nella pagina con textContent, mai come HTML: nemmeno
@@ -266,54 +266,17 @@ function assignmentSection() {
       { class: 'original', open: true },
       h('summary', { text: text.assignment.originalTitle }),
       h('p', { class: 'note', text: text.assignment.originalNote }),
-      h('blockquote', { lang: 'en' }, originalAssignment().map((block) => h('p', { text: block.text }))),
+      h(
+        'blockquote',
+        { lang: 'en' },
+        originalAssignment().map((block) => {
+          if (block.type === 'title') return h('p', null, h('strong', { text: block.text }));
+          if (block.type === 'list') return h('ul', null, block.items.map((item) => h('li', { text: item })));
+          if (block.type === 'link') return h('p', null, h('a', { href: block.href, target: '_blank', rel: 'noopener noreferrer', text: block.text }));
+          return h('p', { text: block.text });
+        }),
+      ),
     ),
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Part 1: l'area, le regole, il -infinito, la convergenza, la tavola, i
-// quantili, le code, i dati e le verifiche
-// ---------------------------------------------------------------------------
-
-function part1Section() {
-  const S = text.sections;
-  const F = text.fmt;
-  regions.infinity = h('div');
-  regions.verify = h('div');
-  return h(
-    'section',
-    { class: 'section' },
-    title('hw5-part1', 0, S.part1),
-    paras(text.part1.intro),
-    title('hw5-area', 1, S.area),
-    paras(text.area.intro),
-    formulas(text.formulas.cdf),
-    h('div', { class: 'charts' }, figure(text.area.chartTitle, hw.drawQuadrature, view.bellChart(F.decimal), { wide: true })),
-    tryAreaBlock(),
-    title('hw5-rules', 1, S.rules),
-    rulesBlock(),
-    title('hw5-infinity', 1, S.infinity),
-    paras(text.infinity.intro),
-    formulas(text.formulas.strategies, text.infinity.formulasTitle),
-    choices(text.infinity.chooseLabel, hw.STRATEGY_RULES.map((r) => [r.rule, text.ruleNames[r.rule]]), state.infinityRule, (rule) => {
-      state.infinityRule = rule;
-      updateInfinity();
-    }),
-    regions.infinity,
-    title('hw5-convergence', 1, S.convergence),
-    convergenceBlock(),
-    title('hw5-table', 1, S.table),
-    zTableBlock(),
-    title('hw5-quantiles', 1, S.quantiles),
-    quantilesBlock(),
-    title('hw5-tails', 1, S.tails),
-    tailsBlock(),
-    tryAlarmBlock(),
-    title('hw5-data', 1, S.data),
-    dataBlock(),
-    title('hw5-checks', 1, S.checks),
-    regions.verify,
   );
 }
 
@@ -717,7 +680,7 @@ function updateVerify() {
       'details',
       { class: 'details' },
       h('summary', { text: V.details(checkRows.length) }),
-      ['quadrature', 'normal', 'part2', 'generator'].map((group) => [
+      ['quadrature', 'normal', 'cdf', 'integrals', 'generator'].map((group) => [
         subtitle(V.groups[group]),
         table(
           'discussion checks',
@@ -730,24 +693,26 @@ function updateVerify() {
 }
 
 // ---------------------------------------------------------------------------
-// Part 2: le monete, le funzioni, Riemann, Lebesgue, il confronto, il
-// traffico, Monte Carlo e Dirichlet
+// Esercizio 1: le monete, le funzioni, Riemann, Lebesgue, i risultati, il
+// confronto, i costi, Dirichlet e Thomae, il traffico, Monte Carlo
 // ---------------------------------------------------------------------------
 
-function part2Section() {
+function exercise1Section() {
   const S = text.sections;
   regions.coins = h('div');
   regions.custom = h('div');
   regions.riemann = h('div');
   regions.lebesgue = h('div');
+  regions.results = h('div');
   regions.compare = h('div');
+  regions.efficiency = h('div');
   regions.mc = h('div');
   regions.mcStatus = h('div');
   return h(
     'section',
     { class: 'section' },
-    title('hw5-part2', 0, S.part2),
-    paras(text.part2.intro),
+    title('hw5-exercise1', 0, S.exercise1),
+    paras(text.exercise1.intro),
     title('hw5-idea', 1, S.idea),
     paras(text.idea.intro),
     h('div', { class: 'try' }, title('hw5-try-coins', 2, S.tryCoins), paras(text.tryCoins.intro), regions.coins),
@@ -766,9 +731,17 @@ function part2Section() {
     formulas(text.formulas.lebesgue, text.lebesgue.formulasTitle),
     regions.lebesgue,
     trySlicesBlock(),
+    title('hw5-results', 1, S.results),
+    paras(text.results.intro),
+    regions.results,
     title('hw5-compare', 1, S.compare),
     paras(text.compare.intro),
     regions.compare,
+    title('hw5-efficiency', 1, S.efficiency),
+    paras(text.efficiency.intro),
+    regions.efficiency,
+    title('hw5-pathological', 1, S.pathological),
+    pathologicalBlock(),
     title('hw5-traffic', 1, S.traffic),
     trafficBlock(),
     title('hw5-montecarlo', 1, S.montecarlo),
@@ -779,8 +752,299 @@ function part2Section() {
     regions.mcStatus,
     regions.mc,
     tryMcBlock(),
-    title('hw5-dirichlet', 1, S.dirichlet),
-    dirichletBlock(),
+  );
+}
+
+// The comparison of the reader's function, computed once for sections 1.5 - 1.7.
+let customStudyCache = { spec: null, study: null };
+
+function customStudy() {
+  if (state.fnKey !== hw.CUSTOM) return null;
+  const { spec } = current();
+  if (customStudyCache.spec !== spec) customStudyCache = { spec, study: hw.comparisonStudy(spec) };
+  return customStudyCache.study;
+}
+
+// --- 1.5 I risultati -----------------------------------------------------------------------------------------
+
+function updateResultsTable() {
+  const R = text.results;
+  const s = computation.shown;
+  const rows = view.resultsRows(s, customStudy(), view.pathological());
+  fill(
+    regions.results,
+    !s && pending(),
+    subtitle(R.tableTitle),
+    h(
+      'div',
+      { class: 'scroll' },
+      table(
+        'compact results',
+        [R.cols.name, R.cols.integral, R.cols.riemann, R.cols.lebesgue, R.cols.riemannError, R.cols.lebesgueError, R.cols.verdict],
+        rows.map((r) => ({ cells: [{ text: text.functionNames[r.key], head: true }, { text: R.integralCell(r) }, { text: R.riemannCell(r) }, { text: R.lebesgueCell(r) }, { text: R.errorCell(r.errors.riemann) }, { text: R.errorCell(r.errors.lebesgue) }, { text: R.verdicts[r.verdict] }] })),
+      ),
+    ),
+    s && paras(R.after(rows)),
+  );
+}
+
+// --- 1.7 Quanto costano -----------------------------------------------------------------------------------
+
+let efficiencyCache = { study: null, result: null };
+
+function updateEfficiency() {
+  const E = text.efficiency;
+  const F = text.fmt;
+  const s = computation.shown;
+  let study = null;
+  if (state.fnKey === hw.CUSTOM) {
+    const cs = customStudy();
+    if (efficiencyCache.study !== cs) efficiencyCache = { study: cs, result: hw.efficiencyStudy(current().spec, cs.reference) };
+    study = efficiencyCache.result;
+  } else if (s) {
+    study = s.efficiency[state.fnKey];
+  }
+  const rows = s ? view.efficiencyRows(s) : null;
+  fill(
+    regions.efficiency,
+    !study
+      ? pending()
+      : h('div', { class: 'charts' }, figure(E.chartTitle(text.functionNames[state.fnKey]), hw.drawLineChart, view.efficiencyChart(study, F.decimal), { wide: true, items: [{ label: E.legend[0], color: 1 }, { label: E.legend[1], color: 0 }] })),
+    rows && [
+      subtitle(E.tableTitle),
+      h(
+        'div',
+        { class: 'scroll' },
+        table(
+          'compact efficiency',
+          [E.cols.name, E.cols.target, E.cols.riemann, E.cols.lebesgue],
+          rows.flatMap((r) => r.targets.map((t) => ({ cells: [{ text: text.functionNames[r.key], head: true }, { text: F.pow(Math.round(Math.log10(t.target))) }, { text: E.cell(t.riemann, 'riemann') }, { text: E.cell(t.lebesgue, 'lebesgue') }] }))),
+        ),
+      ),
+      paras(E.after(view.efficiencyFacts(s))),
+    ],
+  );
+}
+
+// --- 1.8 Dirichlet e Thomae --------------------------------------------------------------------------------
+
+function pathologicalBlock() {
+  const P = text.pathological;
+  const F = text.fmt;
+  const study = view.pathological();
+  return [
+    paras(P.intro),
+    table(
+      'discussion dirichlet',
+      [P.cols.number, P.cols.fraction, P.cols.value],
+      view.DIRICHLET_NUMBERS.map((d) => {
+        const f = hw.exactFraction(d.value);
+        return { cells: [{ text: P.numbers[d.key], head: true }, { node: h('code', { text: `${f.numerator}/2^${f.power}` }) }, { text: '1' }] };
+      }),
+    ),
+    h('p', { text: P.thomaeIntro }),
+    h('div', { class: 'charts' }, figure(P.chartTitle(view.thomaeUpper()), hw.drawHistogram, view.thomaeChart(F.decimal), { wide: true })),
+    subtitle(P.tableTitle),
+    h(
+      'div',
+      { class: 'scroll' },
+      table(
+        'compact thomae',
+        [P.thomaeCols.n, P.thomaeCols.rational, P.thomaeCols.irrational, P.thomaeCols.lower, P.thomaeCols.upper, P.thomaeCols.doubles],
+        study.thomae.map((r) => ({ cells: [{ text: F.int(r.n), head: true }, { text: F.sig(r.rational, 4) }, { text: F.int(r.irrational) }, { text: F.int(r.lower) }, { text: F.sig(r.upper, 4) }, { text: F.sig(r.doubles, 4) }] })),
+      ),
+    ),
+    paras(P.after(study)),
+  ];
+}
+
+// ---------------------------------------------------------------------------
+// Esercizio 2: Liouville, erf, l'area, le regole, il -infinito, la
+// convergenza, le serie, le approssimazioni, il metodo, il riferimento, il
+// confronto, la tavola, i quantili, le code e i dati
+// ---------------------------------------------------------------------------
+
+function exercise2Section() {
+  const S = text.sections;
+  const F = text.fmt;
+  regions.infinity = h('div');
+  regions.ours = h('div');
+  regions.methods = h('div');
+  return h(
+    'section',
+    { class: 'section' },
+    title('hw5-exercise2', 0, S.exercise2),
+    paras(text.exercise2.intro),
+    title('hw5-liouville', 1, S.liouville),
+    liouvilleBlock(),
+    title('hw5-erf', 1, S.erf),
+    erfBlock(),
+    title('hw5-area', 1, S.area),
+    paras(text.area.intro),
+    formulas(text.formulas.cdf),
+    h('div', { class: 'charts' }, figure(text.area.chartTitle, hw.drawQuadrature, view.bellChart(F.decimal), { wide: true })),
+    tryAreaBlock(),
+    title('hw5-rules', 1, S.rules),
+    rulesBlock(),
+    title('hw5-infinity', 1, S.infinity),
+    paras(text.infinity.intro),
+    formulas(text.formulas.strategies, text.infinity.formulasTitle),
+    choices(text.infinity.chooseLabel, hw.STRATEGY_RULES.map((r) => [r.rule, text.ruleNames[r.rule]]), state.infinityRule, (rule) => {
+      state.infinityRule = rule;
+      updateInfinity();
+    }),
+    regions.infinity,
+    title('hw5-convergence', 1, S.convergence),
+    convergenceBlock(),
+    title('hw5-series', 1, S.series),
+    seriesBlock(),
+    title('hw5-approximations', 1, S.approximations),
+    approximationsBlock(),
+    title('hw5-ours', 1, S.ours),
+    regions.ours,
+    title('hw5-reference', 1, S.reference),
+    referenceBlock(),
+    title('hw5-methods', 1, S.methods),
+    paras(text.methods.intro),
+    regions.methods,
+    title('hw5-table', 1, S.table),
+    zTableBlock(),
+    title('hw5-quantiles', 1, S.quantiles),
+    quantilesBlock(),
+    title('hw5-tails', 1, S.tails),
+    tailsBlock(),
+    tryAlarmBlock(),
+    title('hw5-data', 1, S.data),
+    dataBlock(),
+  );
+}
+
+function checksSection() {
+  regions.verify = h('div');
+  return h('section', { class: 'section' }, title('hw5-checks', 0, text.sections.checks), regions.verify);
+}
+
+// --- 2.1 Liouville e 2.2 erf ---------------------------------------------------------------------------------
+
+function liouvilleBlock() {
+  const L = text.liouville;
+  const F = text.fmt;
+  const rows = hw.liouvilleRows();
+  return [
+    paras(L.intro),
+    formulas(L.formulas),
+    subtitle(L.tableTitle),
+    h('div', { class: 'scroll' }, table('compact liouville', [L.cols.x, L.cols.S, L.cols.ratio, L.cols.degree], rows.map((r) => ({ cells: [{ text: F.int(r.x), head: true }, { text: r.S >= 1e5 ? F.sci(r.S, 6) : F.sig(r.S, 7) }, { text: F.num(r.ratio, 6) }, { text: F.num(r.degree, 2) }] })))),
+    paras(L.after(rows)),
+  ];
+}
+
+function erfBlock() {
+  const E = text.erf;
+  const F = text.fmt;
+  const rows = hw.empiricalRuleRows();
+  return [
+    paras(E.intro),
+    formulas(E.formulas),
+    subtitle(E.tableTitle),
+    h('div', { class: 'scroll' }, table('compact erf', [E.cols.k, E.cols.value, E.cols.reference, E.cols.rounded], rows.map((r) => ({ cells: [{ text: String(r.k), head: true }, { text: F.num(r.value, 16) }, { text: F.num(r.reference, 16) }, { text: F.num(r.rounded, 4) }] })))),
+    paras(E.after(rows)),
+  ];
+}
+
+// --- 2.7 - 2.11 --------------------------------------------------------------------------------------------
+
+const series = { fig: null, z: view.SERIES_CHOICES[2] };
+
+function seriesBlock() {
+  const S = text.series;
+  const F = text.fmt;
+  const rows = hw.seriesRows();
+  series.fig = figure(S.chartTitle(series.z), hw.drawLineChart, view.seriesChart(series.z, F.decimal), { wide: true, items: [{ label: S.legend[0], color: 1 }, { label: S.legend[1], color: 1, dashed: true }, { label: S.legend[2], color: 0 }] });
+  return [
+    paras(S.intro),
+    formulas(S.formulas),
+    subtitle(S.tableTitle),
+    h(
+      'div',
+      { class: 'scroll' },
+      table(
+        'compact series',
+        [S.cols.z, S.cols.altTerms, S.cols.largest, S.cols.lost, S.cols.altError, S.cols.posTerms, S.cols.posError],
+        rows.map((r) => ({ cells: [{ text: String(r.z), head: true }, { text: String(r.alternating.terms) }, { text: F.sci(r.alternating.largest) }, { text: F.num(r.alternating.lost, 1) }, { text: F.err(r.alternating.error) }, { text: String(r.positive.terms) }, { text: F.err(r.positive.error) }] })),
+      ),
+    ),
+    choices(S.chooseLabel, view.SERIES_CHOICES.map((v) => [v, F.plain(v)]), series.z, (z) => {
+      series.z = z;
+      refreshFigure(series.fig, S.chartTitle(z), view.seriesChart(z, F.decimal), null);
+    }),
+    h('div', { class: 'charts' }, series.fig),
+    paras(S.after(rows)),
+  ];
+}
+
+function approximationsBlock() {
+  const A = text.approximations;
+  const F = text.fmt;
+  return [
+    paras(A.intro),
+    h('div', { class: 'charts' }, figure(A.chartTitle, hw.drawLineChart, view.approximationChart(F.decimal), { wide: true, items: [{ label: A.legend[0], color: 0 }, { label: A.legend[1], color: 1 }, { label: A.legend[2], color: 6, dashed: true }] })),
+    paras(A.after(view.approximationFacts())),
+  ];
+}
+
+function updateOurs() {
+  const O = text.ours;
+  const facts = view.methodsFacts(computation.shown);
+  fill(regions.ours, paras(O.intro(facts)), formulas(O.formulas), paras(O.after(facts)));
+}
+
+function referenceBlock() {
+  const R = text.reference;
+  const F = text.fmt;
+  const { rows, nist } = view.referenceFacts();
+  return [
+    paras(R.intro),
+    h('p', null, h('a', { href: hw.NIST_URL, target: '_blank', rel: 'noopener noreferrer', text: R.link })),
+    subtitle(R.tableTitle),
+    h(
+      'div',
+      { class: 'scroll' },
+      table(
+        'compact reference',
+        [R.cols.z, R.cols.nist, R.cols.mpmath, R.cols.ours, R.cols.error, R.cols.nistError],
+        rows.map((r) => ({
+          class: nist.mismatches.some((m) => m.z === r.z) ? 'misprint' : null,
+          cells: [{ text: F.plain(r.z), head: true }, { text: r.nist === null ? '-' : F.num(r.nist, 5) }, { text: F.sig(r.mpmath, 16) }, { text: F.sig(r.value, 16) }, { text: F.err(r.error) }, { text: r.nistError === null ? '-' : F.err(r.nistError) }],
+        })),
+      ),
+    ),
+    h('p', { text: R.nist(nist) }),
+    nist.mismatches.map((m) => h('p', { text: R.mismatch(m) })),
+    paras(R.after(rows)),
+  ];
+}
+
+function updateMethods() {
+  const M = text.methods;
+  const F = text.fmt;
+  const s = computation.shown;
+  const rows = view.methodsRows(s);
+  fill(
+    regions.methods,
+    subtitle(M.tableTitle),
+    h(
+      'div',
+      { class: 'scroll' },
+      table(
+        'compact methods',
+        [M.cols.method, M.cols.absolute, M.cols.relative, M.cols.exp, M.cols.terms, M.cols.time],
+        rows.map((r) => ({ class: r.key === 'ours' ? 'ours' : null, cells: [{ text: text.methodNames[r.key], head: true }, { text: F.err(r.absolute) }, { text: M.relativeCell(r.relative) }, { text: F.int(r.exp) }, { text: r.terms ? F.int(r.terms) : '-' }, { text: M.timeCell(r.time) }] })),
+      ),
+    ),
+    !s && pending(),
+    h('div', { class: 'charts' }, figure(M.chartTitle, hw.drawLineChart, view.methodsChart(F.decimal), { wide: true, items: hw.CDF_METHODS.map((key) => ({ label: text.methodNames[key], color: view.METHOD_STYLE[key].colorIndex, dashed: !!view.METHOD_STYLE[key].dashed })) })),
+    paras(M.after(view.methodsFacts(s))),
   );
 }
 
@@ -911,7 +1175,7 @@ function updateCustomMessages() {
 
 let specCache = { key: null, custom: null, spec: null, reference: null };
 
-/** The function of Part 2 and its reference integral, computed again only when the choice changes. */
+/** The function of Exercise 1 and its reference integral, computed again only when the choice changes. */
 function current() {
   if (specCache.key !== state.fnKey || specCache.custom !== state.validCustom) {
     const spec = view.specOf(state.fnKey, state.validCustom);
@@ -924,7 +1188,9 @@ function updateFunctionSections() {
   updateRiemann();
   updateLebesgue();
   updateSlices();
+  updateResultsTable();
   updateCompare();
+  updateEfficiency();
 }
 
 const sumCells = (r, keys, F) => keys.map((k) => ({ text: k === 'gap' ? F.err(r[k]) : F.sig(r[k], 9) }));
@@ -1064,8 +1330,8 @@ function updateCompare() {
   const F = text.fmt;
   const s = computation.shown;
   const name = text.functionNames[state.fnKey];
-  // the six functions come with the simulation; the reader's one is compared here
-  const study = state.fnKey === hw.CUSTOM ? hw.comparisonStudy(current().spec) : s ? s.compare[state.fnKey] : null;
+  // the nine functions come with the simulation; the reader's one is compared here
+  const study = state.fnKey === hw.CUSTOM ? customStudy() : s ? s.compare[state.fnKey] : null;
   const summary = s ? view.summaryRows(s) : null;
   fill(
     regions.compare,
@@ -1108,8 +1374,8 @@ function updateCompare() {
       subtitle(C.summaryTitle),
       table(
         'discussion summary-compare',
-        [C.summaryCols.name, C.summaryCols.riemann8, C.summaryCols.lebesgue8, C.summaryCols.riemann1024, C.summaryCols.lebesgue1024, C.summaryCols.winner],
-        summary.map((r) => ({ cells: [{ text: text.functionNames[r.key], head: true }, { text: F.err(r.small.riemann) }, { text: F.err(r.small.lebesgue) }, { text: F.err(r.large.riemann) }, { text: F.err(r.large.lebesgue) }, { text: r.winner === 'lebesgue' ? 'Lebesgue' : 'Riemann' }] })),
+        [C.summaryCols.name, C.summaryCols.riemannSmall, C.summaryCols.lebesgueSmall, C.summaryCols.riemannLarge, C.summaryCols.lebesgueLarge, C.summaryCols.orderRiemann, C.summaryCols.orderLebesgue, C.summaryCols.winner],
+        summary.map((r) => ({ cells: [{ text: text.functionNames[r.key], head: true }, { text: F.err(r.small.riemann) }, { text: F.err(r.small.lebesgue) }, { text: F.err(r.large.riemann) }, { text: F.err(r.large.lebesgue) }, { text: C.orderCell(r.orders.riemann) }, { text: C.orderCell(r.orders.lebesgue) }, { text: r.winner === 'lebesgue' ? 'Lebesgue' : 'Riemann' }] })),
       ),
       paras(C.summaryAfter(summary)),
     ],
@@ -1242,22 +1508,6 @@ function toggleMc() {
 
 // --- 2.8 Dirichlet ---------------------------------------------------------------------------------------
 
-function dirichletBlock() {
-  const D = text.dirichlet;
-  return [
-    paras(D.intro),
-    table(
-      'discussion dirichlet',
-      [D.cols.number, D.cols.fraction, D.cols.value],
-      view.DIRICHLET_NUMBERS.map((d) => {
-        const f = hw.exactFraction(d.value);
-        return { cells: [{ text: D.numbers[d.key], head: true }, { node: h('code', { text: `${f.numerator}/2^${f.power}` }) }, { text: '1' }] };
-      }),
-    ),
-    h('p', { text: D.after }),
-  ];
-}
-
 // ---------------------------------------------------------------------------
 // 3, 4 e 5
 // ---------------------------------------------------------------------------
@@ -1320,7 +1570,7 @@ function conclusionSection() {
 }
 
 function updateConclusion() {
-  if (!staticFacts) staticFacts = { ...view.convergenceFacts(hw.convergenceStudy()), tailTotal: view.tailFacts(hw.tailRows()).total };
+  if (!staticFacts) staticFacts = { ...view.convergenceFacts(hw.convergenceStudy()), tailTotal: view.tailFacts(hw.tailRows()).total, nist: view.referenceFacts().nist };
   fill(regions.conclusion, paras(text.conclusion(computation.shown, staticFacts)));
 }
 
@@ -1384,7 +1634,11 @@ function startComputation() {
 function updateResults() {
   updateStatus();
   updateData();
+  updateResultsTable();
   updateCompare();
+  updateEfficiency();
+  updateOurs();
+  updateMethods();
   updateMc();
   updateTests();
   updateConclusion();
@@ -1482,7 +1736,7 @@ function render() {
   controls.fields = {};
   renderChrome();
   const app = document.getElementById('app');
-  fill(app, assignmentSection(), part1Section(), part2Section(), testsSection(), historySection(), conclusionSection(), toTopButton());
+  fill(app, assignmentSection(), exercise1Section(), exercise2Section(), checksSection(), testsSection(), historySection(), conclusionSection(), toTopButton());
   updateArea();
   updateInfinity();
   updateInputs();

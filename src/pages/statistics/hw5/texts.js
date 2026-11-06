@@ -4,7 +4,7 @@
 // stesse cose con le stesse parole. Ogni numero arriva dagli argomenti (i
 // risultati dei calcoli e delle simulazioni) o dalle costanti della
 // libreria: nessuna frase contiene un risultato scritto a mano.
-import { ALARM_K, CONFIDENCE, DARBOUX_SAMPLES, FORMULA_MAX, FORMULA_NAMES, HANDFUL, HEAVY_DF, LEVEL_CELLS, LIMITS, SIGNIFICANCE, STEPS, TRAFFIC, TRUNCATIONS, heavySf, tailDirect } from './homework5.js';
+import { ALARM_K, CONFIDENCE, DARBOUX_SAMPLES, FORMULA_MAX, FORMULA_NAMES, FUNCTIONS, HANDFUL, HEAVY_DF, LEVEL_CELLS, LIMITS, SIGNIFICANCE, TRAFFIC, TRUNCATIONS, heavySf, tailDirect } from './homework5.js';
 import { NEWTON_P, RULES_N, clock } from './view.js';
 
 /** Number formatting of one language: decimal and thousands separators, the "not available" marker, the multiplication sign. */
@@ -60,6 +60,8 @@ function formatters(decimal, thousands, na, times) {
     err: (v) => (missing(v) ? na : v === 0 ? '0' : !Number.isFinite(v) ? '∞' : sci(v)),
     sci,
     ms: (v) => (missing(v) ? na : v >= 1000 ? `${local((v / 1000).toFixed(2))} s` : `${Math.max(1, Math.round(v))} ms`),
+    // a short duration: 0,4 µs, 12 µs, 3,1 ms
+    dur: (v) => (missing(v) ? na : v < 0.01 ? `${local((v * 1000).toFixed(1))} µs` : v < 1 ? `${Math.round(v * 1000)} µs` : `${local(v.toFixed(1))} ms`),
     pow: (e) => `10^${e}`,
     // a number of events: 10^6 for a million
     events: (v) => `10^${Math.round(Math.log10(v))}`,
@@ -68,18 +70,42 @@ function formatters(decimal, thousands, na, times) {
   };
 }
 
+/** A name inside a sentence: the first letter in lower case ("traffico di un giorno"). */
+const inline = (name) => name.charAt(0).toLowerCase() + name.slice(1);
+
 /** The value of a coin, as it is written on it: 1 c, 50 c, 1 €, 2 €. */
 const coinLabel = (cents) => (cents >= 100 ? `${cents / 100} €` : `${cents} c`);
 
+/** The notes of the course that the assignment links. */
+export const NOTES_URL = 'https://faculty.etsu.edu/gardnerr/4047/notes-Hogg-McKean-Craig/Hogg-McKean-Craig-3-4.pdf';
+
 /**
- * The assignment as the professor wrote it. The only changes: the number
- * 1) of the first exercise, missing in the copy received, and the LaTeX
- * \dots of the second, written as three dots.
+ * The assignment as the professor wrote it, in English. The only changes:
+ * the lists are laid out as lists, the long dashes of the two titles are
+ * written as hyphens, and the line of dashes between the two exercises is
+ * left out.
  */
 export const originalAssignment = () => [
-  { type: 'p', text: '1) Given a normal density find the CDF by numerical integration.' },
-  { type: 'p', text: '2) Given a choice of functions (f_1, f_2, ...) compute numerically both the Riemann and Lebesgue integral.' },
+  { type: 'title', text: 'HOMEWORK' },
+  { type: 'title', text: 'Es 1 - Riemann and Lebesgue Integration' },
+  { type: 'p', text: 'Choose a collection of interesting functions f1, f2, ... and compute their integrals numerically. Approximate the integrals using approaches inspired by both the Riemann definition (partitioning the domain into subintervals) and the Lebesgue definition (partitioning the range of function values into measurable subsets and considering their preimages in the domain).' },
+  { type: 'p', text: 'Compare the two numerical approaches in terms of accuracy, convergence, and computational efficiency.' },
+  { type: 'p', text: 'For functions that are Riemann-integrable, compare the numerical results and discuss whether the two approaches converge to the same value.' },
+  { type: 'p', text: 'Include examples of functions for which the two approaches behave differently, if possible.' },
+  { type: 'p', text: 'Examples:' },
+  { type: 'list', items: ['f(x) = sin(x), x in [0, pi]', 'f(x) = x^2, x in [0, 1]', 'f(x) = 1 if x < 0.5, 3 if x >= 0.5, x in [0, 1]', 'f(x) = |x - 0.5|, x in [0, 1]', 'f(x) = 1 / sqrt(x), x in (0, 1]', 'f(x) = 1 if x < 0.5, 0 if x >= 0.5, x in [0, 1]', 'f(x) = sin(x) / x, x in [0, pi]'] },
+  { type: 'p', text: '"Pathological" functions:' },
+  { type: 'list', items: ['f(x) = 1 if x is rational, 0 if x is irrational, x in [0, 1] (Dirichlet function)', "f(x) = 1/q if x = p/q in lowest terms, 0 if x is irrational, x in [0, 1] (Thomae's function)", '...'] },
+  { type: 'title', text: 'Es 2 - Numerical Computation of the Normal CDF' },
+  { type: 'p', text: 'Develop an efficient numerical method to compute the cumulative distribution function (CDF) of the standard normal distribution.' },
+  { type: 'p', text: "Implement the method and evaluate the CDF at several points, comparing the results with a trusted numerical reference found on the web. Investigate the numerical efficiency and accuracy of your implementation. Explain why the normal CDF cannot be expressed in terms of elementary functions, discussing the mathematical result behind this fact (Liouville's theorem)." },
+  { type: 'p', text: 'Explain how the introduction of special functions, such as the error function (erf), provides an exact analytical representation of the CDF, and why numerical methods are still necessary for its practical computation.' },
+  { type: 'p', text: 'Explore possible numerical approaches, such as numerical integration, series expansions, or approximations based on the error function.' },
+  { type: 'link', text: NOTES_URL, href: NOTES_URL },
+  { type: 'p', text: 'examples of approaches:' },
+  { type: 'list', items: ["Numerical integration: using the trapezoidal rule or Simpson's rule.", 'Series expansion: using the power series expansion of the error function.', 'Error function (erf): using the mathematical relationship between the normal CDF and the error function.', '...'] },
 ];
+
 
 // ---------------------------------------------------------------------------
 // Le formule, scritte una volta: le parole cambiano con la lingua
@@ -160,7 +186,8 @@ const refIt = (ref) => (ref.exact ? 'esatto' : ref.method === 'composite' ? `di 
 const ruleNamesIt = { left: 'Rettangoli', midpoint: 'Punti medi', trapezoid: 'Trapezi', simpson: 'Simpson', gauss: 'Gauss-Legendre' };
 // i nomi dentro una frase: "con i trapezi", "con Simpson"
 const ruleInlineIt = { left: 'i rettangoli', midpoint: 'i punti medi', trapezoid: 'i trapezi', simpson: 'Simpson', gauss: 'Gauss-Legendre' };
-const functionNamesIt = { square: 'x² su [0, 1]', bell: 'La campana su [-3, 3]', steps: 'A gradini', oscillating: 'sin(1/x)', unbounded: '1/√x', traffic: 'Traffico di un giorno', custom: 'Scritta da voi' };
+const functionNamesIt = { sine: 'sin x su [0, π]', square: 'x² su [0, 1]', jump: 'Gradino da 1 a 3', vee: '|x - 0,5|', unbounded: '1/√x', indicator: 'Gradino da 1 a 0', sinc: 'sin(x)/x su [0, π]', oscillating: 'sin(1/x)', traffic: 'Traffico di un giorno', custom: 'Scritta da voi', dirichlet: 'Dirichlet', thomae: 'Thomae' };
+const methodNamesIt = { trapezoid: 'Trapezi, n = 64', simpson: 'Simpson, n = 64', gauss: 'Gauss-Legendre, 64 nodi', alternating: 'Serie degli appunti', positive: 'Serie a termini positivi', abramowitz: 'Abramowitz-Stegun 7.1.26', zelen: 'Zelen-Severo 26.2.17', ours: 'Metodo della pagina' };
 
 const it = {
   fmt: IT,
@@ -184,45 +211,54 @@ const it = {
   },
   sections: {
     assignment: '0. La consegna',
-    part1: 'Part 1 - La funzione di ripartizione della normale',
-    area: '1.1 La CDF è un’area',
-    tryArea: 'Prova: l’area sotto la campana',
-    rules: '1.2 Cinque modi di sommare fette',
-    infinity: '1.3 Il problema di -∞',
-    convergence: '1.4 Quanti punti servono',
-    table: '1.5 La tavola della normale, ricostruita',
-    quantiles: '1.6 All’indietro: i quantili',
-    tails: '1.7 Le code lontane e le soglie d’allarme',
-    tryAlarm: 'Prova: la soglia d’allarme',
-    data: '1.8 Il modello alla prova dei dati',
-    checks: '1.9 Verifiche',
-    part2: 'Part 2 - Integrale di Riemann e di Lebesgue',
-    idea: '2.1 Due modi di contare',
+    exercise1: 'Esercizio 1 - Integrale di Riemann e di Lebesgue',
+    idea: '1.1 Due modi di contare',
     tryCoins: 'Prova: le monete di Lebesgue',
-    functions: '2.2 Le funzioni',
-    riemann: '2.3 Riemann: strisce verticali',
-    lebesgue: '2.4 Lebesgue: fette orizzontali',
+    functions: '1.2 Le funzioni',
+    riemann: '1.3 Riemann: strisce verticali',
+    lebesgue: '1.4 Lebesgue: fette orizzontali',
     trySlices: 'Prova: verticale o orizzontale',
-    compare: '2.5 Chi vince, e quando',
-    traffic: '2.6 Il traffico di un server',
-    montecarlo: '2.7 Monte Carlo, il Lebesgue dei dadi',
+    results: '1.5 I risultati, fianco a fianco',
+    compare: '1.6 Precisione e convergenza',
+    efficiency: '1.7 Quanto costano',
+    pathological: '1.8 Dove le due strade si separano: Dirichlet e Thomae',
+    traffic: '1.9 Il traffico di un server',
+    montecarlo: '1.10 Monte Carlo, il Lebesgue dei dadi',
     tryMc: 'Prova: Monte Carlo dal vivo',
-    dirichlet: '2.8 La funzione di Dirichlet',
-    tests: '3. I test d’ipotesi',
-    history: '4. Il contesto storico',
-    conclusion: '5. Conclusioni',
+    exercise2: 'Esercizio 2 - La funzione di ripartizione della normale',
+    liouville: '2.1 Perché non c’è una formula: Liouville',
+    erf: '2.2 erf: una formula esatta che va comunque calcolata',
+    area: '2.3 La CDF è un’area',
+    tryArea: 'Prova: l’area sotto la campana',
+    rules: '2.4 Cinque modi di sommare fette',
+    infinity: '2.5 Il problema di -∞',
+    convergence: '2.6 Quanti punti servono',
+    series: '2.7 Le serie: quella degli appunti e quella a termini positivi',
+    approximations: '2.8 Le approssimazioni costruite su erf',
+    ours: '2.9 Un metodo efficiente',
+    reference: '2.10 Il confronto con un riferimento dal web',
+    methods: '2.11 Precisione e velocità di ogni metodo',
+    table: '2.12 La tavola della normale, ricostruita',
+    quantiles: '2.13 All’indietro: i quantili',
+    tails: '2.14 Le code lontane e le soglie d’allarme',
+    tryAlarm: 'Prova: la soglia d’allarme',
+    data: '2.15 Il modello alla prova dei dati',
+    checks: '3. Verifiche',
+    tests: '4. I test d’ipotesi',
+    history: '5. Il contesto storico',
+    conclusion: '6. Conclusioni',
   },
   assignment: {
     intro: [
-      'La consegna ha due parti. La prima chiede di trovare la funzione di ripartizione (CDF) di una densità normale per integrazione numerica; la seconda, data una scelta di funzioni f_1, f_2, ..., di calcolarne numericamente sia l’integrale di Riemann sia quello di Lebesgue.',
-      'La pagina procede per esempi. La Part 1 calcola Φ con cinque regole scritte da zero, mostra come aggirare il -∞, misura quanti punti servono e poi usa la CDF: ricostruisce la tavola dei libri di statistica, trova all’indietro l’1,96 degli intervalli al 95% e le soglie d’allarme di un sistema che segnala anomalie, e la mette alla prova contro dati simulati. La Part 2 integra sei funzioni scelte per mostrare le differenze, più una che potete scrivere voi, nei due modi: le strisce verticali di Riemann e le fette orizzontali di Lebesgue; poi il traffico di un server, Monte Carlo e la funzione di Dirichlet. Tutti i numeri sono calcolati nel browser, e il programma scaricabile stampa gli stessi.',
+      'La consegna ha due esercizi. Il primo chiede di scegliere una collezione di funzioni interessanti e di integrarle numericamente con due approcci ispirati alle due definizioni: quella di Riemann, che divide il dominio in intervalli, e quella di Lebesgue, che divide l’insieme dei valori e ne misura le controimmagini; poi di confrontarli per precisione, convergenza e costo, di discutere se arrivano allo stesso valore e di mostrare dove si comportano diversamente. Il secondo chiede un metodo efficiente per la funzione di ripartizione della normale standard, da confrontare con un riferimento affidabile trovato sul web, insieme alle ragioni per cui non ha una formula elementare (il teorema di Liouville) e al ruolo della funzione degli errori erf.',
+      'La pagina procede per esempi, con ogni numero calcolato qui. L’Esercizio 1 integra le nove funzioni della consegna e due della pagina e ne mette i risultati fianco a fianco (1.5), misura come convergono (1.6) e quanto costano (1.7), e calcola Dirichlet e Thomae con le frazioni esatte (1.8). L’Esercizio 2 parte da Liouville e da erf (2.1, 2.2), prova l’integrazione numerica, le serie e le approssimazioni dei manuali (2.3 - 2.8), ne ricava un metodo efficiente (2.9), lo confronta con la tavola del NIST e con mpmath (2.10) e misura precisione e velocità di tutti i metodi (2.11).',
     ],
     originalTitle: 'Il testo originale della consegna',
-    originalNote: 'Com’è stato assegnato, in inglese. Le uniche modifiche: il numero 1) del primo esercizio, che mancava nella copia ricevuta, e il \\dots di LaTeX del secondo, scritto con tre punti.',
+    originalNote: 'Com’è stato assegnato, in inglese: gli elenchi sono impaginati come elenchi, i trattini lunghi dei due titoli sono scritti come trattini corti e la riga di trattini fra i due esercizi è tolta.',
   },
-  part1: {
+  exercise2: {
     intro: [
-      'X ~ N(μ, σ²) ha densità a campana e funzione di ripartizione F(x) = P(X ≤ x), l’area sotto la campana a sinistra di x. Quell’area non ha una formula con un numero finito di funzioni elementari (Liouville lo dimostrò nel 1835), quindi va calcolata: sommando fette, come chiede la consegna. Ogni N(μ, σ²) si riporta alla normale standard con z = (x - μ)/σ, quindi basta saper calcolare Φ.',
+      'X ~ N(μ, σ²) ha densità a campana e funzione di ripartizione F(x) = P(X ≤ x), l’area sotto la campana a sinistra di x. Ogni N(μ, σ²) si riporta alla normale standard con z = (x - μ)/σ, quindi basta saper calcolare Φ. Quell’area non ha una formula elementare (2.1), e la funzione erf la scrive in modo esatto senza calcolarla (2.2). Per calcolarla la pagina prova le tre famiglie di metodi della consegna, l’integrazione numerica (2.3 - 2.6), le serie (2.7) e le approssimazioni costruite su erf (2.8), ne ricava un metodo efficiente (2.9), lo confronta con un riferimento trovato sul web (2.10) e misura precisione e velocità di tutti (2.11). Le ultime sezioni la mettono al lavoro: la tavola, i quantili, le soglie d’allarme, un test contro dati simulati.',
     ],
   },
   area: {
@@ -295,7 +331,7 @@ const it = {
       const order = (r) => F.num(f.orders[r], 2);
       return [
         `Gli ordini misurati sulle rette sono ${order('left')} per i rettangoli, ${order('midpoint')} per i punti medi, ${order('trapezoid')} per i trapezi e ${order('simpson')} per Simpson, come dice la teoria (1, 2, 2, 4). Per avere dieci decimali giusti Simpson usa ${F.int(f.enough.simpson)} valori di φ e Gauss ${F.int(f.enough.gauss)}; i rettangoli non ci arrivano nemmeno con 16.384 (errore ${F.err(f.left16384)}), i punti medi neppure (${F.err(f.midpoint16384)}).`,
-        'Due avvertenze pratiche. Oltre il pavimento più punti non aiutano: l’errore risale, perché si sommano più arrotondamenti. E l’ordine vale per funzioni lisce: con un salto o un angolo anche Simpson torna al primo ordine, come si vede nella Part 2.',
+        'Due avvertenze pratiche. Oltre il pavimento più punti non aiutano: l’errore risale, perché si sommano più arrotondamenti. E l’ordine vale per funzioni lisce: con un salto o un angolo anche Simpson torna al primo ordine, come si vede nell’Esercizio 1.',
       ];
     },
   },
@@ -365,7 +401,7 @@ const it = {
     intro: [
       'Una CDF calcolata si può mettere alla prova contro dei dati. Qui i dati sono simulati con il metodo di Box e Muller, che trasforma coppie di numeri uniformi in coppie di normali indipendenti; il test di Kolmogorov e Smirnov misura lo scarto massimo D fra la funzione di ripartizione empirica dei dati e la nostra Φ numerica. Lo stesso test, sui dati a code pesanti della sezione 1.7, deve accorgersi che non sono normali: è il controllo da fare prima di fidarsi di una soglia.',
     ],
-    fieldsIntro: 'Il seme e il numero di valori simulati; gli stessi semi alimentano anche Monte Carlo nella sezione 2.7.',
+    fieldsIntro: 'Il seme e il numero di valori simulati; gli stessi semi alimentano anche Monte Carlo nella sezione 1.10.',
     seedLabel: 'Seme',
     seedHint: `da 0 a ${IT.int(LIMITS.seed[1])}`,
     sampleLabel: 'Valori simulati n',
@@ -394,17 +430,17 @@ const it = {
     },
   },
   checks: {
-    intro: 'Ogni regola e ogni costante della pagina è controllata contro un riferimento indipendente: i nodi di Gauss contro la loro formula chiusa e NumPy, le regole contro polinomi che devono integrare esattamente, Φ, le code e i quantili contro mpmath a 40 cifre, gli integrali esatti della Part 2 contro mpmath, la t di Student e la legge di Kolmogorov contro SciPy, i generatori contro il codice C di riferimento e contro un’implementazione Python scritta a parte. Il riferimento di Φ usato nelle tabelle (la funzione gamma incompleta) non usa nessuna regola di quadratura: una regola controllata con sé stessa non dimostrerebbe niente.',
+    intro: 'Ogni regola e ogni costante della pagina è controllata contro un riferimento indipendente: i nodi di Gauss contro la loro formula chiusa e NumPy, le regole contro polinomi che devono integrare esattamente, Φ, le code e i quantili contro mpmath a 40 cifre, gli integrali esatti dell’Esercizio 1 contro mpmath, la t di Student e la legge di Kolmogorov contro SciPy, i generatori contro il codice C di riferimento e contro un’implementazione Python scritta a parte. Il riferimento di Φ usato nelle tabelle (la funzione gamma incompleta) non usa nessuna regola di quadratura: una regola controllata con sé stessa non dimostrerebbe niente. Le serie, le formule dei manuali e il metodo della pagina sono controllati contro mpmath, e la tavola del NIST cella per cella.',
     summary: (ok, total) => `${ok} controlli su ${total} superati.`,
     details: (n) => `Tutti i ${n} controlli`,
-    groups: { quadrature: 'Le regole', normal: 'La normale', part2: 'La Part 2', generator: 'I generatori' },
+    groups: { quadrature: 'Le regole', normal: 'La normale', cdf: 'I metodi per Φ', integrals: 'Gli integrali', generator: 'I generatori' },
     cols: { check: 'Controllo', expected: 'Atteso', result: 'Esito' },
     ok: 'superato',
     failed: 'fallito',
   },
-  part2: {
+  exercise1: {
     intro: [
-      'Riemann e Lebesgue misurano la stessa area in due modi. Riemann taglia l’asse x in strisce e in ogni striscia legge l’altezza della funzione; Lebesgue taglia l’asse y in livelli e per ogni livello misura quanta parte dell’asse x sta sopra. Per le funzioni continue i due integrali coincidono; Lebesgue vale per molte più funzioni e si comporta molto meglio con i limiti, ed è per questo che la probabilità moderna (il valore atteso è un integrale di Lebesgue) è costruita su di lui.',
+      'Un integrale si può approssimare in due modi. Riemann divide il dominio in strisce e somma le aree dei rettangoli; Lebesgue divide l’insieme dei valori in livelli e somma, livello per livello, la misura dell’insieme dove la funzione sta sopra, cioè della sua controimmagine. Sulle funzioni integrabili secondo Riemann le due strade portano allo stesso numero (1.5), con velocità (1.6) e costi (1.7) diversi; sulle funzioni patologiche si separano (1.8). Le sezioni 1.9 e 1.10 mostrano dove l’idea di Lebesgue serve davvero: il tempo passato sopra una soglia, e Monte Carlo.',
     ],
   },
   idea: {
@@ -426,16 +462,19 @@ const it = {
   },
   functions: {
     intro: [
-      'Sei funzioni, scelte ciascuna per mostrare qualcosa. x² è liscia e monotona; la campana è quella della Part 1; la funzione a gradini è una funzione semplice, il mattone di Lebesgue; sin(1/x) oscilla infinite volte vicino a 0 restando limitata; 1/√x è infinita in 0 ma ha area finita; il traffico di un server è un esempio realistico, con un attacco. Più una funzione che scrivete voi. La scelta vale per le sezioni 2.3, 2.4, 2.5 e per la prova che le segue.',
+      'Le sette funzioni della consegna, più due della pagina. sin x e x² sono lisce; i due gradini sono funzioni semplici, il mattone di Lebesgue; |x - 0,5| è continua ma ha un angolo; 1/√x è infinita in 0 ma ha area finita; sin(x)/x è liscia, una volta fissato il suo valore 1 in 0. Le due della pagina: sin(1/x), che oscilla infinite volte vicino a 0 restando limitata, e il traffico di un server in un giorno, con un attacco. Le due funzioni patologiche della consegna, Dirichlet e Thomae, hanno la loro sezione (1.8): nessun numero memorizzato in un computer è irrazionale, quindi vanno calcolate con le frazioni esatte. In fondo, una funzione che scrivete voi.',
     ],
     tableTitle: 'Le funzioni e i loro integrali esatti',
     cols: { name: 'Funzione', interval: 'Intervallo', formula: 'f(x)', integral: 'Integrale esatto', feature: 'Che cosa mostra' },
     features: {
-      square: 'Liscia: entrambi i metodi funzionano',
-      bell: 'Liscia, con un picco: la Part 1',
-      steps: 'Semplice: Lebesgue è esatto con pochi livelli',
-      oscillating: 'Infinite oscillazioni vicino a 0',
+      sine: 'Liscia: entrambi i metodi funzionano',
+      square: 'Liscia e monotona, piatta in 0',
+      jump: 'Semplice: Lebesgue inferiore è esatto',
+      vee: 'Continua, con un angolo',
       unbounded: 'Illimitata, con area finita',
+      indicator: 'L’indicatrice di un insieme',
+      sinc: 'Liscia; la primitiva Si non è elementare',
+      oscillating: 'Infinite oscillazioni vicino a 0',
       traffic: 'Dati di un giorno, con un attacco',
     },
     chooseLabel: 'Funzione',
@@ -464,6 +503,7 @@ const it = {
     customNote: (c) => [c.undefinedPoints ? `In ${c.undefinedPoints} punti su 2.001 la formula non è definita: lì vale 0, che non cambia l’integrale finché sono punti isolati.` : null, c.infinite ? `In ${c.infinite} punti è infinita: Riemann lo segnala, Lebesgue la taglia a 1.000.` : null].filter(Boolean).join(' '),
   },
   functionNames: functionNamesIt,
+  methodNames: methodNamesIt,
   riemann: {
     intro: [
       'Riemann divide [a, b] in n strisce e in ogni striscia prende il valore della funzione in un punto: l’estremo sinistro, il destro, il centro. La funzione è integrabile secondo Riemann se, stringendo le strisce, ogni scelta dei punti porta allo stesso numero; il test di Darboux lo verifica con la somma inferiore (il valore più basso di ogni striscia) e quella superiore (il più alto), che devono avvicinarsi.',
@@ -478,7 +518,7 @@ const it = {
     after: (rows, key) => {
       const last = rows[rows.length - 1];
       if (!Number.isFinite(last.gap)) return ['Qui la somma superiore è infinita per ogni n: la prima striscia contiene lo 0, dove la funzione vale infinito. In senso proprio la funzione non è integrabile secondo Riemann, e il suo integrale esiste solo come limite (integrale improprio): le somme al centro si avvicinano a 2, ma lentamente.'];
-      if (key === 'steps') return [`Con n = ${IT.int(last.n)} strisce sup. - inf. vale ${IT.err(last.gap)}: la differenza viene solo dalle tre strisce a cavallo dei salti, e scende come 1/n.`];
+      if (key === 'jump' || key === 'indicator') return [`Con n = ${IT.int(last.n)} strisce sup. - inf. vale ${IT.err(last.gap)}: la differenza viene solo dalle strisce che toccano il salto, e scende come 1/n.`];
       if (key === 'oscillating') return [`Vicino a 0 ogni striscia contiene infinite onde, e minimo e massimo valgono -1 e 1: sup. - inf. scende lentamente (${IT.err(last.gap)} con n = ${IT.int(last.n)}). La funzione resta integrabile secondo Riemann, perché le strisce cattive occupano uno spazio sempre più piccolo.`];
       return [`Con n = ${IT.int(last.n)} strisce sup. - inf. vale ${IT.err(last.gap)}: inferiore e superiore si stringono intorno all’integrale, ed è la definizione di Riemann vista all’opera.`];
     },
@@ -497,13 +537,13 @@ const it = {
     rearrangementTitle: 'La funzione (viola) e la stessa con i valori riordinati dal più alto (blu): stessa area',
     after: (rows, key) => {
       const last = rows[rows.length - 1];
-      if (key === 'steps') return [`Con K = ${rows[0].K} livelli i valori della funzione, ${[...STEPS.values].sort((a, b) => a - b).map((v) => IT.plain(v)).join(', ')}, cadono tutti su un livello (il passo è ${IT.plain((rows[0].M - rows[0].m) / rows[0].K)}): la somma inferiore è già esatta, ${IT.sig(rows[0].lower, 10)}. Una funzione semplice è fatta di pochi valori, e Lebesgue li conta: valore per misura dell’insieme dove la funzione lo assume.`];
+      if (key === 'jump' || key === 'indicator') return [`I due valori della funzione, ${IT.plain(rows[0].m)} e ${IT.plain(rows[0].M)}, sono il livello più basso e il più alto, quindi cadono su un livello per ogni K: con K = ${rows[0].K} la somma inferiore è già esatta, ${IT.sig(rows[0].lower, 10)}. Una funzione semplice è fatta di pochi valori, e Lebesgue li conta: valore per misura dell’insieme dove la funzione lo assume.`];
       return [`Con K = ${IT.int(last.K)} livelli inferiore e superiore distano ${IT.err(last.gap)}, esattamente (M - m)(b - a)/K. Il secondo grafico ordina i valori della funzione dal più alto al più basso: la curva che ne esce (il riordinamento decrescente) ha la stessa area, ed è il grafico a sinistra letto di traverso.`];
     },
   },
   trySlices: {
     intro: [
-      'Le stesse strisce e fette dal vivo: muovete n e K e confrontate. Con la funzione a gradini Lebesgue diventa esatto non appena i livelli cadono sui gradini, mentre Riemann paga ogni salto; con x² le strisce di Riemann vanno più veloci; con sin(1/x) entrambi faticano vicino a 0. Avvia fa crescere n e K insieme da 1 a 64.',
+      'Le stesse strisce e fette dal vivo: muovete n e K e confrontate. Con i gradini la somma inferiore di Lebesgue è esatta per ogni K, mentre Riemann paga il salto; con x² le strisce di Riemann vanno più veloci; con sin(1/x) entrambi faticano vicino a 0. Avvia fa crescere n e K insieme da 1 a 64.',
     ],
     nLabel: (n) => `n = ${n} strisce`,
     kLabel: (K) => `K = ${K} livelli`,
@@ -517,13 +557,178 @@ const it = {
     riemannTitle: (n) => `Riemann, ${n} strisce`,
     lebesgueTitle: (K) => `Lebesgue, ${K} livelli`,
   },
+  results: {
+    intro: [
+      'La risposta alla consegna in una tabella: ogni funzione con il suo integrale, la somma di Riemann e quella di Lebesgue con 729 strisce e 729 livelli (valutate al centro), i due errori e il verdetto sulla domanda della consegna: i due approcci arrivano allo stesso valore? 729 = 3⁶ è un numero dispari di strisce, quindi il salto in 0,5 dei due gradini cade dentro una striscia, come capita a un salto di cui non si conosce la posizione. Dirichlet e Thomae arrivano dalla sezione 1.8, calcolate con le frazioni esatte.',
+    ],
+    tableTitle: 'Riemann e Lebesgue su ogni funzione, con 729 strisce e 729 livelli',
+    cols: { name: 'Funzione', integral: 'Integrale', riemann: 'Riemann', lebesgue: 'Lebesgue', riemannError: 'Errore R', lebesgueError: 'Errore L', verdict: 'Stesso valore?' },
+    verdicts: { yes: 'Sì', improper: 'Sì, come limite improprio', noRiemann: 'No: Riemann non esiste', unknown: 'Sì, se è integrabile' },
+    integralCell: (row) => `${IT.sig(row.reference, 10)}${row.exact ? '' : ' (rif.)'}`,
+    riemannCell: (row) => (row.kind === 'dirichlet' ? 'nessuno: inf. 0, sup. 1' : row.kind === 'thomae' ? `fra 0 e ${IT.sig(row.upper, 3)}` : IT.sig(row.riemann, 10)),
+    lebesgueCell: (row) => (row.kind === 'regular' ? IT.sig(row.lebesgue, 10) : '0'),
+    errorCell: (v) => (v === null ? '-' : IT.err(v)),
+    pending: 'Le somme delle nove funzioni si calcolano insieme alle simulazioni: qualche secondo. Dirichlet e Thomae sono già qui.',
+    after: (rows) => {
+      const F = IT;
+      const regular = rows.filter((r) => r.kind === 'regular' && r.key !== 'custom');
+      const names = (list) => list.map((r) => inline(functionNamesIt[r.key])).join(', ') || 'nessuna';
+      const unbounded = rows.find((r) => r.key === 'unbounded');
+      const thomae = rows.find((r) => r.key === 'thomae');
+      return [
+        `Sulle funzioni integrabili secondo Riemann i due numeri arrivano allo stesso valore: con 729 strisce e livelli gli errori sono tutti piccoli, e la sezione 1.6 mostra che scendono ancora al crescere di n e K. Con 729 Riemann è più vicino su ${names(regular.filter((r) => r.errors.riemann <= r.errors.lebesgue))}; Lebesgue su ${names(regular.filter((r) => r.errors.lebesgue < r.errors.riemann))}.`,
+        `Le eccezioni sono quelle volute dalla consegna. 1/√x è illimitata: per Riemann ha un integrale solo come limite improprio, e le somme al centro ci arrivano piano (errore ${F.err(unbounded ? unbounded.errors.riemann : null)}); per Lebesgue l’integrale esiste direttamente, ma il calcolo deve tagliare i valori a un tetto. La funzione di Dirichlet non ha integrale di Riemann, perché ogni somma inferiore vale 0 e ogni superiore 1; ha integrale di Lebesgue 0. Thomae ha entrambi gli integrali, uguali a 0: la sua somma superiore con ${F.int(thomae ? thomae.n : 0)} strisce vale ${F.sig(thomae ? thomae.upper : null, 3)} e continua a scendere.`,
+      ];
+    },
+  },
+  efficiency: {
+    intro: [
+      'Il costo si conta in valori di f, che è ciò che pesa quando f è cara da calcolare (una simulazione, una misura). Riemann con n strisce al centro ne chiede n. Lebesgue ne chiede molti di più, perché per misurare un insieme di livello deve sapere dove f attraversa il livello: qui una griglia di 4.097 punti, poi 44 bisezioni per ogni attraversamento di ogni livello. Al computer, insomma, anche Lebesgue divide il dominio: lo fa per misurare le controimmagini. La tabella riporta, per un errore relativo dell’1% e dello 0,01%, il primo n = K che ci arriva, i valori di f che costa e il tempo di una somma nel vostro browser.',
+    ],
+    chartTitle: (name) => `${name}: errore relativo contro valori di f (scale logaritmiche)`,
+    legend: ['Riemann, centro', 'Lebesgue, media'],
+    tableTitle: 'Quanto serve per un errore relativo di 10^-2 e di 10^-4',
+    cols: { name: 'Funzione', target: 'Errore', riemann: 'Riemann', lebesgue: 'Lebesgue' },
+    cell: (hit, method) => (hit ? `n = ${IT.int(hit.n)}: ${IT.int(hit[method].evaluations)} valori, ${IT.dur(hit[method].ms)}` : 'non con 729'),
+    pending: 'I costi si misurano insieme alle simulazioni: qualche secondo.',
+    after: (f) => {
+      const F = IT;
+      const names = (keys) => keys.map((k) => inline(functionNamesIt[k])).join(', ');
+      const out = [`Per un errore dell’1%, dove ci arrivano entrambi, Lebesgue chiede da ${F.int(f.minRatio)} a ${F.int(f.maxRatio)} volte i valori di f di Riemann. Il motivo non è il numero di livelli, che a volte è più piccolo del numero di strisce${f.fewerLevels.length ? ` (succede con ${names(f.fewerLevels)})` : ''}: è la misura degli insiemi di livello, che costa una griglia e una bisezione per ogni attraversamento.`];
+      if (f.onlyLebesgue.length) out.push(`Ci arriva solo Lebesgue su ${names(f.onlyLebesgue)}: è dove le strisce di Riemann soffrono, e ogni livello in più vale la sua spesa.`);
+      if (f.onlyRiemann.length) out.push(`Ci arriva solo Riemann su ${names(f.onlyRiemann)}.`);
+      out.push('In sintesi: come algoritmo generico Riemann è più economico, e lo è di molto; Lebesgue conviene quando la misura delle controimmagini si conosce già o costa poco: per le funzioni semplici, per una funzione data come elenco di valori (dove contarli è facile), o quando serve sapere per quanto tempo f resta sopra una soglia, come nel traffico della sezione 1.9.');
+      return out;
+    },
+  },
+  pathological: {
+    intro: [
+      'Le due funzioni patologiche della consegna. Quella di Dirichlet vale 1 sui razionali e 0 sugli irrazionali di [0, 1]; quella di Thomae vale 1/q nel razionale p/q ridotto ai minimi termini e 0 sugli irrazionali. Ogni striscia di Riemann contiene razionali e irrazionali, quindi per entrambe la somma inferiore vale sempre 0; la superiore vale sempre 1 per Dirichlet, mentre per Thomae scende verso 0. Così Dirichlet non è integrabile secondo Riemann e Thomae sì, con integrale 0. Per Lebesgue valgono entrambe 0: l’insieme dove Dirichlet supera un livello sono i razionali, un insieme numerabile e quindi di misura 0; quello dove Thomae vale almeno 1/Q è un insieme finito di frazioni.',
+      'Al computer però non si calcolano come le altre, e il motivo è pratico: ogni numero che un programma memorizza è razionale. Un double è sempre una frazione m/2^k: l’irrazionale non esiste, nemmeno π. La tabella mostra la frazione esatta di alcuni numeri come li memorizza il browser: per il computer la funzione di Dirichlet vale 1 dappertutto, e il suo “integrale numerico” vale 1, non 0.',
+    ],
+    numbers: { tenth: '0,1', third: '1/3', pi4: 'π/4', sqrt2: '√2', e: 'e' },
+    cols: { number: 'Numero', fraction: 'Frazione esatta memorizzata', value: 'Dirichlet al computer' },
+    thomaeIntro: 'Per questo la pagina calcola le due funzioni con l’aritmetica esatta delle frazioni. I punti delle somme sono frazioni i/n, oppure numeri irrazionali scritti come tali, (i + 1/√2)/n; il massimo di Thomae su una striscia è 1/q, con q il più piccolo denominatore di una frazione dentro la striscia, trovato con i soli interi. Il grafico mostra Thomae con le frazioni fino a q = 40 e la scala della sua somma superiore con 10 strisce.',
+    chartTitle: (upper) => `La funzione di Thomae (q ≤ 40) e la scala della somma superiore con 10 strisce, ${IT.sig(upper, 4)}`,
+    tableTitle: 'Le somme di Thomae, con le frazioni esatte',
+    thomaeCols: { n: 'n', rational: 'Punti i/n', irrational: 'Punti irrazionali', lower: 'Inferiore', upper: 'Superiore', doubles: 'Punti i/n come double' },
+    after: (p) => {
+      const F = IT;
+      const first = p.thomae[0];
+      const last = p.thomae[p.thomae.length - 1];
+      const mid = p.thomae.find((r) => r.n === 1000) || last;
+      return [
+        `La somma superiore di Thomae scende da ${F.sig(first.upper, 3)} con ${F.int(first.n)} strisce a ${F.sig(last.upper, 3)} con ${F.int(last.n)}, con ordine misurato ${F.num(p.upperOrder, 2)}: quasi 1/√n, perché ogni striscia larga 1/n contiene una frazione con denominatore vicino a √n. L’inferiore vale sempre 0, quindi l’integrale di Riemann esiste e vale 0, e le somme con i punti i/n ci arrivano anche loro. Per Lebesgue l’insieme dove Thomae vale almeno 1/Q contiene ${p.farey.map((r) => `${F.int(r.points)} frazioni per Q = ${F.int(r.Q)}`).join(', ')}: tanti punti, ma un insieme finito di punti ha misura 0, e ogni somma di Lebesgue vale esattamente 0.`,
+        `Con i double, invece, un programma vede i/n arrotondato: 0,1 diventa 3602879701896397/2^55, e lì Thomae vale 2^-55. Sopravvivono solo le frazioni diadiche, 1/2, 1/4, 3/8 e così via: con n = ${F.int(mid.n)} la somma vale ${F.sig(mid.doubles, 3)} invece di ${F.sig(mid.rational, 3)}, un numero che non viene né dalla matematica né dall’errore di discretizzazione, ma dalla rappresentazione binaria. Su Dirichlet va peggio: con i double ogni somma vale 1, l’integrale vero è 0. Sono le uniche funzioni della pagina che la matematica integra e il calcolo in virgola mobile no.`,
+      ];
+    },
+  },
+  liouville: {
+    intro: [
+      'Φ(z) è l’integrale di φ(t) = e^(-t²/2)/√(2π) fino a z, e quell’integrale non si scrive con un numero finito di funzioni elementari (polinomi, esponenziali, logaritmi, funzioni trigonometriche, radici e loro composizioni). Gli appunti del corso correggono qui il libro: una primitiva esiste, è Φ stessa, ma non è elementare. Lo dice il teorema di Liouville (1835), nella forma di Rosenlicht che gli appunti citano: se f e g sono razionali e g non è costante, l’integrale di f e^g è elementare solo se vale R e^g, con R razionale e R′ + g′R = f.',
+      'Per la campana f = 1 e g = -x²/2, quindi servirebbe una R razionale con R′ - xR = 1. Se R fosse un polinomio di grado d, il termine -xR avrebbe grado d + 1 e niente lo cancellerebbe; se R avesse un polo di ordine m, R′ ne avrebbe uno di ordine m + 1, e anche lì niente lo cancellerebbe. Quindi R non esiste e Φ non è elementare. Lo si vede anche con i numeri: tutte le soluzioni di R′ - xR = 1 sono S(x) + C e^(x²/2), con S(x) = (Φ(x) - 1/2)/φ(x), e S cresce come e^(x²/2), più in fretta di qualunque funzione razionale.',
+    ],
+    formulas: "R′(x) - x R(x) = 1\nS(x) = (Φ(x) - 1/2)/φ(x) = x + x³/3 + x⁵/(3·5) + x⁷/(3·5·7) + ...,      S′ = 1 + x S",
+    tableTitle: 'S(x) = (Φ(x) - 1/2)/φ(x): la candidata, e perché non è razionale',
+    cols: { x: 'x', S: 'S(x)', ratio: 'S(x)/e^(x²/2)', degree: 'Grado apparente x S′/S' },
+    after: (rows) => {
+      const F = IT;
+      const last = rows[rows.length - 1];
+      return [`Il rapporto S(x)/e^(x²/2) si ferma a √(π/2) = ${F.num(Math.sqrt(Math.PI / 2), 4)}: S cresce come un’esponenziale di x². Il grado apparente x S′(x)/S(x), che per una funzione razionale tende al suo grado, vale ${F.num(rows[0].degree, 2)} per x = ${rows[0].x} e ${F.num(last.degree, 2)} per x = ${last.x}, e continua a crescere come x². Nessuna funzione razionale fa così: è la dimostrazione di Liouville vista nei numeri. La stessa S, scritta come serie, è la serie a termini positivi della sezione 2.7 e il cuore del metodo della sezione 2.9. Lo stesso teorema dice che anche la primitiva di sin(x)/x, una delle funzioni dell’Esercizio 1, non è elementare: per questo il suo integrale esatto viene dalla funzione seno integrale Si(π).`];
+    },
+  },
+  erf: {
+    intro: [
+      'Con la funzione degli errori, erf(x) = (2/√π) ∫_0^x e^(-t²) dt, la formula diventa esatta: Φ(z) = (1 + erf(z/√2))/2, e P(|Z| < k) = erf(k/√2). Ma erf è solo il nome dato a quell’integrale, e un nome non calcola nulla: è come scrivere √2 o π, simboli esatti le cui cifre vanno comunque ottenute con un algoritmo. Ogni erf di ogni libreria è un programma: le librerie matematiche del C usano approssimazioni razionali su intervalli diversi, gli appunti del corso la serie di Taylor. JavaScript, il linguaggio di questa pagina, non ha nemmeno una erf: Math.erf non esiste, e la pagina se la scrive.',
+      'Un esempio pratico è la regola 68-95-99,7, cioè P(|Z| < k) = erf(k/√2) per k = 1, 2, 3. Gli appunti la ricavano da una tavola a 4 decimali, raddoppiando Φ(k) già arrotondata; la tabella la confronta con il metodo della pagina e con mpmath.',
+    ],
+    formulas: 'erf(x) = (2/√π) ∫_0^x e^(-t²) dt\nΦ(z) = (1 + erf(z/√2))/2,      P(|Z| < k) = erf(k/√2) = 2Φ(k) - 1',
+    tableTitle: 'La regola 68-95-99,7: P(|Z| < k) = erf(k/√2)',
+    cols: { k: 'k', value: 'Metodo della pagina', reference: 'mpmath', rounded: 'Da una tavola a 4 decimali' },
+    after: (rows) => {
+      const F = IT;
+      return [`Arrotondare Φ(k) a 4 decimali prima di raddoppiarla costa l’ultima cifra: ${rows.map((r) => `per k = ${r.k} la tavola dà ${F.num(r.rounded, 4)} invece di ${F.num(r.reference, 4)}`).join(', ')}. Il metodo della pagina differisce da mpmath al più di un’unità nella sedicesima cifra. Da qui la pagina prova le tre famiglie di metodi che la consegna suggerisce: l’integrazione numerica (2.3 - 2.6), le serie (2.7) e le approssimazioni costruite su erf (2.8).`];
+    },
+  },
+  series: {
+    intro: [
+      'Gli appunti del corso calcolano Φ integrando termine a termine la serie di Taylor di e^(-t²/2), cioè la serie di potenze di erf. È una serie a segni alterni, e il teorema delle serie alterne garantisce che l’errore non supera il primo termine trascurato. In aritmetica esatta funziona per ogni z; al computer no. Per z grande i termini crescono fino a circa e^(z²/2) prima di calare, e sommare numeri enormi di segno opposto per ottenere un numero vicino a 1 costa cifre: ne perde una per ogni potenza di dieci del termine più grande.',
+      'La stessa funzione si scrive anche con tutti i termini positivi (Marsaglia, 2004): la somma è proprio la S di Liouville della sezione 2.1. Niente cancellazione dentro la somma, un solo esponenziale fuori. La tabella confronta le due serie per z da 1 a 8; il grafico segue l’errore al crescere del numero di termini.',
+    ],
+    formulas: 'Φ(z) = 1/2 + (1/√(2π)) Σ_(k≥0) (-1)^k z^(2k+1)/(2^k (2k+1) k!)          (appunti, serie alterna)\nΦ(z) = 1/2 + φ(z) Σ_(k≥0) z^(2k+1)/(1·3·5···(2k+1))                     (termini positivi)',
+    tableTitle: 'Le due serie: termini necessari, cifre perse, errori',
+    cols: { z: 'z', altTerms: 'Appunti: termini', largest: 'Termine più grande', lost: 'Cifre perse', altError: 'Errore', posTerms: 'Positiva: termini', posError: 'Errore' },
+    chooseLabel: 'z',
+    chartTitle: (z) => `Φ(${IT.plain(z)}): errore contro numero di termini (scala logaritmica)`,
+    legend: ['Serie degli appunti', 'Primo termine trascurato (il limite delle serie alterne)', 'Serie a termini positivi'],
+    after: (rows) => {
+      const F = IT;
+      const at = (z) => rows.find((r) => r.z === z);
+      const five = at(5);
+      const eight = at(8);
+      return [`Fino a z = 3 le due serie si equivalgono. Poi quella degli appunti perde cifre: a z = 5 il suo termine più grande vale ${F.sci(five.alternating.largest)} e l’errore sale a ${F.err(five.alternating.error)}; a z = 8 il termine più grande vale ${F.sci(eight.alternating.largest)}, le cifre perse sono ${F.num(eight.alternating.lost, 1)} e l’errore è ${F.err(eight.alternating.error)}, mentre la serie positiva resta a ${F.err(eight.positive.error)}. Il limite delle serie alterne vale solo in aritmetica esatta: nel grafico, per z grande, l’errore si ferma molto sopra il primo termine trascurato, al livello degli arrotondamenti dei termini più grandi. I termini necessari crescono come z²: ${eight.positive.terms} per la serie positiva a z = 8.`];
+    },
+  },
+  approximations: {
+    intro: [
+      'Le approssimazioni costruite su erf sono quelle dei manuali: una formula fissa, un esponenziale e cinque coefficienti trovati una volta per tutte. La 7.1.26 di Abramowitz e Stegun (da Hastings, 1955) scrive erf(x) ≈ 1 - t(a₁ + a₂t + a₃t² + a₄t³ + a₅t⁴) e^(-x²), con t = 1/(1 + 0,3275911 x) e un errore al massimo di 1,5 × 10^-7; per Φ l’errore si dimezza. La 26.2.17 (Zelen e Severo) approssima direttamente la coda P(Z > z) con una formula dello stesso tipo, con errore sotto 7,5 × 10^-8.',
+    ],
+    chartTitle: 'Errore delle due formule lungo z, con il limite pubblicato ±7,5 × 10^-8',
+    legend: ['Abramowitz-Stegun 7.1.26', 'Zelen-Severo 26.2.17', 'Limite pubblicato'],
+    after: (f) => {
+      const F = IT;
+      return [`Gli errori ondeggiano: è la firma delle approssimazioni costruite per rendere uniforme l’errore invece di concentrarlo in un punto. Gli scarti più grandi, ${F.err(f.as)} a z = ${F.num(f.asAt, 1)} e ${F.err(f.zs)} a z = ${F.num(f.zsAt, 1)}, rispettano i limiti pubblicati (${F.sci(f.asBound)} e ${F.sci(f.zsBound)}). Sono le più veloci (2.11) e bastano per una tavola a 5 decimali, ma non danno più di 7 cifre, e lontano nella coda sbagliano in proporzione: a z = -9, dove Φ vale 1,1 × 10^-19, la 7.1.26 restituisce ${F.sig(f.asTail, 3)}, e la 26.2.17 a z = -37 ha un errore relativo del ${F.pct(f.zsRelative, 0)}.`];
+    },
+  },
+  ours: {
+    intro: (f) => [
+      `Il metodo della pagina mette insieme i due pezzi migliori. Per |z| < ${f.switchZ} usa la serie a termini positivi della sezione 2.7, che non cancella nulla e lì chiede al massimo ${f.seriesTerms} termini. Per |z| ≥ ${f.switchZ} usa la frazione continua di Laplace (1805) per il rapporto di Mills, P(Z > w)/φ(w), calcolata con il metodo di Lentz: converge per ogni w > 0, tanto più in fretta quanto più w è grande, e lavora direttamente sulla coda, quindi tiene tutte le cifre anche di probabilità come 10^-300. In entrambi i casi basta un solo esponenziale.`,
+    ],
+    formulas: 'Φ(z) = 1/2 + φ(z) Σ_(k≥0) z^(2k+1)/(1·3·5···(2k+1))                  |z| < 2\nP(Z > w) = φ(w) / (w + 1/(w + 2/(w + 3/(w + ...))))                   w = |z| ≥ 2,   Φ(-w) = P(Z > w)',
+    after: (f) => {
+      const F = IT;
+      return [`Contro mpmath, su z da -8 a 8 e nella coda fino a z = -37: errore assoluto massimo ${F.err(f.ours.absolute)}, errore relativo massimo ${F.err(f.ours.relative)} (a z = ${F.num(f.ours.relAt, 1)}, dove la serie sottrae ancora φS da 1/2). Vuol dire circa 15 cifre corrette dappertutto, contro le 7 delle formule dei manuali, con al più ${f.ours.terms} termini. Il prezzo si misura nella sezione 2.11.`];
+    },
+  },
+  reference: {
+    intro: [
+      'Il riferimento affidabile trovato sul web è doppio. Il primo è la tavola della normale del NIST/SEMATECH e-Handbook of Statistical Methods (sezione 1.3.6.7.1), che dà P(0 ≤ Z ≤ z) con 5 decimali per z da 0 a 4,09: la tavola classica, controllabile da chiunque. Cinque decimali però non vedono errori sotto 5 × 10^-6, quindi il secondo riferimento è mpmath, una libreria Python open source a precisione arbitraria, qui usata con 60 cifre.',
+    ],
+    link: 'La tavola del NIST',
+    tableTitle: 'Φ(z) in alcuni punti: NIST, mpmath e il metodo della pagina',
+    cols: { z: 'z', nist: 'NIST, 5 decimali', mpmath: 'mpmath, 60 cifre', ours: 'Metodo della pagina', error: 'Errore', nistError: 'Errore del NIST' },
+    nist: (n) => `Tutta la tavola: ${n.agree} celle su ${n.total} coincidono con il metodo della pagina arrotondato a 5 decimali.`,
+    mismatch: (m) => `L’unica che non coincide è z = ${IT.num(m.z, 2)}: la tavola stampa ${IT.num(m.table, 5)}, il metodo dà ${IT.num(m.ours, 10)}, che si arrotonda a ${IT.num(m.rounded, 5)}. mpmath dà ragione al metodo: è un errore di un’unità nell’ultima cifra della tavola.`,
+    after: (rows) => {
+      const F = IT;
+      const worst = Math.max(...rows.map((r) => r.error));
+      const nistWorst = Math.max(...rows.filter((r) => r.nistError !== null && r.z !== 1.36).map((r) => r.nistError));
+      return [`Sui punti della tabella l’errore del metodo contro mpmath non supera ${F.err(worst)}, cioè l’ultima cifra di un double. Quello della tavola del NIST resta sotto 5 × 10^-6, mezza unità del quinto decimale (al massimo ${F.err(nistWorst)}), tranne a z = 1,36. Un riferimento va controllato come un risultato: per questo la pagina ne usa due.`];
+    },
+  },
+  methods: {
+    intro: [
+      'Tutti i metodi a confronto, contro mpmath: l’errore assoluto più grande per z da -8 a 8, l’errore relativo più grande sotto la media, dove Φ è piccola (fino a z = -37), quanti esponenziali e quanti termini chiede una chiamata, e quanto dura. Il tempo è misurato qui, nel vostro browser: ogni metodo calcola Φ su 1.001 punti fra -8 e 8, ripetendo finché passano almeno 8 millisecondi, e la misura si ripete 11 volte, a turno fra i metodi. La tabella riporta la mediana con il suo intervallo di confidenza dalle statistiche d’ordine, che non suppone nulla sulla forma della distribuzione dei tempi.',
+    ],
+    tableTitle: 'Precisione, costo e tempo di ogni metodo',
+    cols: { method: 'Metodo', absolute: 'Errore assoluto', relative: 'Errore relativo nella coda', exp: 'exp', terms: 'Termini', time: 'ns per chiamata' },
+    relativeCell: (v) => (!Number.isFinite(v) ? '∞' : v >= 1 ? '≥ 1' : IT.err(v)),
+    timeCell: (t) => (t ? `${IT.int(t.median)} [${IT.int(t.lo)}, ${IT.int(t.hi)}]` : 'in misura'),
+    chartTitle: 'Errore di ogni metodo lungo z, contro mpmath (scala logaritmica)',
+    after: (f) => {
+      const F = IT;
+      const out = [`Il metodo della pagina è l’unico che tiene circa 15 cifre sia in senso assoluto sia in senso relativo. Gauss-Legendre con 64 nodi arriva alla stessa precisione assoluta, ma chiede 64 esponenziali e nella coda bassa perde le cifre nella sottrazione da 1/2. Le formule dei manuali sono le più veloci, ma si fermano a 7 cifre. Le serie da sole non bastano: quella degli appunti perde cifre per z grande, quella positiva perde la precisione relativa nella coda bassa.`];
+      if (f.speedup) out.push(`Nel vostro browser il metodo della pagina è ${F.num(f.speedup, 1)} volte più veloce di Gauss-Legendre e costa ${F.num(f.slowdown, 1)} volte la 7.1.26 (intervalli al ${F.pct(f.coverage, 1)}). È lo stesso compromesso delle librerie vere: una formula rapida dove basta, una diversa nella coda.`);
+      return out;
+    },
+  },
   compare: {
     intro: [
-      'Chi vince? Il grafico confronta l’errore delle due somme medie al crescere di n = K, e tratteggiata la distanza fra inferiore e superiore di ciascun metodo, che è la loro garanzia. La tabella in fondo fa lo stesso confronto su tutte e sei le funzioni.',
+      'Come convergono? Il grafico segue l’errore delle due somme medie al crescere di n = K = 3, 9, 27, ..., 729, e tratteggiata la distanza fra inferiore e superiore di ciascun metodo, che è la loro garanzia. La tabella in fondo misura su tutte le funzioni l’ordine di convergenza, cioè la pendenza della retta log errore contro log n: ordine 2 vuol dire che triplicando n l’errore si divide per 9.',
     ],
     chartTitle: (name) => `${name}: errore al crescere di n = K (scale logaritmiche)`,
     legend: ['Riemann, centro', 'Lebesgue, media', 'Riemann, sup. - inf.', 'Lebesgue, sup. - inf.'],
-    tableTitle: 'Errori e garanzie per n = K raddoppiato',
+    tableTitle: 'Errori e garanzie per n = K triplicato',
     cols: { n: 'n = K', riemann: 'Errore di Riemann', lebesgue: 'Errore di Lebesgue', riemannGap: 'Garanzia di Riemann', lebesgueGap: 'Garanzia di Lebesgue' },
     customPending: 'Il confronto della vostra funzione si calcola qui, nel browser: qualche decimo di secondo.',
     after: (f, name) => {
@@ -531,13 +736,20 @@ const it = {
       const winner = f.winner === 'lebesgue' ? 'Lebesgue' : 'Riemann';
       return [`${name}: con n = K = ${F.int(f.n)} vince ${winner}, di ${F.num(f.ratio, 1)} volte (errori ${F.err(f.riemann)} per Riemann e ${F.err(f.lebesgue)} per Lebesgue). L’errore di Riemann scende con ordine ${F.num(f.riemannOrder, 2)}, quello di Lebesgue con ordine ${F.num(f.lebesgueOrder, 2)}${f.riemannInfinite ? '; la garanzia di Riemann è infinita, quella di Lebesgue no' : ''}.`];
     },
-    summaryTitle: 'Tutte le funzioni: errori con n = K = 8 e n = K = 1.024',
-    summaryCols: { name: 'Funzione', riemann8: 'Riemann, 8', lebesgue8: 'Lebesgue, 8', riemann1024: 'Riemann, 1.024', lebesgue1024: 'Lebesgue, 1.024', winner: 'Vince' },
+    summaryTitle: 'Tutte le funzioni: errori con n = K = 9 e 729, e ordini di convergenza misurati',
+    summaryCols: { name: 'Funzione', riemannSmall: 'Riemann, 9', lebesgueSmall: 'Lebesgue, 9', riemannLarge: 'Riemann, 729', lebesgueLarge: 'Lebesgue, 729', orderRiemann: 'Ordine R', orderLebesgue: 'Ordine L', winner: 'Vince' },
+    orderCell: (v) => (Number.isFinite(v) ? IT.num(v, 2) : 'esatto'),
     summaryAfter: (rows) => {
-      const names = (who) => rows.filter((r) => r.winner === who).map((r) => functionNamesIt[r.key].toLowerCase()).join(', ') || 'nessuna';
+      const F = IT;
+      const names = (who) => rows.filter((r) => r.winner === who).map((r) => inline(functionNamesIt[r.key])).join(', ') || 'nessuna';
+      const order = (key, m) => {
+        const r = rows.find((x) => x.key === key);
+        return r ? F.num(r.orders[m], 2) : F.na;
+      };
       return [
-        `Con n = K = 1.024 Riemann vince su: ${names('riemann')}; Lebesgue su: ${names('lebesgue')}. La lezione è onesta: come algoritmo numerico Lebesgue non è migliore di Riemann. Per le funzioni lisce le strisce di Riemann, valutate al centro, convergono come 1/n²; Lebesgue si fa valere con le funzioni semplici e con quelle illimitate, dove Riemann deve fermarsi a un limite improprio.`,
-        'Il vero vantaggio di Lebesgue non è la velocità: è che la sua garanzia non dipende dalla forma della funzione lungo x, e che i suoi teoremi sui limiti (convergenza monotona e dominata) permettono di scambiare limite e integrale, cosa su cui la probabilità e la statistica sono costruite.',
+        `Con n = K = 729 Riemann vince su: ${names('riemann')}; Lebesgue su: ${names('lebesgue')}.`,
+        `Gli ordini dicono il perché. Sulle funzioni lisce Riemann al centro ha ordine 2 (${order('sine', 'riemann')} su sin x, ${order('square', 'riemann')} su x²), Lebesgue circa 1,5 (${order('sine', 'lebesgue')} e ${order('square', 'lebesgue')}): dove f è piatta, al massimo di sin x o al minimo di x², l’insieme sopra un livello cambia come una radice quadrata, e le fette di Lebesgue lo seguono male. Su |x - 0,5| invece la misura sopra il livello y è 1 - 2y, una retta, e Lebesgue è esatto già con 3 livelli. Sui gradini l’ordine è 1 per entrambi, perché il salto cade dentro una striscia, ma l’errore di Lebesgue è la metà. Su 1/√x l’ordine di Riemann scende a ${order('unbounded', 'riemann')} e quello di Lebesgue resta ${order('unbounded', 'lebesgue')}; su sin(1/x) faticano entrambi (${order('oscillating', 'riemann')} e ${order('oscillating', 'lebesgue')}).`,
+        'Il vero vantaggio di Lebesgue non è la velocità: è che la sua garanzia, (M - m)(b - a)/K, non dipende da come la funzione si comporta lungo x, e che i suoi teoremi sui limiti (convergenza monotona e dominata) permettono di scambiare limite e integrale, cosa su cui la probabilità e la statistica sono costruite.',
       ];
     },
   },
@@ -554,7 +766,7 @@ const it = {
       const above500 = r.rows.find((row) => row.y === 500);
       return [
         `In tutto il giorno passano ${F.num(r.total, 1)} Mb/s × ore, cioè ${F.int(r.gigabytes)} GB (le somme di Riemann minuto per minuto danno ${F.num(r.riemann, 1)}). L’attacco ne è solo il ${F.pct(r.attackShare, 1)}: nel totale si vede appena. Negli insiemi di livello invece è l’unico protagonista: sopra 500 Mb/s il collegamento resta ${F.num(above500.hours * 60, 1)} minuti, tutti fra le ${clock(above500.intervals[0][0])} e le ${clock(above500.intervals[above500.intervals.length - 1][1])}, e il picco arriva a ${F.int(r.peak)} Mb/s.`,
-        'La curva di durata del carico, il traffico riordinato dal minuto più carico al più scarico, è il riordinamento decrescente della sezione 2.4: ingegneri delle reti e dell’energia la usano da decenni senza chiamarla Lebesgue. La sua area è di nuovo il totale.',
+        'La curva di durata del carico, il traffico riordinato dal minuto più carico al più scarico, è il riordinamento decrescente della sezione 1.4: ingegneri delle reti e dell’energia la usano da decenni senza chiamarla Lebesgue. La sua area è di nuovo il totale.',
       ];
     },
   },
@@ -563,7 +775,7 @@ const it = {
       'Monte Carlo integra estraendo punti a caso: l’integrale di f su [a, b] è (b - a) volte il valore atteso di f(U), con U uniforme, e la media di N valori lo stima. Non guarda mai l’ordine dei punti sull’asse x, solo quanti valori cadono dove: è un parente statistico di Lebesgue. Il suo errore scende come 1/√N qualunque sia la regolarità della funzione, e ogni stima viene con il suo intervallo di confidenza, calcolato con le tre righe di Welford dell’Homework #4.',
     ],
     formulasTitle: 'Monte Carlo',
-    fieldsIntro: 'Quanti punti usa ogni stima e quante stime indipendenti si fanno per ogni funzione; il seme è quello della sezione 1.8.',
+    fieldsIntro: 'Quanti punti usa ogni stima e quante stime indipendenti si fanno per ogni funzione; il seme è quello della sezione 2.15.',
     pointsLabel: 'Punti per stima N',
     pointsHint: `da ${IT.int(LIMITS.points[0])} a ${IT.int(LIMITS.points[1])}`,
     repsLabel: 'Ripetizioni',
@@ -576,9 +788,9 @@ const it = {
     after: (s) => {
       const F = IT;
       const u = s.mc.unbounded;
-      const ok = ['square', 'bell', 'steps', 'oscillating', 'traffic'].map((key) => `${functionNamesIt[key].toLowerCase()} ${F.pct(s.mc[key].coverage, 1)}`).join(', ');
+      const ok = FUNCTIONS.filter((key) => key !== 'unbounded').map((key) => `${inline(functionNamesIt[key])} ${F.pct(s.mc[key].coverage, 1)}`).join(', ');
       return [
-        `Per le cinque funzioni con varianza finita gli intervalli al 95% contengono l’integrale esatto in queste quote: ${ok}. È la promessa dell’intervallo, e i test della sezione 3 dicono se è mantenuta.`,
+        `Per le ${FUNCTIONS.length - 1} funzioni con varianza finita gli intervalli al 95% contengono l’integrale esatto in queste quote: ${ok}. È la promessa dell’intervallo, e i test della sezione 4 dicono se è mantenuta.`,
         `Con 1/√x la quota è ${F.pct(u.coverage, 1)}${u.coverage < 0.94 ? ', sotto la promessa' : ''}. Le stime restano giuste in media (${F.sig(u.mean, 6)} contro 2), ma f(U) = 1/√U ha varianza infinita: ogni tanto U cade vicinissimo a 0 e un solo punto sposta tutta la media. L’istogramma lo mostra: una coda lunga a destra e un picco spostato a sinistra, e la deviazione standard di un campione sottovaluta quasi sempre la vera incertezza. È la stessa funzione che Riemann non integra in senso proprio: anche Monte Carlo, che non guarda l’ordine dei punti, sente l’infinito.`,
       ];
     },
@@ -594,15 +806,6 @@ const it = {
     chartTitle: (name) => `${name}: la stima al crescere dei punti (scala logaritmica), con la fascia al 95%`,
     legend: ['stima e fascia al 95%', 'valore esatto'],
     status: (p, exact) => (p ? `${IT.int(p.k)} punti: stima ${IT.sig(p.estimate, 7)} ± ${IT.sig(1.96 * p.se, 3)}, valore esatto ${IT.sig(exact, 7)}.` : 'Premete Avvia.'),
-  },
-  dirichlet: {
-    intro: [
-      'L’esempio classico che separa i due integrali è la funzione di Dirichlet: 1 sui razionali e 0 sugli irrazionali, su [0, 1]. Ogni striscia di Riemann contiene sia razionali sia irrazionali, quindi la somma inferiore vale sempre 0 e quella superiore sempre 1: per Riemann non è integrabile. Per Lebesgue sì, e l’integrale vale 0, perché i razionali sono numerabili e hanno misura zero.',
-      'Al computer però non si può calcolare, e il motivo è pratico: ogni numero che un programma memorizza è razionale. Un double è sempre una frazione m/2^k: l’irrazionale non esiste, nemmeno π. Per il computer la funzione di Dirichlet vale 1 dappertutto, e il suo “integrale numerico” vale 1, non 0. La tabella mostra la frazione esatta di alcuni numeri come li memorizza il browser.',
-    ],
-    numbers: { tenth: '0,1', third: '1/3', pi4: 'π/4', sqrt2: '√2', e: 'e' },
-    cols: { number: 'Numero', fraction: 'Frazione esatta memorizzata', value: 'Dirichlet al computer' },
-    after: 'La misura di Lebesgue vede l’insieme di tutti i reali; un computer ne vede un sottoinsieme finito di razionali, che per Lebesgue ha misura zero. Questa è l’unica funzione della pagina che la matematica integra e il calcolo numerico no.',
   },
   stats: {
     verdict: { reject: 'H₀ rifiutata', notReject: 'H₀ non rifiutata' },
@@ -640,39 +843,47 @@ const it = {
     events: [
       { year: '1615', task: true, title: 'Keplero', text: 'Nella Nova stereometria doliorum vinariorum calcola il volume delle botti di vino con una regola a tre punti: l’antenata della regola di Simpson.' },
       { year: '1676-1722', task: true, title: 'Newton e Cotes', text: 'Le formule per integrare con punti equidistanti, che oggi portano i loro nomi: i trapezi e Simpson ne sono i primi due casi.' },
-      { year: '1733', task: true, title: 'de Moivre', text: 'La curva normale compare come approssimazione della binomiale: è la densità che la Part 1 integra.' },
+      { year: '1733', task: true, title: 'de Moivre', text: 'La curva normale compare come approssimazione della binomiale: è la densità che l’Esercizio 2 integra.' },
       { year: '1743', task: true, title: 'Simpson', text: 'Thomas Simpson pubblica la regola delle parabole che porta il suo nome, già nota a Cavalieri e a James Gregory.' },
       { year: '1799', task: true, title: 'Kramp', text: 'Christian Kramp calcola la prima tavola dell’integrale di e^(-t²), per la rifrazione astronomica: la prima tavola della normale.' },
+      { year: '1805', task: true, title: 'Laplace', text: 'Nel quarto volume del Traité de mécanique céleste la frazione continua per la coda della normale: è la seconda metà del metodo della sezione 2.9.' },
       { year: '1809', task: true, title: 'Gauss', text: 'Nella Theoria motus la normale diventa la legge degli errori di osservazione.' },
       { year: '1814', task: true, title: 'Gauss', text: 'Methodus nova integralium valores per approximationem inveniendi: nodi e pesi scelti per integrare esattamente i polinomi del grado più alto possibile, la regola di Gauss della pagina.' },
       { year: '1826', task: true, title: 'Jacobi', text: 'Collega i nodi di Gauss alle radici dei polinomi di Legendre, come li calcola gaussLegendre() con il metodo di Newton.' },
-      { year: '1835', task: false, title: 'Liouville', text: 'Dimostra che certi integrali, fra cui quello di e^(-t²), non si esprimono con un numero finito di funzioni elementari: Φ va calcolata numericamente.' },
+      { year: '1829', task: true, title: 'Dirichlet', text: 'Nell’articolo sulla convergenza delle serie di Fourier propone una funzione che vale una costante sui razionali e un’altra sugli irrazionali, come esempio di funzione che non si sa integrare: la prima patologica della consegna.' },
+      { year: '1835', task: true, title: 'Liouville', text: 'Dimostra che certi integrali, fra cui quello di e^(-t²), non si esprimono con un numero finito di funzioni elementari: Φ va calcolata numericamente (sezione 2.1).' },
       { year: '1854', task: true, title: 'Riemann', text: 'Nella tesi di abilitazione sulle serie trigonometriche, pubblicata dopo la sua morte, definisce l’integrale come limite delle somme sulle strisce.' },
-      { year: '1871', task: false, title: 'Glaisher', text: 'Dà il nome alla funzione degli errori, erf, con cui oggi si scrive Φ(z) = (1 + erf(z/√2))/2.' },
+      { year: '1871', task: true, title: 'Glaisher', text: 'Dà il nome alla funzione degli errori, erf, con cui oggi si scrive Φ(z) = (1 + erf(z/√2))/2 (sezione 2.2).' },
       { year: '1875', task: true, title: 'Darboux', text: 'Le somme inferiore e superiore: una funzione è integrabile secondo Riemann se e solo se la loro differenza tende a zero.' },
+      { year: '1875', task: true, title: 'Thomae', text: 'Nel suo libro sugli integrali definiti la funzione che vale 1/q in p/q: discontinua su ogni razionale, eppure integrabile secondo Riemann. È la seconda patologica della consegna.' },
       { year: '1898', task: false, title: 'Borel', text: 'Costruisce la misura degli insiemi della retta, additiva sulle successioni numerabili: il terreno su cui lavorerà Lebesgue.' },
       { year: '1902', task: true, title: 'Lebesgue', text: 'La tesi Intégrale, longueur, aire, pubblicata negli Annali di Matematica Pura ed Applicata: l’integrale per livelli e la misura degli insiemi di livello.' },
       { year: '1903', task: false, title: 'Sheppard', text: 'Le tavole della normale su Biometrika, il modello delle tavole che ogni libro di statistica riporta ancora.' },
       { year: '1905', task: false, title: 'Vitali', text: 'Giuseppe Vitali costruisce un insieme non misurabile: anche Lebesgue ha un limite, e la misura non si può dare a ogni sottoinsieme della retta.' },
       { year: '1933', task: true, title: 'Kolmogorov', text: 'Nei Grundbegriffe la probabilità diventa una misura e il valore atteso un integrale di Lebesgue; nello stesso anno, sul Giornale dell’Istituto Italiano degli Attuari, il test sullo scarto massimo fra la funzione di ripartizione empirica e quella teorica.' },
       { year: '1949', task: true, title: 'Metropolis e Ulam', text: 'The Monte Carlo Method: integrare e stimare probabilità estraendo numeri a caso.' },
-      { year: '1958', task: true, title: 'Box e Muller', text: 'La trasformazione di due uniformi in due normali indipendenti, usata per i dati della sezione 1.8.' },
+      { year: '1955', task: true, title: 'Hastings', text: 'Approximations for Digital Computers: formule con pochi coefficienti per i primi calcolatori, fra cui quella di erf che Abramowitz e Stegun riporteranno come 7.1.26.' },
+      { year: '1958', task: true, title: 'Box e Muller', text: 'La trasformazione di due uniformi in due normali indipendenti, usata per i dati della sezione 2.15.' },
+      { year: '1964', task: true, title: 'Abramowitz e Stegun', text: 'Lo Handbook of Mathematical Functions del National Bureau of Standards, con le formule 7.1.26 e 26.2.17 (Zelen e Severo) della sezione 2.8.' },
       { year: '1969', task: false, title: 'Cody', text: 'Le approssimazioni razionali di erf che usano ancora molte librerie numeriche: oggi Φ si calcola così, non con le regole di quadratura.' },
       { year: '1970', task: true, title: 'Stephens', text: 'La correzione del test di Kolmogorov-Smirnov per campioni finiti, (√n + 0,12 + 0,11/√n) D, usata nella pagina.' },
-      { year: '1985', task: true, title: 'IEEE 754', text: 'Lo standard dei numeri in virgola mobile: ogni double è una frazione m/2^k, ed è per questo che la funzione di Dirichlet al computer vale sempre 1.' },
+      { year: '1972', task: true, title: 'Rosenlicht', text: 'Integration in Finite Terms, sull’American Mathematical Monthly: la forma del teorema di Liouville citata dagli appunti del corso e usata nella sezione 2.1.' },
+      { year: '1976', task: true, title: 'Lentz', text: 'Un modo stabile di calcolare le frazioni continue dall’alto verso il basso, fermandosi quando il risultato non cambia più: è come la pagina calcola quella di Laplace.' },
+      { year: '1985', task: true, title: 'IEEE 754', text: 'Lo standard dei numeri in virgola mobile: ogni double è una frazione m/2^k, ed è per questo che al computer la funzione di Dirichlet vale sempre 1 (sezione 1.8).' },
+      { year: '2004', task: true, title: 'Marsaglia', text: 'Evaluating the Normal Distribution, sul Journal of Statistical Software: la serie a termini positivi della sezione 2.7, poche righe di codice per 15 cifre.' },
       { year: '2014-2018', task: true, title: 'SplitMix e xoshiro', text: 'I generatori di numeri casuali di questa pagina, come degli Homework #3 e #4.' },
     ],
-    after: 'La storia corre su due binari che questo homework mette insieme. Uno è il calcolo dell’area, dalle botti di Keplero a Gauss, che porta alle regole della Part 1; l’altro è la definizione dell’integrale, da Riemann a Lebesgue a Kolmogorov, che porta alla probabilità moderna e alla Part 2.',
+    after: 'La storia corre su due binari che questo homework mette insieme. Uno è la definizione dell’integrale, da Riemann a Lebesgue a Kolmogorov, che porta alla probabilità moderna e all’Esercizio 1; l’altro è il calcolo dell’area sotto la campana, dalle botti di Keplero a Gauss, Laplace e alle formule dei manuali, che porta all’Esercizio 2.',
   },
   conclusion: (s, facts) => {
     const F = IT;
     const out = [
-      `Part 1. La funzione di ripartizione della normale si calcola sommando fette della campana. Le cinque regole convergono con gli ordini della teoria (misurati: ${F.num(facts.orders.left, 2)}, ${F.num(facts.orders.midpoint, 2)}, ${F.num(facts.orders.trapezoid, 2)}, ${F.num(facts.orders.simpson, 2)}), e Gauss-Legendre arriva a dieci decimali con ${F.int(facts.enough.gauss)} valori di φ contro i ${F.int(facts.enough.simpson)} di Simpson. Il -∞ si aggira meglio con la simmetria che con il troncamento, e la coda lontana va integrata direttamente: 1 - Φ(k) sbaglia di più del 50% da k = ${facts.tailTotal}. Con la stessa CDF si ricostruiscono la tavola dei libri e i quantili, l’1,96 compreso, e si fissano le soglie d’allarme: purché i dati abbiano davvero code normali, cosa che il test di Kolmogorov-Smirnov permette di verificare.`,
-      'Part 2. Riemann e Lebesgue danno lo stesso numero su tutte le funzioni della pagina, ma lo raggiungono in modi diversi. Come algoritmo Riemann vince sulle funzioni lisce; Lebesgue vince sulle funzioni semplici e su quelle illimitate, e la sua garanzia, (M - m)(b - a)/K, non dipende da come la funzione si comporta lungo x. Sul traffico di un server i due integrali rispondono a due domande: quanto è passato in tutto e per quanto tempo il collegamento è rimasto sopra ogni soglia.',
+      'Esercizio 1. Riemann e Lebesgue arrivano allo stesso numero su tutte le funzioni integrabili secondo Riemann, ma ci arrivano in modi diversi. Sulle funzioni lisce le strisce di Riemann al centro scendono come 1/n², mentre Lebesgue rallenta dove la funzione è piatta, perché lì l’insieme di livello cambia in fretta; Lebesgue è esatto su |x - 0,5|, alla pari sui gradini e più veloce dove Riemann soffre, su 1/√x e su sin(1/x). Come algoritmo però costa di più, perché misurare le controimmagini vuol dire comunque dividere il dominio. Il suo vantaggio vero è un altro: integra funzioni che per Riemann non hanno integrale, come quella di Dirichlet, e permette di scambiare limite e integrale, su cui è costruita la probabilità. Al computer Dirichlet e Thomae vanno calcolate con le frazioni esatte, perché ogni double è razionale.',
+      `Esercizio 2. Φ non ha una formula elementare (Liouville), ed erf la scrive in modo esatto senza calcolarla. Delle tre famiglie di metodi della consegna l’integrazione numerica converge con gli ordini della teoria (misurati: ${F.num(facts.orders.left, 2)}, ${F.num(facts.orders.midpoint, 2)}, ${F.num(facts.orders.trapezoid, 2)} e ${F.num(facts.orders.simpson, 2)}, contro 1, 2, 2 e 4), la serie degli appunti perde cifre per z grande, e le formule dei manuali si fermano a 7 cifre. Il metodo della pagina, la serie a termini positivi vicino al centro e la frazione continua di Laplace nelle code, tiene circa 15 cifre ovunque con un solo esponenziale, coincide con mpmath e con ${F.int(facts.nist.agree)} celle su ${F.int(facts.nist.total)} della tavola del NIST, e l’unica cella diversa è un errore della tavola.`,
     ];
     if (s) {
       const u = s.mc.unbounded;
-      out.push(`Monte Carlo, il cugino statistico di Lebesgue, mantiene la promessa del 95% sulle funzioni con varianza finita; su 1/√x, che ha varianza infinita, gli intervalli contengono l’integrale il ${F.pct(u.coverage, 1)} delle volte: è la stessa funzione che Riemann non integra in senso proprio. E la funzione di Dirichlet ricorda il limite di ogni calcolo numerico: un computer vede solo numeri razionali, un insieme che per Lebesgue ha misura zero.`);
+      out.push(`Monte Carlo, il cugino statistico di Lebesgue, mantiene la promessa del 95% sulle funzioni con varianza finita; su 1/√x, che ha varianza infinita, gli intervalli contengono l’integrale il ${F.pct(u.coverage, 1)} delle volte: è la stessa funzione che Riemann non integra in senso proprio.`);
     }
     return out;
   },
@@ -701,12 +912,12 @@ const it = {
   download: {
     title: 'Scarica il codice',
     text: 'Il programma completo in HTML, CSS e JavaScript, senza dipendenze, in italiano e in inglese: dopo aver estratto l’archivio si apre con un doppio clic su index.html, anche offline, con gli stessi calcoli, grafici ed esempi interattivi. Con node homework5.js stampa nel terminale le cinque regole, la tavola della normale, i quantili, le code, le somme di Riemann e di Lebesgue di ogni funzione, Monte Carlo e i test; --z, --mu, --sigma, --rule, --n, --function, --formula, --a, --b e --seed cambiano i parametri.',
-    contents: 'Contenuto: index.html, style.css, homework5.js (regole di quadratura, CDF, Riemann, Lebesgue, generatori, statistica e grafici), app.js (interfaccia e testi), README.txt.',
+    contents: 'Contenuto: index.html, style.css, homework5.js (Riemann, Lebesgue, Dirichlet e Thomae con le frazioni esatte, regole di quadratura, serie, frazione continua, la CDF, generatori, statistica e grafici), app.js (interfaccia e testi), README.txt.',
     zip: 'Scarica homework5',
     online: 'Apri il programma online',
   },
   standalone: {
-    subtitle: 'La funzione di ripartizione della normale per integrazione numerica, e gli integrali di Riemann e di Lebesgue calcolati numericamente.',
+    subtitle: 'Gli integrali di Riemann e di Lebesgue calcolati numericamente, e la funzione di ripartizione della normale.',
     course: 'Statistics, laurea magistrale in Cybersecurity, Sapienza Università di Roma',
     online: 'Versione online',
     noscript: 'Questo programma ha bisogno di JavaScript.',
@@ -737,7 +948,8 @@ const refEn = (ref) => (ref.exact ? 'exact' : ref.method === 'composite' ? `refe
 
 const ruleNamesEn = { left: 'Rectangles', midpoint: 'Midpoints', trapezoid: 'Trapezoids', simpson: 'Simpson', gauss: 'Gauss-Legendre' };
 const ruleInlineEn = { left: 'rectangles', midpoint: 'midpoints', trapezoid: 'trapezoids', simpson: 'Simpson', gauss: 'Gauss-Legendre' };
-const functionNamesEn = { square: 'x² on [0, 1]', bell: 'The bell on [-3, 3]', steps: 'Step function', oscillating: 'sin(1/x)', unbounded: '1/√x', traffic: 'Traffic of a day', custom: 'Your own' };
+const functionNamesEn = { sine: 'sin x on [0, π]', square: 'x² on [0, 1]', jump: 'Step from 1 to 3', vee: '|x - 0.5|', unbounded: '1/√x', indicator: 'Step from 1 to 0', sinc: 'sin(x)/x on [0, π]', oscillating: 'sin(1/x)', traffic: 'Traffic of a day', custom: 'Your own', dirichlet: 'Dirichlet', thomae: 'Thomae' };
+const methodNamesEn = { trapezoid: 'Trapezoids, n = 64', simpson: 'Simpson, n = 64', gauss: 'Gauss-Legendre, 64 nodes', alternating: 'Series of the notes', positive: 'Positive series', abramowitz: 'Abramowitz-Stegun 7.1.26', zelen: 'Zelen-Severo 26.2.17', ours: 'Method of the page' };
 
 const en = {
   fmt: EN,
@@ -761,45 +973,54 @@ const en = {
   },
   sections: {
     assignment: '0. The assignment',
-    part1: 'Part 1 - The distribution function of the normal law',
-    area: '1.1 The CDF is an area',
-    tryArea: 'Try it: the area under the bell',
-    rules: '1.2 Five ways of adding up slices',
-    infinity: '1.3 The problem of -∞',
-    convergence: '1.4 How many points are needed',
-    table: '1.5 The table of the normal, rebuilt',
-    quantiles: '1.6 Backwards: the quantiles',
-    tails: '1.7 Far tails and alarm thresholds',
-    tryAlarm: 'Try it: the alarm threshold',
-    data: '1.8 The model against data',
-    checks: '1.9 Checks',
-    part2: 'Part 2 - The Riemann and the Lebesgue integral',
-    idea: '2.1 Two ways of counting',
+    exercise1: 'Exercise 1 - The Riemann and the Lebesgue integral',
+    idea: '1.1 Two ways of counting',
     tryCoins: 'Try it: Lebesgue’s coins',
-    functions: '2.2 The functions',
-    riemann: '2.3 Riemann: vertical strips',
-    lebesgue: '2.4 Lebesgue: horizontal slices',
+    functions: '1.2 The functions',
+    riemann: '1.3 Riemann: vertical strips',
+    lebesgue: '1.4 Lebesgue: horizontal slices',
     trySlices: 'Try it: vertical or horizontal',
-    compare: '2.5 Who wins, and when',
-    traffic: '2.6 The traffic of a server',
-    montecarlo: '2.7 Monte Carlo, Lebesgue with dice',
+    results: '1.5 The results, side by side',
+    compare: '1.6 Accuracy and convergence',
+    efficiency: '1.7 What they cost',
+    pathological: '1.8 Where the two roads part: Dirichlet and Thomae',
+    traffic: '1.9 The traffic of a server',
+    montecarlo: '1.10 Monte Carlo, Lebesgue with dice',
     tryMc: 'Try it: Monte Carlo live',
-    dirichlet: '2.8 Dirichlet’s function',
-    tests: '3. Hypothesis tests',
-    history: '4. Historical context',
-    conclusion: '5. Conclusions',
+    exercise2: 'Exercise 2 - The distribution function of the normal law',
+    liouville: '2.1 Why there is no formula: Liouville',
+    erf: '2.2 erf: an exact formula that still has to be computed',
+    area: '2.3 The CDF is an area',
+    tryArea: 'Try it: the area under the bell',
+    rules: '2.4 Five ways of adding up slices',
+    infinity: '2.5 The problem of -∞',
+    convergence: '2.6 How many points are needed',
+    series: '2.7 The series: the one of the notes and the one with positive terms',
+    approximations: '2.8 The approximations built on erf',
+    ours: '2.9 An efficient method',
+    reference: '2.10 Against a reference from the web',
+    methods: '2.11 Accuracy and speed of every method',
+    table: '2.12 The table of the normal, rebuilt',
+    quantiles: '2.13 Backwards: the quantiles',
+    tails: '2.14 Far tails and alarm thresholds',
+    tryAlarm: 'Try it: the alarm threshold',
+    data: '2.15 The model against data',
+    checks: '3. Checks',
+    tests: '4. Hypothesis tests',
+    history: '5. Historical context',
+    conclusion: '6. Conclusions',
   },
   assignment: {
     intro: [
-      'The assignment has two parts. The first asks for the cumulative distribution function (CDF) of a normal density by numerical integration; the second, given a choice of functions f_1, f_2, ..., asks to compute numerically both their Riemann and their Lebesgue integral.',
-      'The page goes by examples. Part 1 computes Phi with five rules written from scratch, shows how to get around -∞, measures how many points are needed and then puts the CDF to work: it rebuilds the table at the back of statistics books, finds backwards the 1.96 of every 95% interval and the thresholds of a system that flags anomalies, and tests it against simulated data. Part 2 integrates six functions chosen to show the differences, plus one you can type yourself, in the two ways: Riemann’s vertical strips and Lebesgue’s horizontal slices; then the traffic of a server, Monte Carlo and Dirichlet’s function. Every number is computed in the browser, and the downloadable program prints the same ones.',
+      'The assignment has two exercises. The first asks to choose a collection of interesting functions and to integrate them numerically with two approaches inspired by the two definitions: Riemann’s, which cuts the domain into intervals, and Lebesgue’s, which cuts the range of values and measures their preimages; then to compare them in accuracy, convergence and cost, to discuss whether they reach the same value and to show where they behave differently. The second asks for an efficient method for the distribution function of the standard normal law, to be compared with a trusted reference found on the web, together with the reasons why it has no elementary formula (Liouville’s theorem) and the role of the error function erf.',
+      'The page goes by examples, with every number computed here. Exercise 1 integrates the nine functions of the assignment and two of the page and puts their results side by side (1.5), measures how they converge (1.6) and what they cost (1.7), and computes Dirichlet’s and Thomae’s functions with exact fractions (1.8). Exercise 2 starts from Liouville and erf (2.1, 2.2), tries numerical integration, series and the handbook approximations (2.3 - 2.8), derives an efficient method from them (2.9), compares it with the NIST table and with mpmath (2.10) and measures the accuracy and speed of every method (2.11).',
     ],
     originalTitle: 'The original text of the assignment',
-    originalNote: 'As it was assigned. The only changes: the number 1) of the first exercise, missing in the copy received, and the LaTeX \\dots of the second, written as three dots.',
+    originalNote: 'As it was assigned: the lists are laid out as lists, the long dashes of the two titles are written as hyphens and the line of dashes between the two exercises is left out.',
   },
-  part1: {
+  exercise2: {
     intro: [
-      'X ~ N(μ, σ²) has a bell-shaped density and distribution function F(x) = P(X ≤ x), the area under the bell to the left of x. That area has no formula with a finite number of elementary functions (Liouville proved it in 1835), so it has to be computed: by adding up slices, as the assignment asks. Every N(μ, σ²) reduces to the standard normal with z = (x - μ)/σ, so computing Φ is enough.',
+      'X ~ N(μ, σ²) has a bell-shaped density and distribution function F(x) = P(X ≤ x), the area under the bell to the left of x. Every N(μ, σ²) goes back to the standard normal with z = (x - μ)/σ, so it is enough to compute Φ. That area has no elementary formula (2.1), and the function erf writes it exactly without computing it (2.2). To compute it the page tries the three families of methods of the assignment, numerical integration (2.3 - 2.6), series (2.7) and the approximations built on erf (2.8), derives an efficient method (2.9), compares it with a reference found on the web (2.10) and measures the accuracy and speed of all of them (2.11). The last sections put it to work: the table, the quantiles, alarm thresholds, a test against simulated data.',
     ],
   },
   area: {
@@ -872,7 +1093,7 @@ const en = {
       const order = (r) => F.num(f.orders[r], 2);
       return [
         `The orders measured on the lines are ${order('left')} for rectangles, ${order('midpoint')} for midpoints, ${order('trapezoid')} for trapezoids and ${order('simpson')} for Simpson, as the theory says (1, 2, 2, 4). For ten correct decimals Simpson uses ${F.int(f.enough.simpson)} values of φ and Gauss ${F.int(f.enough.gauss)}; rectangles do not get there even with 16,384 (error ${F.err(f.left16384)}), and neither do midpoints (${F.err(f.midpoint16384)}).`,
-        'Two practical warnings. Beyond the floor more points do not help: the error goes back up, because more roundings add up. And the order holds for smooth functions: with a jump or a corner even Simpson falls back to the first order, as Part 2 shows.',
+        'Two practical warnings. Beyond the floor more points do not help: the error goes back up, because more roundings add up. And the order holds for smooth functions: with a jump or a corner even Simpson falls back to the first order, as Exercise 1 shows.',
       ];
     },
   },
@@ -942,7 +1163,7 @@ const en = {
     intro: [
       'A computed CDF can be tested against data. Here the data are simulated with Box and Muller’s method, which turns pairs of uniform numbers into pairs of independent normals; the Kolmogorov-Smirnov test measures the largest gap D between the empirical distribution function of the data and our numerical Φ. The same test, on the heavy-tailed data of section 1.7, must notice that they are not normal: it is the check to make before trusting a threshold.',
     ],
-    fieldsIntro: 'The seed and the number of simulated values; the same seeds also feed Monte Carlo in section 2.7.',
+    fieldsIntro: 'The seed and the number of simulated values; the same seeds also feed Monte Carlo in section 1.10.',
     seedLabel: 'Seed',
     seedHint: `from 0 to ${EN.int(LIMITS.seed[1])}`,
     sampleLabel: 'Simulated values n',
@@ -971,17 +1192,17 @@ const en = {
     },
   },
   checks: {
-    intro: 'Every rule and every constant of the page is checked against an independent reference: the Gauss nodes against their closed form and NumPy, the rules against polynomials they must integrate exactly, Φ, the tails and the quantiles against mpmath at 40 digits, the exact integrals of Part 2 against mpmath, Student’s t and Kolmogorov’s law against SciPy, the generators against their reference C code and against a separate Python implementation. The reference Φ used in the tables (the incomplete gamma function) uses no quadrature rule: a rule checked against itself would prove nothing.',
+    intro: 'Every rule and every constant of the page is checked against an independent reference: the Gauss nodes against their closed form and NumPy, the rules against polynomials they must integrate exactly, Φ, the tails and the quantiles against mpmath at 40 digits, the exact integrals of Exercise 1 against mpmath, Student’s t and Kolmogorov’s law against SciPy, the generators against their reference C code and against a separate Python implementation. The reference Φ used in the tables (the incomplete gamma function) uses no quadrature rule: a rule checked against itself would prove nothing. The series, the handbook formulas and the method of the page are checked against mpmath, and the NIST table cell by cell.',
     summary: (ok, total) => `${ok} checks out of ${total} passed.`,
     details: (n) => `All ${n} checks`,
-    groups: { quadrature: 'The rules', normal: 'The normal law', part2: 'Part 2', generator: 'The generators' },
+    groups: { quadrature: 'The rules', normal: 'The normal law', cdf: 'The methods for Φ', integrals: 'The integrals', generator: 'The generators' },
     cols: { check: 'Check', expected: 'Expected', result: 'Result' },
     ok: 'passed',
     failed: 'failed',
   },
-  part2: {
+  exercise1: {
     intro: [
-      'Riemann and Lebesgue measure the same area in two ways. Riemann cuts the x axis into strips and reads the height of the function in every strip; Lebesgue cuts the y axis into levels and for every level measures how much of the x axis lies above it. For continuous functions the two integrals agree; Lebesgue’s works for many more functions and behaves much better with limits, which is why modern probability (the expected value is a Lebesgue integral) is built on it.',
+      'An integral can be approximated in two ways. Riemann cuts the domain into strips and adds up the areas of the rectangles; Lebesgue cuts the range of values into levels and adds up, level by level, the measure of the set where the function is above, its preimage. On the functions that are Riemann-integrable the two roads lead to the same number (1.5), at different speeds (1.6) and costs (1.7); on the pathological functions they part (1.8). Sections 1.9 and 1.10 show where Lebesgue’s idea really pays: the time spent above a threshold, and Monte Carlo.',
     ],
   },
   idea: {
@@ -1003,17 +1224,20 @@ const en = {
   },
   functions: {
     intro: [
-      'Six functions, each chosen to show something. x² is smooth and monotone; the bell is the one of Part 1; the step function is a simple function, Lebesgue’s building block; sin(1/x) oscillates infinitely often near 0 while staying bounded; 1/√x is infinite at 0 but has a finite area; the traffic of a server is a realistic example, with an attack. Plus a function you type yourself. The choice applies to sections 2.3, 2.4, 2.5 and to the example after them.',
+      'The seven functions of the assignment, plus two of the page. sin x and x² are smooth; the two step functions are simple functions, Lebesgue’s building block; |x - 0.5| is continuous but has a corner; 1/√x is infinite at 0 but has a finite area; sin(x)/x is smooth, once its value 1 at 0 is set. The two of the page: sin(1/x), which oscillates infinitely often near 0 while staying bounded, and the traffic of a server over a day, with an attack. The two pathological functions of the assignment, Dirichlet’s and Thomae’s, have their own section (1.8): no number stored in a computer is irrational, so they have to be computed with exact fractions. At the bottom, a function you type yourself.',
     ],
     tableTitle: 'The functions and their exact integrals',
     cols: { name: 'Function', interval: 'Interval', formula: 'f(x)', integral: 'Exact integral', feature: 'What it shows' },
     features: {
-      square: 'Smooth: both methods work',
-      bell: 'Smooth, with a peak: Part 1',
-      steps: 'Simple: Lebesgue is exact with few levels',
-      oscillating: 'Infinitely many oscillations near 0',
+      sine: 'Smooth: both methods work',
+      square: 'Smooth and monotone, flat at 0',
+      jump: 'Simple: Lebesgue’s lower sum is exact',
+      vee: 'Continuous, with a corner',
       unbounded: 'Unbounded, with a finite area',
-      traffic: 'Data of a day, with an attack',
+      indicator: 'The indicator of a set',
+      sinc: 'Smooth; its antiderivative Si is not elementary',
+      oscillating: 'Infinitely many oscillations near 0',
+      traffic: 'Data of one day, with an attack',
     },
     chooseLabel: 'Function',
     customTitle: 'Your function',
@@ -1041,6 +1265,7 @@ const en = {
     customNote: (c) => [c.undefinedPoints ? `At ${c.undefinedPoints} points out of 2,001 the formula is not defined: there it counts as 0, which does not change the integral as long as they are isolated points.` : null, c.infinite ? `At ${c.infinite} points it is infinite: Riemann reports it, Lebesgue cuts it at 1,000.` : null].filter(Boolean).join(' '),
   },
   functionNames: functionNamesEn,
+  methodNames: methodNamesEn,
   riemann: {
     intro: [
       'Riemann divides [a, b] into n strips and in every strip takes the value of the function at one point: the left end, the right end, the centre. The function is Riemann integrable if, as the strips narrow, every choice of points leads to the same number; Darboux’s test checks it with the lower sum (the lowest value of every strip) and the upper sum (the highest), which must come together.',
@@ -1055,7 +1280,7 @@ const en = {
     after: (rows, key) => {
       const last = rows[rows.length - 1];
       if (!Number.isFinite(last.gap)) return ['Here the upper sum is infinite for every n: the first strip contains 0, where the function is infinite. In the proper sense the function is not Riemann integrable, and its integral exists only as a limit (an improper integral): the sums at the centre approach 2, but slowly.'];
-      if (key === 'steps') return [`With n = ${EN.int(last.n)} strips upper - lower is ${EN.err(last.gap)}: the difference comes only from the three strips straddling the jumps, and it falls as 1/n.`];
+      if (key === 'jump' || key === 'indicator') return [`With n = ${EN.int(last.n)} strips upper - lower is ${EN.err(last.gap)}: the difference comes only from the strips that touch the jump, and it falls like 1/n.`];
       if (key === 'oscillating') return [`Near 0 every strip contains infinitely many waves, and its minimum and maximum are -1 and 1: upper - lower falls slowly (${EN.err(last.gap)} with n = ${EN.int(last.n)}). The function is still Riemann integrable, because the bad strips take less and less room.`];
       return [`With n = ${EN.int(last.n)} strips upper - lower is ${EN.err(last.gap)}: lower and upper close in on the integral, and that is Riemann’s definition at work.`];
     },
@@ -1074,13 +1299,13 @@ const en = {
     rearrangementTitle: 'The function (purple) and the same with its values sorted from the highest (blue): the same area',
     after: (rows, key) => {
       const last = rows[rows.length - 1];
-      if (key === 'steps') return [`With K = ${rows[0].K} levels the values of the function, ${[...STEPS.values].sort((a, b) => a - b).map((v) => EN.plain(v)).join(', ')}, all fall on a level (the step is ${EN.plain((rows[0].M - rows[0].m) / rows[0].K)}): the lower sum is already exact, ${EN.sig(rows[0].lower, 10)}. A simple function is made of few values, and Lebesgue counts them: value times the measure of the set where the function takes it.`];
+      if (key === 'jump' || key === 'indicator') return [`The two values of the function, ${EN.plain(rows[0].m)} and ${EN.plain(rows[0].M)}, are the lowest and the highest level, so they fall on a level for every K: with K = ${rows[0].K} the lower sum is already exact, ${EN.sig(rows[0].lower, 10)}. A simple function is made of a few values, and Lebesgue counts them: value times the measure of the set where the function takes it.`];
       return [`With K = ${EN.int(last.K)} levels lower and upper are ${EN.err(last.gap)} apart, exactly (M - m)(b - a)/K. The second chart sorts the values of the function from the highest to the lowest: the curve that comes out (the decreasing rearrangement) has the same area, and it is the chart on the left read sideways.`];
     },
   },
   trySlices: {
     intro: [
-      'The same strips and slices live: move n and K and compare. With the step function Lebesgue becomes exact as soon as the levels fall on the steps, while Riemann pays for every jump; with x² Riemann’s strips are faster; with sin(1/x) both struggle near 0. Play grows n and K together from 1 to 64.',
+      'The same strips and slices live: move n and K and compare. With the step functions Lebesgue’s lower sum is exact for every K, while Riemann pays for the jump; with x² Riemann’s strips are faster; with sin(1/x) both struggle near 0. Play grows n and K together from 1 to 64.',
     ],
     nLabel: (n) => `n = ${n} strips`,
     kLabel: (K) => `K = ${K} levels`,
@@ -1094,13 +1319,178 @@ const en = {
     riemannTitle: (n) => `Riemann, ${n} strips`,
     lebesgueTitle: (K) => `Lebesgue, ${K} levels`,
   },
+  results: {
+    intro: [
+      'The answer to the assignment in one table: every function with its integral, the Riemann sum and the Lebesgue sum with 729 strips and 729 levels (taken at the midpoints), their two errors and the verdict on the question of the assignment: do the two approaches reach the same value? 729 = 3⁶ is an odd number of strips, so the jump at 0.5 of the two step functions falls inside a strip, as happens to a jump whose position is unknown. Dirichlet and Thomae come from section 1.8, computed with exact fractions.',
+    ],
+    tableTitle: 'Riemann and Lebesgue on every function, with 729 strips and 729 levels',
+    cols: { name: 'Function', integral: 'Integral', riemann: 'Riemann', lebesgue: 'Lebesgue', riemannError: 'Error R', lebesgueError: 'Error L', verdict: 'Same value?' },
+    verdicts: { yes: 'Yes', improper: 'Yes, as an improper limit', noRiemann: 'No: Riemann does not exist', unknown: 'Yes, if it is integrable' },
+    integralCell: (row) => `${EN.sig(row.reference, 10)}${row.exact ? '' : ' (ref.)'}`,
+    riemannCell: (row) => (row.kind === 'dirichlet' ? 'none: lower 0, upper 1' : row.kind === 'thomae' ? `between 0 and ${EN.sig(row.upper, 3)}` : EN.sig(row.riemann, 10)),
+    lebesgueCell: (row) => (row.kind === 'regular' ? EN.sig(row.lebesgue, 10) : '0'),
+    errorCell: (v) => (v === null ? '-' : EN.err(v)),
+    pending: 'The sums of the nine functions are computed with the simulations: a few seconds. Dirichlet and Thomae are already here.',
+    after: (rows) => {
+      const F = EN;
+      const regular = rows.filter((r) => r.kind === 'regular' && r.key !== 'custom');
+      const names = (list) => list.map((r) => inline(functionNamesEn[r.key])).join(', ') || 'none';
+      const unbounded = rows.find((r) => r.key === 'unbounded');
+      const thomae = rows.find((r) => r.key === 'thomae');
+      return [
+        `On the functions that are Riemann-integrable the two numbers reach the same value: with 729 strips and levels the errors are all small, and section 1.6 shows that they keep falling as n and K grow. With 729 Riemann is closer on ${names(regular.filter((r) => r.errors.riemann <= r.errors.lebesgue))}; Lebesgue on ${names(regular.filter((r) => r.errors.lebesgue < r.errors.riemann))}.`,
+        `The exceptions are the ones the assignment asks for. 1/√x is unbounded: for Riemann it has an integral only as an improper limit, and the midpoint sums get there slowly (error ${F.err(unbounded ? unbounded.errors.riemann : null)}); for Lebesgue the integral exists directly, but the computation has to cut the values at a ceiling. Dirichlet’s function has no Riemann integral, because every lower sum is 0 and every upper sum 1; its Lebesgue integral is 0. Thomae’s function has both integrals, equal to 0: its upper sum with ${F.int(thomae ? thomae.n : 0)} strips is ${F.sig(thomae ? thomae.upper : null, 3)} and keeps falling.`,
+      ];
+    },
+  },
+  efficiency: {
+    intro: [
+      'The cost is counted in values of f, which is what matters when f is expensive to compute (a simulation, a measurement). Riemann with n strips at their midpoints needs n of them. Lebesgue needs many more, because to measure a level set it has to know where f crosses the level: here a grid of 4,097 points, then 44 bisections for every crossing of every level. On a computer, in short, Lebesgue cuts the domain too: it does so to measure the preimages. The table gives, for a relative error of 1% and of 0.01%, the first n = K that reaches it, the values of f it costs and the time of one sum in your browser.',
+    ],
+    chartTitle: (name) => `${name}: relative error against values of f (logarithmic scales)`,
+    legend: ['Riemann, midpoints', 'Lebesgue, mean'],
+    tableTitle: 'What a relative error of 10^-2 and of 10^-4 takes',
+    cols: { name: 'Function', target: 'Error', riemann: 'Riemann', lebesgue: 'Lebesgue' },
+    cell: (hit, method) => (hit ? `n = ${EN.int(hit.n)}: ${EN.int(hit[method].evaluations)} values, ${EN.dur(hit[method].ms)}` : 'not with 729'),
+    pending: 'The costs are measured with the simulations: a few seconds.',
+    after: (f) => {
+      const F = EN;
+      const names = (keys) => keys.map((k) => inline(functionNamesEn[k])).join(', ');
+      const out = [`For an error of 1%, where both get there, Lebesgue needs from ${F.int(f.minRatio)} to ${F.int(f.maxRatio)} times the values of f that Riemann needs. The reason is not the number of levels, which is sometimes smaller than the number of strips${f.fewerLevels.length ? ` (it happens with ${names(f.fewerLevels)})` : ''}: it is measuring the level sets, which costs a grid and a bisection for every crossing.`];
+      if (f.onlyLebesgue.length) out.push(`Only Lebesgue gets there on ${names(f.onlyLebesgue)}: this is where Riemann’s strips suffer, and every extra level is worth its cost.`);
+      if (f.onlyRiemann.length) out.push(`Only Riemann gets there on ${names(f.onlyRiemann)}.`);
+      out.push('In short: as a general algorithm Riemann is cheaper, by far; Lebesgue pays off when the measure of the preimages is already known or cheap: for simple functions, for a function given as a list of values (where counting them is easy), or when the question is how long f stays above a threshold, as in the traffic of section 1.9.');
+      return out;
+    },
+  },
+  pathological: {
+    intro: [
+      'The two pathological functions of the assignment. Dirichlet’s is 1 on the rationals and 0 on the irrationals of [0, 1]; Thomae’s is 1/q at the rational p/q in lowest terms and 0 on the irrationals. Every Riemann strip holds rationals and irrationals, so for both the lower sum is always 0; the upper sum is always 1 for Dirichlet, while for Thomae it falls towards 0. So Dirichlet’s function is not Riemann-integrable and Thomae’s is, with integral 0. For Lebesgue both are 0: the set where Dirichlet’s function is above a level is the set of the rationals, which is countable and so of measure 0; the set where Thomae’s is at least 1/Q is a finite set of fractions.',
+      'On a computer, though, they cannot be computed like the others, and the reason is practical: every number a program stores is rational. A double is always a fraction m/2^k: irrational numbers do not exist, not even π. The table shows the exact fraction of a few numbers as the browser stores them: for the computer Dirichlet’s function is 1 everywhere, and its “numerical integral” is 1, not 0.',
+    ],
+    numbers: { tenth: '0.1', third: '1/3', pi4: 'π/4', sqrt2: '√2', e: 'e' },
+    cols: { number: 'Number', fraction: 'Exact fraction stored', value: 'Dirichlet on the computer' },
+    thomaeIntro: 'This is why the page computes the two functions with the exact arithmetic of fractions. The points of the sums are fractions i/n, or irrational numbers written down as such, (i + 1/√2)/n; the largest value of Thomae’s function on a strip is 1/q, with q the smallest denominator of a fraction inside the strip, found with integers only. The chart shows Thomae’s function with the fractions up to q = 40 and the staircase of its upper sum with 10 strips.',
+    chartTitle: (upper) => `Thomae’s function (q ≤ 40) and the staircase of its upper sum with 10 strips, ${EN.sig(upper, 4)}`,
+    tableTitle: 'The sums of Thomae’s function, with exact fractions',
+    thomaeCols: { n: 'n', rational: 'Points i/n', irrational: 'Irrational points', lower: 'Lower', upper: 'Upper', doubles: 'Points i/n as doubles' },
+    after: (p) => {
+      const F = EN;
+      const first = p.thomae[0];
+      const last = p.thomae[p.thomae.length - 1];
+      const mid = p.thomae.find((r) => r.n === 1000) || last;
+      return [
+        `The upper sum of Thomae’s function falls from ${F.sig(first.upper, 3)} with ${F.int(first.n)} strips to ${F.sig(last.upper, 3)} with ${F.int(last.n)}, with measured order ${F.num(p.upperOrder, 2)}: almost 1/√n, because every strip of width 1/n holds a fraction with a denominator close to √n. The lower sum is always 0, so the Riemann integral exists and is 0, and the sums with the points i/n get there too. For Lebesgue the set where Thomae’s function is at least 1/Q holds ${p.farey.map((r) => `${F.int(r.points)} fractions for Q = ${F.int(r.Q)}`).join(', ')}: many points, but a finite set of points has measure 0, and every Lebesgue sum is exactly 0.`,
+        `With doubles, instead, a program sees i/n rounded: 0.1 becomes 3602879701896397/2^55, and there Thomae’s function is 2^-55. Only the dyadic fractions survive, 1/2, 1/4, 3/8 and so on: with n = ${F.int(mid.n)} the sum is ${F.sig(mid.doubles, 3)} instead of ${F.sig(mid.rational, 3)}, a number that comes neither from mathematics nor from the discretization error, but from the binary representation. Dirichlet’s function fares worse: with doubles every sum is 1, the true integral is 0. These are the only functions of the page that mathematics integrates and floating point does not.`,
+      ];
+    },
+  },
+  liouville: {
+    intro: [
+      'Φ(z) is the integral of φ(t) = e^(-t²/2)/√(2π) up to z, and that integral cannot be written with a finite number of elementary functions (polynomials, exponentials, logarithms, trigonometric functions, roots and their compositions). The notes of the course correct the book here: an antiderivative exists, Φ itself, but it is not elementary. This is Liouville’s theorem (1835), in the form of Rosenlicht that the notes quote: if f and g are rational and g is not constant, the integral of f e^g is elementary only if it equals R e^g, with R rational and R′ + g′R = f.',
+      'For the bell f = 1 and g = -x²/2, so a rational R with R′ - xR = 1 would be needed. If R were a polynomial of degree d, the term -xR would have degree d + 1 and nothing would cancel it; if R had a pole of order m, R′ would have one of order m + 1, and nothing would cancel that either. So R does not exist and Φ is not elementary. The numbers show it too: every solution of R′ - xR = 1 is S(x) + C e^(x²/2), with S(x) = (Φ(x) - 1/2)/φ(x), and S grows like e^(x²/2), faster than any rational function.',
+    ],
+    formulas: "R′(x) - x R(x) = 1\nS(x) = (Φ(x) - 1/2)/φ(x) = x + x³/3 + x⁵/(3·5) + x⁷/(3·5·7) + ...,      S′ = 1 + x S",
+    tableTitle: 'S(x) = (Φ(x) - 1/2)/φ(x): the candidate, and why it is not rational',
+    cols: { x: 'x', S: 'S(x)', ratio: 'S(x)/e^(x²/2)', degree: 'Apparent degree x S′/S' },
+    after: (rows) => {
+      const F = EN;
+      const last = rows[rows.length - 1];
+      return [`The ratio S(x)/e^(x²/2) settles at √(π/2) = ${F.num(Math.sqrt(Math.PI / 2), 4)}: S grows like an exponential of x². The apparent degree x S′(x)/S(x), which for a rational function tends to its degree, is ${F.num(rows[0].degree, 2)} at x = ${rows[0].x} and ${F.num(last.degree, 2)} at x = ${last.x}, and keeps growing like x². No rational function does that: it is Liouville’s proof seen in numbers. The same S, written as a series, is the positive series of section 2.7 and the heart of the method of section 2.9. The same theorem says that the antiderivative of sin(x)/x, one of the functions of Exercise 1, is not elementary either: this is why its exact integral comes from the sine integral Si(π).`];
+    },
+  },
+  erf: {
+    intro: [
+      'With the error function, erf(x) = (2/√π) ∫_0^x e^(-t²) dt, the formula becomes exact: Φ(z) = (1 + erf(z/√2))/2, and P(|Z| < k) = erf(k/√2). But erf is only the name given to that integral, and a name computes nothing: it is like writing √2 or π, exact symbols whose digits still have to be obtained with an algorithm. Every erf of every library is a program: the mathematical libraries of C use rational approximations on several intervals, the notes of the course the Taylor series. JavaScript, the language of this page, does not even have an erf: Math.erf does not exist, and the page writes its own.',
+      'A practical example is the 68-95-99.7 rule, that is P(|Z| < k) = erf(k/√2) for k = 1, 2, 3. The notes derive it from a table with 4 decimals, doubling Φ(k) after rounding it; the table compares it with the method of the page and with mpmath.',
+    ],
+    formulas: 'erf(x) = (2/√π) ∫_0^x e^(-t²) dt\nΦ(z) = (1 + erf(z/√2))/2,      P(|Z| < k) = erf(k/√2) = 2Φ(k) - 1',
+    tableTitle: 'The 68-95-99.7 rule: P(|Z| < k) = erf(k/√2)',
+    cols: { k: 'k', value: 'Method of the page', reference: 'mpmath', rounded: 'From a table with 4 decimals' },
+    after: (rows) => {
+      const F = EN;
+      return [`Rounding Φ(k) to 4 decimals before doubling it costs the last digit: ${rows.map((r) => `for k = ${r.k} the table gives ${F.num(r.rounded, 4)} instead of ${F.num(r.reference, 4)}`).join(', ')}. The method of the page differs from mpmath by at most one unit in the sixteenth digit. From here the page tries the three families of methods the assignment suggests: numerical integration (2.3 - 2.6), series (2.7) and the approximations built on erf (2.8).`];
+    },
+  },
+  series: {
+    intro: [
+      'The notes of the course compute Φ by integrating term by term the Taylor series of e^(-t²/2), that is the power series of erf. It is an alternating series, and the alternating series theorem guarantees that the error is no larger than the first term left out. In exact arithmetic it works for every z; on a computer it does not. For large z the terms grow up to about e^(z²/2) before they fall, and adding huge numbers of opposite signs to get a number close to 1 costs digits: one for every power of ten of the largest term.',
+      'The same function can also be written with all its terms positive (Marsaglia, 2004): the sum is exactly Liouville’s S of section 2.1. No cancellation inside the sum, one exponential outside it. The table compares the two series for z from 1 to 8; the chart follows the error as the number of terms grows.',
+    ],
+    formulas: 'Φ(z) = 1/2 + (1/√(2π)) Σ_(k≥0) (-1)^k z^(2k+1)/(2^k (2k+1) k!)          (notes, alternating)\nΦ(z) = 1/2 + φ(z) Σ_(k≥0) z^(2k+1)/(1·3·5···(2k+1))                     (positive terms)',
+    tableTitle: 'The two series: terms needed, digits lost, errors',
+    cols: { z: 'z', altTerms: 'Notes: terms', largest: 'Largest term', lost: 'Digits lost', altError: 'Error', posTerms: 'Positive: terms', posError: 'Error' },
+    chooseLabel: 'z',
+    chartTitle: (z) => `Φ(${EN.plain(z)}): error against the number of terms (logarithmic scale)`,
+    legend: ['Series of the notes', 'First term left out (the alternating series bound)', 'Series with positive terms'],
+    after: (rows) => {
+      const F = EN;
+      const at = (z) => rows.find((r) => r.z === z);
+      const five = at(5);
+      const eight = at(8);
+      return [`Up to z = 3 the two series are equivalent. Then the series of the notes loses digits: at z = 5 its largest term is ${F.sci(five.alternating.largest)} and the error rises to ${F.err(five.alternating.error)}; at z = 8 the largest term is ${F.sci(eight.alternating.largest)}, the digits lost are ${F.num(eight.alternating.lost, 1)} and the error is ${F.err(eight.alternating.error)}, while the positive series stays at ${F.err(eight.positive.error)}. The alternating series bound holds only in exact arithmetic: in the chart, for large z, the error stops far above the first term left out, at the level of the roundings of the largest terms. The terms needed grow like z²: ${eight.positive.terms} for the positive series at z = 8.`];
+    },
+  },
+  approximations: {
+    intro: [
+      'The approximations built on erf are the ones of the handbooks: a fixed formula, one exponential and five coefficients found once and for all. Formula 7.1.26 of Abramowitz and Stegun (from Hastings, 1955) writes erf(x) ≈ 1 - t(a₁ + a₂t + a₃t² + a₄t³ + a₅t⁴) e^(-x²), with t = 1/(1 + 0.3275911 x) and an error of at most 1.5 × 10^-7; for Φ the error is halved. Formula 26.2.17 (Zelen and Severo) approximates the tail P(Z > z) directly with a formula of the same kind, with an error below 7.5 × 10^-8.',
+    ],
+    chartTitle: 'Error of the two formulas along z, with the published bound ±7.5 × 10^-8',
+    legend: ['Abramowitz-Stegun 7.1.26', 'Zelen-Severo 26.2.17', 'Published bound'],
+    after: (f) => {
+      const F = EN;
+      return [`The errors wave: it is the signature of approximations built to spread the error evenly instead of piling it up in one place. The largest gaps, ${F.err(f.as)} at z = ${F.num(f.asAt, 1)} and ${F.err(f.zs)} at z = ${F.num(f.zsAt, 1)}, keep within the published bounds (${F.sci(f.asBound)} and ${F.sci(f.zsBound)}). They are the fastest (2.11) and enough for a table with 5 decimals, but they give no more than 7 digits, and far in the tail they are wrong in proportion: at z = -9, where Φ is 1.1 × 10^-19, formula 7.1.26 returns ${F.sig(f.asTail, 3)}, and 26.2.17 at z = -37 has a relative error of ${F.pct(f.zsRelative, 0)}.`];
+    },
+  },
+  ours: {
+    intro: (f) => [
+      `The method of the page puts together the best two pieces. For |z| < ${f.switchZ} it uses the positive series of section 2.7, which cancels nothing and needs at most ${f.seriesTerms} terms there. For |z| ≥ ${f.switchZ} it uses Laplace’s continued fraction (1805) for Mills’ ratio, P(Z > w)/φ(w), computed with Lentz’s method: it converges for every w > 0, the faster the larger w is, and works on the tail directly, so it keeps every digit even of probabilities like 10^-300. Either way one exponential is enough.`,
+    ],
+    formulas: 'Φ(z) = 1/2 + φ(z) Σ_(k≥0) z^(2k+1)/(1·3·5···(2k+1))                  |z| < 2\nP(Z > w) = φ(w) / (w + 1/(w + 2/(w + 3/(w + ...))))                   w = |z| ≥ 2,   Φ(-w) = P(Z > w)',
+    after: (f) => {
+      const F = EN;
+      return [`Against mpmath, for z from -8 to 8 and in the tail down to z = -37: largest absolute error ${F.err(f.ours.absolute)}, largest relative error ${F.err(f.ours.relative)} (at z = ${F.num(f.ours.relAt, 1)}, where the series still subtracts φS from 1/2). That means about 15 correct digits everywhere, against the 7 of the handbook formulas, with at most ${f.ours.terms} terms. Section 2.11 measures the price.`];
+    },
+  },
+  reference: {
+    intro: [
+      'The trusted reference found on the web is twofold. The first is the table of the normal law of the NIST/SEMATECH e-Handbook of Statistical Methods (section 1.3.6.7.1), which gives P(0 ≤ Z ≤ z) with 5 decimals for z from 0 to 4.09: the classic table, which anyone can check. Five decimals, though, cannot see errors below 5 × 10^-6, so the second reference is mpmath, an open-source Python library with arbitrary precision, used here with 60 digits.',
+    ],
+    link: 'The NIST table',
+    tableTitle: 'Φ(z) at a few points: NIST, mpmath and the method of the page',
+    cols: { z: 'z', nist: 'NIST, 5 decimals', mpmath: 'mpmath, 60 digits', ours: 'Method of the page', error: 'Error', nistError: 'Error of NIST' },
+    nist: (n) => `The whole table: ${n.agree} cells out of ${n.total} agree with the method of the page rounded to 5 decimals.`,
+    mismatch: (m) => `The only one that does not is z = ${EN.num(m.z, 2)}: the table prints ${EN.num(m.table, 5)}, the method gives ${EN.num(m.ours, 10)}, which rounds to ${EN.num(m.rounded, 5)}. mpmath sides with the method: the table is off by one unit in its last digit.`,
+    after: (rows) => {
+      const F = EN;
+      const worst = Math.max(...rows.map((r) => r.error));
+      const nistWorst = Math.max(...rows.filter((r) => r.nistError !== null && r.z !== 1.36).map((r) => r.nistError));
+      return [`At the points of the table the error of the method against mpmath is at most ${F.err(worst)}, the last digit of a double. The error of the NIST table stays below 5 × 10^-6, half a unit of the fifth decimal (at most ${F.err(nistWorst)}), except at z = 1.36. A reference has to be checked like a result: this is why the page uses two.`];
+    },
+  },
+  methods: {
+    intro: [
+      'All the methods side by side, against mpmath: the largest absolute error for z from -8 to 8, the largest relative error below the mean, where Φ is small (down to z = -37), how many exponentials and how many terms one call takes, and how long it lasts. The time is measured here, in your browser: every method computes Φ at 1,001 points between -8 and 8, repeating until at least 8 milliseconds have passed, and the measure is repeated 11 times, taking turns between the methods. The table gives the median with its confidence interval from the order statistics, which assumes nothing about the shape of the distribution of the times.',
+    ],
+    tableTitle: 'Accuracy, cost and time of every method',
+    cols: { method: 'Method', absolute: 'Absolute error', relative: 'Relative error in the tail', exp: 'exp', terms: 'Terms', time: 'ns per call' },
+    relativeCell: (v) => (!Number.isFinite(v) ? '∞' : v >= 1 ? '≥ 1' : EN.err(v)),
+    timeCell: (t) => (t ? `${EN.int(t.median)} [${EN.int(t.lo)}, ${EN.int(t.hi)}]` : 'measuring'),
+    chartTitle: 'Error of every method along z, against mpmath (logarithmic scale)',
+    after: (f) => {
+      const F = EN;
+      const out = [`The method of the page is the only one that keeps about 15 digits both in absolute and in relative terms. Gauss-Legendre with 64 nodes reaches the same absolute accuracy, but takes 64 exponentials and in the lower tail loses its digits in the subtraction from 1/2. The handbook formulas are the fastest, but stop at 7 digits. The series alone are not enough: the one of the notes loses digits for large z, the positive one loses the relative accuracy in the lower tail.`];
+      if (f.speedup) out.push(`In your browser the method of the page is ${F.num(f.speedup, 1)} times faster than Gauss-Legendre and costs ${F.num(f.slowdown, 1)} times formula 7.1.26 (intervals at ${F.pct(f.coverage, 1)}). It is the same trade-off as real libraries: a quick formula where it is enough, a different one in the tail.`);
+      return out;
+    },
+  },
   compare: {
     intro: [
-      'Who wins? The chart compares the error of the two mean sums as n = K grows, and, dashed, the distance between lower and upper of each method, which is its guarantee. The table at the bottom makes the same comparison on all six functions.',
+      'How do they converge? The chart follows the error of the two mean sums as n = K = 3, 9, 27, ..., 729 grows, and dashed the gap between lower and upper of each method, which is their guarantee. The table at the bottom measures the order of convergence on every function, the slope of the line of log error against log n: order 2 means that tripling n divides the error by 9.',
     ],
     chartTitle: (name) => `${name}: error as n = K grows (logarithmic scales)`,
     legend: ['Riemann, centre', 'Lebesgue, mean', 'Riemann, upper - lower', 'Lebesgue, upper - lower'],
-    tableTitle: 'Errors and guarantees for doubling n = K',
+    tableTitle: 'Errors and guarantees for tripling n = K',
     cols: { n: 'n = K', riemann: 'Riemann’s error', lebesgue: 'Lebesgue’s error', riemannGap: 'Riemann’s guarantee', lebesgueGap: 'Lebesgue’s guarantee' },
     customPending: 'The comparison of your function is computed here, in the browser: a few tenths of a second.',
     after: (f, name) => {
@@ -1108,13 +1498,20 @@ const en = {
       const winner = f.winner === 'lebesgue' ? 'Lebesgue' : 'Riemann';
       return [`${name}: with n = K = ${F.int(f.n)} ${winner} wins, by ${F.num(f.ratio, 1)} times (errors ${F.err(f.riemann)} for Riemann and ${F.err(f.lebesgue)} for Lebesgue). Riemann’s error falls with order ${F.num(f.riemannOrder, 2)}, Lebesgue’s with order ${F.num(f.lebesgueOrder, 2)}${f.riemannInfinite ? '; Riemann’s guarantee is infinite, Lebesgue’s is not' : ''}.`];
     },
-    summaryTitle: 'All functions: errors with n = K = 8 and n = K = 1,024',
-    summaryCols: { name: 'Function', riemann8: 'Riemann, 8', lebesgue8: 'Lebesgue, 8', riemann1024: 'Riemann, 1,024', lebesgue1024: 'Lebesgue, 1,024', winner: 'Winner' },
+    summaryTitle: 'All functions: errors with n = K = 9 and 729, and measured orders of convergence',
+    summaryCols: { name: 'Function', riemannSmall: 'Riemann, 9', lebesgueSmall: 'Lebesgue, 9', riemannLarge: 'Riemann, 729', lebesgueLarge: 'Lebesgue, 729', orderRiemann: 'Order R', orderLebesgue: 'Order L', winner: 'Wins' },
+    orderCell: (v) => (Number.isFinite(v) ? EN.num(v, 2) : 'exact'),
     summaryAfter: (rows) => {
-      const names = (who) => rows.filter((r) => r.winner === who).map((r) => functionNamesEn[r.key].toLowerCase()).join(', ') || 'none';
+      const F = EN;
+      const names = (who) => rows.filter((r) => r.winner === who).map((r) => inline(functionNamesEn[r.key])).join(', ') || 'none';
+      const order = (key, m) => {
+        const r = rows.find((x) => x.key === key);
+        return r ? F.num(r.orders[m], 2) : F.na;
+      };
       return [
-        `With n = K = 1,024 Riemann wins on: ${names('riemann')}; Lebesgue on: ${names('lebesgue')}. The lesson is an honest one: as a numerical algorithm Lebesgue is not better than Riemann. For smooth functions Riemann’s strips, evaluated at the centre, converge as 1/n²; Lebesgue comes into its own with simple functions and unbounded ones, where Riemann has to stop at an improper limit.`,
-        'Lebesgue’s real advantage is not speed: it is that his guarantee does not depend on the shape of the function along x, and that his theorems on limits (monotone and dominated convergence) allow limit and integral to be swapped, which probability and statistics are built on.',
+        `With n = K = 729 Riemann wins on: ${names('riemann')}; Lebesgue on: ${names('lebesgue')}.`,
+        `The orders tell why. On smooth functions Riemann at the midpoints has order 2 (${order('sine', 'riemann')} on sin x, ${order('square', 'riemann')} on x²), Lebesgue about 1.5 (${order('sine', 'lebesgue')} and ${order('square', 'lebesgue')}): where f is flat, at the maximum of sin x or the minimum of x², the set above a level changes like a square root, and Lebesgue’s slices follow it poorly. On |x - 0.5|, instead, the measure above the level y is 1 - 2y, a straight line, and Lebesgue is exact with 3 levels already. On the step functions the order is 1 for both, because the jump falls inside a strip, but Lebesgue’s error is half of Riemann’s. On 1/√x Riemann’s order drops to ${order('unbounded', 'riemann')} while Lebesgue’s stays at ${order('unbounded', 'lebesgue')}; on sin(1/x) both struggle (${order('oscillating', 'riemann')} and ${order('oscillating', 'lebesgue')}).`,
+        'Lebesgue’s real advantage is not speed: it is that its guarantee, (M - m)(b - a)/K, does not depend on how the function behaves along x, and that its theorems on limits (monotone and dominated convergence) allow limits and integrals to be swapped, which probability and statistics are built on.',
       ];
     },
   },
@@ -1131,7 +1528,7 @@ const en = {
       const above500 = r.rows.find((row) => row.y === 500);
       return [
         `Over the whole day ${F.num(r.total, 1)} Mb/s × hours go through, that is ${F.int(r.gigabytes)} GB (the Riemann sums minute by minute give ${F.num(r.riemann, 1)}). The attack is only ${F.pct(r.attackShare, 1)} of it: in the total it hardly shows. In the level sets, instead, it is the only protagonist: above 500 Mb/s the link stays ${F.num(above500.hours * 60, 1)} minutes, all between ${clock(above500.intervals[0][0])} and ${clock(above500.intervals[above500.intervals.length - 1][1])}, and the peak reaches ${F.int(r.peak)} Mb/s.`,
-        'The load duration curve, the traffic sorted from the busiest minute to the quietest, is the decreasing rearrangement of section 2.4: network and power engineers have used it for decades without calling it Lebesgue. Its area is the total again.',
+        'The load duration curve, the traffic sorted from the busiest minute to the quietest, is the decreasing rearrangement of section 1.4: network and power engineers have used it for decades without calling it Lebesgue. Its area is the total again.',
       ];
     },
   },
@@ -1140,7 +1537,7 @@ const en = {
       'Monte Carlo integrates by drawing points at random: the integral of f on [a, b] is (b - a) times the expected value of f(U), with U uniform, and the mean of N values estimates it. It never looks at the order of the points along the x axis, only at how many values fall where: it is a statistical relative of Lebesgue. Its error falls as 1/√N whatever the smoothness of the function, and every estimate comes with its confidence interval, computed with the three lines of Welford from Homework #4.',
     ],
     formulasTitle: 'Monte Carlo',
-    fieldsIntro: 'How many points every estimate uses and how many independent estimates are made for every function; the seed is the one of section 1.8.',
+    fieldsIntro: 'How many points every estimate uses and how many independent estimates are made for every function; the seed is the one of section 2.15.',
     pointsLabel: 'Points per estimate N',
     pointsHint: `from ${EN.int(LIMITS.points[0])} to ${EN.int(LIMITS.points[1])}`,
     repsLabel: 'Repetitions',
@@ -1153,9 +1550,9 @@ const en = {
     after: (s) => {
       const F = EN;
       const u = s.mc.unbounded;
-      const ok = ['square', 'bell', 'steps', 'oscillating', 'traffic'].map((key) => `${functionNamesEn[key].toLowerCase()} ${F.pct(s.mc[key].coverage, 1)}`).join(', ');
+      const ok = FUNCTIONS.filter((key) => key !== 'unbounded').map((key) => `${inline(functionNamesEn[key])} ${F.pct(s.mc[key].coverage, 1)}`).join(', ');
       return [
-        `For the five functions with a finite variance the 95% intervals contain the exact integral in these shares: ${ok}. That is the promise of the interval, and the tests of section 3 say whether it is kept.`,
+        `For the ${FUNCTIONS.length - 1} functions with a finite variance the 95% intervals contain the exact integral in these shares: ${ok}. That is the promise of the interval, and the tests of section 4 say whether it is kept.`,
         `With 1/√x the share is ${F.pct(u.coverage, 1)}${u.coverage < 0.94 ? ', below the promise' : ''}. The estimates stay right on average (${F.sig(u.mean, 6)} against 2), but f(U) = 1/√U has an infinite variance: every now and then U falls very close to 0 and a single point moves the whole mean. The histogram shows it: a long tail to the right and a peak shifted to the left, and the standard deviation of a sample almost always underestimates the true uncertainty. It is the same function that Riemann does not integrate in the proper sense: even Monte Carlo, which does not look at the order of the points, feels the infinity.`,
       ];
     },
@@ -1171,15 +1568,6 @@ const en = {
     chartTitle: (name) => `${name}: the estimate as the points grow (logarithmic scale), with its 95% band`,
     legend: ['estimate and 95% band', 'exact value'],
     status: (p, exact) => (p ? `${EN.int(p.k)} points: estimate ${EN.sig(p.estimate, 7)} ± ${EN.sig(1.96 * p.se, 3)}, exact value ${EN.sig(exact, 7)}.` : 'Press Play.'),
-  },
-  dirichlet: {
-    intro: [
-      'The classic example that separates the two integrals is Dirichlet’s function: 1 on the rationals and 0 on the irrationals, on [0, 1]. Every Riemann strip contains both rationals and irrationals, so the lower sum is always 0 and the upper sum always 1: for Riemann it is not integrable. For Lebesgue it is, and its integral is 0, because the rationals are countable and have measure zero.',
-      'A computer, however, cannot compute it, and the reason is practical: every number a program stores is rational. A double is always a fraction m/2^k: the irrational does not exist, not even π. For the computer Dirichlet’s function is 1 everywhere, and its “numerical integral” is 1, not 0. The table shows the exact fraction of a few numbers as the browser stores them.',
-    ],
-    numbers: { tenth: '0.1', third: '1/3', pi4: 'π/4', sqrt2: '√2', e: 'e' },
-    cols: { number: 'Number', fraction: 'Exact fraction stored', value: 'Dirichlet on the computer' },
-    after: 'Lebesgue’s measure sees the set of all real numbers; a computer sees a finite subset of rationals, which for Lebesgue has measure zero. This is the only function of the page that mathematics integrates and numerical computation cannot.',
   },
   stats: {
     verdict: { reject: 'H₀ rejected', notReject: 'H₀ not rejected' },
@@ -1215,41 +1603,49 @@ const en = {
     intro: 'From Kepler’s barrels to the generators of this page, the ideas used in the homework in chronological order.',
     legend: { task: 'used in this page', context: 'context' },
     events: [
-      { year: '1615', task: true, title: 'Kepler', text: 'In Nova stereometria doliorum vinariorum he computes the volume of wine barrels with a three-point rule: the ancestor of Simpson’s rule.' },
+      { year: '1615', task: true, title: 'Kepler', text: 'In the Nova stereometria doliorum vinariorum he computes the volume of wine barrels with a three-point rule: the ancestor of Simpson’s rule.' },
       { year: '1676-1722', task: true, title: 'Newton and Cotes', text: 'The formulas for integrating with equally spaced points that bear their names today: trapezoids and Simpson are their first two cases.' },
-      { year: '1733', task: true, title: 'de Moivre', text: 'The normal curve appears as an approximation of the binomial: it is the density that Part 1 integrates.' },
-      { year: '1743', task: true, title: 'Simpson', text: 'Thomas Simpson publishes the rule of the parabolas that bears his name, already known to Cavalieri and to James Gregory.' },
-      { year: '1799', task: true, title: 'Kramp', text: 'Christian Kramp computes the first table of the integral of e^(-t²), for astronomical refraction: the first table of the normal.' },
-      { year: '1809', task: true, title: 'Gauss', text: 'In Theoria motus the normal becomes the law of observation errors.' },
-      { year: '1814', task: true, title: 'Gauss', text: 'Methodus nova integralium valores per approximationem inveniendi: nodes and weights chosen to integrate polynomials of the highest possible degree exactly, the Gauss rule of the page.' },
+      { year: '1733', task: true, title: 'de Moivre', text: 'The normal curve appears as an approximation of the binomial: it is the density that Exercise 2 integrates.' },
+      { year: '1743', task: true, title: 'Simpson', text: 'Thomas Simpson publishes the rule of parabolas that bears his name, already known to Cavalieri and James Gregory.' },
+      { year: '1799', task: true, title: 'Kramp', text: 'Christian Kramp computes the first table of the integral of e^(-t²), for astronomical refraction: the first table of the normal law.' },
+      { year: '1805', task: true, title: 'Laplace', text: 'In the fourth volume of the Traité de mécanique céleste, the continued fraction for the tail of the normal law: the second half of the method of section 2.9.' },
+      { year: '1809', task: true, title: 'Gauss', text: 'In the Theoria motus the normal law becomes the law of observation errors.' },
+      { year: '1814', task: true, title: 'Gauss', text: 'Methodus nova integralium valores per approximationem inveniendi: nodes and weights chosen to integrate exactly the polynomials of the highest possible degree, the Gauss rule of the page.' },
       { year: '1826', task: true, title: 'Jacobi', text: 'He links Gauss’s nodes to the roots of the Legendre polynomials, as gaussLegendre() computes them with Newton’s method.' },
-      { year: '1835', task: false, title: 'Liouville', text: 'He proves that some integrals, that of e^(-t²) among them, cannot be written with a finite number of elementary functions: Φ has to be computed numerically.' },
+      { year: '1829', task: true, title: 'Dirichlet', text: 'In the paper on the convergence of Fourier series he proposes a function that is one constant on the rationals and another on the irrationals, as an example of a function nobody knows how to integrate: the first pathological function of the assignment.' },
+      { year: '1835', task: true, title: 'Liouville', text: 'He proves that some integrals, among them that of e^(-t²), cannot be written with a finite number of elementary functions: Φ has to be computed numerically (section 2.1).' },
       { year: '1854', task: true, title: 'Riemann', text: 'In his habilitation thesis on trigonometric series, published after his death, he defines the integral as the limit of the sums over strips.' },
-      { year: '1871', task: false, title: 'Glaisher', text: 'He names the error function, erf, with which Φ is written today as Φ(z) = (1 + erf(z/√2))/2.' },
-      { year: '1875', task: true, title: 'Darboux', text: 'The lower and upper sums: a function is Riemann integrable if and only if their difference goes to zero.' },
+      { year: '1871', task: true, title: 'Glaisher', text: 'He names the error function, erf, with which Φ(z) = (1 + erf(z/√2))/2 is written today (section 2.2).' },
+      { year: '1875', task: true, title: 'Darboux', text: 'The lower and upper sums: a function is Riemann-integrable if and only if their difference goes to zero.' },
+      { year: '1875', task: true, title: 'Thomae', text: 'In his book on definite integrals, the function that is 1/q at p/q: discontinuous at every rational, and yet Riemann-integrable. It is the second pathological function of the assignment.' },
       { year: '1898', task: false, title: 'Borel', text: 'He builds the measure of the sets of the line, additive over countable sequences: the ground Lebesgue will work on.' },
       { year: '1902', task: true, title: 'Lebesgue', text: 'The thesis Intégrale, longueur, aire, published in the Annali di Matematica Pura ed Applicata: the integral by levels and the measure of the level sets.' },
-      { year: '1903', task: false, title: 'Sheppard', text: 'The tables of the normal in Biometrika, the model of the tables every statistics book still prints.' },
+      { year: '1903', task: false, title: 'Sheppard', text: 'The tables of the normal law in Biometrika, the model of the tables every statistics book still prints.' },
       { year: '1905', task: false, title: 'Vitali', text: 'Giuseppe Vitali builds a non-measurable set: Lebesgue too has a limit, and a measure cannot be given to every subset of the line.' },
-      { year: '1933', task: true, title: 'Kolmogorov', text: 'In the Grundbegriffe probability becomes a measure and the expected value a Lebesgue integral; in the same year, in the Giornale dell’Istituto Italiano degli Attuari, the test on the largest gap between the empirical and the theoretical distribution function.' },
+      { year: '1933', task: true, title: 'Kolmogorov', text: 'In the Grundbegriffe probability becomes a measure and the expected value a Lebesgue integral; the same year, in the Giornale dell’Istituto Italiano degli Attuari, the test on the largest gap between the empirical and the theoretical distribution function.' },
       { year: '1949', task: true, title: 'Metropolis and Ulam', text: 'The Monte Carlo Method: integrating and estimating probabilities by drawing random numbers.' },
-      { year: '1958', task: true, title: 'Box and Muller', text: 'The transformation of two uniforms into two independent normals, used for the data of section 1.8.' },
-      { year: '1969', task: false, title: 'Cody', text: 'The rational approximations of erf still used by many numerical libraries: that is how Φ is computed today, not with quadrature rules.' },
+      { year: '1955', task: true, title: 'Hastings', text: 'Approximations for Digital Computers: formulas with few coefficients for the first computers, among them the one for erf that Abramowitz and Stegun will print as 7.1.26.' },
+      { year: '1958', task: true, title: 'Box and Muller', text: 'The transformation of two uniforms into two independent normals, used for the data of section 2.15.' },
+      { year: '1964', task: true, title: 'Abramowitz and Stegun', text: 'The Handbook of Mathematical Functions of the National Bureau of Standards, with formulas 7.1.26 and 26.2.17 (Zelen and Severo) of section 2.8.' },
+      { year: '1969', task: false, title: 'Cody', text: 'The rational approximations of erf that many numerical libraries still use: Φ is computed this way today, not with quadrature rules.' },
       { year: '1970', task: true, title: 'Stephens', text: 'The correction of the Kolmogorov-Smirnov test for finite samples, (√n + 0.12 + 0.11/√n) D, used in the page.' },
-      { year: '1985', task: true, title: 'IEEE 754', text: 'The standard of floating point numbers: every double is a fraction m/2^k, which is why Dirichlet’s function is always 1 on a computer.' },
-      { year: '2014-2018', task: true, title: 'SplitMix and xoshiro', text: 'The random number generators of this page, as of Homework #3 and #4.' },
+      { year: '1972', task: true, title: 'Rosenlicht', text: 'Integration in Finite Terms, in the American Mathematical Monthly: the form of Liouville’s theorem quoted by the notes of the course and used in section 2.1.' },
+      { year: '1976', task: true, title: 'Lentz', text: 'A stable way of computing continued fractions from the top down, stopping when the result no longer changes: it is how the page computes Laplace’s.' },
+      { year: '1985', task: true, title: 'IEEE 754', text: 'The standard of floating-point numbers: every double is a fraction m/2^k, which is why on a computer Dirichlet’s function is always 1 (section 1.8).' },
+      { year: '2004', task: true, title: 'Marsaglia', text: 'Evaluating the Normal Distribution, in the Journal of Statistical Software: the positive series of section 2.7, a few lines of code for 15 digits.' },
+      { year: '2014-2018', task: true, title: 'SplitMix and xoshiro', text: 'The random number generators of this page, as of Homeworks #3 and #4.' },
     ],
-    after: 'The story runs on two tracks that this homework brings together. One is the computation of the area, from Kepler’s barrels to Gauss, which leads to the rules of Part 1; the other is the definition of the integral, from Riemann to Lebesgue to Kolmogorov, which leads to modern probability and to Part 2.',
+    after: 'The story runs on two tracks that this homework brings together. One is the definition of the integral, from Riemann to Lebesgue to Kolmogorov, which leads to modern probability and to Exercise 1; the other is the computation of the area under the bell, from Kepler’s barrels to Gauss, Laplace and the handbook formulas, which leads to Exercise 2.',
   },
   conclusion: (s, facts) => {
     const F = EN;
     const out = [
-      `Part 1. The distribution function of the normal law is computed by adding up slices of the bell. The five rules converge with the orders of the theory (measured: ${F.num(facts.orders.left, 2)}, ${F.num(facts.orders.midpoint, 2)}, ${F.num(facts.orders.trapezoid, 2)}, ${F.num(facts.orders.simpson, 2)}), and Gauss-Legendre reaches ten decimals with ${F.int(facts.enough.gauss)} values of φ against Simpson’s ${F.int(facts.enough.simpson)}. -∞ is best avoided with the symmetry rather than the truncation, and the far tail must be integrated directly: 1 - Φ(k) is off by more than 50% from k = ${facts.tailTotal}. With the same CDF one rebuilds the table of the books and the quantiles, 1.96 included, and sets alarm thresholds: provided the data really have normal tails, which the Kolmogorov-Smirnov test allows to check.`,
-      'Part 2. Riemann and Lebesgue give the same number on every function of the page, but reach it in different ways. As an algorithm Riemann wins on smooth functions; Lebesgue wins on simple functions and on unbounded ones, and his guarantee, (M - m)(b - a)/K, does not depend on how the function behaves along x. On the traffic of a server the two integrals answer two questions: how much went through in all, and for how long the link stayed above every threshold.',
+      'Exercise 1. Riemann and Lebesgue reach the same number on every Riemann-integrable function, but they get there in different ways. On smooth functions Riemann’s strips at their midpoints fall like 1/n², while Lebesgue slows down where the function is flat, because there the level set changes fast; Lebesgue is exact on |x - 0.5|, even on the step functions and faster where Riemann suffers, on 1/√x and on sin(1/x). As an algorithm, though, it costs more, because measuring the preimages still means cutting the domain. Its real advantage is another: it integrates functions that have no Riemann integral, such as Dirichlet’s, and it allows limits and integrals to be swapped, which probability is built on. On a computer Dirichlet’s and Thomae’s functions have to be computed with exact fractions, because every double is rational.',
+      `Exercise 2. Φ has no elementary formula (Liouville), and erf writes it exactly without computing it. Of the three families of methods of the assignment, numerical integration converges with the orders of the theory (measured: ${F.num(facts.orders.left, 2)}, ${F.num(facts.orders.midpoint, 2)}, ${F.num(facts.orders.trapezoid, 2)} and ${F.num(facts.orders.simpson, 2)}, against 1, 2, 2 and 4), the series of the notes loses digits for large z, and the handbook formulas stop at 7 digits. The method of the page, the positive series near the centre and Laplace’s continued fraction in the tails, keeps about 15 digits everywhere with a single exponential, agrees with mpmath and with ${F.int(facts.nist.agree)} cells out of ${F.int(facts.nist.total)} of the NIST table, and the only cell that differs is an error of the table.`,
     ];
     if (s) {
       const u = s.mc.unbounded;
-      out.push(`Monte Carlo, Lebesgue’s statistical cousin, keeps its 95% promise on the functions with a finite variance; on 1/√x, whose variance is infinite, the intervals contain the integral ${F.pct(u.coverage, 1)} of the times: the same function that Riemann does not integrate in the proper sense. And Dirichlet’s function recalls the limit of every numerical computation: a computer sees only rational numbers, a set that for Lebesgue has measure zero.`);
+      out.push(`Monte Carlo, Lebesgue’s statistical cousin, keeps the 95% promise on the functions with finite variance; on 1/√x, which has infinite variance, the intervals contain the integral ${F.pct(u.coverage, 1)} of the times: it is the same function that Riemann does not integrate in the proper sense.`);
     }
     return out;
   },
@@ -1278,12 +1674,12 @@ const en = {
   download: {
     title: 'Download the code',
     text: 'The complete program in HTML, CSS and JavaScript, with no dependencies, in Italian and English: after extracting the archive it opens with a double click on index.html, even offline, with the same computations, charts and interactive examples. With node homework5.js it prints in the terminal the five rules, the table of the normal, the quantiles, the tails, the Riemann and Lebesgue sums of every function, Monte Carlo and the tests; --z, --mu, --sigma, --rule, --n, --function, --formula, --a, --b and --seed change the parameters.',
-    contents: 'Contents: index.html, style.css, homework5.js (quadrature rules, CDF, Riemann, Lebesgue, generators, statistics and charts), app.js (interface and texts), README.txt.',
+    contents: 'Contents: index.html, style.css, homework5.js (Riemann, Lebesgue, Dirichlet and Thomae with exact fractions, quadrature rules, series, continued fraction, the CDF, generators, statistics and charts), app.js (interface and texts), README.txt.',
     zip: 'Download homework5',
     online: 'Open the program online',
   },
   standalone: {
-    subtitle: 'The distribution function of the normal law by numerical integration, and the Riemann and Lebesgue integrals computed numerically.',
+    subtitle: 'The Riemann and Lebesgue integrals computed numerically, and the distribution function of the normal law.',
     course: 'Statistics, MSc in Cybersecurity, Sapienza University of Rome',
     online: 'Online version',
     noscript: 'This program needs JavaScript.',
