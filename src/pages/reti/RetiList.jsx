@@ -5,11 +5,12 @@
 // la tabella lo stack tecnologico e la topologia di rete, sempre dal README.
 // Niente date e niente pagine di teoria: ogni file unisce gia' teoria e
 // pratica.
-import React, { useState } from 'react';
+import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../../contexts/languageContext';
 import { RETI_LAB, RETI_REPO } from '../../config/reti';
 import SearchInput from '../../components/SearchInput';
+import { useRemembered, useRememberedScroll } from '../../utils/listMemory';
 import StatisticsLayout from '../statistics/StatisticsLayout';
 import Markdown from './Markdown';
 import { README_PARTS, labDescription } from './labText';
@@ -32,7 +33,8 @@ const SEARCH_STYLE = {
 const RetiList = () => {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useRemembered('search', '');
+  useRememberedScroll();
 
   const term = searchTerm.trim().toLowerCase();
   const filtered = RETI_LAB.filter(

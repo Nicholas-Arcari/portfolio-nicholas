@@ -5,15 +5,17 @@ import TerminalText from '../components/TerminalText';
 import { useLanguage } from '../contexts/languageContext';
 import Footer from '../components/Footer';
 import SearchInput from '../components/SearchInput';
+import { useRemembered, useRememberedScroll } from '../utils/listMemory';
 
 const Stampe3d = () => {
   const { t } = useLanguage();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [searchTermExecuted, setSearchTermExecuted] = useState(""); // Ricerca progetti eseguiti
-  const [searchTermFuture, setSearchTermFuture] = useState("");     // Ricerca progetti futuri
+  const [searchTermExecuted, setSearchTermExecuted] = useRemembered('searchExecuted', ''); // Ricerca progetti eseguiti
+  const [searchTermFuture, setSearchTermFuture] = useRemembered('searchFuture', '');     // Ricerca progetti futuri
 
-  const [showExecuted, setShowExecuted] = useState(false); // Default: nascosto
-  const [showFuture, setShowFuture] = useState(false);     // Default: nascosto
+  const [showExecuted, setShowExecuted] = useRemembered('showExecuted', false); // Default: nascosto
+  const [showFuture, setShowFuture] = useRemembered('showFuture', false);     // Default: nascosto
+  useRememberedScroll();
 
   const executedProjects = t('stampe3d.executed');
   const futureProjects = t('stampe3d.future');
@@ -33,7 +35,6 @@ const Stampe3d = () => {
   useEffect(() => {
     document.body.classList.remove('homepage');
     document.body.classList.add('no-sidebar');
-    window.scrollTo(0, 0);
 
     return () => {
       document.body.classList.remove('no-sidebar');

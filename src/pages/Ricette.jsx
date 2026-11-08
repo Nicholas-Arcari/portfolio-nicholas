@@ -5,13 +5,15 @@ import TerminalText from '../components/TerminalText';
 import { useLanguage } from '../contexts/languageContext';
 import Footer from '../components/Footer';
 import SearchInput from '../components/SearchInput';
+import { useRemembered, useRememberedScroll } from '../utils/listMemory';
 import WheelOfFortune from '../components/WheelOfFortune';
 import { jumpToItem } from '../utils/jumpToItem';
 import { FOOD_SYMBOLS, withSymbols } from '../config/symbols';
 
 const Ricette = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState(""); // Stato ricerca
+  const [searchTerm, setSearchTerm] = useRemembered('search', '');
+  useRememberedScroll();
   const { t } = useLanguage();
 
   // Gestione layout (Sidebar Destra)
@@ -19,7 +21,6 @@ const Ricette = () => {
     document.body.classList.remove('homepage');
     document.body.classList.remove('no-sidebar');
     document.body.classList.add('right-sidebar');
-    window.scrollTo(0, 0);
 
     return () => {
       document.body.classList.remove('right-sidebar');

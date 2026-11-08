@@ -5,6 +5,7 @@ import TerminalText from '../components/TerminalText';
 import { useLanguage } from '../contexts/languageContext';
 import Footer from '../components/Footer';
 import SearchInput from '../components/SearchInput';
+import { useRemembered, useRememberedScroll } from '../utils/listMemory';
 import WheelOfFortune from '../components/WheelOfFortune';
 import { jumpToItem } from '../utils/jumpToItem';
 import { DRINK_SYMBOLS, withSymbols } from '../config/symbols';
@@ -12,14 +13,14 @@ import { DRINK_SYMBOLS, withSymbols } from '../config/symbols';
 const Cocktail_classici = () => {
   const { t } = useLanguage();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useRemembered('search', '');
+  useRememberedScroll();
 
   // Gestione layout (Sidebar Destra)
   useEffect(() => {
     document.body.classList.remove('homepage');
     document.body.classList.remove('no-sidebar');
     document.body.classList.add('right-sidebar');
-    window.scrollTo(0, 0);
 
     return () => {
       document.body.classList.remove('right-sidebar');

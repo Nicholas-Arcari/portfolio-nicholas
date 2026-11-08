@@ -5,18 +5,19 @@ import TerminalText from '../components/TerminalText';
 import { useLanguage } from '../contexts/languageContext';
 import Footer from '../components/Footer';
 import SearchInput from '../components/SearchInput';
+import { useRemembered, useRememberedScroll } from '../utils/listMemory';
 
 const UniversityDetails = () => {
   const { t } = useLanguage();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useRemembered('search', '');
+  useRememberedScroll();
 
   // Layout Right Sidebar
   useEffect(() => {
     document.body.classList.remove('homepage');
     document.body.classList.remove('no-sidebar');
     document.body.classList.add('right-sidebar');
-    window.scrollTo(0, 0);
 
     return () => {
       document.body.classList.remove('right-sidebar');

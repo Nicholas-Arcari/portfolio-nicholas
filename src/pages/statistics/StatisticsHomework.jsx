@@ -4,13 +4,15 @@
 // nella lingua scelta, e i pulsanti sotto la barra per tipo (tutti, solo gli
 // homework, solo i project). Ogni riga porta alla sua pagina: il nome e' un link vero
 // (tastiera, apri in nuova scheda), e il resto della riga e' cliccabile per
-// comodita'.
-import React, { useState } from 'react';
+// comodita'. Ricerca, filtro e scorrimento tornano con Indietro del
+// browser (src/utils/listMemory.js).
+import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../../contexts/languageContext';
 import { STATISTICS_HOMEWORK } from '../../config/homework';
 import { formatRomeDateTime } from '../../utils/romeDate';
 import SearchInput from '../../components/SearchInput';
+import { useRemembered, useRememberedScroll } from '../../utils/listMemory';
 import StatisticsLayout from './StatisticsLayout';
 
 const SEARCH_STYLE = {
@@ -32,8 +34,9 @@ const FILTERS = [
 const StatisticsHomework = () => {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [type, setType] = useState('all');
+  const [searchTerm, setSearchTerm] = useRemembered('search', '');
+  const [type, setType] = useRemembered('type', 'all', (v) => FILTERS.some(([value]) => value === v));
+  useRememberedScroll();
 
   const term = searchTerm.trim().toLowerCase();
   const filtered = STATISTICS_HOMEWORK.filter(
