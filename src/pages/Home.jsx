@@ -1,5 +1,5 @@
 // src/pages/Home.jsx
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import TerminalText from '../components/TerminalText';
 import { useLanguage } from '../contexts/languageContext';
@@ -17,6 +17,13 @@ const Home = () => {
   const [showExtra, setShowExtra] = useState(false); // Default: nascosto
 
   const { t } = useLanguage();
+
+  // La home si apre sempre dall'inizio, come le altre pagine che non sono
+  // elenchi: senza, arrivandoci dal menu a scomparsa con un'altra pagina
+  // scorsa a meta', restava allo stesso punto di scorrimento.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   return (
     <div id="page-wrapper">
