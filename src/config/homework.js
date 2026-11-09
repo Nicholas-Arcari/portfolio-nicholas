@@ -24,8 +24,8 @@ export const STATISTICS_HOMEWORK = [
     type: 'homework',
     theory: true,
     description: {
-      it: `Crittografia a chiave pubblica: dalla chiave privata alla chiave pubblica con la moltiplicazione scalare su curva ellittica, come in Ethereum (curva giocattolo ${hw1Curve}), con animazione dell'algoritmo, esplorazione statistica e discussione.`,
-      en: `Public-key cryptography: from a private key to a public key with elliptic-curve scalar multiplication, as in Ethereum (toy curve ${hw1Curve}), with an animation of the algorithm, a statistical exploration and a discussion.`,
+      it: `Dalla chiave privata alla chiave pubblica con la moltiplicazione scalare su curva ellittica, come in Ethereum: sulla curva giocattolo della consegna (${hw1Curve}), somma dopo somma e con double-and-add. L’algoritmo animato al rallentatore. Coordinate, bit, correlazioni ed effetto valanga dei punti al variare di k, con test d’ipotesi. La discussione: funzione a senso unico o di hash?`,
+      en: `From a private key to a public key with elliptic-curve scalar multiplication, as in Ethereum: on the toy curve of the assignment (${hw1Curve}), one addition at a time and with double-and-add. The algorithm animated in slow motion. Coordinates, bits, correlations and avalanche effect of the points as k varies, with hypothesis tests. The discussion: one-way function or hash function?`,
     },
     completed: '2026-10-12T08:28:00+02:00',
     due: '2026-10-15T21:00:00+02:00',
@@ -36,8 +36,8 @@ export const STATISTICS_HOMEWORK = [
     type: 'homework',
     theory: true,
     description: {
-      it: `Dalla frase mnemonica all'indirizzo Ethereum: la pipeline di un wallet (BIP-39, BIP-32, BIP-44, secp256k1, Keccak-256, EIP-55) scritta da zero e verificata con i vettori di test ufficiali, la distinzione fra generazione e derivazione delle chiavi, crittografia a chiave pubblica, hashing, checksum e codifica, le proprietà statistiche di ogni passaggio e il contesto storico.`,
-      en: `From a mnemonic sentence to an Ethereum address: the wallet pipeline (BIP-39, BIP-32, BIP-44, secp256k1, Keccak-256, EIP-55) written from scratch and checked against the official test vectors, the distinction between key generation and derivation, public-key cryptography, hashing, checksums and encoding, the statistical properties of every step and the historical context.`,
+      it: 'Dalla frase mnemonica all’indirizzo Ethereum: la pipeline di un wallet (BIP-39, BIP-32, BIP-44, secp256k1, Keccak-256, EIP-55) scritta da zero e verificata con i vettori di test ufficiali. La distinzione fra generazione e derivazione delle chiavi, crittografia a chiave pubblica, hashing, checksum e codifica. Le proprietà statistiche di ogni passaggio, test d’ipotesi e contesto storico.',
+      en: 'From a mnemonic sentence to an Ethereum address: the wallet pipeline (BIP-39, BIP-32, BIP-44, secp256k1, Keccak-256, EIP-55) written from scratch and checked against the official test vectors. The distinction between key generation and derivation, public-key cryptography, hashing, checksums and encoding. The statistical properties of every step, hypothesis tests and historical context.',
     },
     completed: '2026-10-13T13:30:00+02:00',
     due: '2026-10-15T21:00:00+02:00',
