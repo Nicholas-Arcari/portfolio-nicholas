@@ -50,8 +50,8 @@ export const STATISTICS_HOMEWORK = [
     type: 'homework',
     theory: true,
     description: {
-      it: "Uno schema giocattolo su secp256k1 (ElGamal su curva ellittica con chiavi private di 32 bit) e il cifrario di Cesare: cifrare e decifrare lo stesso messaggio, confrontare procedure, spazi delle chiavi e proprietà statistiche, rompere Cesare con la statistica di un corpus inglese (massima verosimiglianza, χ², n-grammi, dizionario) e lo schema giocattolo con la ricerca esaustiva, baby-step giant-step e il canguro di Pollard, con test d'ipotesi, contesto storico e discussione.",
-      en: "A toy scheme on secp256k1 (elliptic-curve ElGamal with 32-bit private keys) and the Caesar cipher: encrypting and decrypting the same message, comparing procedures, key spaces and statistical properties, breaking Caesar with the statistics of an English corpus (maximum likelihood, χ², n-grams, dictionary) and the toy scheme with exhaustive search, baby-step giant-step and Pollard's kangaroo, with hypothesis tests, historical context and discussion.",
+      it: 'Uno schema giocattolo su secp256k1 (ElGamal su curva ellittica, chiavi private di 32 bit) e il cifrario di Cesare a confronto sullo stesso messaggio. La chiave di Cesare ritrovata con la statistica di un corpus inglese, quella dello schema giocattolo con la ricerca esaustiva, baby-step giant-step e il canguro di Pollard, che contro una chiave vera non bastano. Test d’ipotesi e contesto storico.',
+      en: 'A toy scheme on secp256k1 (elliptic-curve ElGamal, 32-bit private keys) and the Caesar cipher compared on the same message. The Caesar key recovered with the statistics of an English corpus, the toy scheme’s key with exhaustive search, baby-step giant-step and Pollard’s kangaroo, which are not enough against a real key. Hypothesis tests and historical context.',
     },
     completed: '2026-10-15T20:25:00+02:00',
     due: '2026-10-22T21:00:00+02:00',
@@ -62,8 +62,8 @@ export const STATISTICS_HOMEWORK = [
     type: 'homework',
     theory: true,
     description: {
-      it: 'Il processo di penetrazione di m attaccanti su n sistemi come somma di incrementi i.i.d., nel modello di Bernoulli e in quello di Rademacher: traiettorie animate, distribuzioni del punteggio totale, medio e normalizzato al crescere di n, legge dei grandi numeri con i limiti di Chebyshev e Hoeffding, varianza sotto le tre normalizzazioni, teorema del limite centrale con la sua velocità (Berry-Esseen), il ruolo dei sistemi e degli attaccanti, test d’ipotesi e contesto storico.',
-      en: 'The penetration process of m attackers on n systems as a sum of i.i.d. increments, in the Bernoulli and in the Rademacher model: animated trajectories, distributions of the total, average and normalized score as n grows, the law of large numbers with the Chebyshev and Hoeffding bounds, the variance under the three normalizations, the central limit theorem and its speed (Berry-Esseen), the role of systems and attackers, hypothesis tests and historical context.',
+      it: 'Il processo di penetrazione di m attaccanti su n sistemi, con incrementi i.i.d. di Bernoulli o di Rademacher. Traiettorie simulate del punteggio totale, medio e normalizzato al crescere di n: la legge dei grandi numeri con i limiti di Chebyshev e Hoeffding, la varianza, il teorema del limite centrale e quello di Berry-Esseen. Il ruolo di sistemi e attaccanti, test d’ipotesi e contesto storico.',
+      en: 'The penetration process of m attackers on n systems, with i.i.d. Bernoulli or Rademacher increments. Simulated trajectories of the total, average and normalized score as n grows: the law of large numbers with the Chebyshev and Hoeffding bounds, the variance, the central limit theorem and the Berry-Esseen theorem. The role of systems and attackers, hypothesis tests and historical context.',
     },
     completed: '2026-10-23T12:12:00+02:00',
     due: '2026-10-29T21:00:00+01:00',
