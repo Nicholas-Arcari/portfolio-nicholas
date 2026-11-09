@@ -95,15 +95,15 @@ export const STATISTICS_HOMEWORK = [
     due: '2026-11-12T21:00:00+01:00',
   },
   {
-    // progetto di gruppo: per ora la pagina dice solo "Work in progress...";
-    // il codice stara' in un repository a parte, ancora da creare
+    // progetto di gruppo: The Anomaly Guard. Il codice sta nel suo repository;
+    // la pagina ne mostra la demo pubblicata (Project1.jsx)
     slug: 'project-1',
     name: 'Project #1',
     type: 'project',
     theory: false,
     description: {
-      it: 'Progetto di gruppo, in preparazione.',
-      en: 'Group project, in preparation.',
+      it: 'The Anomaly Guard: un sistema didattico di rilevamento delle intrusioni su richieste web simulate. Un motore a regole cerca le firme degli attacchi noti; un modello statistico, addestrato solo sul traffico legittimo, segnala ciò che se ne discosta. Si misura quanto sbaglia ciascuno: falsi positivi e negativi, curva ROC, base rate. Progetto di gruppo, con la demo funzionante nella pagina.',
+      en: 'The Anomaly Guard: an educational intrusion detection system for simulated web requests. A rule engine looks for the signatures of known attacks; a statistical model, trained on legitimate traffic only, flags what departs from it. How often each one is wrong is measured: false positives and negatives, ROC curve, base rate. A group project, with the working demo on this page.',
     },
     completed: null,
     // la fine dell'a.a. 2026-2027: per il Regolamento studenti Sapienza

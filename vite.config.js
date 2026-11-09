@@ -13,8 +13,11 @@ import retiDoc from './build/reti-doc.js'
 // script-src resta 'self' senza eccezioni: e' la regola che disinnesca un XSS,
 // perche' uno script iniettato nella pagina non verrebbe eseguito. Il resto
 // elenca solo cio' che il sito carica davvero da fuori: i font Google importati
-// dal CSS del template e i video tutorial, serviti dalle release GitHub, che
-// rimandano ai propri domini di storage.
+// dal CSS del template, i video tutorial, serviti dalle release GitHub, che
+// rimandano ai propri domini di storage, e la demo di The Anomaly Guard nella
+// pagina del Project #1, l'unico iframe del sito: frame-src permette solo il
+// suo indirizzo (anche le pagine interne della demo stanno sotto quel
+// percorso), e Project1.jsx la isola comunque con sandbox.
 const CSP = [
   "default-src 'self'",
   "script-src 'self'",
@@ -24,7 +27,7 @@ const CSP = [
   "media-src 'self' https://github.com https://objects.githubusercontent.com https://release-assets.githubusercontent.com",
   "connect-src 'self'",
   "object-src 'none'",
-  "frame-src 'none'",
+  'frame-src https://nicholas-arcari.github.io/anomaly-guard/',
   "base-uri 'self'",
   "form-action 'none'",
   'upgrade-insecure-requests',

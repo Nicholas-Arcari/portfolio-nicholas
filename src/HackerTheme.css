@@ -2782,3 +2782,26 @@ body.dark-mode .lab-cmds th,
 body.dark-mode .lab-cmds td {
     border-bottom-color: rgba(255, 255, 255, 0.1);
 }
+
+/* ===== PROJECT #1 (Statistics): la demo di The Anomaly Guard =====
+   La demo vive nel suo repository e arriva qui in un iframe (Project1.jsx):
+   larga quanto il contenuto, alta quasi quanto la finestra. Lo sfondo e' quello
+   della demo, cosi' prima del caricamento non resta un riquadro bianco. */
+.project-demo {
+    display: block;
+    width: 100%;
+    height: 80vh;
+    min-height: 640px;
+    margin: 1.5em 0 0.6em;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 6px;
+    background: #f5f7fa;
+}
+.project-demo-note {
+    font-size: 0.9em;
+    font-style: italic;
+}
+body.dark-mode .project-demo {
+    border-color: rgba(255, 255, 255, 0.15);
+    background: #141519;
+}
