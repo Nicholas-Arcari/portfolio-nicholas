@@ -147,7 +147,7 @@ export function welford(values) {
 
 /**
  * Every step of the recurrences on a list of numbers, for the table and the
- * chart of section 1.5: x_k, delta = x_k - M_(k-1), M_k, x_k - M_k, the
+ * chart of section 1.4: x_k, delta = x_k - M_(k-1), M_k, x_k - M_k, the
  * increment of SS, SS_k, the sample variance SS_k/(k - 1), the population
  * variance SS_k/k, and s_k^2 once more from its own recurrence (section
  * 1.3), s_k^2 = (k - 2)/(k - 1) s_(k-1)^2 + delta^2/k, as a check.
@@ -193,15 +193,15 @@ export function twoPassVariance(values) {
   return ss / (values.length - 1);
 }
 
-/** The data of section 1.5 as the page opens with them (the classic example: mean 5, population standard deviation 2). */
+/** The data of section 1.4 as the page opens with them (the classic example: mean 5, population standard deviation 2). */
 export const DEFAULT_DATA = Object.freeze([2, 4, 4, 4, 5, 5, 7, 9]);
 
-/** How many numbers section 1.5 accepts, and how large. */
+/** How many numbers section 1.4 accepts, and how large. */
 export const DATA_MAX = 40;
 export const DATA_LIMIT = 1e15;
 
 /**
- * The numbers of section 1.5: separated by spaces, semicolons or a comma
+ * The numbers of section 1.4: separated by spaces, semicolons or a comma
  * followed by a space, with a decimal point or a decimal comma (2.5 and
  * 2,5 are the same number), at least 2 and at most DATA_MAX of them.
  */
@@ -238,7 +238,7 @@ export const STABILITY_POWERS = Object.freeze(Array.from({ length: 15 }, (_, e) 
 export const STABILITY_SIZE = 1000;
 
 /**
- * Section 1.6: the variance of x_i = c + y_i, with y_i the first 1000
+ * Section 1.5: the variance of x_i = c + y_i, with y_i the first 1000
  * scores of hacker 1 (initial distribution and seed) and c = 10^0, ...,
  * 10^14. A shift does not change the variance, so the exact value is the
  * one of the y_i, computed with integers (exact up to the last division);
@@ -265,7 +265,7 @@ export function stabilityCurve() {
   return { exact, size: N, rows };
 }
 
-/** The formulas of section 1.6, in the order of the chart. */
+/** The formulas of section 1.5, in the order of the chart. */
 export const FORMULAS = Object.freeze(['naive', 'twoPass', 'welford']);
 
 // ---------------------------------------------------------------------------

@@ -2,10 +2,10 @@
 // Homework #4 di Statistics, in due parti con un solo indirizzo. La Part 1
 // ricava le formule ricorsive di Welford per la somma dei quadrati e la
 // varianza, con lo stesso procedimento della formula di Knuth per la media,
-// le scrive in tre righe di codice, le anima passo per passo e ne misura la
-// stabilita' numerica. La Part 2 estende l'Homework #3: m hacker su n
+// le anima passo per passo e ne misura la stabilita' numerica (il codice
+// richiesto, tre righe, sta nel programma scaricabile). La Part 2 estende l'Homework #3: m hacker su n
 // sistemi, un punteggio da 0 a 10 per tentativo, media e varianza
-// campionarie di ogni hacker con quelle tre righe, il confronto con μ e σ²,
+// campionarie di ogni hacker con quelle formule, il confronto con μ e σ²,
 // la variabilita' al crescere di n e il legame con l'inferenza; poi i test,
 // il contesto storico e le conclusioni.
 //
@@ -215,7 +215,7 @@ const Assignment = React.memo(function Assignment({ text }) {
   );
 });
 
-// --- 1.1, 1.2, 1.3 e 1.4 Le formule e il codice ------------------------------------
+// --- 1.1, 1.2 e 1.3 Le formule ------------------------------------
 
 const Derivation = ({ block, formulas }) => (
   <>
@@ -225,21 +225,7 @@ const Derivation = ({ block, formulas }) => (
   </>
 );
 
-const Code = React.memo(function Code({ text }) {
-  const C = text.code;
-  return (
-    <>
-      <Paras list={C.intro} />
-      <p className="hw1-table-title"><strong>{C.coreTitle}</strong></p>
-      <pre className="hw1-formulas hw4-core">{hw.WELFORD_LINES.join('\n')}</pre>
-      <p className="hw1-table-title"><strong>{C.fullTitle}</strong></p>
-      <pre className="hw1-formulas hw4-code">{view.welfordCode()}</pre>
-      <Paras list={C.after} />
-    </>
-  );
-});
-
-// --- 1.5 Passo per passo -------------------------------------------------------------
+// --- 1.4 Passo per passo -------------------------------------------------------------
 
 const Steps = ({ text, palette }) => {
   const S = text.steps;
@@ -333,7 +319,7 @@ const Steps = ({ text, palette }) => {
   );
 };
 
-// --- 1.6 La stabilita' numerica --------------------------------------------------------
+// --- 1.5 La stabilita' numerica --------------------------------------------------------
 
 const Stability = React.memo(function Stability({ text, palette }) {
   const S = text.stability;
@@ -386,7 +372,7 @@ const Stability = React.memo(function Stability({ text, palette }) {
   );
 });
 
-// --- 1.7 Verifiche -------------------------------------------------------------------------
+// --- 1.6 Verifiche -------------------------------------------------------------------------
 
 const Verify = React.memo(function Verify({ text }) {
   const V = text.checks;
@@ -903,7 +889,7 @@ const TryDrag = ({ text, palette }) => {
   );
 };
 
-// 1.6: la cancellazione dal vivo, cifra per cifra
+// 1.5: la cancellazione dal vivo, cifra per cifra
 const TryDigits = ({ text }) => {
   const D = text.tryDigits;
   const [power, setPower] = useState(8);
@@ -1219,9 +1205,6 @@ const Homework4 = () => {
 
         <Title id="hw4-variance" level={1}>{S.variance}</Title>
         <Derivation block={text.variance} formulas={text.formulas.variance} />
-
-        <Title id="hw4-code" level={1}>{S.code}</Title>
-        <Code text={text} />
 
         <Title id="hw4-steps" level={1}>{S.steps}</Title>
         <Steps text={text} palette={palette} />

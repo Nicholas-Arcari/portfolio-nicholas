@@ -2889,6 +2889,14 @@ export function chartHitTest(draw, data, width, x, y) {
   if (draw === drawQuadrature) {
     const L = areaLayout(data, width);
     if (x < L.margin.left || x > L.margin.left + L.w || y < L.margin.top || y > L.margin.top + L.h) return null;
+    // senza pezzi (la campana della sezione 2.3) si indica il punto della curva piu' vicino
+    if (!data.pieces.length && data.curve && data.curve.length) {
+      let index = 0;
+      data.curve.forEach(([cx], i) => {
+        if (Math.abs(L.px(cx) - x) < Math.abs(L.px(data.curve[index][0]) - x)) index = i;
+      });
+      return { kind: 'curve', index, rect: { x: L.px(data.curve[index][0]) - 3, y: L.margin.top, width: 6, height: L.h } };
+    }
     const index = data.pieces.findIndex((p) => x >= L.px(p.x0) && x <= L.px(p.x1));
     if (index < 0) return null;
     const p = data.pieces[index];
@@ -2911,10 +2919,23 @@ export function chartHitTest(draw, data, width, x, y) {
   }
   const { margin, w, h, px } = histLayout(data, width);
   if (x < margin.left || x > margin.left + w || y < margin.top || y > margin.top + h) return null;
-  const index = data.bars.findIndex((b) => x >= px(b.from) && x < px(b.to));
+  let index = data.bars.findIndex((b) => x >= px(b.from) && x < px(b.to));
+  // barre sottili come aste (Thomae, sezione 1.8): vale la piu' vicina entro `snap` pixel
+  if (index < 0 && data.snap) {
+    let best = data.snap;
+    data.bars.forEach((b, i) => {
+      const d = Math.abs((px(b.from) + px(b.to)) / 2 - x);
+      if (d <= best) {
+        best = d;
+        index = i;
+      }
+    });
+  }
   if (index < 0) return null;
   const b = data.bars[index];
-  return { kind: 'bar', index, rect: { x: px(b.from), y: margin.top, width: px(b.to) - px(b.from), height: h } };
+  const left = Math.min(px(b.from), (px(b.from) + px(b.to)) / 2 - 3);
+  const right = Math.max(px(b.to), (px(b.from) + px(b.to)) / 2 + 3);
+  return { kind: 'bar', index, rect: { x: left, y: margin.top, width: right - left, height: h } };
 }
 
 /**

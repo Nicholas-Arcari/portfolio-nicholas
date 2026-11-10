@@ -233,7 +233,7 @@ function slider(id, onChange) {
 }
 
 // ---------------------------------------------------------------------------
-// I due cursori che si possono far scorrere: i passi della sezione 1.5 e gli n della 2.6
+// I due cursori che si possono far scorrere: i passi della sezione 1.4 e gli n della 2.6
 // ---------------------------------------------------------------------------
 
 let stepRowsCache = { values: null, rows: [] };
@@ -312,14 +312,13 @@ function assignmentSection() {
 }
 
 // ---------------------------------------------------------------------------
-// Part 1: le formule, il codice, i passi, la stabilita' e le verifiche
+// Part 1: le formule, i passi, la stabilita' e le verifiche
 // ---------------------------------------------------------------------------
 
 const derivation = (block, content) => [paras(block.intro), formulas(content, block.formulasTitle), paras(block.after)];
 
 function part1Section() {
   const S = text.sections;
-  const C = text.code;
   regions.verify = h('div');
   return h(
     'section',
@@ -333,13 +332,6 @@ function part1Section() {
     tryDragBlock(),
     title('hw4-variance', 1, S.variance),
     derivation(text.variance, text.formulas.variance),
-    title('hw4-code', 1, S.code),
-    paras(C.intro),
-    subtitle(C.coreTitle),
-    h('pre', { class: 'core', text: hw.WELFORD_LINES.join('\n') }),
-    subtitle(C.fullTitle),
-    h('pre', { text: view.welfordCode() }),
-    paras(C.after),
     title('hw4-steps', 1, S.steps),
     stepsBlock(),
     title('hw4-stability', 1, S.stability),
@@ -350,7 +342,7 @@ function part1Section() {
   );
 }
 
-// --- 1.5 Passo per passo -------------------------------------------------------------
+// --- 1.4 Passo per passo -------------------------------------------------------------
 
 function stepsBlock() {
   const S = text.steps;
@@ -418,7 +410,7 @@ function changeData(value) {
   updateSteps();
 }
 
-/** The chart, the line with the numbers, the table and the final check of section 1.5. */
+/** The chart, the line with the numbers, the table and the final check of section 1.4. */
 function updateSteps() {
   const S = text.steps;
   const F = text.fmt;
@@ -471,7 +463,7 @@ function updateSteps() {
   );
 }
 
-// --- 1.6 La stabilita' numerica --------------------------------------------------------
+// --- 1.5 La stabilita' numerica --------------------------------------------------------
 
 let stability = null;
 
@@ -512,7 +504,7 @@ function stabilityBlock() {
   ];
 }
 
-// --- 1.7 Verifiche -----------------------------------------------------------------
+// --- 1.6 Verifiche -----------------------------------------------------------------
 
 let checkRows = null;
 
@@ -1072,7 +1064,7 @@ function createDrag() {
   dragResizer.observe(canvas);
 }
 
-// --- 1.6 Le cifre che si perdono -------------------------------------------------------
+// --- 1.5 Le cifre che si perdono -------------------------------------------------------
 
 function tryDigitsBlock() {
   const D = text.tryDigits;

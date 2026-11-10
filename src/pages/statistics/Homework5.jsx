@@ -253,12 +253,13 @@ const Assignment = React.memo(function Assignment({ text }) {
 const Area = React.memo(function Area({ text, palette }) {
   const A = text.area;
   const data = useMemo(() => view.bellChart(text.fmt.decimal), [text]);
+  const tip = useMemo(() => view.tips.bell(data, text.tips), [data, text]);
   return (
     <>
       <Paras list={A.intro} />
       <Formulas>{text.formulas.cdf}</Formulas>
       <div className="hw1-charts">
-        <Figure title={A.chartTitle} draw={hw.drawQuadrature} data={data} palette={palette} wide />
+        <Figure title={A.chartTitle} draw={hw.drawQuadrature} data={data} palette={palette} tip={tip} wide />
       </div>
     </>
   );
@@ -308,8 +309,6 @@ const Rules = React.memo(function Rules({ text }) {
     <>
       <Paras list={R.intro} />
       <Formulas title={R.formulasTitle}>{text.formulas.rules}</Formulas>
-      <p className="hw1-table-title"><strong>{R.codeTitle}</strong></p>
-      <pre className="hw1-formulas hw4-code">{view.RULE_CODE}</pre>
       <p className="hw1-table-title"><strong>{R.tableTitle(view.RULES_N)}</strong></p>
       <table className="hw1-table hw1-discussion-table hw5-rules">
         <thead>
@@ -1141,6 +1140,7 @@ const Efficiency = ({ s, job, spec, fnKey, customStudy, text, palette }) => {
     return s ? s.efficiency[fnKey] : null;
   }, [fnKey, spec, customStudy, s]);
   const data = useMemo(() => (study ? view.efficiencyChart(study, F.decimal) : null), [study, F]);
+  const tip = useMemo(() => (data ? view.tips.cost(data, text.tips) : null), [data, text]);
   const rows = useMemo(() => (s ? view.efficiencyRows(s) : null), [s]);
   const facts = useMemo(() => (s ? view.efficiencyFacts(s) : null), [s]);
   return (
@@ -1150,7 +1150,7 @@ const Efficiency = ({ s, job, spec, fnKey, customStudy, text, palette }) => {
         <Pending text={text} result={job} />
       ) : (
         <div className="hw1-charts">
-          <Figure title={E.chartTitle(text.functionNames[fnKey])} draw={hw.drawLineChart} data={data} palette={palette} wide legend={[{ label: E.legend[0], color: 1 }, { label: E.legend[1], color: 0 }]} />
+          <Figure title={E.chartTitle(text.functionNames[fnKey])} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} wide legend={[{ label: E.legend[0], color: 1 }, { label: E.legend[1], color: 0 }]} />
         </div>
       )}
       {rows && (
@@ -1190,6 +1190,7 @@ const Pathological = React.memo(function Pathological({ text, palette }) {
   const numbers = useMemo(() => view.DIRICHLET_NUMBERS.map((d) => ({ ...d, fraction: hw.exactFraction(d.value) })), []);
   const study = useMemo(() => view.pathological(), []);
   const data = useMemo(() => view.thomaeChart(F.decimal), [F]);
+  const tip = useMemo(() => view.tips.thomae(data, text.tips), [data, text]);
   const upper = useMemo(() => view.thomaeUpper(), []);
   return (
     <>
@@ -1210,7 +1211,7 @@ const Pathological = React.memo(function Pathological({ text, palette }) {
       </table>
       <p>{P.thomaeIntro}</p>
       <div className="hw1-charts">
-        <Figure title={P.chartTitle(upper)} draw={hw.drawHistogram} data={data} palette={palette} wide />
+        <Figure title={P.chartTitle(upper)} draw={hw.drawHistogram} data={data} palette={palette} tip={tip} wide />
       </div>
       <p className="hw1-table-title"><strong>{P.tableTitle}</strong></p>
       <div className="hw1-scroll">
@@ -1299,6 +1300,7 @@ const Series = React.memo(function Series({ text, palette }) {
   const rows = useMemo(() => hw.seriesRows(), []);
   const [z, setZ] = useState(view.SERIES_CHOICES[2]);
   const data = useMemo(() => view.seriesChart(z, F.decimal), [z, F]);
+  const tip = useMemo(() => view.tips.series(data, text.tips), [data, text]);
   return (
     <>
       <Paras list={S.intro} />
@@ -1326,7 +1328,7 @@ const Series = React.memo(function Series({ text, palette }) {
       </div>
       <Choices label={S.chooseLabel} options={view.SERIES_CHOICES.map((v) => [v, F.plain(v)])} value={z} onChange={setZ} />
       <div className="hw1-charts">
-        <Figure title={S.chartTitle(z)} draw={hw.drawLineChart} data={data} palette={palette} wide legend={[{ label: S.legend[0], color: 1 }, { label: S.legend[1], color: 1, dashed: true }, { label: S.legend[2], color: 0 }]} />
+        <Figure title={S.chartTitle(z)} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} wide legend={[{ label: S.legend[0], color: 1 }, { label: S.legend[1], color: 1, dashed: true }, { label: S.legend[2], color: 0 }]} />
       </div>
       <Paras list={S.after(rows)} />
     </>
@@ -1337,12 +1339,13 @@ const Approximations = React.memo(function Approximations({ text, palette }) {
   const A = text.approximations;
   const F = text.fmt;
   const data = useMemo(() => view.approximationChart(F.decimal), [F]);
+  const tip = useMemo(() => view.tips.approximation(data, text.tips), [data, text]);
   const facts = useMemo(() => view.approximationFacts(), []);
   return (
     <>
       <Paras list={A.intro} />
       <div className="hw1-charts">
-        <Figure title={A.chartTitle} draw={hw.drawLineChart} data={data} palette={palette} wide legend={[{ label: A.legend[0], color: 0 }, { label: A.legend[1], color: 1 }, { label: A.legend[2], color: 6, dashed: true }]} />
+        <Figure title={A.chartTitle} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} wide legend={[{ label: A.legend[0], color: 0 }, { label: A.legend[1], color: 1 }, { label: A.legend[2], color: 6, dashed: true }]} />
       </div>
       <Paras list={A.after(facts)} />
     </>
@@ -1401,6 +1404,7 @@ const Methods = ({ s, job, text, palette }) => {
   const F = text.fmt;
   const rows = useMemo(() => view.methodsRows(s), [s]);
   const data = useMemo(() => view.methodsChart(F.decimal), [F]);
+  const tip = useMemo(() => view.tips.methods(data, text.tips, text.methodNames), [data, text]);
   const facts = useMemo(() => view.methodsFacts(s), [s]);
   const legend = useMemo(() => hw.CDF_METHODS.map((key) => ({ label: text.methodNames[key], color: view.METHOD_STYLE[key].colorIndex, dashed: !!view.METHOD_STYLE[key].dashed })), [text]);
   return (
@@ -1428,7 +1432,7 @@ const Methods = ({ s, job, text, palette }) => {
       </div>
       {!s && <Pending text={text} result={job} />}
       <div className="hw1-charts">
-        <Figure title={M.chartTitle} draw={hw.drawLineChart} data={data} palette={palette} wide legend={legend} />
+        <Figure title={M.chartTitle} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} wide legend={legend} />
       </div>
       <Paras list={M.after(facts)} />
     </>

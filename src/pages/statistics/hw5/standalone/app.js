@@ -147,7 +147,9 @@ function legend(items) {
   );
 }
 
-function figure(caption, draw, data, { wide = false, tip = null, items = null, note = null, link = null } = {}) {
+function figure(caption, draw, data, { wide = false, tip: given = null, tipOf = null, items = null, note = null, link = null } = {}) {
+  // tipOf(data): the label built from the same data the chart draws
+  const tip = given || (tipOf ? tipOf(data) : null);
   const canvas = h('canvas', { class: 'chart', role: 'img', 'aria-label': caption });
   const fig = h('figure', { class: wide ? 'figure wide' : 'figure' }, canvas, items && legend(items), note && h('p', { class: 'figure-note', text: note }), h('figcaption', { text: caption }));
   const detach = tip ? hw.attachChartTooltip(canvas, { draw, data, describe: tip, link }) : null;
@@ -345,8 +347,6 @@ function rulesBlock() {
   return [
     paras(R.intro),
     formulas(text.formulas.rules, R.formulasTitle),
-    subtitle(R.codeTitle),
-    h('pre', { class: 'code', text: view.RULE_CODE }),
     subtitle(R.tableTitle(view.RULES_N)),
     table(
       'discussion rules',
@@ -809,7 +809,7 @@ function updateEfficiency() {
     regions.efficiency,
     !study
       ? pending()
-      : h('div', { class: 'charts' }, figure(E.chartTitle(text.functionNames[state.fnKey]), hw.drawLineChart, view.efficiencyChart(study, F.decimal), { wide: true, items: [{ label: E.legend[0], color: 1 }, { label: E.legend[1], color: 0 }] })),
+      : h('div', { class: 'charts' }, figure(E.chartTitle(text.functionNames[state.fnKey]), hw.drawLineChart, view.efficiencyChart(study, F.decimal), { wide: true, tipOf: (data) => view.tips.cost(data, text.tips), items: [{ label: E.legend[0], color: 1 }, { label: E.legend[1], color: 0 }] })),
     rows && [
       subtitle(E.tableTitle),
       h(
@@ -843,7 +843,7 @@ function pathologicalBlock() {
       }),
     ),
     h('p', { text: P.thomaeIntro }),
-    h('div', { class: 'charts' }, figure(P.chartTitle(view.thomaeUpper()), hw.drawHistogram, view.thomaeChart(F.decimal), { wide: true })),
+    h('div', { class: 'charts' }, figure(P.chartTitle(view.thomaeUpper()), hw.drawHistogram, view.thomaeChart(F.decimal), { wide: true, tipOf: (data) => view.tips.thomae(data, text.tips) })),
     subtitle(P.tableTitle),
     h(
       'div',
@@ -882,7 +882,7 @@ function exercise2Section() {
     title('hw5-area', 1, S.area),
     paras(text.area.intro),
     formulas(text.formulas.cdf),
-    h('div', { class: 'charts' }, figure(text.area.chartTitle, hw.drawQuadrature, view.bellChart(F.decimal), { wide: true })),
+    h('div', { class: 'charts' }, figure(text.area.chartTitle, hw.drawQuadrature, view.bellChart(F.decimal), { wide: true, tipOf: (data) => view.tips.bell(data, text.tips) })),
     tryAreaBlock(),
     title('hw5-rules', 1, S.rules),
     rulesBlock(),
@@ -960,7 +960,7 @@ function seriesBlock() {
   const S = text.series;
   const F = text.fmt;
   const rows = hw.seriesRows();
-  series.fig = figure(S.chartTitle(series.z), hw.drawLineChart, view.seriesChart(series.z, F.decimal), { wide: true, items: [{ label: S.legend[0], color: 1 }, { label: S.legend[1], color: 1, dashed: true }, { label: S.legend[2], color: 0 }] });
+  series.fig = figure(S.chartTitle(series.z), hw.drawLineChart, view.seriesChart(series.z, F.decimal), { wide: true, tipOf: (data) => view.tips.series(data, text.tips), items: [{ label: S.legend[0], color: 1 }, { label: S.legend[1], color: 1, dashed: true }, { label: S.legend[2], color: 0 }] });
   return [
     paras(S.intro),
     formulas(S.formulas),
@@ -976,7 +976,8 @@ function seriesBlock() {
     ),
     choices(S.chooseLabel, view.SERIES_CHOICES.map((v) => [v, F.plain(v)]), series.z, (z) => {
       series.z = z;
-      refreshFigure(series.fig, S.chartTitle(z), view.seriesChart(z, F.decimal), null);
+      const data = view.seriesChart(z, F.decimal);
+      refreshFigure(series.fig, S.chartTitle(z), data, view.tips.series(data, text.tips));
     }),
     h('div', { class: 'charts' }, series.fig),
     paras(S.after(rows)),
@@ -988,7 +989,7 @@ function approximationsBlock() {
   const F = text.fmt;
   return [
     paras(A.intro),
-    h('div', { class: 'charts' }, figure(A.chartTitle, hw.drawLineChart, view.approximationChart(F.decimal), { wide: true, items: [{ label: A.legend[0], color: 0 }, { label: A.legend[1], color: 1 }, { label: A.legend[2], color: 6, dashed: true }] })),
+    h('div', { class: 'charts' }, figure(A.chartTitle, hw.drawLineChart, view.approximationChart(F.decimal), { wide: true, tipOf: (data) => view.tips.approximation(data, text.tips), items: [{ label: A.legend[0], color: 0 }, { label: A.legend[1], color: 1 }, { label: A.legend[2], color: 6, dashed: true }] })),
     paras(A.after(view.approximationFacts())),
   ];
 }
@@ -1043,7 +1044,7 @@ function updateMethods() {
       ),
     ),
     !s && pending(),
-    h('div', { class: 'charts' }, figure(M.chartTitle, hw.drawLineChart, view.methodsChart(F.decimal), { wide: true, items: hw.CDF_METHODS.map((key) => ({ label: text.methodNames[key], color: view.METHOD_STYLE[key].colorIndex, dashed: !!view.METHOD_STYLE[key].dashed })) })),
+    h('div', { class: 'charts' }, figure(M.chartTitle, hw.drawLineChart, view.methodsChart(F.decimal), { wide: true, tipOf: (data) => view.tips.methods(data, text.tips, text.methodNames), items: hw.CDF_METHODS.map((key) => ({ label: text.methodNames[key], color: view.METHOD_STYLE[key].colorIndex, dashed: !!view.METHOD_STYLE[key].dashed })) })),
     paras(M.after(view.methodsFacts(s))),
   );
 }

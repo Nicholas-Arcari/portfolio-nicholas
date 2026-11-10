@@ -2060,13 +2060,6 @@ body.dark-mode .hw3-over {
     width: 100%;
     max-width: 34em;
 }
-/* le tre righe di codice, in evidenza rispetto alla funzione completa */
-.hw4-core {
-    border-left: 4px solid #d52349;
-}
-body.dark-mode .hw4-core {
-    border-left-color: #e94560;
-}
 /* la riga con i numeri sostituiti nelle formule, al passo corrente */
 .hw4-line {
     text-align: left;

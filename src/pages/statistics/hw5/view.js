@@ -128,7 +128,7 @@ export function areaState({ mu, sigma, z, rule, n, strategy }, decimal = '.') {
 /** The picture of section 1.1: Phi(1.96) = 0.975 as the area under the bell, with no pieces. */
 export function bellChart(decimal = '.') {
   const s = areaState({ ...AREA.defaults, n: 2 }, decimal);
-  return { ...s.chart, pieces: [] };
+  return { ...s.chart, pieces: [], mu: AREA.defaults.mu, sigma: AREA.defaults.sigma };
 }
 
 // ---------------------------------------------------------------------------
@@ -151,27 +151,6 @@ export function gaussRows(n = 5) {
   const { nodes, weights } = hw.gaussLegendre(n);
   return nodes.map((t, i) => ({ i: i + 1, node: t, weight: weights[i] }));
 }
-
-/** The function of section 1.2 as the page shows it: integrate() of homework5.js, one line per rule. */
-export const RULE_CODE = [
-  'function integrate(f, a, b, rule, n) {',
-  '  const h = (b - a) / n;',
-  '  let s = 0;',
-  '  switch (rule) {',
-  "    case 'left':      for (let i = 0; i < n; i++) s += f(a + i * h);  return s * h;",
-  "    case 'midpoint':  for (let i = 0; i < n; i++) s += f(a + (i + 0.5) * h);  return s * h;",
-  "    case 'trapezoid': s = (f(a) + f(b)) / 2;",
-  '                      for (let i = 1; i < n; i++) s += f(a + i * h);  return s * h;',
-  "    case 'simpson':   s = f(a) + f(b);   // n even",
-  '                      for (let i = 1; i < n; i++) s += (i % 2 ? 4 : 2) * f(a + i * h);  return (s * h) / 3;',
-  "    case 'gauss': {   // nodes t_i and weights w_i of gaussLegendre(n)",
-  '      const { nodes: t, weights: w } = gaussLegendre(n);',
-  '      for (let i = 0; i < n; i++) s += w[i] * f((a + b) / 2 + ((b - a) / 2) * t[i]);',
-  '      return (s * (b - a)) / 2;',
-  '    }',
-  '  }',
-  '}',
-].join('\n');
 
 // ---------------------------------------------------------------------------
 // 1.3 Il problema di -infinito
@@ -706,14 +685,14 @@ export const pathological = () => {
 export function thomaeChart(decimal = '.') {
   const bars = [];
   for (let q = 1; q <= THOMAE_Q; q++) {
-    for (let p = 0; p <= q; p++) if (hw.gcd(p, q) === 1) bars.push({ from: p / q - 0.0015, to: p / q + 0.0015, value: 1 / q });
+    for (let p = 0; p <= q; p++) if (hw.gcd(p, q) === 1) bars.push({ from: p / q - 0.0015, to: p / q + 0.0015, value: 1 / q, p, q });
   }
   const curve = [];
   for (let i = 0; i < THOMAE_STRIPS; i++) {
     const top = 1 / hw.smallestDenominator(i, THOMAE_STRIPS);
     curve.push([i / THOMAE_STRIPS, top], [(i + 1) / THOMAE_STRIPS, top]);
   }
-  return { x0: 0, x1: 1, bars, curve, yMax: 1.05, xTicks: [0, 0.2, 0.4, 0.6, 0.8, 1], decimal };
+  return { x0: 0, x1: 1, bars, curve, snap: 6, strips: THOMAE_STRIPS, yMax: 1.05, xTicks: [0, 0.2, 0.4, 0.6, 0.8, 1], decimal };
 }
 
 /** The upper sum of the picture: the area under the staircase. */
@@ -876,6 +855,8 @@ export function seriesChart(z, decimal = '.') {
   for (let e = hi; e >= lo; e -= every) yTicks.unshift(10 ** e);
   return {
     x: path.map((p) => p.terms),
+    path,
+    z,
     logY: true,
     yMin: 10 ** lo,
     yMax: 10 ** hi,
@@ -1062,6 +1043,32 @@ export const tips = {
   histogram: (h, T) => (hit) => {
     const b = h.bars[hit.index];
     return b ? T.estimates(b.from, b.to, b.count, b.share) : null;
+  },
+  // i sei grafici che prima non avevano etichetta: 1.7, 1.8, 2.3, 2.7, 2.8, 2.11
+  cost: (chart, T) => (hit) => T.cost(chart.x[hit.index], chart.series[0].values[hit.index], chart.series[1].values[hit.index]),
+  thomae: (chart, T) => (hit) => {
+    const b = chart.bars[hit.index];
+    if (!b) return null;
+    // lo stelo sta nella striscia che lo contiene; uno sul bordo fra due strisce conta per entrambe
+    const at = b.p / b.q;
+    const strips = [];
+    for (let i = 0; i < chart.strips; i++) if (at >= i / chart.strips - 1e-12 && at <= (i + 1) / chart.strips + 1e-12) strips.push(i);
+    return T.thomae(b.p, b.q, strips.map((i) => ({ from: i / chart.strips, to: (i + 1) / chart.strips, top: 1 / hw.smallestDenominator(i, chart.strips) })));
+  },
+  bell: (chart, T) => (hit) => {
+    const point = chart.curve[hit.index];
+    if (!point) return null;
+    const [x, density] = point;
+    return T.bell(x, density, hw.normalCdf((x - chart.mu) / chart.sigma));
+  },
+  series: (chart, T) => (hit) => {
+    const p = chart.path[hit.index];
+    return p ? T.series(chart.z, p) : null;
+  },
+  approximation: (chart, T) => (hit) => T.approximation(chart.x[hit.index], chart.series[0].values[hit.index], chart.series[1].values[hit.index], chart.series[2].values[hit.index]),
+  methods: (chart, T, names) => (hit) => {
+    const z = chart.x[hit.index];
+    return T.methods(z, hw.CDF_METHODS.map((key) => ({ name: names[key], error: Math.abs(hw.cdfBy[key](z) - hw.referencePhi(z)) })));
   },
   mcPath: (run, T) => (hit) => {
     const p = run.path[hit.index];

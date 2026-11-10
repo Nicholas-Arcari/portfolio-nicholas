@@ -14,7 +14,6 @@ export const SECTIONS = [
   { id: 'hw4-ss', key: 'ss', level: 1 },
   { id: 'hw4-try-drag', key: 'tryDrag', level: 2 },
   { id: 'hw4-variance', key: 'variance', level: 1 },
-  { id: 'hw4-code', key: 'code', level: 1 },
   { id: 'hw4-steps', key: 'steps', level: 1 },
   { id: 'hw4-stability', key: 'stability', level: 1 },
   { id: 'hw4-try-digits', key: 'tryDigits', level: 2 },
@@ -38,29 +37,14 @@ export const SECTIONS = [
 export const tocEntries = (titles) => SECTIONS.map((s) => ({ ...s, title: titles[s.key] }));
 
 // ---------------------------------------------------------------------------
-// Part 1: il codice e i dati
+// Part 1: i dati
 // ---------------------------------------------------------------------------
 
-/** The function of section 1.4 as the page shows it: welford() of homework4.js, with the three lines of WELFORD_LINES. */
-export const welfordCode = () =>
-  [
-    'function welford(values) {',
-    '  let mean = 0;',
-    '  let ss = 0;',
-    '  let k = 0;',
-    '  for (const x of values) {',
-    '    k += 1;',
-    ...hw.WELFORD_LINES.map((line) => `    ${line}`),
-    '  }',
-    '  return { k, mean, ss, variance: k > 1 ? ss / (k - 1) : NaN, population: k > 0 ? ss / k : NaN };',
-    '}',
-  ].join('\n');
-
-/** The data of section 1.5 as the page opens with them. */
+/** The data of section 1.4 as the page opens with them. */
 export const DEFAULT_DATA_TEXT = hw.DEFAULT_DATA.join(' ');
 export const DATA_LENGTH = 600;
 
-/** The y axis of the chart of section 1.5: every value and every band M_k +- s_k, with a margin. */
+/** The y axis of the chart of section 1.4: every value and every band M_k +- s_k, with a margin. */
 export function stepsChart(rows, k, decimal = '.') {
   let lo = Infinity;
   let hi = -Infinity;
@@ -74,7 +58,7 @@ export function stepsChart(rows, k, decimal = '.') {
   return { rows, k, yMin: Math.min(lo - pad, yTicks[0]), yMax: Math.max(hi + pad, yTicks[yTicks.length - 1]), yTicks, decimal };
 }
 
-/** The three formulas on the data of section 1.5, and the largest relative difference among them. */
+/** The three formulas on the data of section 1.4, and the largest relative difference among them. */
 export function stepsCheck(values) {
   const w = hw.welford(values);
   const twoPass = hw.twoPassVariance(values);
@@ -83,7 +67,7 @@ export function stepsCheck(values) {
   return { welford: w.variance, mean: w.mean, twoPass, naive, welfordError: rel(w.variance), naiveError: rel(naive) };
 }
 
-/** The stability curve of section 1.6 on logarithmic axes: the relative error of the three formulas against log10 c. */
+/** The stability curve of section 1.5 on logarithmic axes: the relative error of the three formulas against log10 c. */
 export const ERROR_FLOOR = 1e-17;
 export const ERROR_CEILING = 10;
 
@@ -101,7 +85,7 @@ export function stabilityChart(curve, decimal = '.') {
   };
 }
 
-/** Where every formula of section 1.6 breaks: the first offset with a relative error above 10^-6 and above 100%, and the error at the largest offset. */
+/** Where every formula of section 1.5 breaks: the first offset with a relative error above 10^-6 and above 100%, and the error at the largest offset. */
 export function stabilityFacts(curve) {
   const out = {};
   for (const f of hw.FORMULAS) {
@@ -570,7 +554,7 @@ export function scatterData(s, g, decimal = '.') {
 /** The draggable data of section 1.2 as the page opens with them, and their range. */
 export const DRAG = Object.freeze({ values: hw.DEFAULT_DATA, lo: 0, hi: hw.SCORE_MAX });
 
-/** The two data sets of the live cancellation of section 1.6: the classic example and the first 1000 scores of hacker 1. */
+/** The two data sets of the live cancellation of section 1.5: the classic example and the first 1000 scores of hacker 1. */
 export const DIGIT_DATASETS = Object.freeze(['classic', 'scores']);
 export const DIGIT_POWERS = Object.freeze([0, 15]);
 

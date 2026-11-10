@@ -29,7 +29,7 @@ COME SI USA
   vengono estratti solo i file cliccati). La pagina si apre in inglese:
   IT / EN in alto cambia lingua, e il pulsante Contents (Indice, in
   italiano) porta a qualunque sezione della consegna. La Part 1 funziona
-  subito: nella sezione 1.5 si possono scrivere altri dati e seguire le
+  subito: nella sezione 1.4 si possono scrivere altri dati e seguire le
   formule passo per passo. La simulazione della Part 2 gira nella pagina
   stessa, a fette di pochi millisecondi: con i valori iniziali i risultati
   arrivano in qualche secondo, senza bloccarla, e intanto l'animazione
@@ -109,7 +109,7 @@ HOW TO USE IT
   index.html from there (opened inside the archive manager it stays empty,
   because only the clicked file gets extracted). The page opens in English:
   IT / EN at the top switches language, and the Contents button jumps to
-  any section of the assignment. Part 1 works at once: in section 1.5 other
+  any section of the assignment. Part 1 works at once: in section 1.4 other
   data can be written and the formulas followed step by step. The
   simulation of Part 2 runs in the page itself, in slices of a few
   milliseconds: with the initial values the results arrive in a few

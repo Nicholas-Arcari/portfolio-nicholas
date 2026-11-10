@@ -31,7 +31,7 @@ function formatters(decimal, thousands, na, times) {
     const negative = v < 0 && Math.abs(v) >= 0.5 * 10 ** -digits;
     return `${negative ? '-' : ''}${group(whole)}${part ? `${decimal}${part}` : ''}`;
   };
-  // significant digits, for numbers of any size (the data of section 1.5)
+  // significant digits, for numbers of any size (the data of section 1.4)
   const sig = (v, digits = 6) => {
     if (missing(v)) return na;
     if (v === 0) return '0';
@@ -145,7 +145,7 @@ function testLineIt(t) {
   }
 }
 
-/** Where the formulas of section 1.6 break, in words. */
+/** Where the formulas of section 1.5 break, in words. */
 function stabilityIt(f) {
   const F = IT;
   const at = (power) => `c = ${F.pow(power)}`;
@@ -173,10 +173,9 @@ const it = {
     knuth: '1.1 La formula di Knuth per la media',
     ss: '1.2 La somma dei quadrati: la formula di Welford',
     variance: '1.3 La varianza',
-    code: '1.4 Il codice: tre righe',
-    steps: '1.5 Passo per passo',
-    stability: '1.6 La stabilità numerica',
-    checks: '1.7 Verifiche',
+    steps: '1.4 Passo per passo',
+    stability: '1.5 La stabilità numerica',
+    checks: '1.6 Verifiche',
     part2: 'Part 2 - Media e varianza campionarie',
     scores: '2.1 La distribuzione dei punteggi',
     input: '2.2 Hacker, sistemi e seme',
@@ -196,7 +195,7 @@ const it = {
   assignment: {
     intro: [
       'La consegna ha due parti. La Part 1 chiede di ricavare le formule ricorsive di Welford per la somma dei quadrati (SS) e per la varianza, seguendo lo stesso procedimento della formula ricorsiva di Knuth per la media, e di scriverne il codice, il cui nucleo deve stare in circa tre righe. La Part 2 estende l’Homework #3: ogni tentativo di penetrazione riceve un punteggio fra 0 e 10, estratto da una distribuzione fissa a scelta con media μ e varianza σ²; m hacker attaccano n sistemi ciascuno, e ogni hacker calcola con le formule di Welford la media e la varianza campionarie dei suoi n punteggi. Sugli m hacker si confrontano la media delle medie campionarie con μ e la media delle varianze campionarie con σ², si discutono le conclusioni e la loro utilità per la statistica inferenziale, e si ripete l’esperimento per diversi n, studiando come cambia la variabilità delle medie e delle varianze campionarie.',
-      'La Part 1 ricava le formule passo per passo, mostra le tre righe di codice, le anima su dati scelti da chi legge e ne misura la stabilità numerica contro la formula da manuale. La Part 2 sceglie la distribuzione dei punteggi, simula gli hacker, confronta le medie con μ e σ², risponde alle tre domande della consegna (sezioni 2.5, 2.6 e 2.7) e collega i risultati all’inferenza. La sezione 3 riassume i test statistici, la 4 colloca le idee nel tempo e la 5 trae le conclusioni. Tutti i numeri sono calcolati nel browser, e il programma scaricabile stampa gli stessi.',
+      'La Part 1 ricava le formule passo per passo, le anima su dati scelti da chi legge e ne misura la stabilità numerica contro la formula da manuale; il codice richiesto, in tre righe, è nel programma scaricabile in fondo alla pagina. La Part 2 sceglie la distribuzione dei punteggi, simula gli hacker, confronta le medie con μ e σ², risponde alle tre domande della consegna (sezioni 2.5, 2.6 e 2.7) e collega i risultati all’inferenza. La sezione 3 riassume i test statistici, la 4 colloca le idee nel tempo e la 5 trae le conclusioni. Tutti i numeri sono calcolati nel browser, e il programma scaricabile stampa gli stessi.',
     ],
     originalTitle: 'Il testo originale della consegna',
     originalNote: 'Com’è stato assegnato, in inglese. L’unica modifica è il trattino dei due titoli, scritto "-" come in tutto il sito.',
@@ -233,23 +232,15 @@ const it = {
     formulasTitle: 'Le due varianze, da k - 1 a k dati',
     after: [
       'La varianza della popolazione si aggiorna esattamente come una media: è la media corrente dei termini (x_k - M_(k-1))(x_k - M_k), e la sua ricorsione è quella di Knuth applicata a loro. La varianza campionaria ha in più il fattore (k - 2)/(k - 1), che viene dal divisore k - 1; con due dati vale s_2² = δ_2²/2 = (x_2 - x_1)²/2.',
-      'Nel codice conviene aggiornare M e SS e dividere solo quando serve la varianza: si risparmia una divisione per passo, SS ha senso anche quando la varianza non è ancora definita (k = 1), e le due varianze si ottengono dallo stesso SS. Perché il divisore giusto sia k - 1, la correzione di Bessel, è il cuore della Part 2: la sezione 2.5 lo dimostra e la simulazione lo verifica.',
-    ],
-  },
-  code: {
-    intro: [
-      'Le tre righe sono l’algoritmo intero: lo scarto dalla media vecchia, la media nuova (Knuth), la somma dei quadrati nuova (Welford). La terza riga usa la media già aggiornata dalla seconda, ed è così che il prodotto contiene i due scarti, da prima e da dopo. Sono scritte in JavaScript come il resto della pagina, e sono proprio quelle che la pagina esegue: nella funzione welford() di homework4.js, nella tabella della sezione 1.5, nell’animazione della sezione 2.3 e nella simulazione della Part 2, una volta per ogni punteggio di ogni hacker.',
-    ],
-    coreTitle: 'Il nucleo: tre righe',
-    fullTitle: 'La funzione completa, in homework4.js',
-    after: [
+      'Conviene aggiornare M e SS e dividere solo quando serve la varianza: si risparmia una divisione per passo, SS ha senso anche quando la varianza non è ancora definita (k = 1), e le due varianze si ottengono dallo stesso SS. Perché il divisore giusto sia k - 1, la correzione di Bessel, è il cuore della Part 2: la sezione 2.5 lo dimostra e la simulazione lo verifica.',
+      'Le tre formule di aggiornamento, δ_k = x_k - M_(k-1), M_k = M_(k-1) + δ_k/k e SS_k = SS_(k-1) + δ_k (x_k - M_k), sono l’algoritmo intero: la terza usa la media già aggiornata dalla seconda, ed è così che il prodotto contiene i due scarti, da prima e da dopo. Scritte in JavaScript sono le tre righe che la consegna chiede: stanno nella funzione welford() di homework4.js, nel programma della sezione "Scarica il codice" in fondo alla pagina, e sono le stesse che la pagina esegue nella tabella della sezione 1.4, nell’animazione della sezione 2.3 e nella simulazione della Part 2, una volta per ogni punteggio di ogni hacker.',
       'Il costo è costante per dato e in memoria: tre numeri (k, M e SS) bastano per qualunque n, e media e varianza si possono leggere a ogni passo. Con i punteggi di un hacker che arrivano un sistema dopo l’altro, sono disponibili in ogni momento senza tornare sui dati: è ciò che la Part 2 usa per avere, in una sola simulazione, i risultati di ogni n.',
       'Due risultati parziali si possono anche unire, per esempio quelli calcolati in parallelo su due parti dei dati: con n_A e n_B dati, n = n_A + n_B e δ = M_B - M_A, la media è M_A + δ n_B/n e la somma dei quadrati SS_A + SS_B + δ² n_A n_B/n (Chan, Golub e LeVeque, 1979). Con n_B = 1 è di nuovo la formula di Welford.',
     ],
   },
   steps: {
     intro: [
-      'La tabella e il grafico applicano le tre righe ai dati del campo, uno alla volta. Per ogni passo k: il dato x_k, lo scarto δ_k = x_k - M_(k-1) dalla media vecchia, la media nuova M_k, lo scarto x_k - M_k dalla media nuova, il loro prodotto (l’incremento di SS), SS_k e la varianza campionaria s_k². Nel grafico i punti sono i dati e la linea la media corrente, con la fascia M_k ± s_k; al passo evidenziato il segmento giallo è δ_k, da M_(k-1) a x_k, e quello viola x_k - M_k, i due fattori dell’incremento.',
+      'La tabella e il grafico applicano le tre formule di aggiornamento ai dati del campo, uno alla volta. Per ogni passo k: il dato x_k, lo scarto δ_k = x_k - M_(k-1) dalla media vecchia, la media nuova M_k, lo scarto x_k - M_k dalla media nuova, il loro prodotto (l’incremento di SS), SS_k e la varianza campionaria s_k². Nel grafico i punti sono i dati e la linea la media corrente, con la fascia M_k ± s_k; al passo evidenziato il segmento giallo è δ_k, da M_(k-1) a x_k, e quello viola x_k - M_k, i due fattori dell’incremento.',
       `I dati iniziali sono l’esempio classico 2, 4, 4, 4, 5, 5, 7, 9: media 5, varianza della popolazione 4, varianza campionaria 32/7. Si possono scrivere altri numeri, da 2 a ${DATA_MAX}.`,
     ],
     dataLabel: `I dati (da 2 a ${DATA_MAX} numeri)`,
@@ -276,7 +267,7 @@ const it = {
       if (r.k === 1) return `Passo 1: M_1 = x_1 = ${F.sig(r.x)}, SS_1 = 0; la varianza campionaria non è ancora definita.`;
       return `Passo ${r.k}: δ = ${F.sig(r.x)} - ${F.sig(r.previous)} = ${F.sig(r.delta)}; M_${r.k} = ${F.sig(r.previous)} + ${F.sig(r.delta)}/${r.k} = ${F.sig(r.mean)}; SS_${r.k} = ${F.sig(previous.ss)} + ${F.sig(r.delta)} × ${F.sig(r.after)} = ${F.sig(r.ss)}; s²_${r.k} = ${F.sig(r.ss)}/${r.k - 1} = ${F.sig(r.variance)}.`;
     },
-    tableTitle: 'Le tre righe, passo per passo',
+    tableTitle: 'Le formule di aggiornamento, passo per passo',
     cols: { k: 'k', x: 'x_k', delta: 'δ_k', mean: 'M_k', after: 'x_k - M_k', increment: 'δ_k (x_k - M_k)', ss: 'SS_k', variance: 's_k²' },
     check: (c) => {
       const F = IT;
@@ -302,7 +293,7 @@ const it = {
     ],
   },
   checks: {
-    intro: 'Le formule, il generatore e le funzioni statistiche sono controllati contro riferimenti indipendenti: le tre righe contro il modulo statistics di Python, che calcola con le frazioni e quindi in modo esatto, e contro NumPy 2.4.6; xoshiro128** e SplitMix64 contro il loro codice C di riferimento; i punteggi dell’hacker 1, con tutte e quattro le leggi, contro lo stesso programma C; leggi, quantili e funzioni speciali contro SciPy 1.17.1; le formule di Var(s²) e Cov(M, s²) della sezione 2.6 contro l’enumerazione esatta, con le frazioni di Python, di tutti i campioni di 2 e di 3 punteggi.',
+    intro: 'Le formule, il generatore e le funzioni statistiche sono controllati contro riferimenti indipendenti: le formule di aggiornamento contro il modulo statistics di Python, che calcola con le frazioni e quindi in modo esatto, e contro NumPy 2.4.6; xoshiro128** e SplitMix64 contro il loro codice C di riferimento; i punteggi dell’hacker 1, con tutte e quattro le leggi, contro lo stesso programma C; leggi, quantili e funzioni speciali contro SciPy 1.17.1; le formule di Var(s²) e Cov(M, s²) della sezione 2.6 contro l’enumerazione esatta, con le frazioni di Python, di tutti i campioni di 2 e di 3 punteggi.',
     summary: (ok, total) => `${ok} verifiche su ${total} superate.`,
     details: (total) => `Le ${total} verifiche`,
     groups: { welford: 'Le formule ricorsive', generator: 'Generatore e punteggi', functions: 'Leggi, momenti e funzioni speciali' },
@@ -312,7 +303,7 @@ const it = {
   },
   part2: {
     intro: [
-      'La Part 2 riprende gli attaccanti dell’Homework #3, che qui sono gli hacker della consegna, e dà un punteggio a ogni tentativo. Ogni hacker produce una traiettoria di n punteggi X_1, ..., X_n, indipendenti e con la stessa legge di media μ e varianza σ², e la riassume con le tre righe della Part 1 nella media campionaria M_n e nella varianza campionaria s_n² = SS_n/(n - 1). Gli m hacker sono m campioni indipendenti: le loro medie e varianze sono m estrazioni delle statistiche M_n e s_n², e la media di queste estrazioni dice quanto valgono in media, cioè se M_n e s_n² sono stimatori corretti di μ e σ².',
+      'La Part 2 riprende gli attaccanti dell’Homework #3, che qui sono gli hacker della consegna, e dà un punteggio a ogni tentativo. Ogni hacker produce una traiettoria di n punteggi X_1, ..., X_n, indipendenti e con la stessa legge di media μ e varianza σ², e la riassume con le formule di aggiornamento della Part 1 nella media campionaria M_n e nella varianza campionaria s_n² = SS_n/(n - 1). Gli m hacker sono m campioni indipendenti: le loro medie e varianze sono m estrazioni delle statistiche M_n e s_n², e la media di queste estrazioni dice quanto valgono in media, cioè se M_n e s_n² sono stimatori corretti di μ e σ².',
     ],
   },
   scores: {
@@ -626,7 +617,7 @@ const it = {
     },
   },
   history: {
-    intro: 'Dai minimi quadrati di Gauss alle tre righe di questa pagina, le idee usate nell’homework in ordine cronologico.',
+    intro: 'Dai minimi quadrati di Gauss alle formule ricorsive di questa pagina, le idee usate nell’homework in ordine cronologico.',
     legend: { task: 'usato in questa pagina', context: 'contesto' },
     events: [
       { year: '1809', task: true, title: 'Gauss', text: 'Nella Theoria motus fonda i minimi quadrati: la media aritmetica è il valore che rende minima la somma dei quadrati degli scarti, la proprietà che la sezione 2.5 usa per spiegare il divisore n - 1.' },
@@ -644,15 +635,15 @@ const it = {
       { year: '1969', task: true, title: 'Knuth', text: 'The Art of Computer Programming, vol. 2, riporta le ricorsioni per media e deviazione standard citando Welford, nella parte sull’accuratezza dell’aritmetica in virgola mobile: la formula per la media della consegna.' },
       { year: '1979', task: true, title: 'Chan, Golub e LeVeque; Holm', text: 'Chan, Golub e LeVeque generalizzano Welford all’unione di due gruppi di dati (l’algoritmo a coppie), e nel 1983 ne analizzano la stabilità; Holm propone la correzione per i test multipli usata nella sezione 3.' },
       { year: '1980', task: true, title: 'Jarque e Bera', text: 'Il test di normalità basato sull’asimmetria e sulla curtosi, usato per le medie e le varianze degli hacker.' },
-      { year: '1985', task: true, title: 'IEEE 754', text: 'Lo standard dell’aritmetica in virgola mobile: i double a 53 bit di mantissa con cui la sezione 1.6 misura la cancellazione.' },
+      { year: '1985', task: true, title: 'IEEE 754', text: 'Lo standard dell’aritmetica in virgola mobile: i double a 53 bit di mantissa con cui la sezione 1.5 misura la cancellazione.' },
       { year: '1996', task: false, title: 'Alon, Matias e Szegedy', text: 'La teoria degli algoritmi di flusso: quali statistiche si possono calcolare in una passata con poca memoria. Media e varianza sono il caso più semplice, e Welford la sua soluzione esatta.' },
       { year: '2014-2018', task: true, title: 'SplitMix e xoshiro', text: 'Steele, Lea e Flood pubblicano SplitMix (2014), Blackman e Vigna i generatori xoshiro (2018): sono i numeri casuali di questa pagina, come dell’Homework #3.' },
     ],
-    after: 'La storia procede su due binari che questo homework unisce. Quello della stima (Gauss, Student, Fisher, Neyman) dice che cosa valgono M_n e s_n² come stimatori; quello del calcolo (Welford, Knuth, Chan, Golub e LeVeque) dice come calcolarli bene con una macchina, in una passata e senza perdere cifre. Le tre righe della Part 1 stanno all’incrocio.',
+    after: 'La storia procede su due binari che questo homework unisce. Quello della stima (Gauss, Student, Fisher, Neyman) dice che cosa valgono M_n e s_n² come stimatori; quello del calcolo (Welford, Knuth, Chan, Golub e LeVeque) dice come calcolarli bene con una macchina, in una passata e senza perdere cifre. Le formule ricorsive della Part 1 stanno all’incrocio.',
   },
   conclusion: (s) => {
     const F = IT;
-    const first = 'Part 1. Le formule di Welford si ricavano con lo stesso procedimento di quella di Knuth per la media: si scrive la grandezza dei primi k dati con quella dei primi k - 1 e lo scarto del dato nuovo. Ne vengono SS_k = SS_(k-1) + (x_k - M_(k-1))(x_k - M_k) e s_k² = SS_k/(k - 1), con la stessa forma per la varianza. Il codice sono tre righe che lavorano in memoria costante e in una sola passata, e che, a differenza della formula da manuale, non perdono tutte le cifre quando i dati hanno un grande valore di fondo.';
+    const first = 'Part 1. Le formule di Welford si ricavano con lo stesso procedimento di quella di Knuth per la media: si scrive la grandezza dei primi k dati con quella dei primi k - 1 e lo scarto del dato nuovo. Ne vengono SS_k = SS_(k-1) + (x_k - M_(k-1))(x_k - M_k) e s_k² = SS_k/(k - 1), con la stessa forma per la varianza. Nel codice sono tre righe che lavorano in memoria costante e in una sola passata, e che, a differenza della formula da manuale, non perdono tutte le cifre quando i dati hanno un grande valore di fondo.';
     if (!s) return [first, 'Part 2. Con m hacker e n sistemi, la media delle medie campionarie coincide con μ e la media delle varianze campionarie con σ², per ogni n: sono stimatori corretti, e la loro variabilità scende come 1/n.'];
     const f = spreadFacts(s);
     const i = inferenceFacts(s);
@@ -756,10 +747,9 @@ const en = {
     knuth: '1.1 Knuth’s formula for the mean',
     ss: '1.2 The sum of squares: Welford’s formula',
     variance: '1.3 The variance',
-    code: '1.4 The code: three lines',
-    steps: '1.5 Step by step',
-    stability: '1.6 Numerical stability',
-    checks: '1.7 Checks',
+    steps: '1.4 Step by step',
+    stability: '1.5 Numerical stability',
+    checks: '1.6 Checks',
     part2: 'Part 2 - Sampling mean and variance',
     scores: '2.1 The distribution of the scores',
     input: '2.2 Hackers, systems and seed',
@@ -779,7 +769,7 @@ const en = {
   assignment: {
     intro: [
       'The assignment has two parts. Part 1 asks to derive Welford’s recurrence formulas for the sum of squares (SS) and for the variance, following the same approach as Knuth’s recurrence formula for the mean, and to write the code, whose core should take about three lines. Part 2 extends Homework #3: every penetration attempt gets a score between 0 and 10, drawn from a fixed distribution of one’s choice with mean μ and variance σ²; m hackers attack n systems each, and every hacker computes with Welford’s formulas the sampling mean and variance of its n scores. Over the m hackers, the average of the sampling means is compared with μ and the average of the sampling variances with σ², the conclusions and their use in inferential statistics are discussed, and the experiment is repeated for several n, to see how the variability of the sampling means and variances changes.',
-      'Part 1 derives the formulas step by step, shows the three lines of code, animates them on data chosen by the reader and measures their numerical stability against the textbook formula. Part 2 chooses the distribution of the scores, simulates the hackers, compares the averages with μ and σ², answers the three questions of the assignment (sections 2.5, 2.6 and 2.7) and connects the results to inference. Section 3 summarizes the statistical tests, section 4 places the ideas in time and section 5 draws the conclusions. Every number is computed in the browser, and the downloadable program prints the same ones.',
+      'Part 1 derives the formulas step by step, animates them on data chosen by the reader and measures their numerical stability against the textbook formula; the code asked for, in three lines, is in the downloadable program at the bottom of the page. Part 2 chooses the distribution of the scores, simulates the hackers, compares the averages with μ and σ², answers the three questions of the assignment (sections 2.5, 2.6 and 2.7) and connects the results to inference. Section 3 summarizes the statistical tests, section 4 places the ideas in time and section 5 draws the conclusions. Every number is computed in the browser, and the downloadable program prints the same ones.',
     ],
     originalTitle: 'The original text of the assignment',
     originalNote: 'As it was assigned. The only change is the dash of the two titles, written "-" as everywhere on this site.',
@@ -816,23 +806,15 @@ const en = {
     formulasTitle: 'The two variances, from k - 1 to k values',
     after: [
       'The population variance is updated exactly like a mean: it is the running mean of the terms (x_k - M_(k-1))(x_k - M_k), and its recurrence is Knuth’s applied to them. The sample variance has the extra factor (k - 2)/(k - 1), which comes from the divisor k - 1; with two values it is s_2² = δ_2²/2 = (x_2 - x_1)²/2.',
-      'In code it is better to update M and SS and divide only when the variance is needed: one division less per step, SS makes sense even when the variance is not defined yet (k = 1), and both variances come from the same SS. Why the right divisor is k - 1, Bessel’s correction, is the heart of Part 2: section 2.5 proves it and the simulation checks it.',
-    ],
-  },
-  code: {
-    intro: [
-      'The three lines are the whole algorithm: the deviation from the old mean, the new mean (Knuth), the new sum of squares (Welford). The third line uses the mean already updated by the second, and that is how the product contains both deviations, before and after. They are written in JavaScript like the rest of the page, and they are exactly the ones the page runs: in the function welford() of homework4.js, in the table of section 1.5, in the animation of section 2.3 and in the simulation of Part 2, once for every score of every hacker.',
-    ],
-    coreTitle: 'The core: three lines',
-    fullTitle: 'The whole function, in homework4.js',
-    after: [
+      'It is better to update M and SS and divide only when the variance is needed: one division less per step, SS makes sense even when the variance is not defined yet (k = 1), and both variances come from the same SS. Why the right divisor is k - 1, Bessel’s correction, is the heart of Part 2: section 2.5 proves it and the simulation checks it.',
+      'The three update formulas, δ_k = x_k - M_(k-1), M_k = M_(k-1) + δ_k/k and SS_k = SS_(k-1) + δ_k (x_k - M_k), are the whole algorithm: the third uses the mean already updated by the second, and that is how the product contains both deviations, before and after. Written in JavaScript they are the three lines the assignment asks for: they are in the function welford() of homework4.js, in the program of the section "Download the code" at the bottom of the page, and they are the same ones the page runs in the table of section 1.4, in the animation of section 2.3 and in the simulation of Part 2, once for every score of every hacker.',
       'The cost is constant per value and in memory: three numbers (k, M and SS) are enough for any n, and the mean and the variance can be read at every step. With the scores of a hacker arriving one system after the other, they are available at any time without going back to the data: this is what Part 2 uses to get the results of every n from a single simulation.',
       'Two partial results can also be merged, for example those computed in parallel on two parts of the data: with n_A and n_B values, n = n_A + n_B and δ = M_B - M_A, the mean is M_A + δ n_B/n and the sum of squares SS_A + SS_B + δ² n_A n_B/n (Chan, Golub and LeVeque, 1979). With n_B = 1 it is Welford’s formula again.',
     ],
   },
   steps: {
     intro: [
-      'The table and the chart apply the three lines to the data of the field, one value at a time. For every step k: the value x_k, the deviation δ_k = x_k - M_(k-1) from the old mean, the new mean M_k, the deviation x_k - M_k from the new mean, their product (the increment of SS), SS_k and the sample variance s_k². In the chart the dots are the data and the line the running mean, with the band M_k ± s_k; at the highlighted step the yellow segment is δ_k, from M_(k-1) to x_k, and the purple one x_k - M_k, the two factors of the increment.',
+      'The table and the chart apply the three update formulas to the data of the field, one value at a time. For every step k: the value x_k, the deviation δ_k = x_k - M_(k-1) from the old mean, the new mean M_k, the deviation x_k - M_k from the new mean, their product (the increment of SS), SS_k and the sample variance s_k². In the chart the dots are the data and the line the running mean, with the band M_k ± s_k; at the highlighted step the yellow segment is δ_k, from M_(k-1) to x_k, and the purple one x_k - M_k, the two factors of the increment.',
       `The initial data are the classic example 2, 4, 4, 4, 5, 5, 7, 9: mean 5, population variance 4, sample variance 32/7. Other numbers can be written, from 2 to ${DATA_MAX} of them.`,
     ],
     dataLabel: `The data (from 2 to ${DATA_MAX} numbers)`,
@@ -859,7 +841,7 @@ const en = {
       if (r.k === 1) return `Step 1: M_1 = x_1 = ${F.sig(r.x)}, SS_1 = 0; the sample variance is not defined yet.`;
       return `Step ${r.k}: δ = ${F.sig(r.x)} - ${F.sig(r.previous)} = ${F.sig(r.delta)}; M_${r.k} = ${F.sig(r.previous)} + ${F.sig(r.delta)}/${r.k} = ${F.sig(r.mean)}; SS_${r.k} = ${F.sig(previous.ss)} + ${F.sig(r.delta)} × ${F.sig(r.after)} = ${F.sig(r.ss)}; s²_${r.k} = ${F.sig(r.ss)}/${r.k - 1} = ${F.sig(r.variance)}.`;
     },
-    tableTitle: 'The three lines, step by step',
+    tableTitle: 'The update formulas, step by step',
     cols: { k: 'k', x: 'x_k', delta: 'δ_k', mean: 'M_k', after: 'x_k - M_k', increment: 'δ_k (x_k - M_k)', ss: 'SS_k', variance: 's_k²' },
     check: (c) => {
       const F = EN;
@@ -885,7 +867,7 @@ const en = {
     ],
   },
   checks: {
-    intro: 'The formulas, the generator and the statistical functions are checked against independent references: the three lines against Python’s statistics module, which computes with fractions and therefore exactly, and against NumPy 2.4.6; xoshiro128** and SplitMix64 against their reference C code; the scores of hacker 1, with all four laws, against the same C program; laws, quantiles and special functions against SciPy 1.17.1; the formulas of Var(s²) and Cov(M, s²) of section 2.6 against the exact enumeration, with Python fractions, of every sample of 2 and 3 scores.',
+    intro: 'The formulas, the generator and the statistical functions are checked against independent references: the update formulas against Python’s statistics module, which computes with fractions and therefore exactly, and against NumPy 2.4.6; xoshiro128** and SplitMix64 against their reference C code; the scores of hacker 1, with all four laws, against the same C program; laws, quantiles and special functions against SciPy 1.17.1; the formulas of Var(s²) and Cov(M, s²) of section 2.6 against the exact enumeration, with Python fractions, of every sample of 2 and 3 scores.',
     summary: (ok, total) => `${ok} of ${total} checks passed.`,
     details: (total) => `The ${total} checks`,
     groups: { welford: 'The recurrences', generator: 'Generator and scores', functions: 'Laws, moments and special functions' },
@@ -895,7 +877,7 @@ const en = {
   },
   part2: {
     intro: [
-      'Part 2 takes the attackers of Homework #3, here the hackers of the assignment, and gives every attempt a score. Every hacker produces a trajectory of n scores X_1, ..., X_n, independent and with the same law of mean μ and variance σ², and summarizes it with the three lines of Part 1 in the sampling mean M_n and the sampling variance s_n² = SS_n/(n - 1). The m hackers are m independent samples: their means and variances are m draws of the statistics M_n and s_n², and the average of these draws tells what they are worth on average, that is whether M_n and s_n² are unbiased estimators of μ and σ².',
+      'Part 2 takes the attackers of Homework #3, here the hackers of the assignment, and gives every attempt a score. Every hacker produces a trajectory of n scores X_1, ..., X_n, independent and with the same law of mean μ and variance σ², and summarizes it with the update formulas of Part 1 in the sampling mean M_n and the sampling variance s_n² = SS_n/(n - 1). The m hackers are m independent samples: their means and variances are m draws of the statistics M_n and s_n², and the average of these draws tells what they are worth on average, that is whether M_n and s_n² are unbiased estimators of μ and σ².',
     ],
   },
   scores: {
@@ -1209,7 +1191,7 @@ const en = {
     },
   },
   history: {
-    intro: 'From Gauss’s least squares to the three lines of this page, the ideas used in the homework in chronological order.',
+    intro: 'From Gauss’s least squares to the recurrence formulas of this page, the ideas used in the homework in chronological order.',
     legend: { task: 'used on this page', context: 'context' },
     events: [
       { year: '1809', task: true, title: 'Gauss', text: 'In the Theoria motus he founds least squares: the arithmetic mean is the value that minimizes the sum of the squared deviations, the property that section 2.5 uses to explain the divisor n - 1.' },
@@ -1227,15 +1209,15 @@ const en = {
       { year: '1969', task: true, title: 'Knuth', text: 'The Art of Computer Programming, vol. 2, gives the recurrences for the mean and the standard deviation, citing Welford, in the part on the accuracy of floating-point arithmetic: the formula for the mean of the assignment.' },
       { year: '1979', task: true, title: 'Chan, Golub and LeVeque; Holm', text: 'Chan, Golub and LeVeque generalize Welford to the union of two groups of data (the pairwise algorithm), and in 1983 analyse its stability; Holm proposes the correction for multiple tests used in section 3.' },
       { year: '1980', task: true, title: 'Jarque and Bera', text: 'The normality test based on skewness and kurtosis, used for the means and the variances of the hackers.' },
-      { year: '1985', task: true, title: 'IEEE 754', text: 'The standard of floating-point arithmetic: the doubles with a 53-bit mantissa with which section 1.6 measures cancellation.' },
+      { year: '1985', task: true, title: 'IEEE 754', text: 'The standard of floating-point arithmetic: the doubles with a 53-bit mantissa with which section 1.5 measures cancellation.' },
       { year: '1996', task: false, title: 'Alon, Matias and Szegedy', text: 'The theory of streaming algorithms: which statistics can be computed in one pass with little memory. The mean and the variance are the simplest case, and Welford its exact solution.' },
       { year: '2014-2018', task: true, title: 'SplitMix and xoshiro', text: 'Steele, Lea and Flood publish SplitMix (2014), Blackman and Vigna the xoshiro generators (2018): they are the random numbers of this page, as of Homework #3.' },
     ],
-    after: 'The history runs on two tracks that this homework joins. The one of estimation (Gauss, Student, Fisher, Neyman) says what M_n and s_n² are worth as estimators; the one of computation (Welford, Knuth, Chan, Golub and LeVeque) says how to compute them well with a machine, in one pass and without losing digits. The three lines of Part 1 sit where the two meet.',
+    after: 'The history runs on two tracks that this homework joins. The one of estimation (Gauss, Student, Fisher, Neyman) says what M_n and s_n² are worth as estimators; the one of computation (Welford, Knuth, Chan, Golub and LeVeque) says how to compute them well with a machine, in one pass and without losing digits. The recurrence formulas of Part 1 sit where the two meet.',
   },
   conclusion: (s) => {
     const F = EN;
-    const first = 'Part 1. Welford’s formulas are derived with the same approach as Knuth’s formula for the mean: the quantity of the first k values is written with that of the first k - 1 and the deviation of the new value. This gives SS_k = SS_(k-1) + (x_k - M_(k-1))(x_k - M_k) and s_k² = SS_k/(k - 1), with the same form for the variance. The code is three lines that work in constant memory and in a single pass, and that, unlike the textbook formula, do not lose every digit when the data have a large baseline.';
+    const first = 'Part 1. Welford’s formulas are derived with the same approach as Knuth’s formula for the mean: the quantity of the first k values is written with that of the first k - 1 and the deviation of the new value. This gives SS_k = SS_(k-1) + (x_k - M_(k-1))(x_k - M_k) and s_k² = SS_k/(k - 1), with the same form for the variance. In code they are three lines that work in constant memory and in a single pass, and that, unlike the textbook formula, do not lose every digit when the data have a large baseline.';
     if (!s) return [first, 'Part 2. With m hackers and n systems, the average of the sampling means equals μ and the average of the sampling variances equals σ², for every n: they are unbiased estimators, and their variability falls like 1/n.'];
     const f = spreadFacts(s);
     const i = inferenceFacts(s);
