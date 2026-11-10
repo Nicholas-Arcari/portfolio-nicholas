@@ -106,8 +106,7 @@ export const STATISTICS_HOMEWORK = [
       en: 'The Anomaly Guard: an educational intrusion detection system for simulated web requests. A rule engine looks for the signatures of known attacks; a statistical model, trained on legitimate traffic only, flags what departs from it. How often each one is wrong is measured: false positives and negatives, ROC curve, base rate. A group project, with the working demo on this page.',
     },
     completed: null,
-    // la fine dell'a.a. 2026-2027: per il Regolamento studenti Sapienza
-    // 2026-2027 (art. 18) l'attivita' didattica termina il 30 settembre
-    due: '2027-09-30T21:00:00+02:00',
+    // data limite comunicata il 10/11/2026: 19/11/2026 alle 14:00, ora di Roma (CET)
+    due: '2026-11-19T14:00:00+01:00',
   },
 ];
