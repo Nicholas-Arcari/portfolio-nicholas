@@ -1214,7 +1214,7 @@ function lineLayout(data, width) {
  * the one of `colorIndex`; the legend is written in the page, under the
  * figure, where it can be read and translated.
  */
-export function drawLineChart(canvas, { x, series, logX = false, logY = false, yMin = 0, yMax = 1, yTicks = [], xTicks = [], yFormat = null, decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
+export function drawLineChart(canvas, { x, series, logX = false, logY = false, yMin = 0, yMax = 1, yTicks = [], xTicks = [], yFormat = null, hidden = [], decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
   const pal = { ...DEFAULT_PALETTE, ...palette };
   const { ctx, width, height } = setupCanvas(canvas, LINE_ASPECT, knownWidth);
   const { margin, w, h, px } = lineLayout({ x, logX }, width);
@@ -1255,6 +1255,8 @@ export function drawLineChart(canvas, { x, series, logX = false, logY = false, y
   ctx.rect(margin.left, margin.top, w, h);
   ctx.clip();
   series.forEach((s, i) => {
+    // a series hidden from the legend still counts for the axes, it is just not drawn
+    if (hidden.includes(`series:${i}`)) return;
     const color = pal.series[(s.colorIndex ?? i) % pal.series.length];
     const points = x.map((v, j) => [px(v), s.values[j]]).filter(([, v]) => shown(v));
     if (s.band) {
@@ -1307,7 +1309,7 @@ function histLayout(data, width) {
  * one value per bar, a dashed outline) and a curve (`curve`, points [x, y]
  * of a density, such as the normal one). The legend is in the page.
  */
-export function drawHistogram(canvas, { x0, x1, bars, expected = null, curve = null, yMax = null, xTicks = [], decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
+export function drawHistogram(canvas, { x0, x1, bars, expected = null, curve = null, yMax = null, xTicks = [], hidden = [], decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
   const pal = { ...DEFAULT_PALETTE, ...palette };
   const { ctx, width, height } = setupCanvas(canvas, HIST_ASPECT, knownWidth);
   const { margin, w, h, px } = histLayout({ x0, x1 }, width);
@@ -1349,14 +1351,14 @@ export function drawHistogram(canvas, { x0, x1, bars, expected = null, curve = n
   ctx.clip();
   ctx.fillStyle = pal.series[0];
   ctx.globalAlpha = 0.85;
-  for (const b of bars) {
+  for (const b of hidden.includes('bars') ? [] : bars) {
     const left = px(b.from);
     const right = px(b.to);
     const gap = right - left > 4 ? 0.6 : 0;
     ctx.fillRect(left + gap, py(b.value), Math.max(0.8, right - left - 2 * gap), margin.top + h - py(b.value));
   }
   ctx.globalAlpha = 1;
-  if (expected) {
+  if (expected && !hidden.includes('expected')) {
     ctx.strokeStyle = pal.series[1];
     ctx.lineWidth = 1.5;
     ctx.setLineDash([5, 4]);
@@ -1369,7 +1371,7 @@ export function drawHistogram(canvas, { x0, x1, bars, expected = null, curve = n
     ctx.stroke();
     ctx.setLineDash([]);
   }
-  if (curve && curve.length > 1) {
+  if (curve && curve.length > 1 && !hidden.includes('curve')) {
     ctx.strokeStyle = pal.series[2];
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -1391,7 +1393,7 @@ function qqLayout(data, width) {
 }
 
 /** Normal quantile plot: points [theoretical, sample] and the line y = x, on the same range [lo, hi] on both axes. */
-export function drawQQ(canvas, { points, lo, hi, ticks = [], decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
+export function drawQQ(canvas, { points, lo, hi, ticks = [], hidden = [], decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
   const pal = { ...DEFAULT_PALETTE, ...palette };
   const { ctx, width, height } = setupCanvas(canvas, QQ_ASPECT, knownWidth);
   const { margin, w, h, px, py } = qqLayout({ lo, hi }, width);
@@ -1418,16 +1420,18 @@ export function drawQQ(canvas, { points, lo, hi, ticks = [], decimal = '.', widt
   ctx.beginPath();
   ctx.rect(margin.left, margin.top, w, h);
   ctx.clip();
-  ctx.strokeStyle = pal.series[1];
-  ctx.setLineDash([5, 4]);
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(px(lo), py(lo));
-  ctx.lineTo(px(hi), py(hi));
-  ctx.stroke();
-  ctx.setLineDash([]);
+  if (!hidden.includes('line')) {
+    ctx.strokeStyle = pal.series[1];
+    ctx.setLineDash([5, 4]);
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(px(lo), py(lo));
+    ctx.lineTo(px(hi), py(hi));
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
   ctx.fillStyle = pal.series[0];
-  for (const [a, b] of points) {
+  for (const [a, b] of hidden.includes('points') ? [] : points) {
     ctx.beginPath();
     ctx.arc(px(a), py(b), 2.4, 0, 2 * Math.PI);
     ctx.fill();
@@ -1455,7 +1459,7 @@ function scatterLayout(data, width) {
  * `center` and, through it, a line of slope `slope` (the theoretical
  * regression line), when given.
  */
-export function drawScatter(canvas, { xs, ys, x0, x1, y0, y1, xTicks = [], yTicks = [], center = null, slope = null, decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
+export function drawScatter(canvas, { xs, ys, x0, x1, y0, y1, xTicks = [], yTicks = [], center = null, slope = null, hidden = [], decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
   const pal = { ...DEFAULT_PALETTE, ...palette };
   const { ctx, width, height } = setupCanvas(canvas, SCATTER_ASPECT, knownWidth);
   const { margin, w, h, px, py } = scatterLayout({ x0, x1, y0, y1 }, width);
@@ -1488,19 +1492,21 @@ export function drawScatter(canvas, { xs, ys, x0, x1, y0, y1, xTicks = [], yTick
   ctx.clip();
   ctx.fillStyle = pal.series[0];
   ctx.globalAlpha = Math.min(0.6, Math.max(0.06, 12 / Math.sqrt(xs.length)));
-  for (let i = 0; i < xs.length; i++) ctx.fillRect(px(xs[i]) - 1.3, py(ys[i]) - 1.3, 2.6, 2.6);
+  if (!hidden.includes('points')) for (let i = 0; i < xs.length; i++) ctx.fillRect(px(xs[i]) - 1.3, py(ys[i]) - 1.3, 2.6, 2.6);
   ctx.globalAlpha = 1;
   if (center) {
     ctx.lineWidth = 1.5;
     ctx.setLineDash([5, 4]);
     ctx.strokeStyle = pal.series[1];
-    ctx.beginPath();
-    ctx.moveTo(px(center[0]), margin.top);
-    ctx.lineTo(px(center[0]), margin.top + h);
-    ctx.moveTo(margin.left, py(center[1]));
-    ctx.lineTo(margin.left + w, py(center[1]));
-    ctx.stroke();
-    if (slope !== null) {
+    if (!hidden.includes('center')) {
+      ctx.beginPath();
+      ctx.moveTo(px(center[0]), margin.top);
+      ctx.lineTo(px(center[0]), margin.top + h);
+      ctx.moveTo(margin.left, py(center[1]));
+      ctx.lineTo(margin.left + w, py(center[1]));
+      ctx.stroke();
+    }
+    if (slope !== null && !hidden.includes('slope')) {
       ctx.strokeStyle = pal.series[2];
       ctx.lineWidth = 2;
       ctx.beginPath();
@@ -1523,7 +1529,7 @@ const welfordAxis = (data) => ({ x: [0.5, data.rows.length + 0.5] });
  * previous mean to the new value (left), and x_k - M_k, from the new mean to
  * the same value (right). `rows` are the steps of welfordSteps().
  */
-export function drawWelfordChart(canvas, { rows, k, yMin, yMax, yTicks = [], decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
+export function drawWelfordChart(canvas, { rows, k, yMin, yMax, yTicks = [], hidden = [], decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
   const pal = { ...DEFAULT_PALETTE, ...palette };
   const { ctx, width, height } = setupCanvas(canvas, LINE_ASPECT, knownWidth);
   const { margin, w, h, px } = lineLayout(welfordAxis({ rows }), width);
@@ -1551,8 +1557,9 @@ export function drawWelfordChart(canvas, { rows, k, yMin, yMax, yTicks = [], dec
   ctx.rect(margin.left, margin.top, w, h);
   ctx.clip();
   const shown = rows.slice(0, k);
+  const off = (part) => hidden.includes(part);
   const band = shown.filter((r) => r.k >= 2);
-  if (band.length > 1) {
+  if (band.length > 1 && !off('band')) {
     ctx.globalAlpha = 0.14;
     ctx.fillStyle = pal.series[2];
     ctx.beginPath();
@@ -1565,10 +1572,10 @@ export function drawWelfordChart(canvas, { rows, k, yMin, yMax, yTicks = [], dec
   ctx.strokeStyle = pal.series[1];
   ctx.lineWidth = 2;
   ctx.beginPath();
-  shown.forEach((r, i) => (i ? ctx.lineTo(px(r.k), py(r.mean)) : ctx.moveTo(px(r.k), py(r.mean))));
+  if (!off('mean')) shown.forEach((r, i) => (i ? ctx.lineTo(px(r.k), py(r.mean)) : ctx.moveTo(px(r.k), py(r.mean))));
   ctx.stroke();
   ctx.fillStyle = pal.series[0];
-  for (const r of shown) {
+  for (const r of off('points') ? [] : shown) {
     ctx.beginPath();
     ctx.arc(px(r.k), py(r.x), 3.4, 0, 2 * Math.PI);
     ctx.fill();
@@ -1577,7 +1584,7 @@ export function drawWelfordChart(canvas, { rows, k, yMin, yMax, yTicks = [], dec
   if (r) {
     const X = px(r.k);
     ctx.lineWidth = 3;
-    if (r.k >= 2) {
+    if (r.k >= 2 && !off('delta')) {
       // the previous mean, and delta from it to the new value
       ctx.strokeStyle = pal.series[1];
       ctx.lineWidth = 1.5;
@@ -1594,16 +1601,20 @@ export function drawWelfordChart(canvas, { rows, k, yMin, yMax, yTicks = [], dec
       ctx.lineTo(X - 6, py(r.x));
       ctx.stroke();
     }
-    ctx.strokeStyle = pal.series[4];
-    ctx.beginPath();
-    ctx.moveTo(X + 6, py(r.mean));
-    ctx.lineTo(X + 6, py(r.x));
-    ctx.stroke();
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = pal.highlight;
-    ctx.beginPath();
-    ctx.arc(X, py(r.x), 7, 0, 2 * Math.PI);
-    ctx.stroke();
+    if (!off('after')) {
+      ctx.strokeStyle = pal.series[4];
+      ctx.beginPath();
+      ctx.moveTo(X + 6, py(r.mean));
+      ctx.lineTo(X + 6, py(r.x));
+      ctx.stroke();
+    }
+    if (!off('points')) {
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = pal.highlight;
+      ctx.beginPath();
+      ctx.arc(X, py(r.x), 7, 0, 2 * Math.PI);
+      ctx.stroke();
+    }
   }
   ctx.restore();
 }
@@ -1629,7 +1640,7 @@ function intervalLayout(data, width) {
  * it, with a dot at the estimate and a dashed line at the true value
  * (`truth`). A segment that goes beyond the axis ends with an arrow.
  */
-export function drawIntervals(canvas, { rows, x0, x1, truth, xTicks = [], decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
+export function drawIntervals(canvas, { rows, x0, x1, truth, xTicks = [], hidden = [], decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
   const pal = { ...DEFAULT_PALETTE, ...palette };
   const { ctx, width, height } = setupCanvas(canvas, INTERVAL_ASPECT, knownWidth);
   const { margin, w, h, rowH, px, py } = intervalLayout({ rows, x0, x1 }, width);
@@ -1656,6 +1667,8 @@ export function drawIntervals(canvas, { rows, x0, x1, truth, xTicks = [], decima
   ctx.clip();
   const thick = Math.max(1, Math.min(3, rowH * 0.55));
   rows.forEach((r, i) => {
+    // the intervals that contain the true value and those that miss it can be hidden apart
+    if (hidden.includes(r.ok ? 'covered' : 'missed')) return;
     const y = py(i);
     const color = r.ok ? pal.series[2] : pal.series[1];
     const a = px(Math.max(r.lo, x0));
@@ -1683,14 +1696,16 @@ export function drawIntervals(canvas, { rows, x0, x1, truth, xTicks = [], decima
       ctx.fill();
     }
   });
-  ctx.strokeStyle = pal.text;
-  ctx.lineWidth = 1.5;
-  ctx.setLineDash([5, 4]);
-  ctx.beginPath();
-  ctx.moveTo(px(truth), margin.top);
-  ctx.lineTo(px(truth), margin.top + h);
-  ctx.stroke();
-  ctx.setLineDash([]);
+  if (!hidden.includes('truth')) {
+    ctx.strokeStyle = pal.text;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([5, 4]);
+    ctx.beginPath();
+    ctx.moveTo(px(truth), margin.top);
+    ctx.lineTo(px(truth), margin.top + h);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
   ctx.restore();
 }
 
@@ -1732,11 +1747,13 @@ export function chartHitTest(draw, data, width, x, y) {
     const { margin, w, h, rowH, py } = intervalLayout(data, width);
     if (x < margin.left || x > margin.left + w || y < margin.top || y > margin.top + h) return null;
     const index = Math.min(data.rows.length - 1, Math.max(0, Math.floor((y - margin.top) / rowH)));
+    if ((data.hidden || []).includes(data.rows[index].ok ? 'covered' : 'missed')) return null;
     return { kind: 'row', index, rect: { x: margin.left, y: py(index) - Math.max(2, rowH / 2), width: w, height: Math.max(4, rowH) } };
   }
   if (draw === drawScatter) {
     const { margin, w, h, px, py } = scatterLayout(data, width);
     if (x < margin.left || x > margin.left + w || y < margin.top || y > margin.top + h) return null;
+    if ((data.hidden || []).includes('points')) return null;
     let index = -1;
     let best = 144;
     for (let i = 0; i < data.xs.length; i++) {
@@ -1752,6 +1769,7 @@ export function chartHitTest(draw, data, width, x, y) {
   if (draw === drawQQ) {
     const { margin, w, h, px, py } = qqLayout(data, width);
     if (x < margin.left || x > margin.left + w || y < margin.top || y > margin.top + h) return null;
+    if ((data.hidden || []).includes('points')) return null;
     let index = -1;
     let best = 144;
     data.points.forEach(([a, b], i) => {
@@ -1767,6 +1785,7 @@ export function chartHitTest(draw, data, width, x, y) {
   }
   const { margin, w, h, px } = histLayout(data, width);
   if (x < margin.left || x > margin.left + w || y < margin.top || y > margin.top + h) return null;
+  if ((data.hidden || []).includes('bars')) return null;
   const index = data.bars.findIndex((b) => x >= px(b.from) && x < px(b.to));
   if (index < 0) return null;
   const b = data.bars[index];
@@ -2037,6 +2056,8 @@ export function createScoreAnimation(canvas, options) {
   let speed = options.speed || 1;
   let decimal = options.decimal || '.';
   let palette = { ...DEFAULT_PALETTE, ...(options.palette || {}) };
+  // the parts hidden from the legend: 'others', 'first' (hacker 1), 'band', 'envelope'
+  let hidden = options.hidden || [];
 
   // the drawn trajectories, whole, and the extremes of both quantities over all hackers and scores (fixed axes)
   const paths = { mean: Array.from({ length: D }, () => new Float32Array(n + 1)), variance: Array.from({ length: D }, () => new Float32Array(n + 1)) };
@@ -2129,6 +2150,7 @@ export function createScoreAnimation(canvas, options) {
     const first = Math.max(firstStep(), from);
     const stride = Math.max(1, Math.floor((to - first) / (2 * G.plotW)));
     for (let j = D - 1; j >= 0; j--) {
+      if (hidden.includes(j === 0 ? 'first' : 'others')) continue;
       const path = paths[quantity][j];
       ctx.strokeStyle = j === 0 ? palette.highlight : palette.series[0];
       ctx.globalAlpha = j === 0 ? 1 : 0.32;
@@ -2246,29 +2268,37 @@ export function createScoreAnimation(canvas, options) {
     ctx.beginPath();
     ctx.rect(m.left, m.top, G.plotW, G.h);
     ctx.clip();
-    const upper = band(1, 2);
-    const lower = band(-1, 2);
-    ctx.globalAlpha = 0.12;
-    ctx.fillStyle = palette.series[2];
-    ctx.beginPath();
-    upper.forEach(([s, v], i) => (i ? ctx.lineTo(G.px(s), G.py(v)) : ctx.moveTo(G.px(s), G.py(v))));
-    for (let i = lower.length - 1; i >= 0; i--) ctx.lineTo(G.px(lower[i][0]), G.py(lower[i][1]));
-    ctx.closePath();
-    ctx.fill();
-    ctx.globalAlpha = 1;
-    ctx.drawImage(layer, 0, 0, layer.width, layer.height, 0, 0, G.width, G.height);
-    ctx.strokeStyle = palette.series[2];
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([5, 4]);
-    ctx.beginPath();
-    band(0, 0).forEach(([s, v], i) => (i ? ctx.lineTo(G.px(s), G.py(v)) : ctx.moveTo(G.px(s), G.py(v))));
-    ctx.stroke();
-    ctx.setLineDash([2, 3]);
-    ctx.strokeStyle = palette.series[3];
-    for (const sign of [1, -1]) {
+    const showBand = !hidden.includes('band');
+    if (showBand) {
+      const upper = band(1, 2);
+      const lower = band(-1, 2);
+      ctx.globalAlpha = 0.12;
+      ctx.fillStyle = palette.series[2];
       ctx.beginPath();
-      envelope(sign).forEach(([s, v], i) => (i ? ctx.lineTo(G.px(s), G.py(v)) : ctx.moveTo(G.px(s), G.py(v))));
+      upper.forEach(([s, v], i) => (i ? ctx.lineTo(G.px(s), G.py(v)) : ctx.moveTo(G.px(s), G.py(v))));
+      for (let i = lower.length - 1; i >= 0; i--) ctx.lineTo(G.px(lower[i][0]), G.py(lower[i][1]));
+      ctx.closePath();
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+    ctx.drawImage(layer, 0, 0, layer.width, layer.height, 0, 0, G.width, G.height);
+    if (showBand) {
+      ctx.strokeStyle = palette.series[2];
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([5, 4]);
+      ctx.beginPath();
+      band(0, 0).forEach(([s, v], i) => (i ? ctx.lineTo(G.px(s), G.py(v)) : ctx.moveTo(G.px(s), G.py(v))));
       ctx.stroke();
+    }
+    if (!hidden.includes('envelope')) {
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([2, 3]);
+      ctx.strokeStyle = palette.series[3];
+      for (const sign of [1, -1]) {
+        ctx.beginPath();
+        envelope(sign).forEach(([s, v], i) => (i ? ctx.lineTo(G.px(s), G.py(v)) : ctx.moveTo(G.px(s), G.py(v))));
+        ctx.stroke();
+      }
     }
     ctx.setLineDash([]);
     if (k < n) {
@@ -2337,7 +2367,7 @@ export function createScoreAnimation(canvas, options) {
     if (x < m.left || x > m.left + G.plotW || k < firstStep()) return null;
     const step = Math.max(firstStep(), Math.min(k, Math.round(((x - m.left) / G.plotW) * n)));
     const theory = quantityTheory(law, quantity, step);
-    const text = describe({ kind: 'step', quantity, step, first: paths[quantity][0][step], mean: theory.mean, sd: theory.sd });
+    const text = describe({ kind: 'step', quantity, step, first: paths[quantity][0][step], mean: theory.mean, sd: theory.sd, show: { first: !hidden.includes('first'), band: !hidden.includes('band') } });
     return text ? { rect: { x: G.px(step) - 3, y: m.top, width: 6, height: G.h }, text } : null;
   };
   detachLabel = typeof document !== 'undefined' && canvas.parentElement ? attachPointerLabel(canvas, locate) : null;
@@ -2421,6 +2451,12 @@ export function createScoreAnimation(canvas, options) {
     setSpeed(s) {
       speed = s > 0 ? s : 1;
     },
+    // the legend under the animation: the hidden parts are drawn again from the first score
+    setHidden(parts) {
+      hidden = parts;
+      drawnK = -1;
+      render();
+    },
     setPalette(next) {
       palette = { ...DEFAULT_PALETTE, ...next };
       drawnK = -1;
@@ -2477,6 +2513,9 @@ export function createWelfordDrag(canvas, options = {}) {
   let palette = { ...DEFAULT_PALETTE, ...(options.palette || {}) };
   let decimal = options.decimal || '.';
   const onChange = options.onChange || (() => {});
+  // the parts hidden from the legend: 'points', 'new', 'means', 'delta', 'after', 'previousSS', 'directSS'
+  let hidden = options.hidden || [];
+  const off = (part) => hidden.includes(part);
   let dragging = -1;
   let positions = [];
   let geometry = null;
@@ -2577,34 +2616,39 @@ export function createWelfordDrag(canvas, options = {}) {
     // the two means: the old one dashed, the new one solid
     const top = 14;
     const bottom = G.lineY + 58;
-    ctx.strokeStyle = palette.series[1];
-    ctx.fillStyle = palette.series[1];
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([5, 4]);
-    ctx.beginPath();
-    ctx.moveTo(G.px(S.previousMean), top);
-    ctx.lineTo(G.px(S.previousMean), bottom);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(G.px(S.mean), top);
-    ctx.lineTo(G.px(S.mean), bottom);
-    ctx.stroke();
     ctx.font = '11px sans-serif';
-    const leftFirst = S.previousMean <= S.mean;
-    ctx.textAlign = leftFirst ? 'right' : 'left';
-    ctx.fillText(`M_${S.k - 1} = ${fmt(S.previousMean)}`, G.px(S.previousMean) + (leftFirst ? -4 : 4), top + 2);
-    ctx.textAlign = leftFirst ? 'left' : 'right';
-    ctx.fillText(`M_${S.k} = ${fmt(S.mean)}`, G.px(S.mean) + (leftFirst ? 4 : -4), top + 2);
+    if (!off('means')) {
+      ctx.strokeStyle = palette.series[1];
+      ctx.fillStyle = palette.series[1];
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([5, 4]);
+      ctx.beginPath();
+      ctx.moveTo(G.px(S.previousMean), top);
+      ctx.lineTo(G.px(S.previousMean), bottom);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(G.px(S.mean), top);
+      ctx.lineTo(G.px(S.mean), bottom);
+      ctx.stroke();
+      ctx.font = '11px sans-serif';
+      const leftFirst = S.previousMean <= S.mean;
+      ctx.textAlign = leftFirst ? 'right' : 'left';
+      ctx.fillText(`M_${S.k - 1} = ${fmt(S.previousMean)}`, G.px(S.previousMean) + (leftFirst ? -4 : 4), top + 2);
+      ctx.textAlign = leftFirst ? 'left' : 'right';
+      ctx.fillText(`M_${S.k} = ${fmt(S.mean)}`, G.px(S.mean) + (leftFirst ? 4 : -4), top + 2);
+    }
 
     // the two deviations of the new value
-    arrow(ctx, G.px(S.previousMean), G.px(S.x), G.lineY + 34, palette.series[3], `δ = ${fmt(S.delta)}`);
-    arrow(ctx, G.px(S.mean), G.px(S.x), G.lineY + 56, palette.series[4], `x_${S.k} - M_${S.k} = ${fmt(S.after)}`);
+    if (!off('delta')) arrow(ctx, G.px(S.previousMean), G.px(S.x), G.lineY + 34, palette.series[3], `δ = ${fmt(S.delta)}`);
+    if (!off('after')) arrow(ctx, G.px(S.mean), G.px(S.x), G.lineY + 56, palette.series[4], `x_${S.k} - M_${S.k} = ${fmt(S.after)}`);
 
     // the points, stacked when they overlap
+    // a point hidden from the legend is neither drawn nor dragged
     positions = [];
     values.forEach((v, i) => {
+      if (off(i === values.length - 1 ? 'new' : 'points')) return;
       const X = G.px(v);
       let level = 0;
       for (const q of positions) if (Math.abs(q.x - X) < 2 * DRAG_RADIUS + 1) level = Math.max(level, q.level + 1);
@@ -2632,17 +2676,20 @@ export function createWelfordDrag(canvas, options = {}) {
     ctx.lineWidth = 1;
     ctx.strokeRect(bx, by, side, side);
     ctx.setLineDash([]);
-    ctx.globalAlpha = 0.35;
-    ctx.fillStyle = palette.series[3];
-    ctx.fillRect(bx, by + side - kept, side, kept);
-    ctx.globalAlpha = 1;
-    ctx.strokeStyle = palette.series[4];
-    ctx.lineWidth = 2;
-    ctx.strokeRect(bx, by + side - kept, side, kept);
-    ctx.fillStyle = palette.series[3];
-    ctx.fillRect(bx, by - 4, side, 4);
-    ctx.fillStyle = palette.series[4];
-    ctx.fillRect(bx - 4, by + side - kept, 4, kept);
+    if (!off('delta')) {
+      ctx.globalAlpha = 0.35;
+      ctx.fillStyle = palette.series[3];
+      ctx.fillRect(bx, by + side - kept, side, kept);
+      ctx.globalAlpha = 1;
+      ctx.fillRect(bx, by - 4, side, 4);
+    }
+    if (!off('after')) {
+      ctx.strokeStyle = palette.series[4];
+      ctx.lineWidth = 2;
+      ctx.strokeRect(bx, by + side - kept, side, kept);
+      ctx.fillStyle = palette.series[4];
+      ctx.fillRect(bx - 4, by + side - kept, 4, kept);
+    }
     ctx.font = 'bold 11px sans-serif';
     ctx.fillStyle = palette.text;
     ctx.textAlign = 'center';
@@ -2665,9 +2712,10 @@ export function createWelfordDrag(canvas, options = {}) {
       ctx.font = '11px sans-serif';
       ctx.fillText(label, barX, y - 5);
       let X = barX;
-      for (const [v, color] of parts) {
+      // a part hidden from the legend leaves its place empty, so the others stay where they are
+      for (const [v, color, shown = true] of parts) {
         ctx.fillStyle = color;
-        ctx.fillRect(X, y, Math.max(0, scale(v)), 14);
+        if (shown) ctx.fillRect(X, y, Math.max(0, scale(v)), 14);
         X += Math.max(0, scale(v));
       }
       ctx.fillStyle = palette.text;
@@ -2676,8 +2724,8 @@ export function createWelfordDrag(canvas, options = {}) {
     };
     const y1 = G.narrow ? by + side + 28 : G.lowerTop + Math.round(lowerH * 0.32);
     const y2 = G.narrow ? y1 + 40 : G.lowerTop + Math.round(lowerH * 0.72);
-    row(y1, [[S.previousSS, palette.series[0]], [S.increment, palette.series[3]]], `SS_${S.k - 1} + δ (x_${S.k} - M_${S.k})`, S.previousSS + S.increment);
-    row(y2, [[S.direct, palette.series[2]]], `Σ (x_i - M_${S.k})² = SS_${S.k}`, S.direct);
+    row(y1, [[S.previousSS, palette.series[0], !off('previousSS')], [S.increment, palette.series[3], !off('delta')]], `SS_${S.k - 1} + δ (x_${S.k} - M_${S.k})`, S.previousSS + S.increment);
+    row(y2, [[S.direct, palette.series[2], !off('directSS')]], `Σ (x_i - M_${S.k})² = SS_${S.k}`, S.direct);
   };
 
   const locate = (x, y) => {
@@ -2765,6 +2813,11 @@ export function createWelfordDrag(canvas, options = {}) {
     },
     redraw() {
       geometry = null;
+      render();
+    },
+    // the legend under the canvas: the hidden parts are not drawn, and a hidden point cannot be dragged
+    setHidden(parts) {
+      hidden = parts;
       render();
     },
     destroy() {

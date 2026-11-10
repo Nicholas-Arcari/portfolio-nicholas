@@ -849,34 +849,109 @@ export function testSummary(s) {
 const normalShare = (normal, from, to) => (normal ? hw.normalCdf((to - normal.mean) / normal.sd) - hw.normalCdf((from - normal.mean) / normal.sd) : null);
 
 /** The texts under the pointer: functions of the hit, built from the data of a chart and the words of a language (T = text.tips). */
+// ---------------------------------------------------------------------------
+// Le legende dei grafici, per la pagina e per il programma scaricabile: ogni
+// voce { label, color | paletteKey, dashed?, box?, parts } e' un pulsante che
+// nasconde le sue parti del disegno (`hidden` dei dati di ogni grafico, o
+// setHidden() delle due animazioni)
+// ---------------------------------------------------------------------------
+
+const seriesItem = (label, color, i, extra = {}) => ({ label, color, parts: [`series:${i}`], ...extra });
+const partItem = (label, color, part, extra = {}) => ({ label, color, parts: [part], ...extra });
+
+export const legends = {
+  steps: (text) => ['points', 'mean', 'band', 'delta', 'after'].map((part, i) => partItem(text.steps.legend[i], i, part)),
+  stability: (text) => [seriesItem(text.stability.legend[0], 1, 0), seriesItem(text.stability.legend[1], 3, 1), seriesItem(text.stability.legend[2], 0, 2)],
+  // the law of the scores: the bars, the law per interval (dashed) and the density, as many as the labels
+  scores: (text, discrete, simulated) =>
+    text.scores
+      .legend(discrete, simulated)
+      .map((label, i) => label && partItem(label, i, ['bars', 'expected', 'curve'][i], { dashed: i === 1 }))
+      .filter(Boolean),
+  trajectories: (text) => [
+    partItem(text.trajectories.legend[0], 0, 'others'),
+    partItem(text.trajectories.legend[1], 1, 'first'),
+    partItem(text.trajectories.legend[2], 2, 'band', { dashed: true }),
+    partItem(text.trajectories.legend[3], 3, 'envelope', { dashed: true }),
+  ],
+  means: (text) => [seriesItem(text.averages.legendMeans[0], 2, 0, { dashed: true }), seriesItem(text.averages.legendMeans[1], 0, 1)],
+  variances: (text) => [
+    seriesItem(text.averages.legendVariances[0], 2, 0, { dashed: true }),
+    seriesItem(text.averages.legendVariances[1], 0, 1),
+    seriesItem(text.averages.legendVariances[2], 1, 2, { dashed: true }),
+    seriesItem(text.averages.legendVariances[3], 1, 3),
+  ],
+  // one legend under the two histograms of section 2.6
+  histograms: (text) => [partItem(text.spread.legendHist[0], 0, 'bars'), partItem(text.spread.legendHist[1], 2, 'curve')],
+  spread: (text) => [
+    seriesItem(text.spread.legend[0], 0, 0),
+    seriesItem(text.spread.legend[1], 0, 1, { dashed: true }),
+    seriesItem(text.spread.legend[2], 1, 2),
+    seriesItem(text.spread.legend[3], 1, 3, { dashed: true }),
+    seriesItem(text.spread.legend[4], 3, 4, { dashed: true }),
+  ],
+  coverage: (text) => [
+    seriesItem(text.inference.coverageLegend[0], 2, 0, { dashed: true }),
+    seriesItem(text.inference.coverageLegend[1], 1, 1, { dashed: true }),
+    seriesItem(text.inference.coverageLegend[2], 0, 2),
+    seriesItem(text.inference.coverageLegend[3], 1, 3),
+  ],
+  scatter: (text) => [partItem(text.inference.scatterLegend[0], 0, 'points'), partItem(text.inference.scatterLegend[1], 1, 'center', { dashed: true }), partItem(text.inference.scatterLegend[2], 2, 'slope', { dashed: true })],
+  drag: (text) => [
+    partItem(text.tryDrag.legend[0], 0, 'points'),
+    partItem(text.tryDrag.legend[1], 1, 'new'),
+    partItem(text.tryDrag.legend[2], 1, 'means', { dashed: true }),
+    partItem(text.tryDrag.legend[3], 3, 'delta'),
+    partItem(text.tryDrag.legend[4], 4, 'after'),
+    partItem(text.tryDrag.legend[5], 0, 'previousSS'),
+    partItem(text.tryDrag.legend[6], 2, 'directSS'),
+  ],
+  bessel: (text) => [
+    seriesItem(text.tryBessel.legend[0], 2, 0, { dashed: true }),
+    seriesItem(text.tryBessel.legend[1], 1, 1, { dashed: true }),
+    seriesItem(text.tryBessel.legend[2], 0, 2),
+    seriesItem(text.tryBessel.legend[3], 1, 3),
+  ],
+  intervals: (text) => [partItem(text.tryIntervals.legend[0], 2, 'covered'), partItem(text.tryIntervals.legend[1], 1, 'missed'), partItem(text.tryIntervals.legend[2], 6, 'truth', { dashed: true })],
+};
+
+/** Whether series i of a chart is on screen: the reader can hide it from the legend. */
+const seriesOn = (hidden, i) => !hidden.includes(`series:${i}`);
+
+/**
+ * The labels under the pointer, one factory per chart: each returns
+ * (hit, hidden) => text, where `hidden` lists the parts of the chart that
+ * the reader turned off in the legend, and the label leaves them out.
+ */
 export const tips = {
-  // the animation: the words for a bar of its histogram or a score of its trajectories
+  // the animation: the words for a bar of its histogram or a score of its trajectories (hit.show: what is on screen)
   trajectory: (text) => (hit) => text.tips.trajectory(hit, text.quantityNames[hit.quantity]),
-  steps: (rows, T) => (hit) => T.step(rows[hit.index]),
-  stability: (curve, T) => (hit) => T.stability(curve.rows[hit.index]),
-  scores: (data, discrete, T) => (hit) => {
+  steps: (rows, T) => (hit, hidden = []) => T.step(rows[hit.index], Object.fromEntries(['points', 'mean', 'band', 'delta', 'after'].map((part) => [part, !hidden.includes(part)]))),
+  stability: (curve, T) => (hit, hidden = []) => T.stability(curve.rows[hit.index], { naive: seriesOn(hidden, 0), twoPass: seriesOn(hidden, 1), welford: seriesOn(hidden, 2) }),
+  scores: (data, discrete, T) => (hit, hidden = []) => {
     const b = data.bars[hit.index];
-    return b ? T.score(b, discrete) : null;
+    return b ? T.score(b, discrete, { law: !hidden.includes('expected') }) : null;
   },
-  means: (s, T) => (hit) => {
+  means: (s, T) => (hit, hidden = []) => {
     const pt = s.points[hit.index];
-    return T.mean(pt, s.law, s.m);
+    return T.mean(pt, s.law, s.m, { truth: seriesOn(hidden, 0), average: seriesOn(hidden, 1) });
   },
-  variances: (s, T) => (hit) => {
+  variances: (s, T) => (hit, hidden = []) => {
     const pt = s.points[hit.index];
-    return T.variance(pt, s.law, s.m);
+    return T.variance(pt, s.law, s.m, { truth: seriesOn(hidden, 0), average: seriesOn(hidden, 1), biasedTheory: seriesOn(hidden, 2), biased: seriesOn(hidden, 3) });
   },
-  spread: (s, T) => (hit) => T.spread(spreadRows(s)[hit.index]),
-  histogram: (h, T) => (hit) => {
+  spread: (s, T) => (hit, hidden = []) =>
+    T.spread(spreadRows(s)[hit.index], { varMean: seriesOn(hidden, 0), varMeanTheory: seriesOn(hidden, 1), varVariance: seriesOn(hidden, 2), varVarianceTheory: seriesOn(hidden, 3), normalVariance: seriesOn(hidden, 4) }),
+  histogram: (h, T) => (hit, hidden = []) => {
     const b = h.bars[hit.index];
-    return b ? T.bin(b.from, b.to, b.share, normalShare(h.normal, b.from, b.to)) : null;
+    return b ? T.bin(b.from, b.to, b.share, hidden.includes('curve') ? null : normalShare(h.normal, b.from, b.to)) : null;
   },
-  coverage: (s, T) => (hit) => T.coverage(inferenceRows(s)[hit.index]),
+  coverage: (s, T) => (hit, hidden = []) => T.coverage(inferenceRows(s)[hit.index], { t: seriesOn(hidden, 2), chi2: seriesOn(hidden, 3) }),
   scatter: (data, T) => (hit) => T.hacker(hit.index + 1, data.xs[hit.index], data.ys[hit.index]),
-  bessel: (state, data, T) => (hit) => {
+  bessel: (state, data, T) => (hit, hidden = []) => {
     const c = data.x[hit.index];
     const h = state.history.find((row) => row[0] === c);
-    return h ? T.bessel(h[0], h[1], h[2]) : null;
+    return h ? T.bessel(h[0], h[1], h[2], { variance: seriesOn(hidden, 2), biased: seriesOn(hidden, 3) }) : null;
   },
   intervals: (batch, T) => (hit) => T.interval(batch.rows[hit.index], batch.param),
 };

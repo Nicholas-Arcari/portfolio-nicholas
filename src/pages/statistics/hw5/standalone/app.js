@@ -153,6 +153,9 @@ function redraw(canvas, chart) {
   }
 }
 
+// what the reader hid in the legends of the charts that are built again (a new result, another function)
+const kept = { efficiency: new Set(), compare: new Set(), methods: new Set(), ecdfNormal: new Set(), ecdfHeavy: new Set(), estimates: new Set() };
+
 /** The parts of the drawing covered by the hidden items of a legend. */
 const partsOf = (items, hidden) => items.flatMap((item, i) => (hidden.has(i) ? item.parts || [] : []));
 
@@ -160,11 +163,12 @@ const partsOf = (items, hidden) => items.flatMap((item, i) => (hidden.has(i) ? i
  * The legend of a chart, or of a group of charts: { label, color? |
  * paletteKey?, dashed?, box?, parts }. Every item is a button: pressed (as
  * the page opens) its parts are on screen, released they are hidden;
- * onChange(parts) receives the hidden parts after every press.
+ * onChange(parts) receives the hidden parts after every press. `hidden`,
+ * the set of the hidden items, outlives the legend when its chart is built
+ * again.
  */
-function legend(items, onChange = null) {
+function legend(items, onChange = null, hidden = new Set()) {
   const pal = palette();
-  const hidden = new Set();
   return h(
     'ul',
     { class: 'series-legend' },
@@ -177,7 +181,8 @@ function legend(items, onChange = null) {
         'button',
         {
           type: 'button',
-          'aria-pressed': 'true',
+          'aria-pressed': String(!hidden.has(i)),
+          class: hidden.has(i) ? 'is-off' : null,
           onclick: () => {
             if (hidden.has(i)) hidden.delete(i);
             else hidden.add(i);
@@ -214,20 +219,25 @@ function setHidden(fig, parts) {
  * onHide(parts) runs when the reader hides or shows a part, for the table
  * tied to the chart.
  */
-function figure(caption, draw, data, { wide = false, tip: given = null, tipOf = null, items = null, note = null, link = null, onHide = null } = {}) {
+function figure(caption, draw, data, { wide = false, tip: given = null, tipOf = null, items = null, note = null, link = null, onHide = null, keep = null } = {}) {
   // tipOf(data): the label built from the same data the chart draws
   const tip = given || (tipOf ? tipOf(data) : null);
   const canvas = h('canvas', { class: 'chart', role: 'img', 'aria-label': caption });
-  const chart = { draw, data, width: -1, detach: null, link, tip, hidden: [] };
+  const kept = keep || new Set();
+  const chart = { draw, data, width: -1, detach: null, link, tip, hidden: items ? partsOf(items, kept) : [] };
   const fig = h(
     'figure',
     { class: wide ? 'figure wide' : 'figure' },
     canvas,
     items &&
-      legend(items, (parts) => {
-        setHidden(fig, parts);
-        if (onHide) onHide(parts);
-      }),
+      legend(
+        items,
+        (parts) => {
+          setHidden(fig, parts);
+          if (onHide) onHide(parts);
+        },
+        kept,
+      ),
     note && h('p', { class: 'figure-note', text: note }),
     h('figcaption', { text: caption }),
   );
@@ -737,8 +747,8 @@ function updateData() {
     h(
       'div',
       { class: 'charts' },
-      figure(D.normalTitle(s.normal.n), hw.drawLineChart, normal, { tip: view.tips.ecdf(normal, text.tips), items }),
-      figure(D.heavyTitle(s.heavy.n), hw.drawLineChart, heavy, { tip: view.tips.ecdf(heavy, text.tips), items }),
+      figure(D.normalTitle(s.normal.n), hw.drawLineChart, normal, { tip: view.tips.ecdf(normal, text.tips), items, keep: kept.ecdfNormal }),
+      figure(D.heavyTitle(s.heavy.n), hw.drawLineChart, heavy, { tip: view.tips.ecdf(heavy, text.tips), items, keep: kept.ecdfHeavy }),
     ),
     tests('model', s),
     paras(D.after(s)),
@@ -899,11 +909,12 @@ function updateEfficiency() {
         [null, null, 'series:0', 'series:1'],
       )
     : null;
+  if (costs) hideParts(costs, partsOf(view.legends.cost(text), kept.efficiency));
   fill(
     regions.efficiency,
     !study
       ? pending()
-      : h('div', { class: 'charts' }, figure(E.chartTitle(text.functionNames[state.fnKey]), hw.drawLineChart, view.efficiencyChart(study, F.decimal), { wide: true, tipOf: (data) => view.tips.cost(data, text.tips), items: view.legends.cost(text), onHide: (parts) => costs && hideParts(costs, parts) })),
+      : h('div', { class: 'charts' }, figure(E.chartTitle(text.functionNames[state.fnKey]), hw.drawLineChart, view.efficiencyChart(study, F.decimal), { wide: true, tipOf: (data) => view.tips.cost(data, text.tips), items: view.legends.cost(text), keep: kept.efficiency, onHide: (parts) => costs && hideParts(costs, parts) })),
     rows && [
       subtitle(E.tableTitle),
       h('div', { class: 'scroll' }, costs),
@@ -1123,12 +1134,13 @@ function updateMethods() {
     [M.cols.method, M.cols.absolute, M.cols.relative, M.cols.exp, M.cols.terms, M.cols.time],
     rows.map((r) => ({ class: r.key === 'ours' ? 'ours' : null, part: `series:${hw.CDF_METHODS.indexOf(r.key)}`, cells: [{ text: text.methodNames[r.key], head: true }, { text: F.err(r.absolute) }, { text: M.relativeCell(r.relative) }, { text: F.int(r.exp) }, { text: r.terms ? F.int(r.terms) : '-' }, { text: M.timeCell(r.time) }] })),
   );
+  hideParts(methods, partsOf(view.legends.methods(text), kept.methods));
   fill(
     regions.methods,
     subtitle(M.tableTitle),
     h('div', { class: 'scroll' }, methods),
     !s && pending(),
-    h('div', { class: 'charts' }, figure(M.chartTitle, hw.drawLineChart, view.methodsChart(F.decimal), { wide: true, tipOf: (data) => view.tips.methods(data, text.tips, text.methodNames), items: view.legends.methods(text), onHide: (parts) => hideParts(methods, parts) })),
+    h('div', { class: 'charts' }, figure(M.chartTitle, hw.drawLineChart, view.methodsChart(F.decimal), { wide: true, tipOf: (data) => view.tips.methods(data, text.tips, text.methodNames), items: view.legends.methods(text), keep: kept.methods, onHide: (parts) => hideParts(methods, parts) })),
     paras(M.after(view.methodsFacts(s))),
   );
 }
@@ -1436,6 +1448,7 @@ function updateCompare() {
         [null, 'series:0', 'series:1', 'series:2', 'series:3'],
       )
     : null;
+  if (compared) hideParts(compared, partsOf(view.legends.compare(text), kept.compare));
   fill(
     regions.compare,
     state.fnKey === hw.CUSTOM && h('p', { class: 'note', text: C.customPending }),
@@ -1450,6 +1463,7 @@ function updateCompare() {
             tip: view.tips.compare(study, text.tips),
             link: view.links.compare,
             items: view.legends.compare(text),
+            keep: kept.compare,
             onHide: (parts) => hideParts(compared, parts),
           }),
         ),
@@ -1518,7 +1532,7 @@ function updateMc() {
       state.histKey = k;
       updateMc();
     }),
-    h('div', { class: 'charts' }, figure(M.histogramTitle(text.functionNames[state.histKey], s), hw.drawHistogram, hist, { wide: true, tip: view.tips.histogram(hist, text.tips), items: view.legends.estimates(text) })),
+    h('div', { class: 'charts' }, figure(M.histogramTitle(text.functionNames[state.histKey], s), hw.drawHistogram, hist, { wide: true, tip: view.tips.histogram(hist, text.tips), items: view.legends.estimates(text), keep: kept.estimates })),
     tests('coverage', s),
     paras(M.after(s)),
   );

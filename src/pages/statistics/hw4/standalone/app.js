@@ -115,7 +115,11 @@ const formulas = (content, label = null) => [label && subtitle(label), h('pre', 
 // The width of every chart comes from the ResizeObserver, measured after
 // layout; the height is set at once, the drawing happens a few
 // milliseconds per frame.
-const charts = new Map(); // canvas -> { draw, data, width, detach }
+const charts = new Map(); // canvas -> { draw, data, width, detach, link, tip, hidden }
+
+// what a chart draws: its data, without the parts hidden from the legend
+const shownData = (chart) => (chart.hidden.length ? { ...chart.data, hidden: chart.hidden } : chart.data);
+
 const resizer = new ResizeObserver((entries) => {
   for (const entry of entries) {
     const canvas = entry.target;
@@ -123,31 +127,121 @@ const resizer = new ResizeObserver((entries) => {
     const width = Math.round(entry.contentRect.width);
     if (!chart || width <= 0 || width === chart.width) continue;
     chart.width = width;
-    canvas.style.height = `${hw.chartHeight(chart.draw, chart.data, width)}px`;
+    canvas.style.height = `${hw.chartHeight(chart.draw, shownData(chart), width)}px`;
     view.scheduleFrameJob(() => {
-      if (charts.get(canvas) === chart && chart.width === width) chart.draw(canvas, { ...chart.data, width }, palette());
+      if (charts.get(canvas) === chart && chart.width === width) chart.draw(canvas, { ...shownData(chart), width }, palette());
     });
   }
 });
 
-/** The legend of a chart, in the page: { label, color?, dashed? }. */
-function legend(items) {
+/** Ties the label under the pointer to a chart: it describes what is on screen, and leaves out the hidden parts. */
+function attachTip(canvas, chart) {
+  if (chart.detach) chart.detach();
+  const tip = chart.tip;
+  chart.detach = tip ? hw.attachChartTooltip(canvas, { draw: chart.draw, data: shownData(chart), describe: (hit) => tip(hit, chart.hidden), link: chart.link }) : null;
+}
+
+/** Draws a chart again at its width, with its data and hidden parts. */
+function redraw(canvas, chart) {
+  if (chart.width > 0) {
+    canvas.style.height = `${hw.chartHeight(chart.draw, shownData(chart), chart.width)}px`;
+    chart.draw(canvas, { ...shownData(chart), width: chart.width }, palette());
+  }
+}
+
+// what the reader hid in the legends: the charts of a region are built again at every step or result
+const kept = { steps: new Set(), stability: new Set(), scores: new Set(), trajectories: new Set(), means: new Set(), variances: new Set(), histograms: new Set(), spread: new Set(), coverage: new Set(), scatter: new Set(), drag: new Set() };
+
+/** The parts of the drawing covered by the hidden items of a legend. */
+const partsOf = (items, hidden) => items.flatMap((item, i) => (hidden.has(i) ? item.parts || [] : []));
+
+/**
+ * The legend of a chart, or of a group of charts: { label, color? |
+ * paletteKey?, dashed?, box?, parts }. Every item is a button: pressed (as
+ * the page opens) its parts are on screen, released they are hidden;
+ * onChange(parts) receives the hidden parts after every press. `hidden`,
+ * the set of the hidden items, outlives the legend when its chart is built
+ * again.
+ */
+function legend(items, onChange = null, hidden = new Set()) {
   const pal = palette();
   return h(
     'ul',
     { class: 'series-legend' },
     items.map((item, i) => {
-      const color = pal.series[item.color ?? i];
-      return h('li', null, h('span', { class: item.dashed ? 'is-dashed' : null, 'aria-hidden': 'true', style: { borderColor: color, backgroundColor: item.dashed ? 'transparent' : color } }), item.label);
+      const color = item.paletteKey ? pal[item.paletteKey] : pal.series[(item.color ?? i) % pal.series.length];
+      let swatch = null;
+      if (item.box) swatch = 'is-box';
+      else if (item.dashed) swatch = 'is-dashed';
+      const button = h(
+        'button',
+        {
+          type: 'button',
+          'aria-pressed': String(!hidden.has(i)),
+          class: hidden.has(i) ? 'is-off' : null,
+          onclick: () => {
+            if (hidden.has(i)) hidden.delete(i);
+            else hidden.add(i);
+            button.setAttribute('aria-pressed', String(!hidden.has(i)));
+            button.classList.toggle('is-off', hidden.has(i));
+            if (onChange) onChange(partsOf(items, hidden));
+          },
+        },
+        h('span', { class: swatch, 'aria-hidden': 'true', style: { borderColor: color, backgroundColor: item.box ? color : 'transparent' } }),
+        item.label,
+      );
+      return h('li', null, button);
     }),
   );
 }
 
-function figure(caption, draw, data, { wide = false, tip = null, items = null, note = null, link = null } = {}) {
+// the hidden parts of several charts that share one table, each with its own prefix ('means/series:1')
+const prefixed = (groups) => groups.flatMap(([name, items, set]) => partsOf(items, set).map((part) => `${name}/${part}`));
+
+/** Hides the cells and rows of a table that belong to hidden parts (data-part), and shows the others. */
+function hideParts(tableEl, parts) {
+  for (const el of tableEl.querySelectorAll('[data-part]')) el.hidden = parts.includes(el.dataset.part);
+}
+
+/** Hides parts of a chart (the legend of a group of charts calls it on each of them). */
+function setHidden(fig, parts) {
+  const canvas = fig.querySelector('canvas.chart');
+  const chart = charts.get(canvas);
+  if (!chart) return;
+  chart.hidden = parts;
+  attachTip(canvas, chart);
+  redraw(canvas, chart);
+}
+
+/**
+ * A chart with its legend (`items`) and its label under the pointer.
+ * onHide(parts) runs when the reader hides or shows a part, for the table
+ * tied to the chart, and `keep` (a set) remembers the hidden items when
+ * the chart is built again; the charts of a group share one legend outside them
+ * (groupLegend) and have no `items`.
+ */
+function figure(caption, draw, data, { wide = false, tip = null, items = null, note = null, link = null, onHide = null, keep = null } = {}) {
   const canvas = h('canvas', { class: 'chart', role: 'img', 'aria-label': caption });
-  const fig = h('figure', { class: wide ? 'figure wide' : 'figure' }, canvas, items && legend(items), note && h('p', { class: 'figure-note', text: note }), h('figcaption', { text: caption }));
-  const detach = tip ? hw.attachChartTooltip(canvas, { draw, data, describe: tip, link }) : null;
-  charts.set(canvas, { draw, data, width: -1, detach });
+  const kept = keep || new Set();
+  const chart = { draw, data, width: -1, detach: null, link, tip, hidden: items ? partsOf(items, kept) : [] };
+  const fig = h(
+    'figure',
+    { class: wide ? 'figure wide' : 'figure' },
+    canvas,
+    items &&
+      legend(
+        items,
+        (parts) => {
+          setHidden(fig, parts);
+          if (onHide) onHide(parts);
+        },
+        kept,
+      ),
+    note && h('p', { class: 'figure-note', text: note }),
+    h('figcaption', { text: caption }),
+  );
+  attachTip(canvas, chart);
+  charts.set(canvas, chart);
   resizer.observe(canvas);
   return fig;
 }
@@ -163,19 +257,19 @@ function fill(region, ...nodes) {
   region.replaceChildren(...nodes.flat(Infinity).filter((n) => n !== null && n !== undefined && n !== false));
 }
 
-/** A table: column headers, then rows of cells, each { text | node, class?, head? } (head: a row header, th); `id` for a table tied to a chart (view.LINKED_TABLES). */
-function table(className, headers, rows, id = null) {
+/** A table: column headers, then rows of cells, each { text | node, class?, head? } (head: a row header, th); `id` for a table tied to a chart (view.LINKED_TABLES); `columns` gives the part of a chart each column belongs to, and a row can have its own `part`: hideParts() hides them with their curve. */
+function table(className, headers, rows, id = null, columns = []) {
   return h(
     'table',
     { id, class: `table ${className}` },
-    h('thead', null, h('tr', null, headers.map((x) => h('th', { text: x })))),
+    h('thead', null, h('tr', null, headers.map((x, i) => h('th', { text: x, 'data-part': columns[i] || null })))),
     h(
       'tbody',
       null,
       rows.map((row) => h(
         'tr',
-        { class: row.class || null },
-        row.cells.map((cell, i) => h(cell.head ? 'th' : 'td', { 'data-label': cell.head ? null : headers[i], class: cell.class || null }, cell.node || cell.text)),
+        { class: row.class || null, 'data-part': row.part || null },
+        row.cells.map((cell, i) => h(cell.head ? 'th' : 'td', { 'data-label': cell.head ? null : headers[i], class: cell.class || null, 'data-part': columns[i] || null }, cell.node || cell.text)),
       )),
     ),
   );
@@ -436,29 +530,32 @@ function updateSteps() {
   controls.stepsPlay.textContent = play;
   const c = view.stepsCheck(state.data.values);
   const cell = (v) => ({ text: F.sig(v) });
+  // i dati, la media, la fascia, delta e x - M sono anche colonne della tabella
+  const items = view.legends.steps(text);
+  const steps = table(
+    'compact steps',
+    ['k', 'x', 'delta', 'mean', 'after', 'increment', 'ss', 'variance'].map((key) => S.cols[key]),
+    rows.map((r, i) => ({
+      class: i === g ? 'is-current' : i > g ? 'is-future' : null,
+      cells: [{ text: String(r.k), head: true }, cell(r.x), cell(r.delta), cell(r.mean), cell(r.after), cell(r.increment), cell(r.ss), { text: r.k > 1 ? F.sig(r.variance) : '-' }],
+    })),
+    view.LINKED_TABLES.steps,
+    [null, 'points', 'delta', 'mean', 'after', null, null, 'band'],
+  );
+  hideParts(steps, partsOf(items, kept.steps));
   fill(
     regions.steps,
     figure(label, hw.drawWelfordChart, view.stepsChart(rows, g + 1, F.decimal), {
       wide: true,
       tip: view.tips.steps(rows, text.tips),
       link: view.links.steps,
-      items: S.legend.map((item, i) => ({ label: item, color: i })),
+      items,
+      keep: kept.steps,
+      onHide: (parts) => hideParts(steps, parts),
     }),
     h('p', { class: 'caption line', 'aria-live': state.steps.playing ? 'off' : 'polite', text: S.line(rows[g], rows[g - 1]) }),
     subtitle(S.tableTitle),
-    h(
-      'div',
-      { class: rows.length > 16 ? 'scroll' : null },
-      table(
-        'compact steps',
-        ['k', 'x', 'delta', 'mean', 'after', 'increment', 'ss', 'variance'].map((key) => S.cols[key]),
-        rows.map((r, i) => ({
-          class: i === g ? 'is-current' : i > g ? 'is-future' : null,
-          cells: [{ text: String(r.k), head: true }, cell(r.x), cell(r.delta), cell(r.mean), cell(r.after), cell(r.increment), cell(r.ss), { text: r.k > 1 ? F.sig(r.variance) : '-' }],
-        })),
-        view.LINKED_TABLES.steps,
-      ),
-    ),
+    h('div', { class: rows.length > 16 ? 'scroll' : null }, steps),
     check(c.welfordError < 1e-9, S.check(c)),
   );
 }
@@ -472,19 +569,19 @@ function stabilityBlock() {
   const F = text.fmt;
   if (!stability) stability = { rows: hw.cancellationRows(), curve: hw.stabilityCurve() };
   const offset = (c) => (c === 0 ? '0' : F.pow(Math.round(Math.log10(c))));
+  // le tre formule sono le tre curve del grafico e le tre colonne della tabella
+  const cancellation = table(
+    'compact cancellation',
+    [S.cols.offset, S.cols.naive, S.cols.twoPass, S.cols.welford],
+    stability.rows.map((r) => ({ cells: [{ text: offset(r.offset), head: true }, { text: F.sig(r.naive, 17), class: Math.abs(r.naive - 30) > 1e-9 ? 'over' : null }, { text: F.sig(r.twoPass, 17) }, { text: F.sig(r.welford, 17) }] })),
+    view.LINKED_TABLES.cancellation,
+    [null, 'series:0', 'series:1', 'series:2'],
+  );
+  hideParts(cancellation, partsOf(view.legends.stability(text), kept.stability));
   return [
     paras(S.intro),
     subtitle(S.tableTitle),
-    h(
-      'div',
-      { class: 'scroll' },
-      table(
-        'compact cancellation',
-        [S.cols.offset, S.cols.naive, S.cols.twoPass, S.cols.welford],
-        stability.rows.map((r) => ({ cells: [{ text: offset(r.offset), head: true }, { text: F.sig(r.naive, 17), class: Math.abs(r.naive - 30) > 1e-9 ? 'over' : null }, { text: F.sig(r.twoPass, 17) }, { text: F.sig(r.welford, 17) }] })),
-        view.LINKED_TABLES.cancellation,
-      ),
-    ),
+    h('div', { class: 'scroll' }, cancellation),
     h(
       'div',
       { class: 'charts' },
@@ -492,11 +589,9 @@ function stabilityBlock() {
         wide: true,
         tip: view.tips.stability(stability.curve, text.tips),
         link: view.links.cancellation,
-        items: [
-          { label: S.legend[0], color: 1 },
-          { label: S.legend[1], color: 3 },
-          { label: S.legend[2], color: 0 },
-        ],
+        items: view.legends.stability(text),
+        keep: kept.stability,
+        onHide: (parts) => hideParts(cancellation, parts),
       }),
     ),
     paras(S.facts(view.stabilityFacts(stability.curve))),
@@ -607,9 +702,12 @@ function updateScores() {
   const s = computation.shown;
   const data = view.scoresChart(law, s, F.decimal);
   const simulated = Boolean(data.expected);
-  const items = S.legend(law.discrete, simulated)
-    .map((label, i) => label && { label, color: i, dashed: i === 1 })
-    .filter(Boolean);
+  const items = view.legends.scores(text, law.discrete, simulated);
+  // la legenda cambia voci quando arriva la simulazione: si riparte con tutto visibile
+  if (kept.scoresSimulated !== simulated) {
+    kept.scores = new Set();
+    kept.scoresSimulated = simulated;
+  }
   fill(
     regions.scores,
     paras(S.intro(params.p)),
@@ -628,7 +726,7 @@ function updateScores() {
       ),
     ),
     paras(S.after),
-    h('div', { class: 'charts' }, figure(S.chartTitle(text.distNames[params.dist], simulated), hw.drawHistogram, data, { wide: true, tip: view.tips.scores(data, law.discrete, text.tips), items })),
+    h('div', { class: 'charts' }, figure(S.chartTitle(text.distNames[params.dist], simulated), hw.drawHistogram, data, { wide: true, tip: view.tips.scores(data, law.discrete, text.tips), items, keep: kept.scores })),
     s && simulated && tests('sim', s),
   );
 }
@@ -787,7 +885,8 @@ function trajectoriesBlock() {
     h('div', { class: 'controls' }, h('label', null, T.speedLabel, speed), h('span', { class: 'buttons' }, controls.play, button(T.step, 'step'), button(T.reset, 'reset'), button(T.end, 'toEnd'))),
     // posizionato: ci stanno dentro l'evidenziazione e l'etichetta sotto il puntatore
     h('div', { class: 'figure' }, controls.canvas),
-    legend([{ label: T.legend[0], color: 0 }, { label: T.legend[1], color: 1 }, { label: T.legend[2], color: 2, dashed: true }, { label: T.legend[3], color: 3, dashed: true }]),
+    // la legenda sotto l'animazione: le parti nascoste si ridisegnano dal primo punteggio
+    legend(view.legends.trajectories(text), (parts) => animation && animation.setHidden(parts), kept.trajectories),
     controls.caption,
     paras(T.after),
   ];
@@ -826,6 +925,7 @@ function createAnimation() {
     palette: palette(),
     decimal: text.fmt.decimal,
     describe: view.tips.trajectory(text),
+    hidden: partsOf(view.legends.trajectories(text), kept.trajectories),
     onUpdate: updateCaption,
   });
   canvasWidth = canvas.clientWidth;
@@ -845,28 +945,40 @@ function updateAverages() {
     fill(regions.averages, paras(A.intro(null)), pending());
     return;
   }
+  // i due grafici hanno una tabella sola: la media delle M_n, la media delle s_n² e le due versioni con n
+  const meansItems = view.legends.means(text);
+  const variancesItems = view.legends.variances(text);
+  const averages = table(
+    'compact averages',
+    ['n', 'mean', 'meanZ', 'variance', 'varianceZ', 'biased', 'biasedTheory'].map((k) => A.cols[k]),
+    view.averageRows(s).map((r) => ({ cells: [{ text: F.int(r.n), head: true }, { text: F.num(r.mean, 4) }, zCell(r.meanZ), { text: F.num(r.variance, 4) }, zCell(r.varianceZ), { text: F.num(r.biased, 4) }, { text: F.num(r.biasedTheory, 4) }] })),
+    view.LINKED_TABLES.averages,
+    [null, 'means/series:1', 'means/series:1', 'variances/series:1', 'variances/series:1', 'variances/series:3', 'variances/series:2'],
+  );
+  const hideAverages = () =>
+    hideParts(
+      averages,
+      prefixed([
+        ['means', meansItems, kept.means],
+        ['variances', variancesItems, kept.variances],
+      ]),
+    );
+  hideAverages();
   fill(
     regions.averages,
     paras(A.intro(s)),
     subtitle(A.tableTitle(s.m)),
-    h(
-      'div',
-      { class: 'scroll' },
-      table(
-        'compact averages',
-        ['n', 'mean', 'meanZ', 'variance', 'varianceZ', 'biased', 'biasedTheory'].map((k) => A.cols[k]),
-        view.averageRows(s).map((r) => ({ cells: [{ text: F.int(r.n), head: true }, { text: F.num(r.mean, 4) }, zCell(r.meanZ), { text: F.num(r.variance, 4) }, zCell(r.varianceZ), { text: F.num(r.biased, 4) }, { text: F.num(r.biasedTheory, 4) }] })),
-        view.LINKED_TABLES.averages,
-      ),
-    ),
+    h('div', { class: 'scroll' }, averages),
     h(
       'div',
       { class: 'charts' },
-      figure(A.meansChart(s.m), hw.drawLineChart, view.meansChart(s, F.decimal), { tip: view.tips.means(s, text.tips), link: view.links.averages, items: [{ label: A.legendMeans[0], color: 2, dashed: true }, { label: A.legendMeans[1], color: 0 }] }),
+      figure(A.meansChart(s.m), hw.drawLineChart, view.meansChart(s, F.decimal), { tip: view.tips.means(s, text.tips), link: view.links.averages, items: meansItems, keep: kept.means, onHide: hideAverages }),
       figure(A.variancesChart(s.m), hw.drawLineChart, view.variancesChart(s, F.decimal), {
         tip: view.tips.variances(s, text.tips),
         link: view.links.averages,
-        items: [{ label: A.legendVariances[0], color: 2, dashed: true }, { label: A.legendVariances[1], color: 0 }, { label: A.legendVariances[2], color: 1, dashed: true }, { label: A.legendVariances[3], color: 1 }],
+        items: variancesItems,
+        keep: kept.variances,
+        onHide: hideAverages,
       }),
     ),
     paras(A.facts(s)),
@@ -896,15 +1008,30 @@ function updateSpread() {
   controls.spreadSlider.set(lastIndex(), g, S.nLabel(pt.n));
   const mean = view.spreadHistogram(s, g, 'mean', state.spread.mode, F.decimal);
   const variance = view.spreadHistogram(s, g, 'variance', state.spread.mode, F.decimal);
+  // una legenda per i due istogrammi; le cinque curve del grafico sono cinque colonne della tabella
+  const histItems = view.legends.histograms(text);
+  const histMean = figure(S.histMean(pt.n, s.m), hw.drawHistogram, mean, { tip: view.tips.histogram(mean, text.tips), note: S.histNote(pt.meanStats, pt.theory, 'mean') });
+  const histVariance = figure(S.histVariance(pt.n, s.m), hw.drawHistogram, variance, { tip: view.tips.histogram(variance, text.tips), note: S.histNote(pt.varStats, pt.theory, 'variance') });
+  for (const fig of [histMean, histVariance]) setHidden(fig, partsOf(histItems, kept.histograms));
+  const items = view.legends.spread(text);
+  const spread = table(
+    'compact spread',
+    ['n', 'varMean', 'varMeanTheory', 'varVariance', 'varVarianceTheory', 'normalVariance', 'skewMean'].map((k) => S.cols[k]),
+    view.spreadRows(s).map((r) => ({ cells: [{ text: F.int(r.n), head: true }, { text: F.sig(r.varMean, 4) }, { text: F.sig(r.varMeanTheory, 4) }, { text: F.sig(r.varVariance, 4) }, { text: F.sig(r.varVarianceTheory, 4) }, { text: F.sig(r.normalVariance, 4) }, { text: `${F.num(r.skewMean, 3)} (${F.num(r.skewMeanTheory, 3)})` }] })),
+    view.LINKED_TABLES.spread,
+    [null, 'series:0', 'series:1', 'series:2', 'series:3', 'series:4', null],
+  );
+  hideParts(spread, partsOf(items, kept.spread));
   fill(
     regions.spread,
-    h(
-      'div',
-      { class: 'charts' },
-      figure(S.histMean(pt.n, s.m), hw.drawHistogram, mean, { tip: view.tips.histogram(mean, text.tips), note: S.histNote(pt.meanStats, pt.theory, 'mean') }),
-      figure(S.histVariance(pt.n, s.m), hw.drawHistogram, variance, { tip: view.tips.histogram(variance, text.tips), note: S.histNote(pt.varStats, pt.theory, 'variance') }),
+    h('div', { class: 'charts' }, histMean, histVariance),
+    legend(
+      histItems,
+      (parts) => {
+        for (const fig of [histMean, histVariance]) setHidden(fig, parts);
+      },
+      kept.histograms,
     ),
-    legend([{ label: S.legendHist[0], color: 0 }, { label: S.legendHist[1], color: 2 }]),
     h(
       'div',
       { class: 'charts' },
@@ -912,26 +1039,13 @@ function updateSpread() {
         wide: true,
         tip: view.tips.spread(s, text.tips),
         link: view.links.spread,
-        items: [
-          { label: S.legend[0], color: 0 },
-          { label: S.legend[1], color: 0, dashed: true },
-          { label: S.legend[2], color: 1 },
-          { label: S.legend[3], color: 1, dashed: true },
-          { label: S.legend[4], color: 3, dashed: true },
-        ],
+        items,
+        keep: kept.spread,
+        onHide: (parts) => hideParts(spread, parts),
       }),
     ),
     subtitle(S.tableTitle),
-    h(
-      'div',
-      { class: 'scroll' },
-      table(
-        'compact spread',
-        ['n', 'varMean', 'varMeanTheory', 'varVariance', 'varVarianceTheory', 'normalVariance', 'skewMean'].map((k) => S.cols[k]),
-        view.spreadRows(s).map((r) => ({ cells: [{ text: F.int(r.n), head: true }, { text: F.sig(r.varMean, 4) }, { text: F.sig(r.varMeanTheory, 4) }, { text: F.sig(r.varVariance, 4) }, { text: F.sig(r.varVarianceTheory, 4) }, { text: F.sig(r.normalVariance, 4) }, { text: `${F.num(r.skewMean, 3)} (${F.num(r.skewMeanTheory, 3)})` }] })),
-        view.LINKED_TABLES.spread,
-      ),
-    ),
+    h('div', { class: 'scroll' }, spread),
     paras(S.facts(s)),
     tests('spread', s),
   );
@@ -953,6 +1067,25 @@ function updateInference() {
   const pt = s.points[g];
   controls.inferenceSlider.set(last, g, I.nLabel(pt.n));
   const scatter = view.scatterData(s, g, F.decimal);
+  // la copertura dei due intervalli e la correlazione degli hacker sono colonne della tabella
+  const coverageItems = view.legends.coverage(text);
+  const scatterItems = view.legends.scatter(text);
+  const inference = table(
+    'compact inference',
+    ['n', 't', 'tQuantile', 'chi2', 'corr', 'corrTheory'].map((k) => I.cols[k]),
+    view.inferenceRows(s).map((r) => ({ cells: [{ text: F.int(r.n), head: true }, { text: F.pct(r.t, 2) }, { text: F.num(r.tQuantile, 3) }, { text: F.pct(r.chi2, 2) }, { text: F.num(r.corr, 3) }, { text: F.num(r.corrTheory, 3) }] })),
+    view.LINKED_TABLES.inference,
+    [null, 'coverage/series:2', 'coverage/series:2', 'coverage/series:3', 'scatter/points', 'scatter/slope'],
+  );
+  const hideInference = () =>
+    hideParts(
+      inference,
+      prefixed([
+        ['coverage', coverageItems, kept.coverage],
+        ['scatter', scatterItems, kept.scatter],
+      ]),
+    );
+  hideInference();
   fill(
     regions.inference,
     h(
@@ -961,21 +1094,14 @@ function updateInference() {
       figure(I.coverageTitle, hw.drawLineChart, view.coverageChart(s, F.decimal), {
         tip: view.tips.coverage(s, text.tips),
         link: view.links.inference,
-        items: [{ label: I.coverageLegend[0], color: 2, dashed: true }, { label: I.coverageLegend[1], color: 1, dashed: true }, { label: I.coverageLegend[2], color: 0 }, { label: I.coverageLegend[3], color: 1 }],
+        items: coverageItems,
+        keep: kept.coverage,
+        onHide: hideInference,
       }),
-      figure(I.scatterTitle(pt.n, s.m), hw.drawScatter, scatter, { tip: view.tips.scatter(scatter, text.tips), items: [{ label: I.scatterLegend[0], color: 0 }, { label: I.scatterLegend[1], color: 1, dashed: true }, { label: I.scatterLegend[2], color: 2, dashed: true }] }),
+      figure(I.scatterTitle(pt.n, s.m), hw.drawScatter, scatter, { tip: view.tips.scatter(scatter, text.tips), items: scatterItems, keep: kept.scatter, onHide: hideInference }),
     ),
     subtitle(I.tableTitle),
-    h(
-      'div',
-      { class: 'scroll' },
-      table(
-        'compact inference',
-        ['n', 't', 'tQuantile', 'chi2', 'corr', 'corrTheory'].map((k) => I.cols[k]),
-        view.inferenceRows(s).map((r) => ({ cells: [{ text: F.int(r.n), head: true }, { text: F.pct(r.t, 2) }, { text: F.num(r.tQuantile, 3) }, { text: F.pct(r.chi2, 2) }, { text: F.num(r.corr, 3) }, { text: F.num(r.corrTheory, 3) }] })),
-        view.LINKED_TABLES.inference,
-      ),
-    ),
+    h('div', { class: 'scroll' }, inference),
     paras(I.facts(s)),
     tests('inference', s),
   );
@@ -985,20 +1111,17 @@ function updateInference() {
 // Gli esempi interattivi ("Prova")
 // ---------------------------------------------------------------------------
 
-/** Redraws a chart in place, with new data and labels, without replacing its canvas (no flicker while it plays). */
+/** Redraws a chart in place, with new data and labels, without replacing its canvas (no flicker while it plays); the hidden parts stay hidden. */
 function refreshFigure(fig, caption, data, tip) {
   const canvas = fig.querySelector('canvas.chart');
   const chart = charts.get(canvas);
   if (!chart) return;
-  if (chart.detach) chart.detach();
   chart.data = data;
-  chart.detach = tip ? hw.attachChartTooltip(canvas, { draw: chart.draw, data, describe: tip }) : null;
+  chart.tip = tip;
+  attachTip(canvas, chart);
   canvas.setAttribute('aria-label', caption);
   fig.querySelector('figcaption').textContent = caption;
-  if (chart.width > 0) {
-    canvas.style.height = `${hw.chartHeight(chart.draw, data, chart.width)}px`;
-    chart.draw(canvas, { ...data, width: chart.width }, palette());
-  }
+  redraw(canvas, chart);
 }
 
 // --- 1.2 I dati da trascinare ---------------------------------------------------------
@@ -1029,15 +1152,8 @@ function tryDragBlock() {
     h('div', { class: 'slider-row' }, controls.dragSlider.el, h('span', { class: 'buttons' }, controls.dragAdd, controls.dragRemove, reset)),
     // posizionato: ci stanno dentro l'evidenziazione e l'etichetta sotto il puntatore
     h('div', { class: 'figure' }, controls.dragCanvas),
-    legend([
-      { label: D.legend[0], color: 0 },
-      { label: D.legend[1], color: 1 },
-      { label: D.legend[2], color: 1, dashed: true },
-      { label: D.legend[3], color: 3 },
-      { label: D.legend[4], color: 4 },
-      { label: D.legend[5], color: 0 },
-      { label: D.legend[6], color: 2 },
-    ]),
+    // la legenda: le parti nascoste non si disegnano, e un punto nascosto non si trascina
+    legend(view.legends.drag(text), (parts) => drag && drag.setHidden(parts), kept.drag),
     controls.dragCaption,
     paras(D.after),
   );
@@ -1058,7 +1174,7 @@ function createDrag() {
   drag = null;
   const canvas = controls.dragCanvas;
   if (!canvas || !canvas.isConnected) return;
-  drag = hw.createWelfordDrag(canvas, { ...view.DRAG, initial: view.DRAG.values, values: state.drag.values || view.DRAG.values, palette: palette(), decimal: text.fmt.decimal, onChange: updateDrag });
+  drag = hw.createWelfordDrag(canvas, { ...view.DRAG, initial: view.DRAG.values, values: state.drag.values || view.DRAG.values, palette: palette(), decimal: text.fmt.decimal, hidden: partsOf(view.legends.drag(text), kept.drag), onChange: updateDrag });
   dragWidth = canvas.clientWidth;
   dragResizer.disconnect();
   dragResizer.observe(canvas);
@@ -1129,12 +1245,7 @@ function tryBesselBlock() {
   const data = view.besselChart(view.besselStart(state.target, state.bessel.n), text.fmt.decimal);
   controls.besselFigure = figure(B.chartTitle(state.bessel.n), hw.drawLineChart, data, {
     wide: true,
-    items: [
-      { label: B.legend[0], color: 2, dashed: true },
-      { label: B.legend[1], color: 1, dashed: true },
-      { label: B.legend[2], color: 0 },
-      { label: B.legend[3], color: 1 },
-    ],
+    items: view.legends.bessel(text),
   });
   return h(
     'div',
@@ -1286,11 +1397,7 @@ function updateIntervals() {
       figure(I.chartTitle(current, text.distNames[dist]), hw.drawIntervals, data, {
         wide: true,
         tip: view.tips.intervals(current, text.tips),
-        items: [
-          { label: I.legend[0], color: 2 },
-          { label: I.legend[1], color: 1 },
-          { label: I.legend[2], color: 6, dashed: true },
-        ],
+        items: view.legends.intervals(text),
       }),
     ),
     h('p', { class: 'caption line', 'aria-live': 'polite', text: I.counts(current.misses, S.level, (S.batch + 1) * view.INTERVAL_SIZE, total) }),

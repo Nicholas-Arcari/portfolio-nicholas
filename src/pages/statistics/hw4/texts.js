@@ -120,6 +120,17 @@ const spreadFormulas = (large, normal) =>
 // ITALIANO
 // ---------------------------------------------------------------------------
 
+/**
+ * The labels under the pointer list only what is on screen: `show` says
+ * which parts of the chart the reader has not hidden from the legend (a
+ * missing key counts as shown), and a label with nothing left is null.
+ */
+const on = (show, key) => !show || show[key] !== false;
+const said = (head, items, sep = ', ') => {
+  const kept = items.filter(Boolean);
+  return kept.length ? `${head}: ${kept.join(sep)}` : null;
+};
+
 const IT = formatters(',', '.', 'n/d', '×');
 
 /** The line of numbers under a hypothesis test, whatever its kind. */
@@ -661,20 +672,20 @@ const it = {
     trajectory: (hit, name) =>
       hit.kind === 'bin'
         ? `${name} fra ${IT.num(hit.from, 3)} e ${IT.num(hit.to, 3)} al punteggio ${IT.int(hit.k)}: ${IT.int(hit.count)} hacker su ${IT.int(hit.sample)}, ${IT.num(hit.expected, 1)} attesi dalla normale`
-        : `Punteggio ${IT.int(hit.step)}: ${name} dell’hacker 1 ${IT.num(hit.first, 4)}; valore vero ${IT.num(hit.mean, 4)}, fascia fra ${IT.num(hit.mean - 2 * hit.sd, 4)} e ${IT.num(hit.mean + 2 * hit.sd, 4)}`,
-    step: (r) => (r.k === 1 ? `Passo 1: x = ${IT.sig(r.x)}, M = ${IT.sig(r.mean)}, SS = 0` : `Passo ${r.k}: x = ${IT.sig(r.x)}, δ = ${IT.sig(r.delta)}, M = ${IT.sig(r.mean)}, SS = ${IT.sig(r.ss)}, s² = ${IT.sig(r.variance)}`),
-    stability: (r) => `c = 10^${r.power}: errore relativo ${IT.sci(r.errors.naive)} (manuale), ${IT.sci(r.errors.twoPass)} (due passate), ${IT.sci(r.errors.welford)} (Welford)`,
-    score: (b, discrete) => {
+        : said(`Punteggio ${IT.int(hit.step)}`, [on(hit.show, 'first') && `${name} dell’hacker 1 ${IT.num(hit.first, 4)}`, on(hit.show, 'band') && `valore vero ${IT.num(hit.mean, 4)}, fascia fra ${IT.num(hit.mean - 2 * hit.sd, 4)} e ${IT.num(hit.mean + 2 * hit.sd, 4)}`], '; '),
+    step: (r, show) => said(`Passo ${r.k}`, [on(show, 'points') && `x = ${IT.sig(r.x)}`, r.k > 1 && on(show, 'delta') && `δ = ${IT.sig(r.delta)}`, on(show, 'mean') && `M = ${IT.sig(r.mean)}`, r.k > 1 && on(show, 'after') && `x - M = ${IT.sig(r.after)}`, `SS = ${r.k === 1 ? '0' : IT.sig(r.ss)}`, r.k > 1 && on(show, 'band') && `s² = ${IT.sig(r.variance)}`]),
+    stability: (r, show) => said(`c = 10^${r.power}, errore relativo`, [on(show, 'naive') && `${IT.sci(r.errors.naive)} (manuale)`, on(show, 'twoPass') && `${IT.sci(r.errors.twoPass)} (due passate)`, on(show, 'welford') && `${IT.sci(r.errors.welford)} (Welford)`]),
+    score: (b, discrete, show) => {
       const where = discrete ? `Punteggio ${b.k}` : `Da ${b.k} a ${b.k + 1}`;
-      return b.share === null ? `${where}: legge ${IT.pct(b.prob, 2)}` : `${where}: simulazione ${IT.pct(b.share, 3)}, legge ${IT.pct(b.prob, 3)}`;
+      return b.share === null ? `${where}: legge ${IT.pct(b.prob, 2)}` : said(where, [`simulazione ${IT.pct(b.share, 3)}`, on(show, 'law') && `legge ${IT.pct(b.prob, 3)}`]);
     },
-    mean: (pt, law, m) => `n = ${IT.int(pt.n)}: media delle M_n ${IT.num(pt.meanStats.mean, 4)}, μ = ${IT.sig(law.mu)}, fascia ± ${IT.num(1.959963984540054 * pt.theory.sdMean / Math.sqrt(m), 4)}`,
-    variance: (pt, law, m) => `n = ${IT.int(pt.n)}: media delle s_n² ${IT.num(pt.varStats.mean, 4)}, σ² = ${IT.sig(law.variance)} (fascia ± ${IT.num(1.959963984540054 * pt.theory.sdVariance / Math.sqrt(m), 4)}); media di SS_n/n ${IT.num(pt.biased, 4)}, attesa ${IT.num(pt.theory.biased, 4)}`,
-    spread: (r) => `n = ${IT.int(r.n)}: Var(M_n) ${IT.small(r.varMean)} (teoria ${IT.small(r.varMeanTheory)}), Var(s_n²) ${IT.small(r.varVariance)} (teoria ${IT.small(r.varVarianceTheory)}, dati normali ${IT.small(r.normalVariance)})`,
+    mean: (pt, law, m, show) => said(`n = ${IT.int(pt.n)}`, [on(show, 'average') && `media delle M_n ${IT.num(pt.meanStats.mean, 4)}`, on(show, 'truth') && `μ = ${IT.sig(law.mu)}, fascia ± ${IT.num(1.959963984540054 * pt.theory.sdMean / Math.sqrt(m), 4)}`]),
+    variance: (pt, law, m, show) => said(`n = ${IT.int(pt.n)}`, [on(show, 'average') && `media delle s_n² ${IT.num(pt.varStats.mean, 4)}`, on(show, 'truth') && `σ² = ${IT.sig(law.variance)} (fascia ± ${IT.num(1.959963984540054 * pt.theory.sdVariance / Math.sqrt(m), 4)})`, on(show, 'biased') && `media di SS_n/n ${IT.num(pt.biased, 4)}`, on(show, 'biasedTheory') && `σ² (n - 1)/n ${IT.num(pt.theory.biased, 4)}`]),
+    spread: (r, show) => said(`n = ${IT.int(r.n)}`, [on(show, 'varMean') && `Var(M_n) ${IT.small(r.varMean)}`, on(show, 'varMeanTheory') && `σ²/n ${IT.small(r.varMeanTheory)}`, on(show, 'varVariance') && `Var(s_n²) ${IT.small(r.varVariance)}`, on(show, 'varVarianceTheory') && `teoria ${IT.small(r.varVarianceTheory)}`, on(show, 'normalVariance') && `dati normali ${IT.small(r.normalVariance)}`]),
     bin: (from, to, share, normal) => `Da ${IT.sig(from, 4)} a ${IT.sig(to, 4)}: hacker ${IT.pct(share, 2)}${normal === null ? '' : `, normale ${IT.pct(normal, 2)}`}`,
-    coverage: (r) => `n = ${IT.int(r.n)}: intervallo t ${IT.pct(r.t, 2)} (t = ${IT.num(r.tQuantile, 3)}), intervallo χ² ${IT.pct(r.chi2, 2)}`,
+    coverage: (r, show) => said(`n = ${IT.int(r.n)}`, [on(show, 't') && `intervallo t ${IT.pct(r.t, 2)} (t = ${IT.num(r.tQuantile, 3)})`, on(show, 'chi2') && `intervallo χ² ${IT.pct(r.chi2, 2)}`]),
     hacker: (j, mean, variance) => `Hacker ${IT.int(j)}: M_n = ${IT.num(mean, 4)}, s_n² = ${IT.num(variance, 4)}`,
-    bessel: (count, variance, biased) => `${IT.int(count)} campioni: media delle s² ${IT.num(variance, 4)}, media di SS/n ${IT.num(biased, 4)}`,
+    bessel: (count, variance, biased, show) => said(`${IT.int(count)} campioni`, [on(show, 'variance') && `media delle s² ${IT.num(variance, 4)}`, on(show, 'biased') && `media di SS/n ${IT.num(biased, 4)}`]),
     interval: (r, param) => `Hacker ${IT.int(r.hacker)}: media ${IT.num(r.mean, 3)}, s² ${IT.num(r.variance, 3)}; intervallo per ${param === 'mean' ? 'μ' : 'σ²'} da ${IT.num(r.lo, 3)} a ${IT.num(r.hi, 3)}, ${r.ok ? 'contiene' : 'manca'} il valore vero`,
   },
   download: {
@@ -1235,20 +1246,20 @@ const en = {
     trajectory: (hit, name) =>
       hit.kind === 'bin'
         ? `${name} between ${EN.num(hit.from, 3)} and ${EN.num(hit.to, 3)} at score ${EN.int(hit.k)}: ${EN.int(hit.count)} hackers of ${EN.int(hit.sample)}, ${EN.num(hit.expected, 1)} expected from the normal law`
-        : `Score ${EN.int(hit.step)}: ${name} of hacker 1 ${EN.num(hit.first, 4)}; true value ${EN.num(hit.mean, 4)}, band between ${EN.num(hit.mean - 2 * hit.sd, 4)} and ${EN.num(hit.mean + 2 * hit.sd, 4)}`,
-    step: (r) => (r.k === 1 ? `Step 1: x = ${EN.sig(r.x)}, M = ${EN.sig(r.mean)}, SS = 0` : `Step ${r.k}: x = ${EN.sig(r.x)}, δ = ${EN.sig(r.delta)}, M = ${EN.sig(r.mean)}, SS = ${EN.sig(r.ss)}, s² = ${EN.sig(r.variance)}`),
-    stability: (r) => `c = 10^${r.power}: relative error ${EN.sci(r.errors.naive)} (textbook), ${EN.sci(r.errors.twoPass)} (two passes), ${EN.sci(r.errors.welford)} (Welford)`,
-    score: (b, discrete) => {
+        : said(`Score ${EN.int(hit.step)}`, [on(hit.show, 'first') && `${name} of hacker 1 ${EN.num(hit.first, 4)}`, on(hit.show, 'band') && `true value ${EN.num(hit.mean, 4)}, band between ${EN.num(hit.mean - 2 * hit.sd, 4)} and ${EN.num(hit.mean + 2 * hit.sd, 4)}`], '; '),
+    step: (r, show) => said(`Step ${r.k}`, [on(show, 'points') && `x = ${EN.sig(r.x)}`, r.k > 1 && on(show, 'delta') && `δ = ${EN.sig(r.delta)}`, on(show, 'mean') && `M = ${EN.sig(r.mean)}`, r.k > 1 && on(show, 'after') && `x - M = ${EN.sig(r.after)}`, `SS = ${r.k === 1 ? '0' : EN.sig(r.ss)}`, r.k > 1 && on(show, 'band') && `s² = ${EN.sig(r.variance)}`]),
+    stability: (r, show) => said(`c = 10^${r.power}, relative error`, [on(show, 'naive') && `${EN.sci(r.errors.naive)} (textbook)`, on(show, 'twoPass') && `${EN.sci(r.errors.twoPass)} (two passes)`, on(show, 'welford') && `${EN.sci(r.errors.welford)} (Welford)`]),
+    score: (b, discrete, show) => {
       const where = discrete ? `Score ${b.k}` : `From ${b.k} to ${b.k + 1}`;
-      return b.share === null ? `${where}: law ${EN.pct(b.prob, 2)}` : `${where}: simulation ${EN.pct(b.share, 3)}, law ${EN.pct(b.prob, 3)}`;
+      return b.share === null ? `${where}: law ${EN.pct(b.prob, 2)}` : said(where, [`simulation ${EN.pct(b.share, 3)}`, on(show, 'law') && `law ${EN.pct(b.prob, 3)}`]);
     },
-    mean: (pt, law, m) => `n = ${EN.int(pt.n)}: average of M_n ${EN.num(pt.meanStats.mean, 4)}, μ = ${EN.sig(law.mu)}, band ± ${EN.num(1.959963984540054 * pt.theory.sdMean / Math.sqrt(m), 4)}`,
-    variance: (pt, law, m) => `n = ${EN.int(pt.n)}: average of s_n² ${EN.num(pt.varStats.mean, 4)}, σ² = ${EN.sig(law.variance)} (band ± ${EN.num(1.959963984540054 * pt.theory.sdVariance / Math.sqrt(m), 4)}); average of SS_n/n ${EN.num(pt.biased, 4)}, expected ${EN.num(pt.theory.biased, 4)}`,
-    spread: (r) => `n = ${EN.int(r.n)}: Var(M_n) ${EN.small(r.varMean)} (theory ${EN.small(r.varMeanTheory)}), Var(s_n²) ${EN.small(r.varVariance)} (theory ${EN.small(r.varVarianceTheory)}, normal data ${EN.small(r.normalVariance)})`,
+    mean: (pt, law, m, show) => said(`n = ${EN.int(pt.n)}`, [on(show, 'average') && `average of M_n ${EN.num(pt.meanStats.mean, 4)}`, on(show, 'truth') && `μ = ${EN.sig(law.mu)}, band ± ${EN.num(1.959963984540054 * pt.theory.sdMean / Math.sqrt(m), 4)}`]),
+    variance: (pt, law, m, show) => said(`n = ${EN.int(pt.n)}`, [on(show, 'average') && `average of s_n² ${EN.num(pt.varStats.mean, 4)}`, on(show, 'truth') && `σ² = ${EN.sig(law.variance)} (band ± ${EN.num(1.959963984540054 * pt.theory.sdVariance / Math.sqrt(m), 4)})`, on(show, 'biased') && `average of SS_n/n ${EN.num(pt.biased, 4)}`, on(show, 'biasedTheory') && `σ² (n - 1)/n ${EN.num(pt.theory.biased, 4)}`]),
+    spread: (r, show) => said(`n = ${EN.int(r.n)}`, [on(show, 'varMean') && `Var(M_n) ${EN.small(r.varMean)}`, on(show, 'varMeanTheory') && `σ²/n ${EN.small(r.varMeanTheory)}`, on(show, 'varVariance') && `Var(s_n²) ${EN.small(r.varVariance)}`, on(show, 'varVarianceTheory') && `theory ${EN.small(r.varVarianceTheory)}`, on(show, 'normalVariance') && `normal data ${EN.small(r.normalVariance)}`]),
     bin: (from, to, share, normal) => `From ${EN.sig(from, 4)} to ${EN.sig(to, 4)}: hackers ${EN.pct(share, 2)}${normal === null ? '' : `, normal ${EN.pct(normal, 2)}`}`,
-    coverage: (r) => `n = ${EN.int(r.n)}: t interval ${EN.pct(r.t, 2)} (t = ${EN.num(r.tQuantile, 3)}), χ² interval ${EN.pct(r.chi2, 2)}`,
+    coverage: (r, show) => said(`n = ${EN.int(r.n)}`, [on(show, 't') && `t interval ${EN.pct(r.t, 2)} (t = ${EN.num(r.tQuantile, 3)})`, on(show, 'chi2') && `χ² interval ${EN.pct(r.chi2, 2)}`]),
     hacker: (j, mean, variance) => `Hacker ${EN.int(j)}: M_n = ${EN.num(mean, 4)}, s_n² = ${EN.num(variance, 4)}`,
-    bessel: (count, variance, biased) => `${EN.int(count)} samples: average of s² ${EN.num(variance, 4)}, average of SS/n ${EN.num(biased, 4)}`,
+    bessel: (count, variance, biased, show) => said(`${EN.int(count)} samples`, [on(show, 'variance') && `average of s² ${EN.num(variance, 4)}`, on(show, 'biased') && `average of SS/n ${EN.num(biased, 4)}`]),
     interval: (r, param) => `Hacker ${EN.int(r.hacker)}: mean ${EN.num(r.mean, 3)}, s² ${EN.num(r.variance, 3)}; interval for ${param === 'mean' ? 'μ' : 'σ²'} from ${EN.num(r.lo, 3)} to ${EN.num(r.hi, 3)}, ${r.ok ? 'contains' : 'misses'} the true value`,
   },
   download: {

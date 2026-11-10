@@ -19,6 +19,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLanguage } from '../../contexts/languageContext';
 import { useTheme } from '../../contexts/themeContext';
 import HomeworkShell from './HomeworkShell';
+import { ChartLegend } from './ChartLegend';
+import { hiddenParts, useHidden } from './legendState';
 import * as hw from './hw4/homework4';
 import * as view from './hw4/view';
 import { HW4_TEXTS, originalAssignment } from './hw4/texts';
@@ -71,23 +73,20 @@ const Formulas = ({ title = null, children }) => (
   </>
 );
 
-// La legenda di un grafico, nella pagina: si legge e si traduce
-const Legend = ({ items, palette }) => (
-  <ul className="hw2a-legend">
-    {items.map((item, i) => (
-      <li key={item.label}>
-        <span className={item.dashed ? 'is-dashed' : ''} style={{ borderColor: palette.series[item.color ?? i], backgroundColor: item.dashed ? 'transparent' : palette.series[item.color ?? i] }} aria-hidden="true" />
-        {item.label}
-      </li>
-    ))}
-  </ul>
-);
-
 // Un grafico su canvas, ridisegnato quando cambia la larghezza, con i valori
 // del pezzo sotto il puntatore e, con `link` (view.links), la riga della
-// tabella legata: il disegno vero e' in homework4.js.
-const Figure = ({ title, draw, data, palette, tip = null, wide = false, legend = null, note = null, link = null }) => {
+// tabella legata: il disegno vero e' in homework4.js. Le voci della legenda
+// nascondono e mostrano le loro parti; con `hidden` e `onToggle` lo stato
+// sta nella sezione, che ne fa sparire anche le colonne della tabella
+// annessa, e con `off` la legenda e' fuori dal grafico (un gruppo di grafici
+// con una legenda sola).
+const Figure = ({ title, draw, data, palette, tip = null, wide = false, legend = null, note = null, link = null, hidden: shared = null, onToggle = null, off: given = null }) => {
   const ref = useRef(null);
+  const [own, toggleOwn] = useHidden();
+  const hidden = shared || own;
+  const off = (given || hiddenParts(legend, hidden)).join(' ');
+  const shown = useMemo(() => (off ? { ...data, hidden: off.split(' ') } : data), [data, off]);
+  const describe = useMemo(() => (tip ? (hit) => tip(hit, off ? off.split(' ') : []) : null), [tip, off]);
   useEffect(() => {
     const canvas = ref.current;
     let drawn = -1;
@@ -95,23 +94,23 @@ const Figure = ({ title, draw, data, palette, tip = null, wide = false, legend =
       const width = Math.round(entries[entries.length - 1].contentRect.width);
       if (width <= 0 || width === drawn) return;
       drawn = width;
-      canvas.style.height = `${hw.chartHeight(draw, data, width)}px`;
+      canvas.style.height = `${hw.chartHeight(draw, shown, width)}px`;
       view.scheduleFrameJob(() => {
-        if (canvas.isConnected && drawn === width) draw(canvas, { ...data, width }, palette);
+        if (canvas.isConnected && drawn === width) draw(canvas, { ...shown, width }, palette);
       });
     });
     observer.observe(canvas);
-    const detach = tip ? hw.attachChartTooltip(canvas, { draw, data, describe: tip, link }) : null;
+    const detach = describe ? hw.attachChartTooltip(canvas, { draw, data: shown, describe, link }) : null;
     return () => {
       drawn = -2;
       observer.disconnect();
       if (detach) detach();
     };
-  }, [draw, data, palette, tip, link]);
+  }, [draw, shown, palette, describe, link]);
   return (
     <figure className={wide ? 'hw1-figure hw1-figure-wide' : 'hw1-figure'}>
       <canvas ref={ref} className="hw1-canvas" role="img" aria-label={title} />
-      {legend && <Legend items={legend} palette={palette} />}
+      {legend && <ChartLegend items={legend} palette={palette} hidden={hidden} onToggle={onToggle || toggleOwn} />}
       {note && <p className="hw3-figure-note">{note}</p>}
       <figcaption>{title}</figcaption>
     </figure>
@@ -250,6 +249,11 @@ const Steps = ({ text, palette }) => {
   const check = useMemo(() => view.stepsCheck(values), [values]);
   const error = read.ok ? null : S.errors[read.error](read.text);
   const row = rows[index];
+  // i dati, la media, la fascia, delta e x - M sono anche colonne della tabella: nascosti nella legenda, spariscono da entrambe
+  const [hidden, toggleHidden] = useHidden();
+  const legend = useMemo(() => view.legends.steps(text), [text]);
+  const col = (part) => !hiddenParts(legend, hidden).includes(part);
+  const columns = [['x', 'points'], ['delta', 'delta'], ['mean', 'mean'], ['after', 'after'], ['increment', null], ['ss', null], ['variance', 'band']].filter(([, part]) => !part || col(part)).map(([key]) => key);
   let playLabel = S.play;
   if (playing) playLabel = S.pause;
   else if (index > 0 && index < last) playLabel = S.resume;
@@ -282,32 +286,22 @@ const Steps = ({ text, palette }) => {
         tip={tip}
         link={view.links.steps}
         wide
-        legend={[
-          { label: S.legend[0], color: 0 },
-          { label: S.legend[1], color: 1 },
-          { label: S.legend[2], color: 2 },
-          { label: S.legend[3], color: 3 },
-          { label: S.legend[4], color: 4 },
-        ]}
+        legend={legend}
+        hidden={hidden}
+        onToggle={toggleHidden}
       />
       <p className="hw1-caption hw4-line" aria-live={playing ? 'off' : 'polite'}>{S.line(row, rows[index - 1])}</p>
       <p className="hw1-table-title"><strong>{S.tableTitle}</strong></p>
       <div className={rows.length > 16 ? 'hw1-scroll' : 'hw4-table'}>
         <table id={view.LINKED_TABLES.steps} className="hw1-table hw1-compact hw4-steps">
           <thead>
-            <tr>{['k', 'x', 'delta', 'mean', 'after', 'increment', 'ss', 'variance'].map((key) => <th key={key}>{S.cols[key]}</th>)}</tr>
+            <tr>{['k', ...columns].map((key) => <th key={key}>{S.cols[key]}</th>)}</tr>
           </thead>
           <tbody>
             {rows.map((r, i) => (
               <tr key={r.k} className={i === index ? 'is-current' : i > index ? 'is-future' : ''}>
                 <th>{r.k}</th>
-                <td data-label={S.cols.x}>{F.sig(r.x)}</td>
-                <td data-label={S.cols.delta}>{F.sig(r.delta)}</td>
-                <td data-label={S.cols.mean}>{F.sig(r.mean)}</td>
-                <td data-label={S.cols.after}>{F.sig(r.after)}</td>
-                <td data-label={S.cols.increment}>{F.sig(r.increment)}</td>
-                <td data-label={S.cols.ss}>{F.sig(r.ss)}</td>
-                <td data-label={S.cols.variance}>{r.k > 1 ? F.sig(r.variance) : '-'}</td>
+                {columns.map((key) => <td key={key} data-label={S.cols[key]}>{key === 'variance' && r.k === 1 ? '-' : F.sig(r[key])}</td>)}
               </tr>
             ))}
           </tbody>
@@ -329,6 +323,10 @@ const Stability = React.memo(function Stability({ text, palette }) {
   const data = useMemo(() => view.stabilityChart(curve, F.decimal), [curve, F]);
   const tip = useMemo(() => view.tips.stability(curve, text.tips), [curve, text]);
   const offset = (c) => (c === 0 ? '0' : F.pow(Math.round(Math.log10(c))));
+  // le tre formule sono le tre curve del grafico e le tre colonne della tabella
+  const [hidden, toggle] = useHidden();
+  const legend = useMemo(() => view.legends.stability(text), [text]);
+  const [naive, twoPass, welford] = [0, 1, 2].map((i) => !hidden.has(i));
   return (
     <>
       <Paras list={S.intro} />
@@ -336,15 +334,20 @@ const Stability = React.memo(function Stability({ text, palette }) {
       <div className="hw1-scroll">
         <table id={view.LINKED_TABLES.cancellation} className="hw1-table hw1-compact hw4-cancellation">
           <thead>
-            <tr><th>{S.cols.offset}</th><th>{S.cols.naive}</th><th>{S.cols.twoPass}</th><th>{S.cols.welford}</th></tr>
+            <tr>
+              <th>{S.cols.offset}</th>
+              {naive && <th>{S.cols.naive}</th>}
+              {twoPass && <th>{S.cols.twoPass}</th>}
+              {welford && <th>{S.cols.welford}</th>}
+            </tr>
           </thead>
           <tbody>
             {rows.map((r) => (
               <tr key={r.offset}>
                 <th>{offset(r.offset)}</th>
-                <td data-label={S.cols.naive} className={Math.abs(r.naive - 30) > 1e-9 ? 'hw3-over' : ''}>{F.sig(r.naive, 17)}</td>
-                <td data-label={S.cols.twoPass}>{F.sig(r.twoPass, 17)}</td>
-                <td data-label={S.cols.welford}>{F.sig(r.welford, 17)}</td>
+                {naive && <td data-label={S.cols.naive} className={Math.abs(r.naive - 30) > 1e-9 ? 'hw3-over' : ''}>{F.sig(r.naive, 17)}</td>}
+                {twoPass && <td data-label={S.cols.twoPass}>{F.sig(r.twoPass, 17)}</td>}
+                {welford && <td data-label={S.cols.welford}>{F.sig(r.welford, 17)}</td>}
               </tr>
             ))}
           </tbody>
@@ -359,11 +362,9 @@ const Stability = React.memo(function Stability({ text, palette }) {
           tip={tip}
           link={view.links.cancellation}
           wide
-          legend={[
-            { label: S.legend[0], color: 1 },
-            { label: S.legend[1], color: 3 },
-            { label: S.legend[2], color: 0 },
-          ]}
+          legend={legend}
+          hidden={hidden}
+          onToggle={toggle}
         />
       </div>
       <Paras list={S.facts(view.stabilityFacts(curve))} />
@@ -421,9 +422,7 @@ const Scores = ({ params, setDist, s, text, palette }) => {
   const data = useMemo(() => view.scoresChart(law, s, F.decimal), [law, s, F]);
   const tip = useMemo(() => view.tips.scores(data, law.discrete, text.tips), [data, law, text]);
   const simulated = Boolean(data.expected);
-  const legend = S.legend(law.discrete, simulated)
-    .map((label, i) => label && { label, color: i, dashed: i === 1 })
-    .filter(Boolean);
+  const legend = useMemo(() => view.legends.scores(text, law.discrete, simulated), [text, law, simulated]);
   return (
     <>
       <Paras list={S.intro(params.p)} />
@@ -451,7 +450,8 @@ const Scores = ({ params, setDist, s, text, palette }) => {
       </div>
       <Paras list={S.after} />
       <div className="hw1-charts">
-        <Figure title={S.chartTitle(text.distNames[params.dist], simulated)} draw={hw.drawHistogram} data={data} palette={palette} tip={tip} wide legend={legend} />
+        {/* la legenda cambia voci quando arriva la simulazione: si riparte con tutto visibile */}
+        <Figure key={simulated ? 'simulated' : 'law'} title={S.chartTitle(text.distNames[params.dist], simulated)} draw={hw.drawHistogram} data={data} palette={palette} tip={tip} wide legend={legend} />
       </div>
       {s && simulated && <Tests group="sim" s={s} text={text} />}
     </>
@@ -499,11 +499,18 @@ const Trajectories = ({ params, text, palette }) => {
   const [quantity, setQuantity] = useState('mean');
   const [speed, setSpeed] = useState(1);
   const [status, setStatus] = useState(null);
-  const settingsRef = useRef({ quantity, speed: view.ANIMATION.speeds[speed], palette, decimal: text.fmt.decimal, describe: view.tips.trajectory(text) });
+  // la legenda sotto l'animazione: le parti nascoste si ridisegnano dal primo punteggio
+  const [hidden, toggleHidden] = useHidden();
+  const legend = useMemo(() => view.legends.trajectories(text), [text]);
+  const off = hiddenParts(legend, hidden).join(' ');
+  const settingsRef = useRef({ quantity, speed: view.ANIMATION.speeds[speed], palette, decimal: text.fmt.decimal, describe: view.tips.trajectory(text), hidden: [] });
 
   useEffect(() => {
-    settingsRef.current = { quantity, speed: view.ANIMATION.speeds[speed], palette, decimal: text.fmt.decimal, describe: view.tips.trajectory(text) };
-  }, [quantity, speed, palette, text]);
+    settingsRef.current = { quantity, speed: view.ANIMATION.speeds[speed], palette, decimal: text.fmt.decimal, describe: view.tips.trajectory(text), hidden: off ? off.split(' ') : [] };
+  }, [quantity, speed, palette, text, off]);
+  useEffect(() => {
+    if (animRef.current) animRef.current.setHidden(off ? off.split(' ') : []);
+  }, [off]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -568,15 +575,7 @@ const Trajectories = ({ params, text, palette }) => {
       <div className="hw1-figure">
         <canvas ref={canvasRef} className="hw1-canvas hw3-anim" role="img" aria-label={text.sections.trajectories} />
       </div>
-      <Legend
-        items={[
-          { label: T.legend[0], color: 0 },
-          { label: T.legend[1], color: 1 },
-          { label: T.legend[2], color: 2, dashed: true },
-          { label: T.legend[3], color: 3, dashed: true },
-        ]}
-        palette={palette}
-      />
+      <ChartLegend items={legend} palette={palette} hidden={hidden} onToggle={toggleHidden} />
       <p className="hw1-caption" aria-live={playing ? 'off' : 'polite'}>{status ? T.caption(status, text.quantityNames[status.quantity]) : ''}</p>
       <Paras list={T.after} />
     </>
@@ -598,6 +597,12 @@ const Averages = React.memo(function Averages({ s, job, text, palette }) {
       variances: { data: view.variancesChart(s, F.decimal), tip: view.tips.variances(s, text.tips) },
     };
   }, [s, F, text]);
+  // i due grafici hanno una tabella sola: la media delle M_n, la media delle s_n² e le due versioni con n
+  const [meansHidden, toggleMeans] = useHidden();
+  const [variancesHidden, toggleVariances] = useHidden();
+  const meansLegend = useMemo(() => view.legends.means(text), [text]);
+  const variancesLegend = useMemo(() => view.legends.variances(text), [text]);
+  const shown = { mean: !meansHidden.has(1), meanZ: !meansHidden.has(1), variance: !variancesHidden.has(1), varianceZ: !variancesHidden.has(1), biased: !variancesHidden.has(3), biasedTheory: !variancesHidden.has(2) };
   return (
     <>
       <Paras list={A.intro(s)} />
@@ -609,25 +614,25 @@ const Averages = React.memo(function Averages({ s, job, text, palette }) {
           <div className="hw1-scroll">
             <table id={view.LINKED_TABLES.averages} className="hw1-table hw1-compact hw4-averages">
               <thead>
-                <tr>{['n', 'mean', 'meanZ', 'variance', 'varianceZ', 'biased', 'biasedTheory'].map((key) => <th key={key}>{A.cols[key]}</th>)}</tr>
+                <tr>{['n', 'mean', 'meanZ', 'variance', 'varianceZ', 'biased', 'biasedTheory'].filter((key) => shown[key] !== false).map((key) => <th key={key}>{A.cols[key]}</th>)}</tr>
               </thead>
               <tbody>
                 {rows.map((r) => (
                   <tr key={r.n}>
                     <th>{F.int(r.n)}</th>
-                    <td data-label={A.cols.mean}>{F.num(r.mean, 4)}</td>
-                    <td data-label={A.cols.meanZ} className={zClass(r.meanZ)}>{F.num(r.meanZ, 2)}</td>
-                    <td data-label={A.cols.variance}>{F.num(r.variance, 4)}</td>
-                    <td data-label={A.cols.varianceZ} className={zClass(r.varianceZ)}>{F.num(r.varianceZ, 2)}</td>
-                    <td data-label={A.cols.biased}>{F.num(r.biased, 4)}</td>
-                    <td data-label={A.cols.biasedTheory}>{F.num(r.biasedTheory, 4)}</td>
+                    {shown.mean && <td data-label={A.cols.mean}>{F.num(r.mean, 4)}</td>}
+                    {shown.meanZ && <td data-label={A.cols.meanZ} className={zClass(r.meanZ)}>{F.num(r.meanZ, 2)}</td>}
+                    {shown.variance && <td data-label={A.cols.variance}>{F.num(r.variance, 4)}</td>}
+                    {shown.varianceZ && <td data-label={A.cols.varianceZ} className={zClass(r.varianceZ)}>{F.num(r.varianceZ, 2)}</td>}
+                    {shown.biased && <td data-label={A.cols.biased}>{F.num(r.biased, 4)}</td>}
+                    {shown.biasedTheory && <td data-label={A.cols.biasedTheory}>{F.num(r.biasedTheory, 4)}</td>}
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
           <div className="hw1-charts">
-            <Figure title={A.meansChart(s.m)} draw={hw.drawLineChart} data={charts.means.data} palette={palette} tip={charts.means.tip} link={view.links.averages} legend={[{ label: A.legendMeans[0], color: 2, dashed: true }, { label: A.legendMeans[1], color: 0 }]} />
+            <Figure title={A.meansChart(s.m)} draw={hw.drawLineChart} data={charts.means.data} palette={palette} tip={charts.means.tip} link={view.links.averages} legend={meansLegend} hidden={meansHidden} onToggle={toggleMeans} />
             <Figure
               title={A.variancesChart(s.m)}
               draw={hw.drawLineChart}
@@ -635,7 +640,9 @@ const Averages = React.memo(function Averages({ s, job, text, palette }) {
               palette={palette}
               tip={charts.variances.tip}
               link={view.links.averages}
-              legend={[{ label: A.legendVariances[0], color: 2, dashed: true }, { label: A.legendVariances[1], color: 0 }, { label: A.legendVariances[2], color: 1, dashed: true }, { label: A.legendVariances[3], color: 1 }]}
+              legend={variancesLegend}
+              hidden={variancesHidden}
+              onToggle={toggleVariances}
             />
           </div>
           <Paras list={A.facts(s)} />
@@ -676,6 +683,13 @@ const Spread = React.memo(function Spread({ s, job, text, palette }) {
     };
   }, [s, g, mode, F, text]);
   const rows = useMemo(() => (s ? view.spreadRows(s) : null), [s]);
+  // una legenda per i due istogrammi; le cinque curve del grafico sono cinque colonne della tabella
+  const [histHidden, toggleHist] = useHidden();
+  const histLegend = useMemo(() => view.legends.histograms(text), [text]);
+  const histOff = hiddenParts(histLegend, histHidden);
+  const [seriesHidden, toggleSeries] = useHidden();
+  const legend = useMemo(() => view.legends.spread(text), [text]);
+  const keys = ['varMean', 'varMeanTheory', 'varVariance', 'varVarianceTheory', 'normalVariance'].filter((_, i) => !seriesHidden.has(i));
   return (
     <>
       <Paras list={S.intro} />
@@ -693,10 +707,10 @@ const Spread = React.memo(function Spread({ s, job, text, palette }) {
             </div>
           </div>
           <div className="hw1-charts">
-            <Figure title={S.histMean(s.points[g].n, s.m)} draw={hw.drawHistogram} data={charts.mean.data} palette={palette} tip={charts.mean.tip} note={S.histNote(s.points[g].meanStats, s.points[g].theory, 'mean')} />
-            <Figure title={S.histVariance(s.points[g].n, s.m)} draw={hw.drawHistogram} data={charts.variance.data} palette={palette} tip={charts.variance.tip} note={S.histNote(s.points[g].varStats, s.points[g].theory, 'variance')} />
+            <Figure title={S.histMean(s.points[g].n, s.m)} draw={hw.drawHistogram} data={charts.mean.data} palette={palette} tip={charts.mean.tip} off={histOff} note={S.histNote(s.points[g].meanStats, s.points[g].theory, 'mean')} />
+            <Figure title={S.histVariance(s.points[g].n, s.m)} draw={hw.drawHistogram} data={charts.variance.data} palette={palette} tip={charts.variance.tip} off={histOff} note={S.histNote(s.points[g].varStats, s.points[g].theory, 'variance')} />
           </div>
-          <Legend items={[{ label: S.legendHist[0], color: 0 }, { label: S.legendHist[1], color: 2 }]} palette={palette} />
+          <ChartLegend items={histLegend} palette={palette} hidden={histHidden} onToggle={toggleHist} />
           <div className="hw1-charts">
             <Figure
               title={S.chartTitle}
@@ -706,30 +720,22 @@ const Spread = React.memo(function Spread({ s, job, text, palette }) {
               tip={charts.spread.tip}
               link={view.links.spread}
               wide
-              legend={[
-                { label: S.legend[0], color: 0 },
-                { label: S.legend[1], color: 0, dashed: true },
-                { label: S.legend[2], color: 1 },
-                { label: S.legend[3], color: 1, dashed: true },
-                { label: S.legend[4], color: 3, dashed: true },
-              ]}
+              legend={legend}
+              hidden={seriesHidden}
+              onToggle={toggleSeries}
             />
           </div>
           <p className="hw1-table-title"><strong>{S.tableTitle}</strong></p>
           <div className="hw1-scroll">
             <table id={view.LINKED_TABLES.spread} className="hw1-table hw1-compact hw4-spread">
               <thead>
-                <tr>{['n', 'varMean', 'varMeanTheory', 'varVariance', 'varVarianceTheory', 'normalVariance', 'skewMean'].map((key) => <th key={key}>{S.cols[key]}</th>)}</tr>
+                <tr>{['n', ...keys, 'skewMean'].map((key) => <th key={key}>{S.cols[key]}</th>)}</tr>
               </thead>
               <tbody>
                 {rows.map((r) => (
                   <tr key={r.n}>
                     <th>{F.int(r.n)}</th>
-                    <td data-label={S.cols.varMean}>{F.sig(r.varMean, 4)}</td>
-                    <td data-label={S.cols.varMeanTheory}>{F.sig(r.varMeanTheory, 4)}</td>
-                    <td data-label={S.cols.varVariance}>{F.sig(r.varVariance, 4)}</td>
-                    <td data-label={S.cols.varVarianceTheory}>{F.sig(r.varVarianceTheory, 4)}</td>
-                    <td data-label={S.cols.normalVariance}>{F.sig(r.normalVariance, 4)}</td>
+                    {keys.map((key) => <td key={key} data-label={S.cols[key]}>{F.sig(r[key], 4)}</td>)}
                     <td data-label={S.cols.skewMean}>{`${F.num(r.skewMean, 3)} (${F.num(r.skewMeanTheory, 3)})`}</td>
                   </tr>
                 ))}
@@ -761,6 +767,12 @@ const Inference = React.memo(function Inference({ s, job, text, palette }) {
     };
   }, [s, g, F, text]);
   const rows = useMemo(() => (s ? view.inferenceRows(s) : null), [s]);
+  // la copertura dei due intervalli e la correlazione degli hacker sono colonne della tabella
+  const [coverageHidden, toggleCoverage] = useHidden();
+  const [scatterHidden, toggleScatter] = useHidden();
+  const coverageLegend = useMemo(() => view.legends.coverage(text), [text]);
+  const scatterLegend = useMemo(() => view.legends.scatter(text), [text]);
+  const shown = { t: !coverageHidden.has(2), tQuantile: !coverageHidden.has(2), chi2: !coverageHidden.has(3), corr: !scatterHidden.has(0), corrTheory: !scatterHidden.has(2) };
   return (
     <>
       <Paras list={I.intro} />
@@ -783,25 +795,27 @@ const Inference = React.memo(function Inference({ s, job, text, palette }) {
               palette={palette}
               tip={charts.coverage.tip}
               link={view.links.inference}
-              legend={[{ label: I.coverageLegend[0], color: 2, dashed: true }, { label: I.coverageLegend[1], color: 1, dashed: true }, { label: I.coverageLegend[2], color: 0 }, { label: I.coverageLegend[3], color: 1 }]}
+              legend={coverageLegend}
+              hidden={coverageHidden}
+              onToggle={toggleCoverage}
             />
-            <Figure title={I.scatterTitle(s.points[g].n, s.m)} draw={hw.drawScatter} data={charts.scatter.data} palette={palette} tip={charts.scatter.tip} legend={[{ label: I.scatterLegend[0], color: 0 }, { label: I.scatterLegend[1], color: 1, dashed: true }, { label: I.scatterLegend[2], color: 2, dashed: true }]} />
+            <Figure title={I.scatterTitle(s.points[g].n, s.m)} draw={hw.drawScatter} data={charts.scatter.data} palette={palette} tip={charts.scatter.tip} legend={scatterLegend} hidden={scatterHidden} onToggle={toggleScatter} />
           </div>
           <p className="hw1-table-title"><strong>{I.tableTitle}</strong></p>
           <div className="hw1-scroll">
             <table id={view.LINKED_TABLES.inference} className="hw1-table hw1-compact hw4-inference">
               <thead>
-                <tr>{['n', 't', 'tQuantile', 'chi2', 'corr', 'corrTheory'].map((key) => <th key={key}>{I.cols[key]}</th>)}</tr>
+                <tr>{['n', 't', 'tQuantile', 'chi2', 'corr', 'corrTheory'].filter((key) => shown[key] !== false).map((key) => <th key={key}>{I.cols[key]}</th>)}</tr>
               </thead>
               <tbody>
                 {rows.map((r) => (
                   <tr key={r.n}>
                     <th>{F.int(r.n)}</th>
-                    <td data-label={I.cols.t}>{F.pct(r.t, 2)}</td>
-                    <td data-label={I.cols.tQuantile}>{F.num(r.tQuantile, 3)}</td>
-                    <td data-label={I.cols.chi2}>{F.pct(r.chi2, 2)}</td>
-                    <td data-label={I.cols.corr}>{F.num(r.corr, 3)}</td>
-                    <td data-label={I.cols.corrTheory}>{F.num(r.corrTheory, 3)}</td>
+                    {shown.t && <td data-label={I.cols.t}>{F.pct(r.t, 2)}</td>}
+                    {shown.tQuantile && <td data-label={I.cols.tQuantile}>{F.num(r.tQuantile, 3)}</td>}
+                    {shown.chi2 && <td data-label={I.cols.chi2}>{F.pct(r.chi2, 2)}</td>}
+                    {shown.corr && <td data-label={I.cols.corr}>{F.num(r.corr, 3)}</td>}
+                    {shown.corrTheory && <td data-label={I.cols.corrTheory}>{F.num(r.corrTheory, 3)}</td>}
                   </tr>
                 ))}
               </tbody>
@@ -825,10 +839,17 @@ const TryDrag = ({ text, palette }) => {
   const canvasRef = useRef(null);
   const dragRef = useRef(null);
   const [stats, setStats] = useState(null);
-  const settingsRef = useRef({ palette, decimal: F.decimal });
+  // la legenda: le parti nascoste non si disegnano, e un punto nascosto non si trascina
+  const [hidden, toggleHidden] = useHidden();
+  const legend = useMemo(() => view.legends.drag(text), [text]);
+  const off = hiddenParts(legend, hidden).join(' ');
+  const settingsRef = useRef({ palette, decimal: F.decimal, hidden: [] });
   useEffect(() => {
-    settingsRef.current = { palette, decimal: F.decimal };
-  }, [palette, F]);
+    settingsRef.current = { palette, decimal: F.decimal, hidden: off ? off.split(' ') : [] };
+  }, [palette, F, off]);
+  useEffect(() => {
+    if (dragRef.current) dragRef.current.setHidden(off ? off.split(' ') : []);
+  }, [off]);
   useEffect(() => {
     const canvas = canvasRef.current;
     const drag = hw.createWelfordDrag(canvas, { ...view.DRAG, ...settingsRef.current, onChange: setStats });
@@ -871,18 +892,7 @@ const TryDrag = ({ text, palette }) => {
       <div className="hw1-figure">
         <canvas ref={canvasRef} className="hw1-canvas hw4-drag" role="img" aria-label={text.sections.tryDrag} />
       </div>
-      <Legend
-        items={[
-          { label: D.legend[0], color: 0 },
-          { label: D.legend[1], color: 1 },
-          { label: D.legend[2], color: 1, dashed: true },
-          { label: D.legend[3], color: 3 },
-          { label: D.legend[4], color: 4 },
-          { label: D.legend[5], color: 0 },
-          { label: D.legend[6], color: 2 },
-        ]}
-        palette={palette}
-      />
+      <ChartLegend items={legend} palette={palette} hidden={hidden} onToggle={toggleHidden} />
       <p className="hw1-caption hw4-line" aria-live="polite">{stats ? D.caption(stats) : ''}</p>
       <Paras list={D.after} />
     </div>
@@ -980,12 +990,7 @@ const TryBessel = ({ params, text, palette }) => {
           palette={palette}
           tip={tip}
           wide
-          legend={[
-            { label: B.legend[0], color: 2, dashed: true },
-            { label: B.legend[1], color: 1, dashed: true },
-            { label: B.legend[2], color: 0 },
-            { label: B.legend[3], color: 1 },
-          ]}
+          legend={view.legends.bessel(text)}
         />
       </div>
       <p className="hw1-caption hw4-line" aria-live={playing ? 'off' : 'polite'}>{B.status(state, law)}</p>
@@ -1038,11 +1043,7 @@ const TryIntervals = ({ params, text, palette }) => {
           palette={palette}
           tip={tip}
           wide
-          legend={[
-            { label: I.legend[0], color: 2 },
-            { label: I.legend[1], color: 1 },
-            { label: I.legend[2], color: 6, dashed: true },
-          ]}
+          legend={view.legends.intervals(text)}
         />
       </div>
       <p className="hw1-caption hw4-line" aria-live="polite">{I.counts(current.misses, level, (batch + 1) * view.INTERVAL_SIZE, totalMisses)}</p>

@@ -1153,7 +1153,7 @@ function lineLayout(data, width) {
  * the one of `colorIndex`; the legend is written in the page, under the
  * figure, where it can be read and translated.
  */
-export function drawLineChart(canvas, { x, series, logX = false, logY = false, yMin = 0, yMax = 1, yTicks = [], xTicks = [], yFormat = null, decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
+export function drawLineChart(canvas, { x, series, logX = false, logY = false, yMin = 0, yMax = 1, yTicks = [], xTicks = [], yFormat = null, hidden = [], decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
   const pal = { ...DEFAULT_PALETTE, ...palette };
   const { ctx, width, height } = setupCanvas(canvas, LINE_ASPECT, knownWidth);
   const { margin, w, h, px } = lineLayout({ x, logX }, width);
@@ -1194,6 +1194,8 @@ export function drawLineChart(canvas, { x, series, logX = false, logY = false, y
   ctx.rect(margin.left, margin.top, w, h);
   ctx.clip();
   series.forEach((s, i) => {
+    // a series hidden from the legend still counts for the axes, it is just not drawn
+    if (hidden.includes(`series:${i}`)) return;
     const color = pal.series[(s.colorIndex ?? i) % pal.series.length];
     const points = x.map((v, j) => [px(v), s.values[j]]).filter(([, v]) => shown(v));
     if (s.band) {
@@ -1246,7 +1248,7 @@ function histLayout(data, width) {
  * one value per bar, a dashed outline) and a curve (`curve`, points [x, y]
  * of a density, such as the normal one). The legend is in the page.
  */
-export function drawHistogram(canvas, { x0, x1, bars, expected = null, curve = null, yMax = null, xTicks = [], decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
+export function drawHistogram(canvas, { x0, x1, bars, expected = null, curve = null, yMax = null, xTicks = [], hidden = [], decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
   const pal = { ...DEFAULT_PALETTE, ...palette };
   const { ctx, width, height } = setupCanvas(canvas, HIST_ASPECT, knownWidth);
   const { margin, w, h, px } = histLayout({ x0, x1 }, width);
@@ -1288,14 +1290,14 @@ export function drawHistogram(canvas, { x0, x1, bars, expected = null, curve = n
   ctx.clip();
   ctx.fillStyle = pal.series[0];
   ctx.globalAlpha = 0.85;
-  for (const b of bars) {
+  for (const b of hidden.includes('bars') ? [] : bars) {
     const left = px(b.from);
     const right = px(b.to);
     const gap = right - left > 4 ? 0.6 : 0;
     ctx.fillRect(left + gap, py(b.value), Math.max(0.8, right - left - 2 * gap), margin.top + h - py(b.value));
   }
   ctx.globalAlpha = 1;
-  if (expected) {
+  if (expected && !hidden.includes('expected')) {
     ctx.strokeStyle = pal.series[1];
     ctx.lineWidth = 1.5;
     ctx.setLineDash([5, 4]);
@@ -1308,7 +1310,7 @@ export function drawHistogram(canvas, { x0, x1, bars, expected = null, curve = n
     ctx.stroke();
     ctx.setLineDash([]);
   }
-  if (curve && curve.length > 1) {
+  if (curve && curve.length > 1 && !hidden.includes('curve')) {
     ctx.strokeStyle = pal.series[2];
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -1330,7 +1332,7 @@ function qqLayout(data, width) {
 }
 
 /** Normal quantile plot: points [theoretical, sample] and the line y = x, on the same range [lo, hi] on both axes. */
-export function drawQQ(canvas, { points, lo, hi, ticks = [], decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
+export function drawQQ(canvas, { points, lo, hi, ticks = [], hidden = [], decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
   const pal = { ...DEFAULT_PALETTE, ...palette };
   const { ctx, width, height } = setupCanvas(canvas, QQ_ASPECT, knownWidth);
   const { margin, w, h, px, py } = qqLayout({ lo, hi }, width);
@@ -1357,16 +1359,18 @@ export function drawQQ(canvas, { points, lo, hi, ticks = [], decimal = '.', widt
   ctx.beginPath();
   ctx.rect(margin.left, margin.top, w, h);
   ctx.clip();
-  ctx.strokeStyle = pal.series[1];
-  ctx.setLineDash([5, 4]);
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(px(lo), py(lo));
-  ctx.lineTo(px(hi), py(hi));
-  ctx.stroke();
-  ctx.setLineDash([]);
+  if (!hidden.includes('line')) {
+    ctx.strokeStyle = pal.series[1];
+    ctx.setLineDash([5, 4]);
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(px(lo), py(lo));
+    ctx.lineTo(px(hi), py(hi));
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
   ctx.fillStyle = pal.series[0];
-  for (const [a, b] of points) {
+  for (const [a, b] of hidden.includes('points') ? [] : points) {
     ctx.beginPath();
     ctx.arc(px(a), py(b), 2.4, 0, 2 * Math.PI);
     ctx.fill();
@@ -1400,6 +1404,7 @@ export function chartHitTest(draw, data, width, x, y) {
   if (draw === drawQQ) {
     const { margin, w, h, px, py } = qqLayout(data, width);
     if (x < margin.left || x > margin.left + w || y < margin.top || y > margin.top + h) return null;
+    if ((data.hidden || []).includes('points')) return null;
     let index = -1;
     let best = 144;
     data.points.forEach(([a, b], i) => {
@@ -1415,6 +1420,7 @@ export function chartHitTest(draw, data, width, x, y) {
   }
   const { margin, w, h, px } = histLayout(data, width);
   if (x < margin.left || x > margin.left + w || y < margin.top || y > margin.top + h) return null;
+  if ((data.hidden || []).includes('bars')) return null;
   const index = data.bars.findIndex((b) => x >= px(b.from) && x < px(b.to));
   if (index < 0) return null;
   const b = data.bars[index];
