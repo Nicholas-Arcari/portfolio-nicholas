@@ -1839,6 +1839,47 @@ body.dark-mode .hw2a-subst-row.is-cipher .hw2a-subst-head {
 .hw2a-legend span.is-dashed {
     border-top-style: dashed;
 }
+/* Le voci della legenda sono pulsanti: premute (l'impostazione iniziale)
+   la loro parte del grafico si vede, rilasciate si nasconde */
+.hw-legend button {
+    all: unset;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    padding: 0.15em 0.35em;
+    border-radius: 3px;
+    /* il tema da' a ogni pulsante il testo bianco con !important */
+    color: inherit !important;
+    font: inherit;
+    line-height: 1.4;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+.hw-legend button:hover {
+    color: #d52349 !important;
+    background: rgba(213, 35, 73, 0.06);
+}
+.hw-legend button:focus-visible {
+    outline: 2px solid #d52349;
+    outline-offset: 1px;
+}
+.hw-legend button.is-off {
+    opacity: 0.45;
+    text-decoration: line-through;
+}
+.hw-legend span.is-box {
+    width: 0.85em;
+    height: 0.85em;
+    border-top: 0;
+    border-radius: 2px;
+}
+body.dark-mode .hw-legend button:hover {
+    color: #e94560 !important;
+    background: rgba(233, 69, 96, 0.08);
+}
+body.dark-mode .hw-legend button:focus-visible {
+    outline-color: #e94560;
+}
 
 /* Tabelle */
 .hw2a-blocks td {

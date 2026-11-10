@@ -1023,36 +1023,101 @@ export function testSummary(s) {
 // ---------------------------------------------------------------------------
 
 /** The texts under the pointer: functions of the hit, built from the data of a chart and the words of a language (T = text.tips). */
+// ---------------------------------------------------------------------------
+// Le legende dei grafici, per la pagina e per il programma scaricabile: ogni
+// voce { label, color | paletteKey, dashed?, box?, parts } e' un pulsante che
+// nasconde le sue parti del disegno (`hidden` dei dati di ogni grafico)
+// ---------------------------------------------------------------------------
+
+const seriesItem = (label, color, i, extra = {}) => ({ label, color, parts: [`series:${i}`], ...extra });
+
+// la densita', l'area, i pezzi della regola e l'estremo (sezioni 1.3 e 2.3)
+const areaItems = (labels, withPieces) => [
+  { label: labels[0], color: 0, parts: ['curve'] },
+  { label: labels[1], color: 0, box: true, parts: ['area'] },
+  ...(withPieces ? [{ label: labels[2], color: 1, box: true, parts: ['pieces'] }] : []),
+  { label: labels[withPieces ? 3 : 2], paletteKey: 'reference', dashed: true, parts: ['marker'] },
+];
+
+// f e le strisce di Riemann, o f e gli strati di Lebesgue
+const integralItems = (labels, mode) => [
+  { label: labels[0], color: 4, parts: ['curve'] },
+  mode === 'riemann' ? { label: labels[1], color: 1, box: true, parts: ['strips'] } : { label: labels[1], color: 0, box: true, parts: ['layers'] },
+];
+
+export const legends = {
+  bell: (text) => areaItems(text.legends.bell(AREA.defaults.z), false),
+  area: (text) => areaItems(text.legends.area, true),
+  convergence: (text) => hw.RULES.map((r, i) => seriesItem(text.ruleNames[r], i, i)),
+  tails: (text) => [seriesItem(text.tails.legend[0], 1, 0), seriesItem(text.tails.legend[1], 2, 1)],
+  alarm: (text) => [seriesItem(text.tryAlarm.legend[0], 0, 0), seriesItem(text.tryAlarm.legend[1], 1, 1), seriesItem(text.tryAlarm.legend[2], 6, 2, { dashed: true })],
+  ecdf: (text) => [seriesItem(text.data.legend[0], 0, 0), seriesItem(text.data.legend[1], 2, 1, { dashed: true })],
+  riemann: (text) => integralItems(text.legends.riemann, 'riemann'),
+  lebesgue: (text) => integralItems(text.legends.lebesgue, 'lebesgue'),
+  rearrangement: (text) => [seriesItem(text.legends.rearrangement[0], 4, 0), seriesItem(text.legends.rearrangement[1], 0, 1)],
+  compare: (text) => [
+    seriesItem(text.compare.legend[0], 1, 0),
+    seriesItem(text.compare.legend[1], 0, 1),
+    seriesItem(text.compare.legend[2], 1, 2, { dashed: true }),
+    seriesItem(text.compare.legend[3], 0, 3, { dashed: true }),
+  ],
+  traffic: (text) => [{ label: text.legends.traffic[0], color: 4, parts: ['curve'] }, { label: text.legends.traffic[1], color: 0, box: true, parts: ['layers'] }],
+  // la curva di durata e, con un solo pulsante, tutte le soglie
+  duration: (text, chart) => [seriesItem(text.legends.duration[0], 0, 0), { label: text.legends.duration[1], color: 6, dashed: true, parts: chart.series.slice(1).map((_, i) => `series:${i + 1}`) }],
+  estimates: (text) => [
+    { label: text.montecarlo.legend[0], color: 0, box: true, parts: ['bars'] },
+    { label: text.montecarlo.legend[1], color: 2, parts: ['curve'] },
+    { label: text.montecarlo.legend[2], color: 1, dashed: true, parts: ['marker'] },
+  ],
+  mcPath: (text) => [seriesItem(text.tryMc.legend[0], 0, 0), seriesItem(text.tryMc.legend[1], 1, 1, { dashed: true })],
+  cost: (text) => [seriesItem(text.efficiency.legend[0], 1, 0), seriesItem(text.efficiency.legend[1], 0, 1)],
+  thomae: (text) => [{ label: text.legends.thomae[0], color: 0, box: true, parts: ['bars'] }, { label: text.legends.thomae[1], color: 2, parts: ['curve'] }],
+  series: (text) => [seriesItem(text.series.legend[0], 1, 0), seriesItem(text.series.legend[1], 1, 1, { dashed: true }), seriesItem(text.series.legend[2], 0, 2)],
+  approximation: (text) => [
+    seriesItem(text.approximations.legend[0], 0, 0),
+    seriesItem(text.approximations.legend[1], 1, 1),
+    { label: text.approximations.legend[2], color: 6, dashed: true, parts: ['series:2', 'series:3'] },
+  ],
+  methods: (text) => hw.CDF_METHODS.map((key, i) => seriesItem(text.methodNames[key], METHOD_STYLE[key].colorIndex, i, { dashed: !!METHOD_STYLE[key].dashed })),
+};
+
+/** Whether series i of a chart is on screen: the reader can hide it from the legend (ChartLegend.jsx). */
+const seriesOn = (hidden, i) => !hidden.includes(`series:${i}`);
+
+/**
+ * The labels under the pointer, one factory per chart: each returns
+ * (hit, hidden) => text, where `hidden` lists the parts of the chart that
+ * the reader turned off in the legend, and the label leaves them out.
+ */
 export const tips = {
   area: (state, T) => (hit) => T.piece(state.chart.pieces[hit.index], hit.index, state.sign),
-  convergence: (study, T) => (hit) => T.convergence(study.rows[hit.index]),
-  newton: (rows, T) => (hit) => T.newton(rows[hit.index]),
-  tails: (rows, T) => (hit) => T.tail(rows[hit.index]),
-  alarm: (state, chart, T) => (hit) => T.alarm(chart.x[hit.index], state.events),
-  ecdf: (chart, T) => (hit) => {
+  convergence: (study, T) => (hit, hidden = []) => T.convergence(study.rows[hit.index], hw.RULES.filter((_, i) => seriesOn(hidden, i))),
+  newton: (rows, T) => (hit, hidden = []) => (seriesOn(hidden, 0) ? T.newton(rows[hit.index]) : null),
+  tails: (rows, T) => (hit, hidden = []) => T.tail(rows[hit.index], { subtraction: seriesOn(hidden, 0), direct: seriesOn(hidden, 1) }),
+  alarm: (state, chart, T) => (hit, hidden = []) => T.alarm(chart.x[hit.index], state.events, { normal: seriesOn(hidden, 0), heavy: seriesOn(hidden, 1) }),
+  ecdf: (chart, T) => (hit, hidden = []) => {
     const [x, F] = chart.points[hit.index];
-    return T.ecdf(x, F, hw.cdfStandard(x));
+    return T.ecdf(x, F, hw.cdfStandard(x), { empirical: seriesOn(hidden, 0), normal: seriesOn(hidden, 1) });
   },
   strip: (chart, T) => (hit) => T.strip(chart.strips[hit.index], chart.kind),
   level: (chart, T) => (hit) => T.level(chart.levels[hit.index - 1], chart.levels[hit.index], (chart.sets[hit.index - 1] || []).reduce((s, [a, b]) => s + b - a, 0), (chart.sets[hit.index - 1] || []).length),
   traffic: (chart, T) => (hit) => T.traffic(chart.levels[hit.index], chart.sets[hit.index - 1] || []),
-  distribution: (chart, T) => (hit) => T.distribution(chart.x[hit.index], chart.series[0].values[hit.index]),
-  rearrangement: (chart, T) => (hit) => T.rearrangement(chart.x[hit.index], chart.series[1].values[hit.index], chart.series[0].values[hit.index]),
-  duration: (chart, T) => (hit) => T.duration(chart.x[hit.index], chart.series[0].values[hit.index]),
-  compare: (study, T) => (hit) => T.compare(study.rows[hit.index]),
+  distribution: (chart, T) => (hit, hidden = []) => (seriesOn(hidden, 0) ? T.distribution(chart.x[hit.index], chart.series[0].values[hit.index]) : null),
+  rearrangement: (chart, T) => (hit, hidden = []) => T.rearrangement(chart.x[hit.index], chart.series[1].values[hit.index], chart.series[0].values[hit.index], { sorted: seriesOn(hidden, 1), original: seriesOn(hidden, 0) }),
+  duration: (chart, T) => (hit, hidden = []) => (seriesOn(hidden, 0) ? T.duration(chart.x[hit.index], chart.series[0].values[hit.index]) : null),
+  compare: (study, T) => (hit, hidden = []) => T.compare(study.rows[hit.index], { riemann: seriesOn(hidden, 0), lebesgue: seriesOn(hidden, 1), riemannGap: seriesOn(hidden, 2), lebesgueGap: seriesOn(hidden, 3) }),
   histogram: (h, T) => (hit) => {
     const b = h.bars[hit.index];
     return b ? T.estimates(b.from, b.to, b.count, b.share) : null;
   },
-  // i sei grafici che prima non avevano etichetta: 1.7, 1.8, 2.3, 2.7, 2.8, 2.11
-  cost: (chart, T) => (hit) => T.cost(chart.x[hit.index], chart.series[0].values[hit.index], chart.series[1].values[hit.index]),
-  thomae: (chart, T) => (hit) => {
+  cost: (chart, T) => (hit, hidden = []) => T.cost(chart.x[hit.index], seriesOn(hidden, 0) ? chart.series[0].values[hit.index] : NaN, seriesOn(hidden, 1) ? chart.series[1].values[hit.index] : NaN),
+  thomae: (chart, T) => (hit, hidden = []) => {
     const b = chart.bars[hit.index];
     if (!b) return null;
     // lo stelo sta nella striscia che lo contiene; uno sul bordo fra due strisce conta per entrambe
     const at = b.p / b.q;
     const strips = [];
-    for (let i = 0; i < chart.strips; i++) if (at >= i / chart.strips - 1e-12 && at <= (i + 1) / chart.strips + 1e-12) strips.push(i);
+    if (!hidden.includes('curve')) for (let i = 0; i < chart.strips; i++) if (at >= i / chart.strips - 1e-12 && at <= (i + 1) / chart.strips + 1e-12) strips.push(i);
     return T.thomae(b.p, b.q, strips.map((i) => ({ from: i / chart.strips, to: (i + 1) / chart.strips, top: 1 / hw.smallestDenominator(i, chart.strips) })));
   },
   bell: (chart, T) => (hit) => {
@@ -1061,18 +1126,25 @@ export const tips = {
     const [x, density] = point;
     return T.bell(x, density, hw.normalCdf((x - chart.mu) / chart.sigma));
   },
-  series: (chart, T) => (hit) => {
+  series: (chart, T) => (hit, hidden = []) => {
     const p = chart.path[hit.index];
-    return p ? T.series(chart.z, p) : null;
+    return p ? T.series(chart.z, p, { alternating: seriesOn(hidden, 0), bound: seriesOn(hidden, 1), positive: seriesOn(hidden, 2) }) : null;
   },
-  approximation: (chart, T) => (hit) => T.approximation(chart.x[hit.index], chart.series[0].values[hit.index], chart.series[1].values[hit.index], chart.series[2].values[hit.index]),
-  methods: (chart, T, names) => (hit) => {
+  approximation: (chart, T) => (hit, hidden = []) =>
+    T.approximation(
+      chart.x[hit.index],
+      seriesOn(hidden, 0) ? chart.series[0].values[hit.index] : null,
+      seriesOn(hidden, 1) ? chart.series[1].values[hit.index] : null,
+      seriesOn(hidden, 2) ? chart.series[2].values[hit.index] : null,
+    ),
+  methods: (chart, T, names) => (hit, hidden = []) => {
     const z = chart.x[hit.index];
-    return T.methods(z, hw.CDF_METHODS.map((key) => ({ name: names[key], error: Math.abs(hw.cdfBy[key](z) - hw.referencePhi(z)) })));
+    const shown = hw.CDF_METHODS.filter((_, i) => seriesOn(hidden, i));
+    return T.methods(z, shown.map((key) => ({ name: names[key], error: Math.abs(hw.cdfBy[key](z) - hw.referencePhi(z)) })));
   },
-  mcPath: (run, T) => (hit) => {
+  mcPath: (run, T) => (hit, hidden = []) => {
     const p = run.path[hit.index];
-    return p ? T.mcPath(p, run.exact) : null;
+    return p ? T.mcPath(p, run.exact, { estimate: seriesOn(hidden, 0), exact: seriesOn(hidden, 1) }) : null;
   },
 };
 

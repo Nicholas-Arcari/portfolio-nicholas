@@ -119,7 +119,11 @@ const formulas = (content, label = null) => [label && subtitle(label), h('pre', 
 // The width of every chart comes from the ResizeObserver, measured after
 // layout; the height is set at once, the drawing happens a few
 // milliseconds per frame.
-const charts = new Map(); // canvas -> { draw, data, width, detach, link }
+const charts = new Map(); // canvas -> { draw, data, width, detach, link, tip, hidden }
+
+// what a chart draws: its data, without the parts hidden from the legend
+const shownData = (chart) => (chart.hidden.length ? { ...chart.data, hidden: chart.hidden } : chart.data);
+
 const resizer = new ResizeObserver((entries) => {
   for (const entry of entries) {
     const canvas = entry.target;
@@ -127,51 +131,123 @@ const resizer = new ResizeObserver((entries) => {
     const width = Math.round(entry.contentRect.width);
     if (!chart || width <= 0 || width === chart.width) continue;
     chart.width = width;
-    canvas.style.height = `${hw.chartHeight(chart.draw, chart.data, width)}px`;
+    canvas.style.height = `${hw.chartHeight(chart.draw, shownData(chart), width)}px`;
     view.scheduleFrameJob(() => {
-      if (charts.get(canvas) === chart && chart.width === width) chart.draw(canvas, { ...chart.data, width }, palette());
+      if (charts.get(canvas) === chart && chart.width === width) chart.draw(canvas, { ...shownData(chart), width }, palette());
     });
   }
 });
 
-/** The legend of a chart, in the page: { label, color?, dashed? }. */
-function legend(items) {
+/** Ties the label under the pointer to a chart: it describes what is on screen, and leaves out the hidden parts. */
+function attachTip(canvas, chart) {
+  if (chart.detach) chart.detach();
+  const tip = chart.tip;
+  chart.detach = tip ? hw.attachChartTooltip(canvas, { draw: chart.draw, data: shownData(chart), describe: (hit) => tip(hit, chart.hidden), link: chart.link }) : null;
+}
+
+/** Draws a chart again at its width, with its data and hidden parts. */
+function redraw(canvas, chart) {
+  if (chart.width > 0) {
+    canvas.style.height = `${hw.chartHeight(chart.draw, shownData(chart), chart.width)}px`;
+    chart.draw(canvas, { ...shownData(chart), width: chart.width }, palette());
+  }
+}
+
+/** The parts of the drawing covered by the hidden items of a legend. */
+const partsOf = (items, hidden) => items.flatMap((item, i) => (hidden.has(i) ? item.parts || [] : []));
+
+/**
+ * The legend of a chart, or of a group of charts: { label, color? |
+ * paletteKey?, dashed?, box?, parts }. Every item is a button: pressed (as
+ * the page opens) its parts are on screen, released they are hidden;
+ * onChange(parts) receives the hidden parts after every press.
+ */
+function legend(items, onChange = null) {
   const pal = palette();
+  const hidden = new Set();
   return h(
     'ul',
     { class: 'series-legend' },
     items.map((item, i) => {
-      const color = pal.series[item.color ?? i];
-      return h('li', null, h('span', { class: item.dashed ? 'is-dashed' : null, 'aria-hidden': 'true', style: { borderColor: color, backgroundColor: item.dashed ? 'transparent' : color } }), item.label);
+      const color = item.paletteKey ? pal[item.paletteKey] : pal.series[(item.color ?? i) % pal.series.length];
+      let swatch = null;
+      if (item.box) swatch = 'is-box';
+      else if (item.dashed) swatch = 'is-dashed';
+      const button = h(
+        'button',
+        {
+          type: 'button',
+          'aria-pressed': 'true',
+          onclick: () => {
+            if (hidden.has(i)) hidden.delete(i);
+            else hidden.add(i);
+            button.setAttribute('aria-pressed', String(!hidden.has(i)));
+            button.classList.toggle('is-off', hidden.has(i));
+            if (onChange) onChange(partsOf(items, hidden));
+          },
+        },
+        h('span', { class: swatch, 'aria-hidden': 'true', style: { borderColor: color, backgroundColor: item.box ? color : 'transparent' } }),
+        item.label,
+      );
+      return h('li', null, button);
     }),
   );
 }
 
-function figure(caption, draw, data, { wide = false, tip: given = null, tipOf = null, items = null, note = null, link = null } = {}) {
+/** Hides the cells and rows of a table that belong to hidden parts (data-part), and shows the others. */
+function hideParts(tableEl, parts) {
+  for (const el of tableEl.querySelectorAll('[data-part]')) el.hidden = parts.includes(el.dataset.part);
+}
+
+/** Hides parts of a chart (the legend of a group of charts calls it on each of them). */
+function setHidden(fig, parts) {
+  const canvas = fig.querySelector('canvas.chart');
+  const chart = charts.get(canvas);
+  if (!chart) return;
+  chart.hidden = parts;
+  attachTip(canvas, chart);
+  redraw(canvas, chart);
+}
+
+/**
+ * A chart with its legend (`items`) and its label under the pointer.
+ * onHide(parts) runs when the reader hides or shows a part, for the table
+ * tied to the chart.
+ */
+function figure(caption, draw, data, { wide = false, tip: given = null, tipOf = null, items = null, note = null, link = null, onHide = null } = {}) {
   // tipOf(data): the label built from the same data the chart draws
   const tip = given || (tipOf ? tipOf(data) : null);
   const canvas = h('canvas', { class: 'chart', role: 'img', 'aria-label': caption });
-  const fig = h('figure', { class: wide ? 'figure wide' : 'figure' }, canvas, items && legend(items), note && h('p', { class: 'figure-note', text: note }), h('figcaption', { text: caption }));
-  const detach = tip ? hw.attachChartTooltip(canvas, { draw, data, describe: tip, link }) : null;
-  charts.set(canvas, { draw, data, width: -1, detach, link });
+  const chart = { draw, data, width: -1, detach: null, link, tip, hidden: [] };
+  const fig = h(
+    'figure',
+    { class: wide ? 'figure wide' : 'figure' },
+    canvas,
+    items &&
+      legend(items, (parts) => {
+        setHidden(fig, parts);
+        if (onHide) onHide(parts);
+      }),
+    note && h('p', { class: 'figure-note', text: note }),
+    h('figcaption', { text: caption }),
+  );
+  attachTip(canvas, chart);
+  charts.set(canvas, chart);
   resizer.observe(canvas);
   return fig;
 }
 
-/** Redraws a chart in place, with new data and labels, without replacing its canvas (no flicker while it plays or a slider moves). */
+/** Redraws a chart in place, with new data and labels, without replacing its canvas (no flicker while it plays or a slider moves); the hidden parts stay hidden. */
 function refreshFigure(fig, caption, data, tip) {
   const canvas = fig.querySelector('canvas.chart');
   const chart = charts.get(canvas);
   if (!chart) return;
-  if (chart.detach) chart.detach();
   chart.data = data;
-  chart.detach = tip ? hw.attachChartTooltip(canvas, { draw: chart.draw, data, describe: tip, link: chart.link }) : null;
+  chart.tip = tip;
+  attachTip(canvas, chart);
   canvas.setAttribute('aria-label', caption);
   fig.querySelector('figcaption').textContent = caption;
-  if (chart.width > 0) {
-    canvas.style.height = `${hw.chartHeight(chart.draw, data, chart.width)}px`;
-    chart.draw(canvas, { ...data, width: chart.width }, palette());
-  }
+  redraw(canvas, chart);
 }
 
 /** Replaces the content of a region, releasing the charts it contained and their labels. */
@@ -185,19 +261,25 @@ function fill(region, ...nodes) {
   region.replaceChildren(...nodes.flat(Infinity).filter((n) => n !== null && n !== undefined && n !== false));
 }
 
-/** A table: column headers, then rows of cells, each { text | node, class?, head?, title? } (head: a row header, th); `id` for a table tied to a chart (view.LINKED_TABLES). */
-function table(className, headers, rows, id = null) {
+/**
+ * A table: column headers, then rows of cells, each { text | node, class?,
+ * head?, title? } (head: a row header, th); `id` for a table tied to a chart
+ * (view.LINKED_TABLES). `columns` gives the part of the chart each column
+ * belongs to, and a row can have its own `part`: hideParts() hides them
+ * with their curve.
+ */
+function table(className, headers, rows, id = null, columns = []) {
   return h(
     'table',
     { id, class: `table ${className}` },
-    h('thead', null, h('tr', null, headers.map((x) => h('th', { text: x })))),
+    h('thead', null, h('tr', null, headers.map((x, i) => h('th', { text: x, 'data-part': columns[i] || null })))),
     h(
       'tbody',
       null,
       rows.map((row) => h(
         'tr',
-        { class: row.class || null },
-        row.cells.map((cell, i) => h(cell.head ? 'th' : 'td', { 'data-label': cell.head ? null : headers[i], class: cell.class || null, title: cell.title || null }, cell.node || cell.text)),
+        { class: row.class || null, 'data-part': row.part || null },
+        row.cells.map((cell, i) => h(cell.head ? 'th' : 'td', { 'data-label': cell.head ? null : headers[i], class: cell.class || null, title: cell.title || null, 'data-part': columns[i] || null }, cell.node || cell.text)),
       )),
     ),
   );
@@ -299,7 +381,7 @@ function tryAreaBlock() {
     updateArea();
   });
   const st = view.areaState(a, F.decimal);
-  tryArea.fig = figure(T.chartTitle(st, a.rule), hw.drawQuadrature, st.chart, { wide: true, tip: view.tips.area(st, text.tips) });
+  tryArea.fig = figure(T.chartTitle(st, a.rule), hw.drawQuadrature, st.chart, { wide: true, tip: view.tips.area(st, text.tips), items: view.legends.area(text) });
   tryArea.line = h('p', { class: 'caption line', 'aria-live': 'polite' });
   return h(
     'div',
@@ -389,24 +471,23 @@ function convergenceBlock() {
   const C = text.convergence;
   const F = text.fmt;
   const study = hw.convergenceStudy();
+  // una regola nascosta nella legenda sparisce anche dalle colonne della tabella
+  const rules = table(
+    'compact convergence',
+    [C.cols.n, ...hw.RULES.map((r) => text.ruleNames[r])],
+    study.rows.map((r) => ({ cells: [{ text: F.int(r.n), head: true }, ...hw.RULES.map((rule) => ({ text: r.errors[rule] === null ? '-' : F.err(r.errors[rule]) }))] })),
+    view.LINKED_TABLES.convergence,
+    [null, ...hw.RULES.map((_, i) => `series:${i}`)],
+  );
   return [
     paras(C.intro),
     h(
       'div',
       { class: 'charts' },
-      figure(C.chartTitle(study.z), hw.drawLineChart, view.convergenceChart(study, F.decimal), { wide: true, tip: view.tips.convergence(study, text.tips), link: view.links.convergence, items: hw.RULES.map((r, i) => ({ label: text.ruleNames[r], color: i })) }),
+      figure(C.chartTitle(study.z), hw.drawLineChart, view.convergenceChart(study, F.decimal), { wide: true, tip: view.tips.convergence(study, text.tips), link: view.links.convergence, items: view.legends.convergence(text), onHide: (parts) => hideParts(rules, parts) }),
     ),
     subtitle(C.tableTitle),
-    h(
-      'div',
-      { class: 'scroll' },
-      table(
-        'compact convergence',
-        [C.cols.n, ...hw.RULES.map((r) => text.ruleNames[r])],
-        study.rows.map((r) => ({ cells: [{ text: F.int(r.n), head: true }, ...hw.RULES.map((rule) => ({ text: r.errors[rule] === null ? '-' : F.err(r.errors[rule]) }))] })),
-        view.LINKED_TABLES.convergence,
-      ),
-    ),
+    h('div', { class: 'scroll' }, rules),
     paras(C.after(view.convergenceFacts(study))),
   ];
 }
@@ -466,16 +547,19 @@ function tailsBlock() {
   const F = text.fmt;
   const rows = hw.tailRows();
   const alarms = view.alarmRows();
+  // nascondere una curva toglie dalla tabella il suo valore e il suo errore
+  const tails = table(
+    'compact tails',
+    [T.cols.k, T.cols.reference, T.cols.subtraction, T.cols.subtractionError, T.cols.direct, T.cols.directError],
+    rows.map((r) => ({ cells: [{ text: String(r.k), head: true }, { text: F.sci(r.reference, 2) }, { text: F.sci(r.subtraction, 2) }, { text: F.err(r.subtractionError), class: r.subtractionError > 1e-6 ? 'over' : null }, { text: F.sci(r.direct, 2) }, { text: F.err(r.directError) }] })),
+    view.LINKED_TABLES.tails,
+    [null, null, 'series:0', 'series:0', 'series:1', 'series:1'],
+  );
   return [
     paras(T.intro),
     subtitle(T.tableTitle),
-    table(
-      'compact tails',
-      [T.cols.k, T.cols.reference, T.cols.subtraction, T.cols.subtractionError, T.cols.direct, T.cols.directError],
-      rows.map((r) => ({ cells: [{ text: String(r.k), head: true }, { text: F.sci(r.reference, 2) }, { text: F.sci(r.subtraction, 2) }, { text: F.err(r.subtractionError), class: r.subtractionError > 1e-6 ? 'over' : null }, { text: F.sci(r.direct, 2) }, { text: F.err(r.directError) }] })),
-      view.LINKED_TABLES.tails,
-    ),
-    h('div', { class: 'charts' }, figure(T.chartTitle, hw.drawLineChart, view.tailChart(rows, F.decimal), { wide: true, tip: view.tips.tails(rows, text.tips), link: view.links.tails, items: [{ label: T.legend[0], color: 1 }, { label: T.legend[1], color: 2 }] })),
+    tails,
+    h('div', { class: 'charts' }, figure(T.chartTitle, hw.drawLineChart, view.tailChart(rows, F.decimal), { wide: true, tip: view.tips.tails(rows, text.tips), link: view.links.tails, items: view.legends.tails(text), onHide: (parts) => hideParts(tails, parts) })),
     paras(T.after(view.tailFacts(rows))),
     paras(T.alarmIntro),
     subtitle(T.alarmTitle),
@@ -495,7 +579,7 @@ function tryAlarmBlock() {
   const F = text.fmt;
   const st = view.alarmState(state.alarm.events, state.alarm.rate);
   const data = view.alarmChart(st, F.decimal);
-  tryAlarm.fig = figure(T.chartTitle, hw.drawLineChart, data, { wide: true, tip: view.tips.alarm(st, data, text.tips), items: [{ label: T.legend[0], color: 0 }, { label: T.legend[1], color: 1 }, { label: T.legend[2], color: 6, dashed: true }] });
+  tryAlarm.fig = figure(T.chartTitle, hw.drawLineChart, data, { wide: true, tip: view.tips.alarm(st, data, text.tips), items: view.legends.alarm(text) });
   tryAlarm.line = h('p', { class: 'caption line', 'aria-live': 'polite', text: T.result(st) });
   return h(
     'div',
@@ -645,7 +729,7 @@ function updateData() {
     fill(regions.data, pending());
     return;
   }
-  const items = [{ label: D.legend[0], color: 0 }, { label: D.legend[1], color: 2, dashed: true }];
+  const items = view.legends.ecdf(text);
   const normal = view.ecdfChart(s.normal, F.decimal);
   const heavy = view.ecdfChart(s.heavy, F.decimal);
   fill(
@@ -805,22 +889,24 @@ function updateEfficiency() {
     study = s.efficiency[state.fnKey];
   }
   const rows = s ? view.efficiencyRows(s) : null;
+  // le due curve sono le colonne Riemann e Lebesgue della tabella
+  const costs = rows
+    ? table(
+        'compact efficiency',
+        [E.cols.name, E.cols.target, E.cols.riemann, E.cols.lebesgue],
+        rows.flatMap((r) => r.targets.map((t) => ({ cells: [{ text: text.functionNames[r.key], head: true }, { text: F.pow(Math.round(Math.log10(t.target))) }, { text: E.cell(t.riemann, 'riemann') }, { text: E.cell(t.lebesgue, 'lebesgue') }] }))),
+        null,
+        [null, null, 'series:0', 'series:1'],
+      )
+    : null;
   fill(
     regions.efficiency,
     !study
       ? pending()
-      : h('div', { class: 'charts' }, figure(E.chartTitle(text.functionNames[state.fnKey]), hw.drawLineChart, view.efficiencyChart(study, F.decimal), { wide: true, tipOf: (data) => view.tips.cost(data, text.tips), items: [{ label: E.legend[0], color: 1 }, { label: E.legend[1], color: 0 }] })),
+      : h('div', { class: 'charts' }, figure(E.chartTitle(text.functionNames[state.fnKey]), hw.drawLineChart, view.efficiencyChart(study, F.decimal), { wide: true, tipOf: (data) => view.tips.cost(data, text.tips), items: view.legends.cost(text), onHide: (parts) => costs && hideParts(costs, parts) })),
     rows && [
       subtitle(E.tableTitle),
-      h(
-        'div',
-        { class: 'scroll' },
-        table(
-          'compact efficiency',
-          [E.cols.name, E.cols.target, E.cols.riemann, E.cols.lebesgue],
-          rows.flatMap((r) => r.targets.map((t) => ({ cells: [{ text: text.functionNames[r.key], head: true }, { text: F.pow(Math.round(Math.log10(t.target))) }, { text: E.cell(t.riemann, 'riemann') }, { text: E.cell(t.lebesgue, 'lebesgue') }] }))),
-        ),
-      ),
+      h('div', { class: 'scroll' }, costs),
       paras(E.after(view.efficiencyFacts(s))),
     ],
   );
@@ -843,7 +929,7 @@ function pathologicalBlock() {
       }),
     ),
     h('p', { text: P.thomaeIntro }),
-    h('div', { class: 'charts' }, figure(P.chartTitle(view.thomaeUpper()), hw.drawHistogram, view.thomaeChart(F.decimal), { wide: true, tipOf: (data) => view.tips.thomae(data, text.tips) })),
+    h('div', { class: 'charts' }, figure(P.chartTitle(view.thomaeUpper()), hw.drawHistogram, view.thomaeChart(F.decimal), { wide: true, tipOf: (data) => view.tips.thomae(data, text.tips), items: view.legends.thomae(text) })),
     subtitle(P.tableTitle),
     h(
       'div',
@@ -882,7 +968,7 @@ function exercise2Section() {
     title('hw5-area', 1, S.area),
     paras(text.area.intro),
     formulas(text.formulas.cdf),
-    h('div', { class: 'charts' }, figure(text.area.chartTitle, hw.drawQuadrature, view.bellChart(F.decimal), { wide: true, tipOf: (data) => view.tips.bell(data, text.tips) })),
+    h('div', { class: 'charts' }, figure(text.area.chartTitle, hw.drawQuadrature, view.bellChart(F.decimal), { wide: true, tipOf: (data) => view.tips.bell(data, text.tips), items: view.legends.bell(text) })),
     tryAreaBlock(),
     title('hw5-rules', 1, S.rules),
     rulesBlock(),
@@ -960,20 +1046,20 @@ function seriesBlock() {
   const S = text.series;
   const F = text.fmt;
   const rows = hw.seriesRows();
-  series.fig = figure(S.chartTitle(series.z), hw.drawLineChart, view.seriesChart(series.z, F.decimal), { wide: true, tipOf: (data) => view.tips.series(data, text.tips), items: [{ label: S.legend[0], color: 1 }, { label: S.legend[1], color: 1, dashed: true }, { label: S.legend[2], color: 0 }] });
+  // la serie degli appunti ha quattro colonne, quella a termini positivi due; il limite non ne ha
+  const terms = table(
+    'compact series',
+    [S.cols.z, S.cols.altTerms, S.cols.largest, S.cols.lost, S.cols.altError, S.cols.posTerms, S.cols.posError],
+    rows.map((r) => ({ cells: [{ text: String(r.z), head: true }, { text: String(r.alternating.terms) }, { text: F.sci(r.alternating.largest) }, { text: F.num(r.alternating.lost, 1) }, { text: F.err(r.alternating.error) }, { text: String(r.positive.terms) }, { text: F.err(r.positive.error) }] })),
+    null,
+    [null, 'series:0', 'series:0', 'series:0', 'series:0', 'series:2', 'series:2'],
+  );
+  series.fig = figure(S.chartTitle(series.z), hw.drawLineChart, view.seriesChart(series.z, F.decimal), { wide: true, tipOf: (data) => view.tips.series(data, text.tips), items: view.legends.series(text), onHide: (parts) => hideParts(terms, parts) });
   return [
     paras(S.intro),
     formulas(S.formulas),
     subtitle(S.tableTitle),
-    h(
-      'div',
-      { class: 'scroll' },
-      table(
-        'compact series',
-        [S.cols.z, S.cols.altTerms, S.cols.largest, S.cols.lost, S.cols.altError, S.cols.posTerms, S.cols.posError],
-        rows.map((r) => ({ cells: [{ text: String(r.z), head: true }, { text: String(r.alternating.terms) }, { text: F.sci(r.alternating.largest) }, { text: F.num(r.alternating.lost, 1) }, { text: F.err(r.alternating.error) }, { text: String(r.positive.terms) }, { text: F.err(r.positive.error) }] })),
-      ),
-    ),
+    h('div', { class: 'scroll' }, terms),
     choices(S.chooseLabel, view.SERIES_CHOICES.map((v) => [v, F.plain(v)]), series.z, (z) => {
       series.z = z;
       const data = view.seriesChart(z, F.decimal);
@@ -989,7 +1075,7 @@ function approximationsBlock() {
   const F = text.fmt;
   return [
     paras(A.intro),
-    h('div', { class: 'charts' }, figure(A.chartTitle, hw.drawLineChart, view.approximationChart(F.decimal), { wide: true, tipOf: (data) => view.tips.approximation(data, text.tips), items: [{ label: A.legend[0], color: 0 }, { label: A.legend[1], color: 1 }, { label: A.legend[2], color: 6, dashed: true }] })),
+    h('div', { class: 'charts' }, figure(A.chartTitle, hw.drawLineChart, view.approximationChart(F.decimal), { wide: true, tipOf: (data) => view.tips.approximation(data, text.tips), items: view.legends.approximation(text) })),
     paras(A.after(view.approximationFacts())),
   ];
 }
@@ -1031,20 +1117,18 @@ function updateMethods() {
   const F = text.fmt;
   const s = computation.shown;
   const rows = view.methodsRows(s);
+  // ogni metodo e' una curva del grafico e una riga della tabella: nascosto nella legenda, sparisce da entrambi
+  const methods = table(
+    'compact methods',
+    [M.cols.method, M.cols.absolute, M.cols.relative, M.cols.exp, M.cols.terms, M.cols.time],
+    rows.map((r) => ({ class: r.key === 'ours' ? 'ours' : null, part: `series:${hw.CDF_METHODS.indexOf(r.key)}`, cells: [{ text: text.methodNames[r.key], head: true }, { text: F.err(r.absolute) }, { text: M.relativeCell(r.relative) }, { text: F.int(r.exp) }, { text: r.terms ? F.int(r.terms) : '-' }, { text: M.timeCell(r.time) }] })),
+  );
   fill(
     regions.methods,
     subtitle(M.tableTitle),
-    h(
-      'div',
-      { class: 'scroll' },
-      table(
-        'compact methods',
-        [M.cols.method, M.cols.absolute, M.cols.relative, M.cols.exp, M.cols.terms, M.cols.time],
-        rows.map((r) => ({ class: r.key === 'ours' ? 'ours' : null, cells: [{ text: text.methodNames[r.key], head: true }, { text: F.err(r.absolute) }, { text: M.relativeCell(r.relative) }, { text: F.int(r.exp) }, { text: r.terms ? F.int(r.terms) : '-' }, { text: M.timeCell(r.time) }] })),
-      ),
-    ),
+    h('div', { class: 'scroll' }, methods),
     !s && pending(),
-    h('div', { class: 'charts' }, figure(M.chartTitle, hw.drawLineChart, view.methodsChart(F.decimal), { wide: true, tipOf: (data) => view.tips.methods(data, text.tips, text.methodNames), items: hw.CDF_METHODS.map((key) => ({ label: text.methodNames[key], color: view.METHOD_STYLE[key].colorIndex, dashed: !!view.METHOD_STYLE[key].dashed })) })),
+    h('div', { class: 'charts' }, figure(M.chartTitle, hw.drawLineChart, view.methodsChart(F.decimal), { wide: true, tipOf: (data) => view.tips.methods(data, text.tips, text.methodNames), items: view.legends.methods(text), onHide: (parts) => hideParts(methods, parts) })),
     paras(M.after(view.methodsFacts(s))),
   );
 }
@@ -1207,7 +1291,7 @@ function updateRiemann() {
   const keys = ['left', 'right', 'midpoint', 'lower', 'upper', 'gap'];
   fill(
     regions.riemann,
-    h('div', { class: 'charts' }, figure(R.chartTitle(name, 10, kind), hw.drawIntegral, chart.chart, { wide: true, tip: view.tips.strip(chart.chart, text.tips) })),
+    h('div', { class: 'charts' }, figure(R.chartTitle(name, 10, kind), hw.drawIntegral, chart.chart, { wide: true, tip: view.tips.strip(chart.chart, text.tips), items: view.legends.riemann(text) })),
     subtitle(R.tableTitle(reference)),
     table('discussion sums', [R.cols.n, ...keys.map((k) => R.cols[k])], rows.map((r) => ({ cells: [{ text: String(r.n), head: true }, ...sumCells(r, keys, F)] }))),
     h('p', { class: 'note', text: R.note }),
@@ -1227,7 +1311,7 @@ function updateLebesgue() {
   const rear = view.rearrangementChart(spec, F.decimal);
   fill(
     regions.lebesgue,
-    h('div', { class: 'charts' }, figure(L.chartTitle(name, 10), hw.drawIntegral, chart.chart, { wide: true, tip: view.tips.level(chart.chart, text.tips) })),
+    h('div', { class: 'charts' }, figure(L.chartTitle(name, 10), hw.drawIntegral, chart.chart, { wide: true, tip: view.tips.level(chart.chart, text.tips), items: view.legends.lebesgue(text) })),
     subtitle(L.tableTitle(reference)),
     table('discussion sums', [L.cols.K, ...keys.map((k) => L.cols[k])], rows.map((r) => ({ cells: [{ text: String(r.K), head: true }, ...sumCells(r, keys, F)] }))),
     state.fnKey === 'unbounded' && h('p', { class: 'note', text: L.capNote(spec.cap, 2 - 1 / spec.cap) }),
@@ -1235,7 +1319,7 @@ function updateLebesgue() {
       'div',
       { class: 'charts' },
       figure(L.distributionTitle, hw.drawLineChart, dist, { tip: view.tips.distribution(dist, text.tips) }),
-      figure(L.rearrangementTitle, hw.drawLineChart, rear.chart, { tip: view.tips.rearrangement(rear.chart, text.tips) }),
+      figure(L.rearrangementTitle, hw.drawLineChart, rear.chart, { tip: view.tips.rearrangement(rear.chart, text.tips), items: view.legends.rearrangement(text) }),
     ),
     paras(L.after(rows, state.fnKey)),
   );
@@ -1280,8 +1364,8 @@ function updateSlices() {
   const l = view.integralChart(spec, 'lebesgue', { K }, F.decimal);
   // the two figures are kept while only n and K change; a new function rebuilds them
   if (!trySlices.riemann || trySlices.spec !== spec) {
-    trySlices.riemann = figure(T.riemannTitle(n), hw.drawIntegral, r.chart, { tip: view.tips.strip(r.chart, text.tips) });
-    trySlices.lebesgue = figure(T.lebesgueTitle(K), hw.drawIntegral, l.chart, { tip: view.tips.level(l.chart, text.tips) });
+    trySlices.riemann = figure(T.riemannTitle(n), hw.drawIntegral, r.chart, { tip: view.tips.strip(r.chart, text.tips), items: view.legends.riemann(text) });
+    trySlices.lebesgue = figure(T.lebesgueTitle(K), hw.drawIntegral, l.chart, { tip: view.tips.level(l.chart, text.tips), items: view.legends.lebesgue(text) });
     trySlices.spec = spec;
     fill(regions.slicesCharts, trySlices.riemann, trySlices.lebesgue);
   } else {
@@ -1334,6 +1418,24 @@ function updateCompare() {
   // the nine functions come with the simulation; the reader's one is compared here
   const study = state.fnKey === hw.CUSTOM ? customStudy() : s ? s.compare[state.fnKey] : null;
   const summary = s ? view.summaryRows(s) : null;
+  // le quattro curve sono le quattro colonne della tabella, nello stesso ordine
+  const compared = study
+    ? table(
+        'compact compare',
+        [C.cols.n, C.cols.riemann, C.cols.lebesgue, C.cols.riemannGap, C.cols.lebesgueGap],
+        study.rows.map((r) => ({
+          cells: [
+            { text: F.int(r.n), head: true },
+            { text: F.err(r.errors.riemann), class: r.errors.riemann < r.errors.lebesgue ? 'win' : null },
+            { text: F.err(r.errors.lebesgue), class: r.errors.lebesgue < r.errors.riemann ? 'win' : null },
+            { text: F.err(r.gaps.riemann) },
+            { text: F.err(r.gaps.lebesgue) },
+          ],
+        })),
+        view.LINKED_TABLES.compare,
+        [null, 'series:0', 'series:1', 'series:2', 'series:3'],
+      )
+    : null;
   fill(
     regions.compare,
     state.fnKey === hw.CUSTOM && h('p', { class: 'note', text: C.customPending }),
@@ -1347,27 +1449,15 @@ function updateCompare() {
             wide: true,
             tip: view.tips.compare(study, text.tips),
             link: view.links.compare,
-            items: [{ label: C.legend[0], color: 1 }, { label: C.legend[1], color: 0 }, { label: C.legend[2], color: 1, dashed: true }, { label: C.legend[3], color: 0, dashed: true }],
+            items: view.legends.compare(text),
+            onHide: (parts) => hideParts(compared, parts),
           }),
         ),
         subtitle(C.tableTitle),
         h(
           'div',
           { class: 'scroll' },
-          table(
-            'compact compare',
-            [C.cols.n, C.cols.riemann, C.cols.lebesgue, C.cols.riemannGap, C.cols.lebesgueGap],
-            study.rows.map((r) => ({
-              cells: [
-                { text: F.int(r.n), head: true },
-                { text: F.err(r.errors.riemann), class: r.errors.riemann < r.errors.lebesgue ? 'win' : null },
-                { text: F.err(r.errors.lebesgue), class: r.errors.lebesgue < r.errors.riemann ? 'win' : null },
-                { text: F.err(r.gaps.riemann) },
-                { text: F.err(r.gaps.lebesgue) },
-              ],
-            })),
-            view.LINKED_TABLES.compare,
-          ),
+          compared,
         ),
         paras(C.after(view.compareFacts(study), name)),
       ],
@@ -1393,14 +1483,14 @@ function trafficBlock() {
   const duration = view.durationChart(F.decimal);
   return [
     paras(T.intro),
-    h('div', { class: 'charts' }, figure(T.chartTitle, hw.drawIntegral, chart, { wide: true, tip: view.tips.traffic(chart, text.tips) })),
+    h('div', { class: 'charts' }, figure(T.chartTitle, hw.drawIntegral, chart, { wide: true, tip: view.tips.traffic(chart, text.tips), items: view.legends.traffic(text) })),
     subtitle(T.tableTitle),
     table(
       'discussion traffic',
       [T.cols.y, T.cols.hours, T.cols.minutes, T.cols.when],
       report.rows.map((r) => ({ cells: [{ text: F.int(r.y), head: true }, { text: F.num(r.hours, 3) }, { text: F.num(r.hours * 60, 1) }, { text: r.intervals.map(([a, b]) => `${view.clock(a)}-${view.clock(b)}`).join(', ') }] })),
     ),
-    h('div', { class: 'charts' }, figure(T.durationTitle, hw.drawLineChart, duration, { wide: true, tip: view.tips.duration(duration, text.tips) })),
+    h('div', { class: 'charts' }, figure(T.durationTitle, hw.drawLineChart, duration, { wide: true, tip: view.tips.duration(duration, text.tips), items: view.legends.duration(text, duration) })),
     paras(T.after(report)),
   ];
 }
@@ -1428,7 +1518,7 @@ function updateMc() {
       state.histKey = k;
       updateMc();
     }),
-    h('div', { class: 'charts' }, figure(M.histogramTitle(text.functionNames[state.histKey], s), hw.drawHistogram, hist, { wide: true, tip: view.tips.histogram(hist, text.tips), items: [{ label: M.legend[0], color: 0 }, { label: M.legend[1], color: 2 }, { label: M.legend[2], color: 1, dashed: true }] })),
+    h('div', { class: 'charts' }, figure(M.histogramTitle(text.functionNames[state.histKey], s), hw.drawHistogram, hist, { wide: true, tip: view.tips.histogram(hist, text.tips), items: view.legends.estimates(text) })),
     tests('coverage', s),
     paras(M.after(s)),
   );
@@ -1442,7 +1532,7 @@ function tryMcBlock() {
   tryMc.play = h('button', { type: 'button', class: 'btn', text: T.play, onclick: toggleMc });
   tryMc.line = h('p', { class: 'caption line', 'aria-live': 'polite' });
   tryMc.run = view.mcPath(state.target.seed, state.mc.key, state.mc.draw);
-  tryMc.fig = figure(T.chartTitle(text.functionNames[state.mc.key]), hw.drawLineChart, view.mcPathChart(tryMc.run, state.mc.shown, text.fmt.decimal), { wide: true, tip: view.tips.mcPath(tryMc.run, text.tips), items: [{ label: T.legend[0], color: 0 }, { label: T.legend[1], color: 1, dashed: true }] });
+  tryMc.fig = figure(T.chartTitle(text.functionNames[state.mc.key]), hw.drawLineChart, view.mcPathChart(tryMc.run, state.mc.shown, text.fmt.decimal), { wide: true, tip: view.tips.mcPath(tryMc.run, text.tips), items: view.legends.mcPath(text) });
   return h(
     'div',
     { class: 'try' },

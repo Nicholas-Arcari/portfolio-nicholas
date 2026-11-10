@@ -70,6 +70,17 @@ function formatters(decimal, thousands, na, times) {
   };
 }
 
+/**
+ * The labels under the pointer list only what is on screen: `show` says
+ * which parts of the chart the reader has not hidden (a missing key counts
+ * as shown), and a label with nothing left to say is null.
+ */
+const on = (show, key) => !show || show[key] !== false;
+const said = (head, items) => {
+  const kept = items.filter(Boolean);
+  return kept.length ? `${head}: ${kept.join(', ')}` : null;
+};
+
 /** A name inside a sentence: the first letter in lower case ("traffico di un giorno"). */
 const inline = (name) => name.charAt(0).toLowerCase() + name.slice(1);
 
@@ -887,32 +898,43 @@ const it = {
     return out;
   },
   ruleNames: ruleNamesIt,
+  // le legende dei grafici che prima non ne avevano: ogni voce si preme per nascondere la sua parte
+  legends: {
+    bell: (z) => ['densità φ', `area Φ(${IT.plain(z)})`, `estremo x = ${IT.plain(z)}`],
+    area: ['densità', 'area esatta', 'pezzi della regola', 'estremo x'],
+    riemann: ['f', 'strisce di Riemann'],
+    lebesgue: ['f', 'strati di Lebesgue'],
+    rearrangement: ['f originale', 'f riordinata dal valore più alto'],
+    traffic: ['traffico del giorno', 'strati sopra le soglie'],
+    duration: ['curva di durata', 'soglie da 350 Mb/s in su'],
+    thomae: ['f di Thomae: un’asta alta 1/q su ogni p/q', 'somma superiore con 10 strisce'],
+  },
   tips: {
     piece: (p, i, sign) => {
       const F = IT;
       const what = { rect: 'rettangolo', trap: 'trapezio', parab: 'arco di parabola', node: 'nodo di Gauss' }[p.kind];
       return `${what[0].toUpperCase()}${what.slice(1)} ${i + 1}: da ${F.num(p.x0, 3)} a ${F.num(p.x1, 3)}${p.kind === 'node' ? `, nodo in ${F.num(p.tag, 3)}, peso ${F.num(p.weight, 4)}` : ''}, area ${F.num(p.area, 6)}${sign < 0 ? ' (tolta da 1/2)' : ''}`;
     },
-    convergence: (r) => `n = ${IT.int(r.n)}: ${Object.entries(r.errors).map(([rule, e]) => `${ruleNamesIt[rule]} ${e === null ? '-' : IT.err(e)}`).join(', ')}`,
+    convergence: (r, rules = Object.keys(r.errors)) => said(`n = ${IT.int(r.n)}`, rules.map((rule) => `${ruleNamesIt[rule]} ${r.errors[rule] === null ? '-' : IT.err(r.errors[rule])}`)),
     newton: (r) => `Passo ${r.k}: z = ${IT.num(r.z, 12)}, errore ${IT.err(r.error)}`,
-    tail: (r) => `k = ${r.k}: P(Z > k) = ${IT.sci(r.reference, 3)}; 1 - Φ(k) sbaglia di ${IT.err(r.subtractionError)}, la coda diretta di ${IT.err(r.directError)}`,
-    alarm: (k, events) => `k = ${IT.num(k, 1)}: dati normali ${IT.sci(tailDirect(k))} (${IT.num(events * tailDirect(k), 1)} al giorno), code pesanti ${IT.sci(heavySf(k))} (${IT.num(events * heavySf(k), 1)} al giorno)`,
-    ecdf: (x, F, P) => `x = ${IT.num(x, 3)}: empirica ${IT.num(F, 4)}, Φ ${IT.num(P, 4)}, scarto ${IT.num(Math.abs(F - P), 4)}`,
+    tail: (r, show) => said(`k = ${r.k}, P(Z > k) = ${IT.sci(r.reference, 3)}`, [on(show, 'subtraction') && `1 - Φ(k) sbaglia di ${IT.err(r.subtractionError)}`, on(show, 'direct') && `la coda diretta di ${IT.err(r.directError)}`]),
+    alarm: (k, events, show) => said(`k = ${IT.num(k, 1)}`, [on(show, 'normal') && `dati normali ${IT.sci(tailDirect(k))} (${IT.num(events * tailDirect(k), 1)} al giorno)`, on(show, 'heavy') && `code pesanti ${IT.sci(heavySf(k))} (${IT.num(events * heavySf(k), 1)} al giorno)`]),
+    ecdf: (x, F, P, show) => said(`x = ${IT.num(x, 3)}`, [on(show, 'empirical') && `empirica ${IT.num(F, 4)}`, on(show, 'normal') && `Φ ${IT.num(P, 4)}`, on(show, 'empirical') && on(show, 'normal') && `scarto ${IT.num(Math.abs(F - P), 4)}`]),
     strip: (s, kind) => `Da ${IT.sig(s.x0, 4)} a ${IT.sig(s.x1, 4)}: altezza ${IT.sig(s[kind], 5)}, minimo ${IT.sig(s.lower, 5)}, massimo ${IT.sig(s.upper, 5)}`,
     level: (y0, y1, measure, pieces) => `Fascia da ${IT.sig(y0, 4)} a ${IT.sig(y1, 4)}: f ≥ ${IT.sig(y1, 4)} su una lunghezza ${IT.sig(measure, 5)} (${pieces} ${pieces === 1 ? 'intervallo' : 'intervalli'}), area ${IT.sig((y1 - y0) * measure, 5)}`,
     traffic: (y, set) => `Sopra ${IT.int(y)} Mb/s: ${IT.num(set.reduce((s, [a, b]) => s + b - a, 0) * 60, 1)} minuti${set.length ? `, ${set.map(([a, b]) => `${clock(a)}-${clock(b)}`).join(', ')}` : ''}`,
     distribution: (y, m) => `y = ${IT.sig(y, 4)}: f ≥ y su una lunghezza ${IT.sig(m, 5)}`,
-    rearrangement: (s, sorted, original) => `s = ${IT.sig(s, 4)}: riordinata ${IT.sig(sorted, 5)}, originale ${IT.sig(original, 5)}`,
+    rearrangement: (s, sorted, original, show) => said(`s = ${IT.sig(s, 4)}`, [on(show, 'sorted') && `riordinata ${IT.sig(sorted, 5)}`, on(show, 'original') && `originale ${IT.sig(original, 5)}`]),
     duration: (h, v) => `${IT.num(h, 2)} ore al giorno sopra ${IT.int(v)} Mb/s`,
-    compare: (r) => `n = K = ${IT.int(r.n)}: Riemann ${IT.err(r.errors.riemann)}, Lebesgue ${IT.err(r.errors.lebesgue)}`,
+    compare: (r, show) => said(`n = K = ${IT.int(r.n)}`, [on(show, 'riemann') && `Riemann ${IT.err(r.errors.riemann)}`, on(show, 'lebesgue') && `Lebesgue ${IT.err(r.errors.lebesgue)}`, on(show, 'riemannGap') && `garanzia di Riemann ${IT.err(r.gaps.riemann)}`, on(show, 'lebesgueGap') && `garanzia di Lebesgue ${IT.err(r.gaps.lebesgue)}`]),
     estimates: (from, to, count, share) => `Da ${IT.sig(from, 5)} a ${IT.sig(to, 5)}: ${IT.int(count)} stime, ${IT.pct(share, 1)}`,
-    cost: (n, r, l) => `${IT.int(n)} valori di f: errore relativo ${[Number.isFinite(r) ? `di Riemann ${IT.err(r)}` : null, Number.isFinite(l) ? `di Lebesgue ${IT.err(l)}` : null].filter(Boolean).join(', ')}`,
-    thomae: (p, q, strips) => `x = ${p}/${q}: Thomae vale 1/${q} = ${IT.sig(1 / q, 4)}; ${strips.map((st) => `nella striscia da ${IT.num(st.from, 1)} a ${IT.num(st.to, 1)} la somma superiore prende ${IT.sig(st.top, 4)}`).join('; ')}`,
+    cost: (n, r, l) => said(`${IT.int(n)} valori di f, errore relativo`, [Number.isFinite(r) && `di Riemann ${IT.err(r)}`, Number.isFinite(l) && `di Lebesgue ${IT.err(l)}`]),
+    thomae: (p, q, strips) => [`x = ${p}/${q}: Thomae vale 1/${q} = ${IT.sig(1 / q, 4)}`, ...strips.map((st) => `nella striscia da ${IT.num(st.from, 1)} a ${IT.num(st.to, 1)} la somma superiore prende ${IT.sig(st.top, 4)}`)].join('; '),
     bell: (x, density, area) => `x = ${IT.num(x, 2)}: densità φ(x) = ${IT.num(density, 4)}, area a sinistra Φ(x) = ${IT.num(area, 4)}`,
-    series: (z, p) => `z = ${IT.plain(z)}, ${p.terms} termini: serie degli appunti ${IT.err(p.alternating)} (limite ${IT.err(p.bound)}), serie a termini positivi ${IT.err(p.positive)}`,
-    approximation: (z, as, zs, bound) => `z = ${IT.num(z, 2)}: errore di 7.1.26 ${IT.sig(as, 3)}, di 26.2.17 ${IT.sig(zs, 3)}, limite pubblicato ± ${IT.sig(bound, 3)}`,
-    methods: (z, list) => `z = ${IT.num(z, 1)}: ${list.map((m) => `${m.name}: ${IT.err(m.error)}`).join('; ')}`,
-    mcPath: (p, exact) => `${IT.int(p.k)} punti: stima ${IT.sig(p.estimate, 6)} ± ${IT.sig(1.96 * p.se, 3)}, esatto ${IT.sig(exact, 6)}`,
+    series: (z, p, show) => said(`z = ${IT.plain(z)}, ${p.terms} termini`, [on(show, 'alternating') && `serie degli appunti ${IT.err(p.alternating)}`, on(show, 'bound') && `limite della serie degli appunti ${IT.err(p.bound)}`, on(show, 'positive') && `serie a termini positivi ${IT.err(p.positive)}`]),
+    approximation: (z, as, zs, bound) => said(`z = ${IT.num(z, 2)}`, [as !== null && `errore di 7.1.26 ${IT.sig(as, 3)}`, zs !== null && `errore di 26.2.17 ${IT.sig(zs, 3)}`, bound !== null && `limite pubblicato ± ${IT.sig(bound, 3)}`]),
+    methods: (z, list) => (list.length ? `z = ${IT.num(z, 1)}: ${list.map((m) => `${m.name}: ${IT.err(m.error)}`).join('; ')}` : null),
+    mcPath: (p, exact, show) => said(`${IT.int(p.k)} punti`, [on(show, 'estimate') && `stima ${IT.sig(p.estimate, 6)} ± ${IT.sig(1.96 * p.se, 3)}`, on(show, 'exact') && `esatto ${IT.sig(exact, 6)}`]),
   },
   download: {
     title: 'Scarica il codice',
@@ -1654,32 +1676,43 @@ const en = {
     return out;
   },
   ruleNames: ruleNamesEn,
+  // the legends of the charts that had none: every item can be pressed to hide its part
+  legends: {
+    bell: (z) => ['density φ', `area Φ(${EN.plain(z)})`, `end point x = ${EN.plain(z)}`],
+    area: ['density', 'exact area', 'pieces of the rule', 'end point x'],
+    riemann: ['f', 'Riemann strips'],
+    lebesgue: ['f', 'Lebesgue layers'],
+    rearrangement: ['original f', 'f sorted from the highest value'],
+    traffic: ['traffic of the day', 'layers above the thresholds'],
+    duration: ['load duration curve', 'thresholds from 350 Mb/s up'],
+    thomae: ['Thomae’s function: a stem 1/q high on every p/q', 'upper sum with 10 strips'],
+  },
   tips: {
     piece: (p, i, sign) => {
       const F = EN;
       const what = { rect: 'rectangle', trap: 'trapezoid', parab: 'arc of parabola', node: 'Gauss node' }[p.kind];
       return `${what[0].toUpperCase()}${what.slice(1)} ${i + 1}: from ${F.num(p.x0, 3)} to ${F.num(p.x1, 3)}${p.kind === 'node' ? `, node at ${F.num(p.tag, 3)}, weight ${F.num(p.weight, 4)}` : ''}, area ${F.num(p.area, 6)}${sign < 0 ? ' (taken away from 1/2)' : ''}`;
     },
-    convergence: (r) => `n = ${EN.int(r.n)}: ${Object.entries(r.errors).map(([rule, e]) => `${ruleNamesEn[rule]} ${e === null ? '-' : EN.err(e)}`).join(', ')}`,
+    convergence: (r, rules = Object.keys(r.errors)) => said(`n = ${EN.int(r.n)}`, rules.map((rule) => `${ruleNamesEn[rule]} ${r.errors[rule] === null ? '-' : EN.err(r.errors[rule])}`)),
     newton: (r) => `Step ${r.k}: z = ${EN.num(r.z, 12)}, error ${EN.err(r.error)}`,
-    tail: (r) => `k = ${r.k}: P(Z > k) = ${EN.sci(r.reference, 3)}; 1 - Φ(k) is off by ${EN.err(r.subtractionError)}, the direct tail by ${EN.err(r.directError)}`,
-    alarm: (k, events) => `k = ${EN.num(k, 1)}: normal data ${EN.sci(tailDirect(k))} (${EN.num(events * tailDirect(k), 1)} a day), heavy tails ${EN.sci(heavySf(k))} (${EN.num(events * heavySf(k), 1)} a day)`,
-    ecdf: (x, F, P) => `x = ${EN.num(x, 3)}: empirical ${EN.num(F, 4)}, Φ ${EN.num(P, 4)}, gap ${EN.num(Math.abs(F - P), 4)}`,
+    tail: (r, show) => said(`k = ${r.k}, P(Z > k) = ${EN.sci(r.reference, 3)}`, [on(show, 'subtraction') && `1 - Φ(k) is off by ${EN.err(r.subtractionError)}`, on(show, 'direct') && `the direct tail by ${EN.err(r.directError)}`]),
+    alarm: (k, events, show) => said(`k = ${EN.num(k, 1)}`, [on(show, 'normal') && `normal data ${EN.sci(tailDirect(k))} (${EN.num(events * tailDirect(k), 1)} a day)`, on(show, 'heavy') && `heavy tails ${EN.sci(heavySf(k))} (${EN.num(events * heavySf(k), 1)} a day)`]),
+    ecdf: (x, F, P, show) => said(`x = ${EN.num(x, 3)}`, [on(show, 'empirical') && `empirical ${EN.num(F, 4)}`, on(show, 'normal') && `Φ ${EN.num(P, 4)}`, on(show, 'empirical') && on(show, 'normal') && `gap ${EN.num(Math.abs(F - P), 4)}`]),
     strip: (s, kind) => `From ${EN.sig(s.x0, 4)} to ${EN.sig(s.x1, 4)}: height ${EN.sig(s[kind], 5)}, minimum ${EN.sig(s.lower, 5)}, maximum ${EN.sig(s.upper, 5)}`,
     level: (y0, y1, measure, pieces) => `Band from ${EN.sig(y0, 4)} to ${EN.sig(y1, 4)}: f ≥ ${EN.sig(y1, 4)} over a length ${EN.sig(measure, 5)} (${pieces} ${pieces === 1 ? 'interval' : 'intervals'}), area ${EN.sig((y1 - y0) * measure, 5)}`,
     traffic: (y, set) => `Above ${EN.int(y)} Mb/s: ${EN.num(set.reduce((s, [a, b]) => s + b - a, 0) * 60, 1)} minutes${set.length ? `, ${set.map(([a, b]) => `${clock(a)}-${clock(b)}`).join(', ')}` : ''}`,
     distribution: (y, m) => `y = ${EN.sig(y, 4)}: f ≥ y over a length ${EN.sig(m, 5)}`,
-    rearrangement: (s, sorted, original) => `s = ${EN.sig(s, 4)}: sorted ${EN.sig(sorted, 5)}, original ${EN.sig(original, 5)}`,
+    rearrangement: (s, sorted, original, show) => said(`s = ${EN.sig(s, 4)}`, [on(show, 'sorted') && `sorted ${EN.sig(sorted, 5)}`, on(show, 'original') && `original ${EN.sig(original, 5)}`]),
     duration: (h, v) => `${EN.num(h, 2)} hours a day above ${EN.int(v)} Mb/s`,
-    compare: (r) => `n = K = ${EN.int(r.n)}: Riemann ${EN.err(r.errors.riemann)}, Lebesgue ${EN.err(r.errors.lebesgue)}`,
+    compare: (r, show) => said(`n = K = ${EN.int(r.n)}`, [on(show, 'riemann') && `Riemann ${EN.err(r.errors.riemann)}`, on(show, 'lebesgue') && `Lebesgue ${EN.err(r.errors.lebesgue)}`, on(show, 'riemannGap') && `Riemann’s guarantee ${EN.err(r.gaps.riemann)}`, on(show, 'lebesgueGap') && `Lebesgue’s guarantee ${EN.err(r.gaps.lebesgue)}`]),
     estimates: (from, to, count, share) => `From ${EN.sig(from, 5)} to ${EN.sig(to, 5)}: ${EN.int(count)} estimates, ${EN.pct(share, 1)}`,
-    cost: (n, r, l) => `${EN.int(n)} values of f: relative error ${[Number.isFinite(r) ? `of Riemann ${EN.err(r)}` : null, Number.isFinite(l) ? `of Lebesgue ${EN.err(l)}` : null].filter(Boolean).join(', ')}`,
-    thomae: (p, q, strips) => `x = ${p}/${q}: Thomae's function is 1/${q} = ${EN.sig(1 / q, 4)}; ${strips.map((st) => `in the strip from ${EN.num(st.from, 1)} to ${EN.num(st.to, 1)} the upper sum takes ${EN.sig(st.top, 4)}`).join('; ')}`,
+    cost: (n, r, l) => said(`${EN.int(n)} values of f, relative error`, [Number.isFinite(r) && `of Riemann ${EN.err(r)}`, Number.isFinite(l) && `of Lebesgue ${EN.err(l)}`]),
+    thomae: (p, q, strips) => [`x = ${p}/${q}: Thomae's function is 1/${q} = ${EN.sig(1 / q, 4)}`, ...strips.map((st) => `in the strip from ${EN.num(st.from, 1)} to ${EN.num(st.to, 1)} the upper sum takes ${EN.sig(st.top, 4)}`)].join('; '),
     bell: (x, density, area) => `x = ${EN.num(x, 2)}: density φ(x) = ${EN.num(density, 4)}, area to the left Φ(x) = ${EN.num(area, 4)}`,
-    series: (z, p) => `z = ${EN.plain(z)}, ${p.terms} terms: series of the notes ${EN.err(p.alternating)} (bound ${EN.err(p.bound)}), positive series ${EN.err(p.positive)}`,
-    approximation: (z, as, zs, bound) => `z = ${EN.num(z, 2)}: error of 7.1.26 ${EN.sig(as, 3)}, of 26.2.17 ${EN.sig(zs, 3)}, published bound ± ${EN.sig(bound, 3)}`,
-    methods: (z, list) => `z = ${EN.num(z, 1)}: ${list.map((m) => `${m.name}: ${EN.err(m.error)}`).join('; ')}`,
-    mcPath: (p, exact) => `${EN.int(p.k)} points: estimate ${EN.sig(p.estimate, 6)} ± ${EN.sig(1.96 * p.se, 3)}, exact ${EN.sig(exact, 6)}`,
+    series: (z, p, show) => said(`z = ${EN.plain(z)}, ${p.terms} terms`, [on(show, 'alternating') && `series of the notes ${EN.err(p.alternating)}`, on(show, 'bound') && `bound of the series of the notes ${EN.err(p.bound)}`, on(show, 'positive') && `positive series ${EN.err(p.positive)}`]),
+    approximation: (z, as, zs, bound) => said(`z = ${EN.num(z, 2)}`, [as !== null && `error of 7.1.26 ${EN.sig(as, 3)}`, zs !== null && `error of 26.2.17 ${EN.sig(zs, 3)}`, bound !== null && `published bound ± ${EN.sig(bound, 3)}`]),
+    methods: (z, list) => (list.length ? `z = ${EN.num(z, 1)}: ${list.map((m) => `${m.name}: ${EN.err(m.error)}`).join('; ')}` : null),
+    mcPath: (p, exact, show) => said(`${EN.int(p.k)} points`, [on(show, 'estimate') && `estimate ${EN.sig(p.estimate, 6)} ± ${EN.sig(1.96 * p.se, 3)}`, on(show, 'exact') && `exact ${EN.sig(exact, 6)}`]),
   },
   download: {
     title: 'Download the code',

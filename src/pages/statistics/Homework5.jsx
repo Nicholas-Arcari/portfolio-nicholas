@@ -19,6 +19,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLanguage } from '../../contexts/languageContext';
 import { useTheme } from '../../contexts/themeContext';
 import HomeworkShell from './HomeworkShell';
+import { ChartLegend } from './ChartLegend';
+import { hiddenParts, useHidden } from './legendState';
 import * as hw from './hw5/homework5';
 import * as view from './hw5/view';
 import { HW5_TEXTS, originalAssignment } from './hw5/texts';
@@ -71,23 +73,19 @@ const Formulas = ({ title = null, children }) => (
   </>
 );
 
-// La legenda di un grafico, nella pagina: si legge e si traduce
-const Legend = ({ items, palette }) => (
-  <ul className="hw2a-legend">
-    {items.map((item, i) => (
-      <li key={item.label}>
-        <span className={item.dashed ? 'is-dashed' : ''} style={{ borderColor: palette.series[item.color ?? i], backgroundColor: item.dashed ? 'transparent' : palette.series[item.color ?? i] }} aria-hidden="true" />
-        {item.label}
-      </li>
-    ))}
-  </ul>
-);
-
 // Un grafico su canvas, ridisegnato quando cambia la larghezza, con i valori
 // del pezzo sotto il puntatore e, con `link` (view.links), la riga della
-// tabella legata: il disegno vero e' in homework5.js.
-const Figure = ({ title, draw, data, palette, tip = null, wide = false, legend = null, note = null, link = null }) => {
+// tabella legata: il disegno vero e' in homework5.js. Le voci della legenda
+// nascondono e mostrano le loro parti; con `hidden` e `onToggle` lo stato
+// sta nella sezione, che ne fa sparire anche le colonne o le righe della
+// tabella annessa.
+const Figure = ({ title, draw, data, palette, tip = null, wide = false, legend = null, note = null, link = null, hidden: shared = null, onToggle = null }) => {
   const ref = useRef(null);
+  const [own, toggleOwn] = useHidden();
+  const hidden = shared || own;
+  const off = hiddenParts(legend, hidden).join(' ');
+  const shown = useMemo(() => (off ? { ...data, hidden: off.split(' ') } : data), [data, off]);
+  const describe = useMemo(() => (tip ? (hit) => tip(hit, off ? off.split(' ') : []) : null), [tip, off]);
   useEffect(() => {
     const canvas = ref.current;
     let drawn = -1;
@@ -95,23 +93,23 @@ const Figure = ({ title, draw, data, palette, tip = null, wide = false, legend =
       const width = Math.round(entries[entries.length - 1].contentRect.width);
       if (width <= 0 || width === drawn) return;
       drawn = width;
-      canvas.style.height = `${hw.chartHeight(draw, data, width)}px`;
+      canvas.style.height = `${hw.chartHeight(draw, shown, width)}px`;
       view.scheduleFrameJob(() => {
-        if (canvas.isConnected && drawn === width) draw(canvas, { ...data, width }, palette);
+        if (canvas.isConnected && drawn === width) draw(canvas, { ...shown, width }, palette);
       });
     });
     observer.observe(canvas);
-    const detach = tip ? hw.attachChartTooltip(canvas, { draw, data, describe: tip, link }) : null;
+    const detach = describe ? hw.attachChartTooltip(canvas, { draw, data: shown, describe, link }) : null;
     return () => {
       drawn = -2;
       observer.disconnect();
       if (detach) detach();
     };
-  }, [draw, data, palette, tip, link]);
+  }, [draw, shown, palette, describe, link]);
   return (
     <figure className={wide ? 'hw1-figure hw1-figure-wide' : 'hw1-figure'}>
       <canvas ref={ref} className="hw1-canvas" role="img" aria-label={title} />
-      {legend && <Legend items={legend} palette={palette} />}
+      {legend && <ChartLegend items={legend} palette={palette} hidden={hidden} onToggle={onToggle || toggleOwn} />}
       {note && <p className="hw3-figure-note">{note}</p>}
       <figcaption>{title}</figcaption>
     </figure>
@@ -254,12 +252,13 @@ const Area = React.memo(function Area({ text, palette }) {
   const A = text.area;
   const data = useMemo(() => view.bellChart(text.fmt.decimal), [text]);
   const tip = useMemo(() => view.tips.bell(data, text.tips), [data, text]);
+  const legend = useMemo(() => view.legends.bell(text), [text]);
   return (
     <>
       <Paras list={A.intro} />
       <Formulas>{text.formulas.cdf}</Formulas>
       <div className="hw1-charts">
-        <Figure title={A.chartTitle} draw={hw.drawQuadrature} data={data} palette={palette} tip={tip} wide />
+        <Figure title={A.chartTitle} draw={hw.drawQuadrature} data={data} palette={palette} tip={tip} wide legend={legend} />
       </div>
     </>
   );
@@ -278,6 +277,7 @@ const TryArea = ({ text, palette }) => {
   const z = view.zOfIndex(zIndex);
   const state = useMemo(() => view.areaState({ mu, sigma, z, rule, n, strategy }, F.decimal), [mu, sigma, z, rule, n, strategy, F]);
   const tip = useMemo(() => view.tips.area(state, text.tips), [state, text]);
+  const legend = useMemo(() => view.legends.area(text), [text]);
   return (
     <div className="hw4-try">
       <Title id="hw5-try-area" level={2}>{text.sections.tryArea}</Title>
@@ -291,7 +291,7 @@ const TryArea = ({ text, palette }) => {
         <Slider id="hw5-area-n" label={T.nLabel(state.n, rule)} valueText={T.nLabel(state.n, rule)} max={view.AREA.nMax - 1} value={n - 1} onChange={(v) => setN(v + 1)} />
       </div>
       <div className="hw1-charts">
-        <Figure title={T.chartTitle(state, rule)} draw={hw.drawQuadrature} data={state.chart} palette={palette} tip={tip} wide />
+        <Figure title={T.chartTitle(state, rule)} draw={hw.drawQuadrature} data={state.chart} palette={palette} tip={tip} wide legend={legend} />
       </div>
       <p className="hw1-caption hw4-line" aria-live="polite">{T.result(state, rule)}</p>
     </div>
@@ -382,23 +382,27 @@ const Convergence = React.memo(function Convergence({ text, palette }) {
   const data = useMemo(() => view.convergenceChart(study, F.decimal), [study, F]);
   const tip = useMemo(() => view.tips.convergence(study, text.tips), [study, text]);
   const facts = useMemo(() => view.convergenceFacts(study), [study]);
+  // una regola nascosta nella legenda sparisce anche dalle colonne della tabella
+  const [hidden, toggle] = useHidden();
+  const legend = useMemo(() => view.legends.convergence(text), [text]);
+  const rules = hw.RULES.filter((_, i) => !hidden.has(i));
   return (
     <>
       <Paras list={C.intro} />
       <div className="hw1-charts">
-        <Figure title={C.chartTitle(study.z)} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} link={view.links.convergence} wide legend={hw.RULES.map((r, i) => ({ label: text.ruleNames[r], color: i }))} />
+        <Figure title={C.chartTitle(study.z)} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} link={view.links.convergence} wide legend={legend} hidden={hidden} onToggle={toggle} />
       </div>
       <p className="hw1-table-title"><strong>{C.tableTitle}</strong></p>
       <div className="hw1-scroll">
         <table id={view.LINKED_TABLES.convergence} className="hw1-table hw1-compact hw5-convergence">
           <thead>
-            <tr><th>{C.cols.n}</th>{hw.RULES.map((r) => <th key={r}>{text.ruleNames[r]}</th>)}</tr>
+            <tr><th>{C.cols.n}</th>{rules.map((r) => <th key={r}>{text.ruleNames[r]}</th>)}</tr>
           </thead>
           <tbody>
             {study.rows.map((r) => (
               <tr key={r.n}>
                 <th>{F.int(r.n)}</th>
-                {hw.RULES.map((rule) => <td key={rule}>{r.errors[rule] === null ? '-' : F.err(r.errors[rule])}</td>)}
+                {rules.map((rule) => <td key={rule}>{r.errors[rule] === null ? '-' : F.err(r.errors[rule])}</td>)}
               </tr>
             ))}
           </tbody>
@@ -498,6 +502,11 @@ const Tails = React.memo(function Tails({ text, palette }) {
   const tip = useMemo(() => view.tips.tails(rows, text.tips), [rows, text]);
   const facts = useMemo(() => view.tailFacts(rows), [rows]);
   const alarms = useMemo(() => view.alarmRows(), []);
+  // nascondere una curva toglie dalla tabella il suo valore e il suo errore
+  const [hidden, toggle] = useHidden();
+  const legend = useMemo(() => view.legends.tails(text), [text]);
+  const subtraction = !hidden.has(0);
+  const direct = !hidden.has(1);
   return (
     <>
       <Paras list={T.intro} />
@@ -505,24 +514,31 @@ const Tails = React.memo(function Tails({ text, palette }) {
       <div className="hw5-table">
         <table id={view.LINKED_TABLES.tails} className="hw1-table hw1-compact hw5-tails">
           <thead>
-            <tr><th>{T.cols.k}</th><th>{T.cols.reference}</th><th>{T.cols.subtraction}</th><th>{T.cols.subtractionError}</th><th>{T.cols.direct}</th><th>{T.cols.directError}</th></tr>
+            <tr>
+              <th>{T.cols.k}</th>
+              <th>{T.cols.reference}</th>
+              {subtraction && <th>{T.cols.subtraction}</th>}
+              {subtraction && <th>{T.cols.subtractionError}</th>}
+              {direct && <th>{T.cols.direct}</th>}
+              {direct && <th>{T.cols.directError}</th>}
+            </tr>
           </thead>
           <tbody>
             {rows.map((r) => (
               <tr key={r.k}>
                 <th>{r.k}</th>
                 <td>{F.sci(r.reference, 2)}</td>
-                <td>{F.sci(r.subtraction, 2)}</td>
-                <td className={r.subtractionError > 1e-6 ? 'hw3-over' : ''}>{F.err(r.subtractionError)}</td>
-                <td>{F.sci(r.direct, 2)}</td>
-                <td>{F.err(r.directError)}</td>
+                {subtraction && <td>{F.sci(r.subtraction, 2)}</td>}
+                {subtraction && <td className={r.subtractionError > 1e-6 ? 'hw3-over' : ''}>{F.err(r.subtractionError)}</td>}
+                {direct && <td>{F.sci(r.direct, 2)}</td>}
+                {direct && <td>{F.err(r.directError)}</td>}
               </tr>
             ))}
           </tbody>
         </table>
       </div>
       <div className="hw1-charts">
-        <Figure title={T.chartTitle} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} link={view.links.tails} wide legend={[{ label: T.legend[0], color: 1 }, { label: T.legend[1], color: 2 }]} />
+        <Figure title={T.chartTitle} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} link={view.links.tails} wide legend={legend} hidden={hidden} onToggle={toggle} />
       </div>
       <Paras list={T.after(facts)} />
       <Paras list={T.alarmIntro} />
@@ -564,7 +580,7 @@ const TryAlarm = ({ text, palette }) => {
       <Choices label={T.eventsLabel} options={view.ALARM_EVENTS.map((e) => [e, F.events(e)])} value={events} onChange={setEvents} />
       <Choices label={T.rateLabel} options={Object.keys(view.ALARM_RATES).map((r) => [r, T.rates[r]])} value={rate} onChange={setRate} />
       <div className="hw1-charts">
-        <Figure title={T.chartTitle} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} wide legend={[{ label: T.legend[0], color: 0 }, { label: T.legend[1], color: 1 }, { label: T.legend[2], color: 6, dashed: true }]} />
+        <Figure title={T.chartTitle} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} wide legend={view.legends.alarm(text)} />
       </div>
       <p className="hw1-caption hw4-line" aria-live="polite">{T.result(state)}</p>
     </div>
@@ -600,7 +616,7 @@ const DataSection = ({ run, text, palette }) => {
   const heavy = useMemo(() => (s ? view.ecdfChart(s.heavy, F.decimal) : null), [s, F]);
   const normalTip = useMemo(() => (normal ? view.tips.ecdf(normal, text.tips) : null), [normal, text]);
   const heavyTip = useMemo(() => (heavy ? view.tips.ecdf(heavy, text.tips) : null), [heavy, text]);
-  const legend = [{ label: D.legend[0], color: 0 }, { label: D.legend[1], color: 2, dashed: true }];
+  const legend = useMemo(() => view.legends.ecdf(text), [text]);
   return (
     <>
       <Paras list={D.intro} />
@@ -784,13 +800,14 @@ const RiemannSection = ({ spec, reference, fnKey, text, palette }) => {
   const tip = useMemo(() => view.tips.strip(chart.chart, text.tips), [chart, text]);
   const rows = useMemo(() => view.riemannRows(spec), [spec]);
   const shown = useMemo(() => rows.map((r) => ({ ...r, format: (v, k) => (k === 'gap' ? F.err(v) : F.sig(v, 9)) })), [rows, F]);
+  const legend = useMemo(() => view.legends.riemann(text), [text]);
   return (
     <>
       <Paras list={R.intro} />
       <Formulas title={R.formulasTitle}>{text.formulas.riemann}</Formulas>
       <Choices label={R.kindLabel} options={hw.RIEMANN_KINDS.map((k) => [k, R.kinds[k]])} value={kind} onChange={setKind} />
       <div className="hw1-charts">
-        <Figure title={R.chartTitle(name, 10, kind)} draw={hw.drawIntegral} data={chart.chart} palette={palette} tip={tip} wide />
+        <Figure title={R.chartTitle(name, 10, kind)} draw={hw.drawIntegral} data={chart.chart} palette={palette} tip={tip} wide legend={legend} />
       </div>
       <p className="hw1-table-title"><strong>{R.tableTitle(reference)}</strong></p>
       <SumsTable rows={shown} cols={R.cols} first="n" keys={['left', 'right', 'midpoint', 'lower', 'upper', 'gap']} className="hw5-riemann" />
@@ -812,19 +829,21 @@ const LebesgueSection = ({ spec, reference, fnKey, text, palette }) => {
   const distTip = useMemo(() => view.tips.distribution(dist, text.tips), [dist, text]);
   const rear = useMemo(() => view.rearrangementChart(spec, F.decimal), [spec, F]);
   const rearTip = useMemo(() => view.tips.rearrangement(rear.chart, text.tips), [rear, text]);
+  const legend = useMemo(() => view.legends.lebesgue(text), [text]);
+  const rearLegend = useMemo(() => view.legends.rearrangement(text), [text]);
   return (
     <>
       <Paras list={L.intro} />
       <Formulas title={L.formulasTitle}>{text.formulas.lebesgue}</Formulas>
       <div className="hw1-charts">
-        <Figure title={L.chartTitle(name, 10)} draw={hw.drawIntegral} data={chart.chart} palette={palette} tip={tip} wide />
+        <Figure title={L.chartTitle(name, 10)} draw={hw.drawIntegral} data={chart.chart} palette={palette} tip={tip} wide legend={legend} />
       </div>
       <p className="hw1-table-title"><strong>{L.tableTitle(reference)}</strong></p>
       <SumsTable rows={shown} cols={L.cols} first="K" keys={['lower', 'upper', 'midpoint', 'gap']} className="hw5-lebesgue" />
       {fnKey === 'unbounded' && <p className="hw1-note">{L.capNote(spec.cap, 2 - 1 / spec.cap)}</p>}
       <div className="hw1-charts">
         <Figure title={L.distributionTitle} draw={hw.drawLineChart} data={dist} palette={palette} tip={distTip} />
-        <Figure title={L.rearrangementTitle} draw={hw.drawLineChart} data={rear.chart} palette={palette} tip={rearTip} />
+        <Figure title={L.rearrangementTitle} draw={hw.drawLineChart} data={rear.chart} palette={palette} tip={rearTip} legend={rearLegend} />
       </div>
       <Paras list={L.after(rows, fnKey)} />
     </>
@@ -862,6 +881,8 @@ const TrySlices = ({ spec, reference, text, palette }) => {
   const l = useMemo(() => view.integralChart(spec, 'lebesgue', { K }, F.decimal), [spec, K, F]);
   const rTip = useMemo(() => view.tips.strip(r.chart, text.tips), [r, text]);
   const lTip = useMemo(() => view.tips.level(l.chart, text.tips), [l, text]);
+  const rLegend = useMemo(() => view.legends.riemann(text), [text]);
+  const lLegend = useMemo(() => view.legends.lebesgue(text), [text]);
   return (
     <div className="hw4-try">
       <Title id="hw5-try-slices" level={2}>{text.sections.trySlices}</Title>
@@ -872,8 +893,8 @@ const TrySlices = ({ spec, reference, text, palette }) => {
         <button type="button" className="button" onClick={toggle}>{playing ? T.pause : T.play}</button>
       </div>
       <div className="hw1-charts">
-        <Figure title={T.riemannTitle(n)} draw={hw.drawIntegral} data={r.chart} palette={palette} tip={rTip} />
-        <Figure title={T.lebesgueTitle(K)} draw={hw.drawIntegral} data={l.chart} palette={palette} tip={lTip} />
+        <Figure title={T.riemannTitle(n)} draw={hw.drawIntegral} data={r.chart} palette={palette} tip={rTip} legend={rLegend} />
+        <Figure title={T.lebesgueTitle(K)} draw={hw.drawIntegral} data={l.chart} palette={palette} tip={lTip} legend={lLegend} />
       </div>
       <p className="hw1-caption hw4-line" aria-live={playing ? 'off' : 'polite'}>{T.values(r.sums, l.sums, reference)}</p>
     </div>
@@ -891,6 +912,10 @@ const Compare = ({ s, job, fnKey, customStudy, text, palette }) => {
   const data = useMemo(() => (study ? view.compareChart(study, F.decimal) : null), [study, F]);
   const tip = useMemo(() => (study ? view.tips.compare(study, text.tips) : null), [study, text]);
   const summary = useMemo(() => (s ? view.summaryRows(s) : null), [s]);
+  // le quattro curve sono le quattro colonne della tabella, nello stesso ordine
+  const [hidden, toggle] = useHidden();
+  const legend = useMemo(() => view.legends.compare(text), [text]);
+  const col = (i) => !hidden.has(i);
   return (
     <>
       <Paras list={C.intro} />
@@ -908,28 +933,31 @@ const Compare = ({ s, job, fnKey, customStudy, text, palette }) => {
               tip={tip}
               link={view.links.compare}
               wide
-              legend={[
-                { label: C.legend[0], color: 1 },
-                { label: C.legend[1], color: 0 },
-                { label: C.legend[2], color: 1, dashed: true },
-                { label: C.legend[3], color: 0, dashed: true },
-              ]}
+              legend={legend}
+              hidden={hidden}
+              onToggle={toggle}
             />
           </div>
           <p className="hw1-table-title"><strong>{C.tableTitle}</strong></p>
           <div className="hw1-scroll">
             <table id={view.LINKED_TABLES.compare} className="hw1-table hw1-compact hw5-compare">
               <thead>
-                <tr><th>{C.cols.n}</th><th>{C.cols.riemann}</th><th>{C.cols.lebesgue}</th><th>{C.cols.riemannGap}</th><th>{C.cols.lebesgueGap}</th></tr>
+                <tr>
+                  <th>{C.cols.n}</th>
+                  {col(0) && <th>{C.cols.riemann}</th>}
+                  {col(1) && <th>{C.cols.lebesgue}</th>}
+                  {col(2) && <th>{C.cols.riemannGap}</th>}
+                  {col(3) && <th>{C.cols.lebesgueGap}</th>}
+                </tr>
               </thead>
               <tbody>
                 {study.rows.map((r) => (
                   <tr key={r.n}>
                     <th>{F.int(r.n)}</th>
-                    <td className={r.errors.riemann < r.errors.lebesgue ? 'hw5-win' : ''}>{F.err(r.errors.riemann)}</td>
-                    <td className={r.errors.lebesgue < r.errors.riemann ? 'hw5-win' : ''}>{F.err(r.errors.lebesgue)}</td>
-                    <td>{F.err(r.gaps.riemann)}</td>
-                    <td>{F.err(r.gaps.lebesgue)}</td>
+                    {col(0) && <td className={r.errors.riemann < r.errors.lebesgue ? 'hw5-win' : ''}>{F.err(r.errors.riemann)}</td>}
+                    {col(1) && <td className={r.errors.lebesgue < r.errors.riemann ? 'hw5-win' : ''}>{F.err(r.errors.lebesgue)}</td>}
+                    {col(2) && <td>{F.err(r.gaps.riemann)}</td>}
+                    {col(3) && <td>{F.err(r.gaps.lebesgue)}</td>}
                   </tr>
                 ))}
               </tbody>
@@ -977,11 +1005,13 @@ const Traffic = React.memo(function Traffic({ text, palette }) {
   const tip = useMemo(() => view.tips.traffic(chart, text.tips), [chart, text]);
   const duration = useMemo(() => view.durationChart(F.decimal), [F]);
   const durationTip = useMemo(() => view.tips.duration(duration, text.tips), [duration, text]);
+  const legend = useMemo(() => view.legends.traffic(text), [text]);
+  const durationLegend = useMemo(() => view.legends.duration(text, duration), [text, duration]);
   return (
     <>
       <Paras list={T.intro} />
       <div className="hw1-charts">
-        <Figure title={T.chartTitle} draw={hw.drawIntegral} data={chart} palette={palette} tip={tip} wide />
+        <Figure title={T.chartTitle} draw={hw.drawIntegral} data={chart} palette={palette} tip={tip} wide legend={legend} />
       </div>
       <p className="hw1-table-title"><strong>{T.tableTitle}</strong></p>
       <table className="hw1-table hw1-discussion-table hw5-traffic">
@@ -1000,7 +1030,7 @@ const Traffic = React.memo(function Traffic({ text, palette }) {
         </tbody>
       </table>
       <div className="hw1-charts">
-        <Figure title={T.durationTitle} draw={hw.drawLineChart} data={duration} palette={palette} tip={durationTip} wide />
+        <Figure title={T.durationTitle} draw={hw.drawLineChart} data={duration} palette={palette} tip={durationTip} wide legend={durationLegend} />
       </div>
       <Paras list={T.after(report)} />
     </>
@@ -1051,7 +1081,7 @@ const MonteCarlo = ({ run, text, palette }) => {
           </table>
           <Choices label={M.chooseLabel} options={hw.FUNCTIONS.map((k) => [k, text.functionNames[k]])} value={histKey} onChange={setHistKey} />
           <div className="hw1-charts">
-            <Figure title={M.histogramTitle(text.functionNames[histKey], s)} draw={hw.drawHistogram} data={hist} palette={palette} tip={tip} wide legend={[{ label: M.legend[0], color: 0 }, { label: M.legend[1], color: 2 }, { label: M.legend[2], color: 1, dashed: true }]} />
+            <Figure title={M.histogramTitle(text.functionNames[histKey], s)} draw={hw.drawHistogram} data={hist} palette={palette} tip={tip} wide legend={view.legends.estimates(text)} />
           </div>
           <Tests group="coverage" s={s} text={text} />
           <Paras list={M.after(s)} />
@@ -1087,7 +1117,7 @@ const TryMc = ({ seed, text, palette }) => {
         </span>
       </div>
       <div className="hw1-charts">
-        <Figure title={T.chartTitle(text.functionNames[key])} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} wide legend={[{ label: T.legend[0], color: 0 }, { label: T.legend[1], color: 1, dashed: true }]} />
+        <Figure title={T.chartTitle(text.functionNames[key])} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} wide legend={view.legends.mcPath(text)} />
       </div>
       <p className="hw1-caption hw4-line" aria-live={playing ? 'off' : 'polite'}>{T.status(shown > 0 ? run.path[shown - 1] : null, run.exact)}</p>
     </div>
@@ -1143,6 +1173,11 @@ const Efficiency = ({ s, job, spec, fnKey, customStudy, text, palette }) => {
   const tip = useMemo(() => (data ? view.tips.cost(data, text.tips) : null), [data, text]);
   const rows = useMemo(() => (s ? view.efficiencyRows(s) : null), [s]);
   const facts = useMemo(() => (s ? view.efficiencyFacts(s) : null), [s]);
+  // le due curve sono le colonne Riemann e Lebesgue della tabella
+  const [hidden, toggle] = useHidden();
+  const legend = useMemo(() => view.legends.cost(text), [text]);
+  const riemann = !hidden.has(0);
+  const lebesgue = !hidden.has(1);
   return (
     <>
       <Paras list={E.intro} />
@@ -1150,7 +1185,7 @@ const Efficiency = ({ s, job, spec, fnKey, customStudy, text, palette }) => {
         <Pending text={text} result={job} />
       ) : (
         <div className="hw1-charts">
-          <Figure title={E.chartTitle(text.functionNames[fnKey])} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} wide legend={[{ label: E.legend[0], color: 1 }, { label: E.legend[1], color: 0 }]} />
+          <Figure title={E.chartTitle(text.functionNames[fnKey])} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} wide legend={legend} hidden={hidden} onToggle={toggle} />
         </div>
       )}
       {rows && (
@@ -1159,7 +1194,12 @@ const Efficiency = ({ s, job, spec, fnKey, customStudy, text, palette }) => {
           <div className="hw1-scroll">
             <table className="hw1-table hw1-compact hw5-efficiency">
               <thead>
-                <tr><th>{E.cols.name}</th><th>{E.cols.target}</th><th>{E.cols.riemann}</th><th>{E.cols.lebesgue}</th></tr>
+                <tr>
+                  <th>{E.cols.name}</th>
+                  <th>{E.cols.target}</th>
+                  {riemann && <th>{E.cols.riemann}</th>}
+                  {lebesgue && <th>{E.cols.lebesgue}</th>}
+                </tr>
               </thead>
               <tbody>
                 {rows.flatMap((r) =>
@@ -1167,8 +1207,8 @@ const Efficiency = ({ s, job, spec, fnKey, customStudy, text, palette }) => {
                     <tr key={`${r.key}-${i}`}>
                       {i === 0 && <th rowSpan={r.targets.length}>{text.functionNames[r.key]}</th>}
                       <td>{F.pow(Math.round(Math.log10(t.target)))}</td>
-                      <td>{E.cell(t.riemann, 'riemann')}</td>
-                      <td>{E.cell(t.lebesgue, 'lebesgue')}</td>
+                      {riemann && <td>{E.cell(t.riemann, 'riemann')}</td>}
+                      {lebesgue && <td>{E.cell(t.lebesgue, 'lebesgue')}</td>}
                     </tr>
                   )),
                 )}
@@ -1192,6 +1232,7 @@ const Pathological = React.memo(function Pathological({ text, palette }) {
   const data = useMemo(() => view.thomaeChart(F.decimal), [F]);
   const tip = useMemo(() => view.tips.thomae(data, text.tips), [data, text]);
   const upper = useMemo(() => view.thomaeUpper(), []);
+  const legend = useMemo(() => view.legends.thomae(text), [text]);
   return (
     <>
       <Paras list={P.intro} />
@@ -1211,7 +1252,7 @@ const Pathological = React.memo(function Pathological({ text, palette }) {
       </table>
       <p>{P.thomaeIntro}</p>
       <div className="hw1-charts">
-        <Figure title={P.chartTitle(upper)} draw={hw.drawHistogram} data={data} palette={palette} tip={tip} wide />
+        <Figure title={P.chartTitle(upper)} draw={hw.drawHistogram} data={data} palette={palette} tip={tip} wide legend={legend} />
       </div>
       <p className="hw1-table-title"><strong>{P.tableTitle}</strong></p>
       <div className="hw1-scroll">
@@ -1300,6 +1341,11 @@ const Series = React.memo(function Series({ text, palette }) {
   const rows = useMemo(() => hw.seriesRows(), []);
   const [z, setZ] = useState(view.SERIES_CHOICES[2]);
   const data = useMemo(() => view.seriesChart(z, F.decimal), [z, F]);
+  // la serie degli appunti ha quattro colonne, quella a termini positivi due; il limite non ne ha
+  const [hidden, toggle] = useHidden();
+  const legend = useMemo(() => view.legends.series(text), [text]);
+  const alt = !hidden.has(0);
+  const pos = !hidden.has(2);
   const tip = useMemo(() => view.tips.series(data, text.tips), [data, text]);
   return (
     <>
@@ -1309,18 +1355,26 @@ const Series = React.memo(function Series({ text, palette }) {
       <div className="hw1-scroll">
         <table className="hw1-table hw1-compact hw5-series">
           <thead>
-            <tr><th>{S.cols.z}</th><th>{S.cols.altTerms}</th><th>{S.cols.largest}</th><th>{S.cols.lost}</th><th>{S.cols.altError}</th><th>{S.cols.posTerms}</th><th>{S.cols.posError}</th></tr>
+            <tr>
+              <th>{S.cols.z}</th>
+              {alt && <th>{S.cols.altTerms}</th>}
+              {alt && <th>{S.cols.largest}</th>}
+              {alt && <th>{S.cols.lost}</th>}
+              {alt && <th>{S.cols.altError}</th>}
+              {pos && <th>{S.cols.posTerms}</th>}
+              {pos && <th>{S.cols.posError}</th>}
+            </tr>
           </thead>
           <tbody>
             {rows.map((r) => (
               <tr key={r.z}>
                 <th>{r.z}</th>
-                <td>{r.alternating.terms}</td>
-                <td>{F.sci(r.alternating.largest)}</td>
-                <td>{F.num(r.alternating.lost, 1)}</td>
-                <td>{F.err(r.alternating.error)}</td>
-                <td>{r.positive.terms}</td>
-                <td>{F.err(r.positive.error)}</td>
+                {alt && <td>{r.alternating.terms}</td>}
+                {alt && <td>{F.sci(r.alternating.largest)}</td>}
+                {alt && <td>{F.num(r.alternating.lost, 1)}</td>}
+                {alt && <td>{F.err(r.alternating.error)}</td>}
+                {pos && <td>{r.positive.terms}</td>}
+                {pos && <td>{F.err(r.positive.error)}</td>}
               </tr>
             ))}
           </tbody>
@@ -1328,7 +1382,7 @@ const Series = React.memo(function Series({ text, palette }) {
       </div>
       <Choices label={S.chooseLabel} options={view.SERIES_CHOICES.map((v) => [v, F.plain(v)])} value={z} onChange={setZ} />
       <div className="hw1-charts">
-        <Figure title={S.chartTitle(z)} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} wide legend={[{ label: S.legend[0], color: 1 }, { label: S.legend[1], color: 1, dashed: true }, { label: S.legend[2], color: 0 }]} />
+        <Figure title={S.chartTitle(z)} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} wide legend={legend} hidden={hidden} onToggle={toggle} />
       </div>
       <Paras list={S.after(rows)} />
     </>
@@ -1345,7 +1399,7 @@ const Approximations = React.memo(function Approximations({ text, palette }) {
     <>
       <Paras list={A.intro} />
       <div className="hw1-charts">
-        <Figure title={A.chartTitle} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} wide legend={[{ label: A.legend[0], color: 0 }, { label: A.legend[1], color: 1 }, { label: A.legend[2], color: 6, dashed: true }]} />
+        <Figure title={A.chartTitle} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} wide legend={view.legends.approximation(text)} />
       </div>
       <Paras list={A.after(facts)} />
     </>
@@ -1406,7 +1460,10 @@ const Methods = ({ s, job, text, palette }) => {
   const data = useMemo(() => view.methodsChart(F.decimal), [F]);
   const tip = useMemo(() => view.tips.methods(data, text.tips, text.methodNames), [data, text]);
   const facts = useMemo(() => view.methodsFacts(s), [s]);
-  const legend = useMemo(() => hw.CDF_METHODS.map((key) => ({ label: text.methodNames[key], color: view.METHOD_STYLE[key].colorIndex, dashed: !!view.METHOD_STYLE[key].dashed })), [text]);
+  const legend = useMemo(() => view.legends.methods(text), [text]);
+  // ogni metodo e' una curva del grafico e una riga della tabella: nascosto nella legenda, sparisce da entrambi
+  const [hidden, toggle] = useHidden();
+  const visible = rows.filter((r) => !hidden.has(hw.CDF_METHODS.indexOf(r.key)));
   return (
     <>
       <Paras list={M.intro} />
@@ -1417,7 +1474,7 @@ const Methods = ({ s, job, text, palette }) => {
             <tr><th>{M.cols.method}</th><th>{M.cols.absolute}</th><th>{M.cols.relative}</th><th>{M.cols.exp}</th><th>{M.cols.terms}</th><th>{M.cols.time}</th></tr>
           </thead>
           <tbody>
-            {rows.map((r) => (
+            {visible.map((r) => (
               <tr key={r.key} className={r.key === 'ours' ? 'hw5-ours' : undefined}>
                 <th>{text.methodNames[r.key]}</th>
                 <td>{F.err(r.absolute)}</td>
@@ -1432,7 +1489,7 @@ const Methods = ({ s, job, text, palette }) => {
       </div>
       {!s && <Pending text={text} result={job} />}
       <div className="hw1-charts">
-        <Figure title={M.chartTitle} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} wide legend={legend} />
+        <Figure title={M.chartTitle} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} wide legend={legend} hidden={hidden} onToggle={toggle} />
       </div>
       <Paras list={M.after(facts)} />
     </>
