@@ -144,7 +144,7 @@ function areaState({ mu, sigma, z, rule, n, strategy }, decimal = '.') {
 /** The picture of section 1.1: Phi(1.96) = 0.975 as the area under the bell, with no pieces. */
 function bellChart(decimal = '.') {
   const s = areaState({ ...AREA.defaults, n: 2 }, decimal);
-  return { ...s.chart, pieces: [] };
+  return { ...s.chart, pieces: [], mu: AREA.defaults.mu, sigma: AREA.defaults.sigma };
 }
 
 // ---------------------------------------------------------------------------
@@ -167,27 +167,6 @@ function gaussRows(n = 5) {
   const { nodes, weights } = hw.gaussLegendre(n);
   return nodes.map((t, i) => ({ i: i + 1, node: t, weight: weights[i] }));
 }
-
-/** The function of section 1.2 as the page shows it: integrate() of homework5.js, one line per rule. */
-const RULE_CODE = [
-  'function integrate(f, a, b, rule, n) {',
-  '  const h = (b - a) / n;',
-  '  let s = 0;',
-  '  switch (rule) {',
-  "    case 'left':      for (let i = 0; i < n; i++) s += f(a + i * h);  return s * h;",
-  "    case 'midpoint':  for (let i = 0; i < n; i++) s += f(a + (i + 0.5) * h);  return s * h;",
-  "    case 'trapezoid': s = (f(a) + f(b)) / 2;",
-  '                      for (let i = 1; i < n; i++) s += f(a + i * h);  return s * h;',
-  "    case 'simpson':   s = f(a) + f(b);   // n even",
-  '                      for (let i = 1; i < n; i++) s += (i % 2 ? 4 : 2) * f(a + i * h);  return (s * h) / 3;',
-  "    case 'gauss': {   // nodes t_i and weights w_i of gaussLegendre(n)",
-  '      const { nodes: t, weights: w } = gaussLegendre(n);',
-  '      for (let i = 0; i < n; i++) s += w[i] * f((a + b) / 2 + ((b - a) / 2) * t[i]);',
-  '      return (s * (b - a)) / 2;',
-  '    }',
-  '  }',
-  '}',
-].join('\n');
 
 // ---------------------------------------------------------------------------
 // 1.3 Il problema di -infinito
@@ -722,14 +701,14 @@ const pathological = () => {
 function thomaeChart(decimal = '.') {
   const bars = [];
   for (let q = 1; q <= THOMAE_Q; q++) {
-    for (let p = 0; p <= q; p++) if (hw.gcd(p, q) === 1) bars.push({ from: p / q - 0.0015, to: p / q + 0.0015, value: 1 / q });
+    for (let p = 0; p <= q; p++) if (hw.gcd(p, q) === 1) bars.push({ from: p / q - 0.0015, to: p / q + 0.0015, value: 1 / q, p, q });
   }
   const curve = [];
   for (let i = 0; i < THOMAE_STRIPS; i++) {
     const top = 1 / hw.smallestDenominator(i, THOMAE_STRIPS);
     curve.push([i / THOMAE_STRIPS, top], [(i + 1) / THOMAE_STRIPS, top]);
   }
-  return { x0: 0, x1: 1, bars, curve, yMax: 1.05, xTicks: [0, 0.2, 0.4, 0.6, 0.8, 1], decimal };
+  return { x0: 0, x1: 1, bars, curve, snap: 6, strips: THOMAE_STRIPS, yMax: 1.05, xTicks: [0, 0.2, 0.4, 0.6, 0.8, 1], decimal };
 }
 
 /** The upper sum of the picture: the area under the staircase. */
@@ -892,6 +871,8 @@ function seriesChart(z, decimal = '.') {
   for (let e = hi; e >= lo; e -= every) yTicks.unshift(10 ** e);
   return {
     x: path.map((p) => p.terms),
+    path,
+    z,
     logY: true,
     yMin: 10 ** lo,
     yMax: 10 ** hi,
@@ -1079,6 +1060,32 @@ const tips = {
     const b = h.bars[hit.index];
     return b ? T.estimates(b.from, b.to, b.count, b.share) : null;
   },
+  // i sei grafici che prima non avevano etichetta: 1.7, 1.8, 2.3, 2.7, 2.8, 2.11
+  cost: (chart, T) => (hit) => T.cost(chart.x[hit.index], chart.series[0].values[hit.index], chart.series[1].values[hit.index]),
+  thomae: (chart, T) => (hit) => {
+    const b = chart.bars[hit.index];
+    if (!b) return null;
+    // lo stelo sta nella striscia che lo contiene; uno sul bordo fra due strisce conta per entrambe
+    const at = b.p / b.q;
+    const strips = [];
+    for (let i = 0; i < chart.strips; i++) if (at >= i / chart.strips - 1e-12 && at <= (i + 1) / chart.strips + 1e-12) strips.push(i);
+    return T.thomae(b.p, b.q, strips.map((i) => ({ from: i / chart.strips, to: (i + 1) / chart.strips, top: 1 / hw.smallestDenominator(i, chart.strips) })));
+  },
+  bell: (chart, T) => (hit) => {
+    const point = chart.curve[hit.index];
+    if (!point) return null;
+    const [x, density] = point;
+    return T.bell(x, density, hw.normalCdf((x - chart.mu) / chart.sigma));
+  },
+  series: (chart, T) => (hit) => {
+    const p = chart.path[hit.index];
+    return p ? T.series(chart.z, p) : null;
+  },
+  approximation: (chart, T) => (hit) => T.approximation(chart.x[hit.index], chart.series[0].values[hit.index], chart.series[1].values[hit.index], chart.series[2].values[hit.index]),
+  methods: (chart, T, names) => (hit) => {
+    const z = chart.x[hit.index];
+    return T.methods(z, hw.CDF_METHODS.map((key) => ({ name: names[key], error: Math.abs(hw.cdfBy[key](z) - hw.referencePhi(z)) })));
+  },
   mcPath: (run, T) => (hit) => {
     const p = run.path[hit.index];
     return p ? T.mcPath(p, run.exact) : null;
@@ -1140,7 +1147,7 @@ function scheduleFrameJob(job) {
   }
 }
 
-return { SECTIONS, tocEntries, AREA, Z_STEPS, zOfIndex, indexOfZ, areaState, bellChart, RULES_N, ruleRows, gaussRows, RULE_CODE, STRATEGY_COLUMNS, strategyTable, strategyFacts, convergenceChart, convergenceFacts, ZTABLE_MARKS, isMarkedZ, quantileRows, NEWTON_P, newtonRows, newtonChart, tailChart, tailFacts, ALARM_EVENTS, ALARM_RATES, ALARM_DEFAULT, ALARM_KS, alarmRows, alarmState, alarmChart, FIELD_LENGTH, DEFAULT_PARAMS, fieldsOf, DEFAULT_INPUTS, readInputs, sameParams, applyInputs, allValid, paramsKey, parseParamsKey, inputBadge, ECDF_WINDOW, ecdfChart, FUNCTION_KEYS, DEFAULT_CUSTOM, RANGE_LENGTH, readCustom, specOf, integralChart, SUM_SIZES, riemannRows, lebesgueRows, referenceOf, distributionChart, rearrangementChart, compareChart, compareFacts, SUMMARY_N, summaryRows, SAME_LIMIT, resultsRows, efficiencyRows, efficiencyFacts, efficiencyChart, THOMAE_Q, THOMAE_STRIPS, pathological, thomaeChart, thomaeUpper, clock, trafficChart, durationChart, mcRows, mcHistogram, MC_CHECKPOINTS, mcPath, mcPathChart, DIRICHLET_NUMBERS, SERIES_CHOICES, SERIES_TERMS, seriesChart, approximationChart, approximationFacts, METHOD_STYLE, methodsChart, methodsRows, methodsFacts, referenceFacts, TEST_GROUPS, statTests, expectedVerdicts, testSummary, tips, LINKED_TABLES, links, scheduleFrameJob };
+return { SECTIONS, tocEntries, AREA, Z_STEPS, zOfIndex, indexOfZ, areaState, bellChart, RULES_N, ruleRows, gaussRows, STRATEGY_COLUMNS, strategyTable, strategyFacts, convergenceChart, convergenceFacts, ZTABLE_MARKS, isMarkedZ, quantileRows, NEWTON_P, newtonRows, newtonChart, tailChart, tailFacts, ALARM_EVENTS, ALARM_RATES, ALARM_DEFAULT, ALARM_KS, alarmRows, alarmState, alarmChart, FIELD_LENGTH, DEFAULT_PARAMS, fieldsOf, DEFAULT_INPUTS, readInputs, sameParams, applyInputs, allValid, paramsKey, parseParamsKey, inputBadge, ECDF_WINDOW, ecdfChart, FUNCTION_KEYS, DEFAULT_CUSTOM, RANGE_LENGTH, readCustom, specOf, integralChart, SUM_SIZES, riemannRows, lebesgueRows, referenceOf, distributionChart, rearrangementChart, compareChart, compareFacts, SUMMARY_N, summaryRows, SAME_LIMIT, resultsRows, efficiencyRows, efficiencyFacts, efficiencyChart, THOMAE_Q, THOMAE_STRIPS, pathological, thomaeChart, thomaeUpper, clock, trafficChart, durationChart, mcRows, mcHistogram, MC_CHECKPOINTS, mcPath, mcPathChart, DIRICHLET_NUMBERS, SERIES_CHOICES, SERIES_TERMS, seriesChart, approximationChart, approximationFacts, METHOD_STYLE, methodsChart, methodsRows, methodsFacts, referenceFacts, TEST_GROUPS, statTests, expectedVerdicts, testSummary, tips, LINKED_TABLES, links, scheduleFrameJob };
 })();
 
 var texts$ = (function () {
@@ -1438,7 +1445,6 @@ const it = {
       'Cinque regole, dalla più ingenua alla più furba. Le prime quattro usano punti equidistanti: i rettangoli prendono il valore all’estremo sinistro di ogni pezzo, i punti medi quello al centro, i trapezi uniscono i due estremi con un segmento, Simpson tre punti con un arco di parabola. Gauss-Legendre sceglie invece dove valutare la funzione: n nodi e n pesi calcolati perché la regola sia esatta per ogni polinomio di grado fino a 2n - 1.',
     ],
     formulasTitle: 'Le cinque regole su [a, b]',
-    codeTitle: 'Il codice: integrate() di homework5.js, una riga per regola',
     tableTitle: (n) => `Φ(1,96) con n = ${n}: valore, errore e valori della densità usati`,
     cols: { rule: 'Regola', n: 'n', evaluations: 'Valori di φ', value: 'Φ(1,96) calcolata', error: 'Errore' },
     gaussTitle: 'Gauss-Legendre con 5 nodi su [-1, 1]: le radici del polinomio di Legendre P_5 e i loro pesi',
@@ -2055,6 +2061,12 @@ const it = {
     duration: (h, v) => `${IT.num(h, 2)} ore al giorno sopra ${IT.int(v)} Mb/s`,
     compare: (r) => `n = K = ${IT.int(r.n)}: Riemann ${IT.err(r.errors.riemann)}, Lebesgue ${IT.err(r.errors.lebesgue)}`,
     estimates: (from, to, count, share) => `Da ${IT.sig(from, 5)} a ${IT.sig(to, 5)}: ${IT.int(count)} stime, ${IT.pct(share, 1)}`,
+    cost: (n, r, l) => `${IT.int(n)} valori di f: errore relativo ${[Number.isFinite(r) ? `di Riemann ${IT.err(r)}` : null, Number.isFinite(l) ? `di Lebesgue ${IT.err(l)}` : null].filter(Boolean).join(', ')}`,
+    thomae: (p, q, strips) => `x = ${p}/${q}: Thomae vale 1/${q} = ${IT.sig(1 / q, 4)}; ${strips.map((st) => `nella striscia da ${IT.num(st.from, 1)} a ${IT.num(st.to, 1)} la somma superiore prende ${IT.sig(st.top, 4)}`).join('; ')}`,
+    bell: (x, density, area) => `x = ${IT.num(x, 2)}: densità φ(x) = ${IT.num(density, 4)}, area a sinistra Φ(x) = ${IT.num(area, 4)}`,
+    series: (z, p) => `z = ${IT.plain(z)}, ${p.terms} termini: serie degli appunti ${IT.err(p.alternating)} (limite ${IT.err(p.bound)}), serie a termini positivi ${IT.err(p.positive)}`,
+    approximation: (z, as, zs, bound) => `z = ${IT.num(z, 2)}: errore di 7.1.26 ${IT.sig(as, 3)}, di 26.2.17 ${IT.sig(zs, 3)}, limite pubblicato ± ${IT.sig(bound, 3)}`,
+    methods: (z, list) => `z = ${IT.num(z, 1)}: ${list.map((m) => `${m.name}: ${IT.err(m.error)}`).join('; ')}`,
     mcPath: (p, exact) => `${IT.int(p.k)} punti: stima ${IT.sig(p.estimate, 6)} ± ${IT.sig(1.96 * p.se, 3)}, esatto ${IT.sig(exact, 6)}`,
   },
   download: {
@@ -2200,7 +2212,6 @@ const en = {
       'Five rules, from the most naive to the smartest. The first four use equally spaced points: rectangles take the value at the left end of every piece, midpoints the one at the centre, trapezoids join the two ends with a segment, Simpson joins three points with an arc of parabola. Gauss-Legendre chooses instead where to evaluate the function: n nodes and n weights computed so that the rule is exact for every polynomial of degree up to 2n - 1.',
     ],
     formulasTitle: 'The five rules on [a, b]',
-    codeTitle: 'The code: integrate() of homework5.js, one line per rule',
     tableTitle: (n) => `Φ(1.96) with n = ${n}: value, error and values of the density used`,
     cols: { rule: 'Rule', n: 'n', evaluations: 'Values of φ', value: 'Computed Φ(1.96)', error: 'Error' },
     gaussTitle: 'Gauss-Legendre with 5 nodes on [-1, 1]: the roots of the Legendre polynomial P_5 and their weights',
@@ -2817,6 +2828,12 @@ const en = {
     duration: (h, v) => `${EN.num(h, 2)} hours a day above ${EN.int(v)} Mb/s`,
     compare: (r) => `n = K = ${EN.int(r.n)}: Riemann ${EN.err(r.errors.riemann)}, Lebesgue ${EN.err(r.errors.lebesgue)}`,
     estimates: (from, to, count, share) => `From ${EN.sig(from, 5)} to ${EN.sig(to, 5)}: ${EN.int(count)} estimates, ${EN.pct(share, 1)}`,
+    cost: (n, r, l) => `${EN.int(n)} values of f: relative error ${[Number.isFinite(r) ? `of Riemann ${EN.err(r)}` : null, Number.isFinite(l) ? `of Lebesgue ${EN.err(l)}` : null].filter(Boolean).join(', ')}`,
+    thomae: (p, q, strips) => `x = ${p}/${q}: Thomae's function is 1/${q} = ${EN.sig(1 / q, 4)}; ${strips.map((st) => `in the strip from ${EN.num(st.from, 1)} to ${EN.num(st.to, 1)} the upper sum takes ${EN.sig(st.top, 4)}`).join('; ')}`,
+    bell: (x, density, area) => `x = ${EN.num(x, 2)}: density φ(x) = ${EN.num(density, 4)}, area to the left Φ(x) = ${EN.num(area, 4)}`,
+    series: (z, p) => `z = ${EN.plain(z)}, ${p.terms} terms: series of the notes ${EN.err(p.alternating)} (bound ${EN.err(p.bound)}), positive series ${EN.err(p.positive)}`,
+    approximation: (z, as, zs, bound) => `z = ${EN.num(z, 2)}: error of 7.1.26 ${EN.sig(as, 3)}, of 26.2.17 ${EN.sig(zs, 3)}, published bound ± ${EN.sig(bound, 3)}`,
+    methods: (z, list) => `z = ${EN.num(z, 1)}: ${list.map((m) => `${m.name}: ${EN.err(m.error)}`).join('; ')}`,
     mcPath: (p, exact) => `${EN.int(p.k)} points: estimate ${EN.sig(p.estimate, 6)} ± ${EN.sig(1.96 * p.se, 3)}, exact ${EN.sig(exact, 6)}`,
   },
   download: {
@@ -2991,7 +3008,9 @@ function legend(items) {
   );
 }
 
-function figure(caption, draw, data, { wide = false, tip = null, items = null, note = null, link = null } = {}) {
+function figure(caption, draw, data, { wide = false, tip: given = null, tipOf = null, items = null, note = null, link = null } = {}) {
+  // tipOf(data): the label built from the same data the chart draws
+  const tip = given || (tipOf ? tipOf(data) : null);
   const canvas = h('canvas', { class: 'chart', role: 'img', 'aria-label': caption });
   const fig = h('figure', { class: wide ? 'figure wide' : 'figure' }, canvas, items && legend(items), note && h('p', { class: 'figure-note', text: note }), h('figcaption', { text: caption }));
   const detach = tip ? hw.attachChartTooltip(canvas, { draw, data, describe: tip, link }) : null;
@@ -3189,8 +3208,6 @@ function rulesBlock() {
   return [
     paras(R.intro),
     formulas(text.formulas.rules, R.formulasTitle),
-    subtitle(R.codeTitle),
-    h('pre', { class: 'code', text: view.RULE_CODE }),
     subtitle(R.tableTitle(view.RULES_N)),
     table(
       'discussion rules',
@@ -3653,7 +3670,7 @@ function updateEfficiency() {
     regions.efficiency,
     !study
       ? pending()
-      : h('div', { class: 'charts' }, figure(E.chartTitle(text.functionNames[state.fnKey]), hw.drawLineChart, view.efficiencyChart(study, F.decimal), { wide: true, items: [{ label: E.legend[0], color: 1 }, { label: E.legend[1], color: 0 }] })),
+      : h('div', { class: 'charts' }, figure(E.chartTitle(text.functionNames[state.fnKey]), hw.drawLineChart, view.efficiencyChart(study, F.decimal), { wide: true, tipOf: (data) => view.tips.cost(data, text.tips), items: [{ label: E.legend[0], color: 1 }, { label: E.legend[1], color: 0 }] })),
     rows && [
       subtitle(E.tableTitle),
       h(
@@ -3687,7 +3704,7 @@ function pathologicalBlock() {
       }),
     ),
     h('p', { text: P.thomaeIntro }),
-    h('div', { class: 'charts' }, figure(P.chartTitle(view.thomaeUpper()), hw.drawHistogram, view.thomaeChart(F.decimal), { wide: true })),
+    h('div', { class: 'charts' }, figure(P.chartTitle(view.thomaeUpper()), hw.drawHistogram, view.thomaeChart(F.decimal), { wide: true, tipOf: (data) => view.tips.thomae(data, text.tips) })),
     subtitle(P.tableTitle),
     h(
       'div',
@@ -3726,7 +3743,7 @@ function exercise2Section() {
     title('hw5-area', 1, S.area),
     paras(text.area.intro),
     formulas(text.formulas.cdf),
-    h('div', { class: 'charts' }, figure(text.area.chartTitle, hw.drawQuadrature, view.bellChart(F.decimal), { wide: true })),
+    h('div', { class: 'charts' }, figure(text.area.chartTitle, hw.drawQuadrature, view.bellChart(F.decimal), { wide: true, tipOf: (data) => view.tips.bell(data, text.tips) })),
     tryAreaBlock(),
     title('hw5-rules', 1, S.rules),
     rulesBlock(),
@@ -3804,7 +3821,7 @@ function seriesBlock() {
   const S = text.series;
   const F = text.fmt;
   const rows = hw.seriesRows();
-  series.fig = figure(S.chartTitle(series.z), hw.drawLineChart, view.seriesChart(series.z, F.decimal), { wide: true, items: [{ label: S.legend[0], color: 1 }, { label: S.legend[1], color: 1, dashed: true }, { label: S.legend[2], color: 0 }] });
+  series.fig = figure(S.chartTitle(series.z), hw.drawLineChart, view.seriesChart(series.z, F.decimal), { wide: true, tipOf: (data) => view.tips.series(data, text.tips), items: [{ label: S.legend[0], color: 1 }, { label: S.legend[1], color: 1, dashed: true }, { label: S.legend[2], color: 0 }] });
   return [
     paras(S.intro),
     formulas(S.formulas),
@@ -3820,7 +3837,8 @@ function seriesBlock() {
     ),
     choices(S.chooseLabel, view.SERIES_CHOICES.map((v) => [v, F.plain(v)]), series.z, (z) => {
       series.z = z;
-      refreshFigure(series.fig, S.chartTitle(z), view.seriesChart(z, F.decimal), null);
+      const data = view.seriesChart(z, F.decimal);
+      refreshFigure(series.fig, S.chartTitle(z), data, view.tips.series(data, text.tips));
     }),
     h('div', { class: 'charts' }, series.fig),
     paras(S.after(rows)),
@@ -3832,7 +3850,7 @@ function approximationsBlock() {
   const F = text.fmt;
   return [
     paras(A.intro),
-    h('div', { class: 'charts' }, figure(A.chartTitle, hw.drawLineChart, view.approximationChart(F.decimal), { wide: true, items: [{ label: A.legend[0], color: 0 }, { label: A.legend[1], color: 1 }, { label: A.legend[2], color: 6, dashed: true }] })),
+    h('div', { class: 'charts' }, figure(A.chartTitle, hw.drawLineChart, view.approximationChart(F.decimal), { wide: true, tipOf: (data) => view.tips.approximation(data, text.tips), items: [{ label: A.legend[0], color: 0 }, { label: A.legend[1], color: 1 }, { label: A.legend[2], color: 6, dashed: true }] })),
     paras(A.after(view.approximationFacts())),
   ];
 }
@@ -3887,7 +3905,7 @@ function updateMethods() {
       ),
     ),
     !s && pending(),
-    h('div', { class: 'charts' }, figure(M.chartTitle, hw.drawLineChart, view.methodsChart(F.decimal), { wide: true, items: hw.CDF_METHODS.map((key) => ({ label: text.methodNames[key], color: view.METHOD_STYLE[key].colorIndex, dashed: !!view.METHOD_STYLE[key].dashed })) })),
+    h('div', { class: 'charts' }, figure(M.chartTitle, hw.drawLineChart, view.methodsChart(F.decimal), { wide: true, tipOf: (data) => view.tips.methods(data, text.tips, text.methodNames), items: hw.CDF_METHODS.map((key) => ({ label: text.methodNames[key], color: view.METHOD_STYLE[key].colorIndex, dashed: !!view.METHOD_STYLE[key].dashed })) })),
     paras(M.after(view.methodsFacts(s))),
   );
 }

@@ -1077,14 +1077,10 @@ dialog.index::backdrop {
 
 /* ===== Homework #4 =====
    Le stesse classi dell'Homework #3, piu' gli elementi nuovi: il campo dei
-   dati della sezione 1.5, le tre righe di codice, il passo corrente. */
+   dati della sezione 1.4, il passo corrente. */
 .param.data input {
   width: 100%;
   max-width: 34rem;
-}
-
-pre.core {
-  border-left: 4px solid var(--accent);
 }
 
 .caption.line {
