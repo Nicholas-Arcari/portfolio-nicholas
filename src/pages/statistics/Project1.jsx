@@ -1,6 +1,7 @@
 // src/pages/statistics/Project1.jsx
 // Il primo project di Statistics, un progetto di gruppo: The Anomaly Guard. Il
-// codice sta nel suo repository (github.com/Nicholas-Arcari/anomaly-guard) e qui
+// codice sta nel repository dell'organizzazione del gruppo
+// (github.com/the-anomaly-guard/anomaly-guard) e qui
 // non se ne copia niente: la pagina mostra in un iframe la demo che quel
 // repository pubblica su GitHub Pages, e ogni nuova pubblicazione compare qui
 // da sola. Nella sidebar, come negli homework, il riquadro col codice: qui e'
@@ -8,7 +9,7 @@
 //
 // L'iframe e' isolato (sandbox senza allow-same-origin): la demo gira come
 // un'origine a se', senza accesso a questa pagina, ai cookie o allo storage del
-// portfolio, pur stando sullo stesso dominio nicholas-arcari.github.io. Le
+// portfolio (e sta comunque su un altro dominio, the-anomaly-guard.github.io). Le
 // basta allow-scripts (impostazioni e pagine passano dall'indirizzo, non dallo
 // storage); allow-popups e allow-popups-to-escape-sandbox servono ai suoi link
 // "Source code", che aprono GitHub in una nuova scheda. La CSP del sito
@@ -17,8 +18,8 @@ import React from 'react';
 import { useLanguage } from '../../contexts/languageContext';
 import HomeworkShell from './HomeworkShell';
 
-const DEMO = 'https://nicholas-arcari.github.io/anomaly-guard/';
-const REPO = 'https://github.com/Nicholas-Arcari/anomaly-guard';
+const DEMO = 'https://the-anomaly-guard.github.io/anomaly-guard/';
+const REPO = 'https://github.com/the-anomaly-guard/anomaly-guard';
 
 const Project1 = () => {
   const { t } = useLanguage();

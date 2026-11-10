@@ -27,7 +27,7 @@ const CSP = [
   "media-src 'self' https://github.com https://objects.githubusercontent.com https://release-assets.githubusercontent.com",
   "connect-src 'self'",
   "object-src 'none'",
-  'frame-src https://nicholas-arcari.github.io/anomaly-guard/',
+  'frame-src https://the-anomaly-guard.github.io/anomaly-guard/',
   "base-uri 'self'",
   "form-action 'none'",
   'upgrade-insecure-requests',
