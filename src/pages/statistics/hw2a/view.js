@@ -465,19 +465,59 @@ export function testSummary(s) {
  * pointer (hw.attachChartTooltip), from the same data the chart draws. P
  * is the `tips` part of the texts.
  */
+// ---------------------------------------------------------------------------
+// Le legende dei grafici, per la pagina e per il programma scaricabile: ogni
+// voce { label, color | paletteKey, dashed?, box?, parts } e' un pulsante che
+// nasconde le sue parti del disegno (`hidden` dei dati di ogni grafico)
+// ---------------------------------------------------------------------------
+
+const seriesItem = (label, color, i, extra = {}) => ({ label, color, parts: [`series:${i}`], ...extra });
+
+// a bar chart: the counts and the expected values (dashed)
+const barItems = (labels) => [
+  { label: labels[0], paletteKey: 'bars', box: true, parts: ['bars'] },
+  { label: labels[1], paletteKey: 'reference', dashed: true, parts: ['expected'] },
+];
+
+export const legends = {
+  letters: (text) => barItems(text.legends.letters),
+  cipher: (text) => barItems(text.legends.cipher),
+  bytes: (text) => barItems(text.legends.bytes),
+  corpus: (text) => barItems(text.legends.corpus),
+  posterior: (text) => [
+    { label: text.legends.posterior[0], paletteKey: 'bars', box: true, parts: ['bars'] },
+    { label: text.legends.posterior[1], paletteKey: 'highlight', box: true, parts: ['highlight'] },
+  ],
+  success: (text) => [seriesItem(text.lengths.legend[0], 0, 0), seriesItem(text.lengths.legend[1], 1, 1, { dashed: true })],
+  methods: (text) => hw.METHODS.map((m, i) => seriesItem(text.methodNames[m], i, i)),
+  // every attack: its measured points and its fitted line
+  scaling: (text) => ATTACKS.map((m, i) => ({ label: text.scaling.legend[i], color: i, parts: [`series:${i}`, `series:${ATTACKS.length + i}`] })),
+};
+
+/** Whether series i of a chart is on screen: the reader can hide it from the legend. */
+const seriesOn = (hidden, i) => !hidden.includes(`series:${i}`);
+
+/**
+ * The labels under the pointer, one factory per chart: each returns
+ * (hit, hidden) => text, where `hidden` lists the parts of the chart that
+ * the reader turned off in the legend, and the label leaves them out.
+ */
 export const tips = {
-  letters: (data, P) => ({ from }) => P.letter(UPPER[from], data.values[from], data.expected[from]),
-  ecBytes: (data, P) => ({ from, to }) => {
+  letters: (data, P) => ({ from }, hidden = []) => P.letter(UPPER[from], data.values[from], hidden.includes('expected') ? null : data.expected[from]),
+  ecBytes: (data, P) => ({ from, to }, hidden = []) => {
     const part = data.values.slice(from, to);
-    return to - from === 1 ? P.byte(from, data.values[from], data.expected) : P.bytes(from, to - 1, Math.min(...part), Math.max(...part), data.expected);
+    const expected = hidden.includes('expected') ? null : data.expected;
+    return to - from === 1 ? P.byte(from, data.values[from], expected) : P.bytes(from, to - 1, Math.min(...part), Math.max(...part), expected);
   },
-  corpus: (data, P) => ({ from }) => P.frequency(UPPER[from], data.values[from], data.expected[from]),
+  corpus: (data, P) => ({ from }, hidden = []) => P.frequency(UPPER[from], data.values[from], hidden.includes('expected') ? null : data.expected[from]),
   posterior: (crack, P) => ({ from }) => P.shift(from, crack.posterior[from], crack.candidates[from].text),
-  success: (s, P) => ({ index }) => P.success(s.caesar.lengths[index], s.caesar.trials[index], s.caesar.rates.unigram[index], s.caesar.intervals.unigram[index], s.caesar.bound[index]),
-  methods: (s, P) => ({ index }) => P.methods(s.caesar.lengths[index], hw.METHODS.map((m) => s.caesar.rates[m][index])),
-  scaling: (sc, P) => ({ index }) => {
+  success: (s, P) => ({ index }, hidden = []) =>
+    P.success(s.caesar.lengths[index], s.caesar.trials[index], seriesOn(hidden, 0) ? s.caesar.rates.unigram[index] : null, s.caesar.intervals.unigram[index], seriesOn(hidden, 1) ? s.caesar.bound[index] : null),
+  methods: (s, P) => ({ index }, hidden = []) => P.methods(s.caesar.lengths[index], hw.METHODS.map((m, i) => (seriesOn(hidden, i) ? s.caesar.rates[m][index] : null))),
+  scaling: (sc, P) => ({ index }, hidden = []) => {
     const bits = scalingBits(sc)[index];
-    return P.scaling(bits, ATTACKS.map((m) => {
+    return P.scaling(bits, ATTACKS.map((m, i) => {
+      if (!seriesOn(hidden, i)) return null;
       const row = sc.rows[m].find((r) => r.bits === bits);
       return row ? row.mean : null;
     }));

@@ -1957,7 +1957,7 @@ function barLayout(bars, width) {
  * `highlight` in another colour. With more bars than pixels each pixel
  * column shows the largest of its bars, so that no value disappears.
  */
-export function drawBarChart(canvas, { values, expected = null, labels = null, allLabels = false, highlight = [], max = null, decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
+export function drawBarChart(canvas, { values, expected = null, labels = null, allLabels = false, highlight = [], max = null, hidden = [], decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
   const pal = { ...DEFAULT_PALETTE, ...palette };
   const { ctx, width, height } = setupCanvas(canvas, BAR_ASPECT, knownWidth);
   const { margin, w, h, columns, perColumn, colW } = barLayout(values.length, width);
@@ -1978,10 +1978,13 @@ export function drawBarChart(canvas, { values, expected = null, labels = null, a
       if (highlight.includes(i)) marked = true;
     }
     const bh = (v / top) * h;
-    ctx.fillStyle = marked ? pal.highlight : pal.bars;
+    // the legend can hide the bars and the highlighted ones apart; a highlight hidden leaves an ordinary bar
+    const asHighlight = marked && !hidden.includes('highlight');
+    if (!asHighlight && hidden.includes('bars')) continue;
+    ctx.fillStyle = asHighlight ? pal.highlight : pal.bars;
     ctx.fillRect(margin.left + c * colW + gap, margin.top + h - bh, Math.max(0.6, colW - 2 * gap), bh);
   }
-  if (refs.length) {
+  if (refs.length && !hidden.includes('expected')) {
     ctx.strokeStyle = pal.reference;
     ctx.setLineDash([5, 4]);
     ctx.lineWidth = 1.5;
@@ -2029,7 +2032,7 @@ function lineLayout(data, width) {
  * of `colorIndex`; the legend is written in the page, under the figure,
  * where it can be read and translated.
  */
-export function drawLineChart(canvas, { x, series, logX = false, yMin = 0, yMax = 1, yTicks = [], xTicks = [], yFormat = (v) => String(v), decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
+export function drawLineChart(canvas, { x, series, logX = false, yMin = 0, yMax = 1, yTicks = [], xTicks = [], yFormat = (v) => String(v), hidden = [], decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
   const pal = { ...DEFAULT_PALETTE, ...palette };
   const { ctx, width, height } = setupCanvas(canvas, LINE_ASPECT, knownWidth);
   const { margin, w, h, px } = lineLayout({ x, logX }, width);
@@ -2058,6 +2061,8 @@ export function drawLineChart(canvas, { x, series, logX = false, yMin = 0, yMax 
   }
   ctx.strokeRect(margin.left, margin.top, w, h);
   series.forEach((s, i) => {
+    // a series hidden from the legend still counts for the axes, it is just not drawn
+    if (hidden.includes(`series:${i}`)) return;
     const color = pal.series[(s.colorIndex ?? i) % pal.series.length];
     const points = x.map((v, j) => [px(v), s.values[j]]).filter(([, v]) => v !== null && v !== undefined && !Number.isNaN(v));
     if (s.band) {
@@ -2115,6 +2120,10 @@ export function chartHitTest(draw, data, width, x, y) {
   const column = Math.min(columns - 1, Math.floor((x - margin.left) / colW));
   const from = Math.floor(column * perColumn);
   const to = Math.max(Math.floor((column + 1) * perColumn), from + 1);
+  // a bar hidden from the legend is not under the pointer
+  const off = data.hidden || [];
+  const marked = (data.highlight || []).some((i) => i >= from && i < to);
+  if (off.includes('bars') && !(marked && !off.includes('highlight'))) return null;
   return { kind: 'bar', from, to, rect: { x: margin.left + column * colW, y: margin.top, width: colW, height: h } };
 }
 

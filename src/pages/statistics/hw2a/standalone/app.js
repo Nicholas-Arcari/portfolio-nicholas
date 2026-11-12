@@ -152,7 +152,11 @@ const value = (label, content, extra = '') => h('div', { class: `value ${extra}`
 // The width of every chart comes from the ResizeObserver, measured after
 // layout; the height is set at once, the drawing happens a few
 // milliseconds per frame.
-const charts = new Map(); // canvas -> { draw, data, width, detach }
+const charts = new Map(); // canvas -> { draw, data, width, detach, link, tip, hidden }
+
+// what a chart draws: its data, without the parts hidden from the legend
+const shownData = (chart) => (chart.hidden.length ? { ...chart.data, hidden: chart.hidden } : chart.data);
+
 const resizer = new ResizeObserver((entries) => {
   for (const entry of entries) {
     const canvas = entry.target;
@@ -160,31 +164,121 @@ const resizer = new ResizeObserver((entries) => {
     const width = Math.round(entry.contentRect.width);
     if (!chart || width <= 0 || width === chart.width) continue;
     chart.width = width;
-    canvas.style.height = `${hw.chartHeight(chart.draw, chart.data, width)}px`;
+    canvas.style.height = `${hw.chartHeight(chart.draw, shownData(chart), width)}px`;
     view.scheduleFrameJob(() => {
-      if (charts.get(canvas) === chart && chart.width === width) chart.draw(canvas, { ...chart.data, width }, palette());
+      if (charts.get(canvas) === chart && chart.width === width) chart.draw(canvas, { ...shownData(chart), width }, palette());
     });
   }
 });
 
-/** The legend of a chart, in the page: { label, color?, dashed? }. */
-function legend(items) {
+/** Ties the label under the pointer to a chart: it describes what is on screen, and leaves out the hidden parts. */
+function attachTip(canvas, chart) {
+  if (chart.detach) chart.detach();
+  const tip = chart.tip;
+  chart.detach = tip ? hw.attachChartTooltip(canvas, { draw: chart.draw, data: shownData(chart), describe: (hit) => tip(hit, chart.hidden), link: chart.link }) : null;
+}
+
+/** Draws a chart again at its width, with its data and hidden parts. */
+function redraw(canvas, chart) {
+  if (chart.width > 0) {
+    canvas.style.height = `${hw.chartHeight(chart.draw, shownData(chart), chart.width)}px`;
+    chart.draw(canvas, { ...shownData(chart), width: chart.width }, palette());
+  }
+}
+
+// what the reader hid in the legends, by chart: a region filled anew (a step, a result) keeps it
+const kept = {};
+const keep = (name) => {
+  if (!kept[name]) kept[name] = new Set();
+  return kept[name];
+};
+
+/** The parts of the drawing covered by the hidden items of a legend. */
+const partsOf = (items, hidden) => items.flatMap((item, i) => (hidden.has(i) ? item.parts || [] : []));
+
+/**
+ * The legend of a chart, or of a group of charts: { label, color? |
+ * paletteKey?, dashed?, box?, parts }. Every item is a button: pressed (as
+ * the page opens) its parts are on screen, released they are hidden;
+ * onChange(parts) receives the hidden parts after every press. `hidden`,
+ * the set of the hidden items, outlives the legend when its chart is built
+ * again.
+ */
+function legend(items, onChange = null, hidden = new Set()) {
   const pal = palette();
   return h(
     'ul',
     { class: 'series-legend' },
     items.map((item, i) => {
-      const color = pal.series[item.color ?? i];
-      return h('li', null, h('span', { class: item.dashed ? 'is-dashed' : null, 'aria-hidden': 'true', style: { borderColor: color, backgroundColor: item.dashed ? 'transparent' : color } }), item.label);
+      const color = item.paletteKey ? pal[item.paletteKey] : pal.series[(item.color ?? i) % pal.series.length];
+      let swatch = null;
+      if (item.box) swatch = 'is-box';
+      else if (item.dashed) swatch = 'is-dashed';
+      const button = h(
+        'button',
+        {
+          type: 'button',
+          'aria-pressed': String(!hidden.has(i)),
+          class: hidden.has(i) ? 'is-off' : null,
+          onclick: () => {
+            if (hidden.has(i)) hidden.delete(i);
+            else hidden.add(i);
+            button.setAttribute('aria-pressed', String(!hidden.has(i)));
+            button.classList.toggle('is-off', hidden.has(i));
+            if (onChange) onChange(partsOf(items, hidden));
+          },
+        },
+        h('span', { class: swatch, 'aria-hidden': 'true', style: { borderColor: color, backgroundColor: item.box ? color : 'transparent' } }),
+        item.label,
+      );
+      return h('li', null, button);
     }),
   );
 }
 
-function figure(caption, draw, data, { wide = false, tip = null, items = null, link = null } = {}) {
+/** Hides the cells and rows of a table that belong to hidden parts (data-part), and shows the others. */
+function hideParts(tableEl, parts) {
+  for (const el of tableEl.querySelectorAll('[data-part]')) el.hidden = parts.includes(el.dataset.part);
+}
+
+/** Hides parts of a chart (the legend of a group of charts calls it on each of them). */
+function setHidden(fig, parts) {
+  const canvas = fig.querySelector('canvas.chart');
+  const chart = charts.get(canvas);
+  if (!chart) return;
+  chart.hidden = parts;
+  attachTip(canvas, chart);
+  redraw(canvas, chart);
+}
+
+/**
+ * A chart with its legend (`items`) and its label under the pointer.
+ * onHide(parts) runs when the reader hides or shows a part, for the table
+ * tied to the chart, and `keep` (a set, keep(name)) remembers the hidden
+ * items when the chart is built again.
+ */
+function figure(caption, draw, data, { wide = false, tip = null, items = null, note = null, link = null, onHide = null, keep: kept = null } = {}) {
   const canvas = h('canvas', { class: 'chart', role: 'img', 'aria-label': caption });
-  const fig = h('figure', { class: wide ? 'figure wide' : 'figure' }, canvas, items && legend(items), h('figcaption', { text: caption }));
-  const detach = tip ? hw.attachChartTooltip(canvas, { draw, data, describe: tip, link }) : null;
-  charts.set(canvas, { draw, data, width: -1, detach });
+  const hidden = kept || new Set();
+  const chart = { draw, data, width: -1, detach: null, link, tip, hidden: items ? partsOf(items, hidden) : [] };
+  const fig = h(
+    'figure',
+    { class: wide ? 'figure wide' : 'figure' },
+    canvas,
+    items &&
+      legend(
+        items,
+        (parts) => {
+          setHidden(fig, parts);
+          if (onHide) onHide(parts);
+        },
+        hidden,
+      ),
+    note && h('p', { class: 'figure-note', text: note }),
+    h('figcaption', { text: caption }),
+  );
+  attachTip(canvas, chart);
+  charts.set(canvas, chart);
   resizer.observe(canvas);
   return fig;
 }
@@ -209,19 +303,19 @@ function redrawAll() {
   updateScaling();
 }
 
-/** A table: column headers, then rows of cells, each { text | node, class?, head? } (head: a row header, th); `id` for a table tied to a chart (view.LINKED_TABLES). */
-function table(className, headers, rows, id = null) {
+/** A table: column headers, then rows of cells, each { text | node, class?, head? } (head: a row header, th); `id` for a table tied to a chart (view.LINKED_TABLES); `columns` gives the part of a chart each column belongs to, and a row can have its own `part`: hideParts() hides them with their curve. */
+function table(className, headers, rows, id = null, columns = []) {
   return h(
     'table',
     { id, class: `table ${className}` },
-    h('thead', null, h('tr', null, headers.map((x) => h('th', { text: x })))),
+    h('thead', null, h('tr', null, headers.map((x, i) => h('th', { text: x, 'data-part': columns[i] || null })))),
     h(
       'tbody',
       null,
       rows.map((row) => h(
         'tr',
-        { class: row.class || null },
-        row.cells.map((cell, i) => h(cell.head ? 'th' : 'td', { 'data-label': cell.head ? null : headers[i], class: cell.class || null }, cell.node || cell.text)),
+        { class: row.class || null, 'data-part': row.part || null },
+        row.cells.map((cell, i) => h(cell.head ? 'th' : 'td', { 'data-label': cell.head ? null : headers[i], class: cell.class || null, 'data-part': columns[i] || null }, cell.node || cell.text)),
       )),
     ),
   );
@@ -613,8 +707,8 @@ function updateCaesar() {
     h(
       'div',
       { class: 'charts' },
-      figure(P.lettersChart, hw.drawBarChart, letters, { tip: view.tips.letters(letters, text.tips) }),
-      figure(P.cipherChart(shift), hw.drawBarChart, cipherLetters, { tip: view.tips.letters(cipherLetters, text.tips) }),
+      figure(P.lettersChart, hw.drawBarChart, letters, { tip: view.tips.letters(letters, text.tips), items: view.legends.letters(text), keep: keep('letters') }),
+      figure(P.cipherChart(shift), hw.drawBarChart, cipherLetters, { tip: view.tips.letters(cipherLetters, text.tips), items: view.legends.cipher(text), keep: keep('cipher') }),
     ),
   );
   updateAlgorithm();
@@ -644,7 +738,7 @@ function updateProperties() {
   fill(
     regions.propertiesStats,
     h('p', { text: P.sampleIntro(s) }),
-    figure(P.bytesChart(s), hw.drawBarChart, bytes, { wide: true, tip: view.tips.ecBytes(bytes, text.tips) }),
+    figure(P.bytesChart(s), hw.drawBarChart, bytes, { wide: true, tip: view.tips.ecBytes(bytes, text.tips), items: view.legends.bytes(text), keep: keep('bytes') }),
     subtitle(P.tableTitle),
     table('discussion ciphers', [P.cols.text, P.cols.symbols, P.cols.entropy, P.cols.ic], view.cipherRows(s).map((r) => ({
       cells: [{ head: true, text: P.rowNames[r.key] }, { text: F.int(r.symbols) }, { text: P.entropyCell(r.entropy, r.max) }, { text: P.icCell(r.ic, r.uniformIc) }],
@@ -705,7 +799,7 @@ function updateCorpus() {
       class: `is-${c.role}`,
       cells: [{ head: true, text: c.number }, { text: c.title }, { text: F.int(c.letters) }, { text: C.roles[c.role] }],
     }))),
-    figure(C.chart(s), hw.drawBarChart, chart, { wide: true, tip: view.tips.corpus(chart, text.tips) }),
+    figure(C.chart(s), hw.drawBarChart, chart, { wide: true, tip: view.tips.corpus(chart, text.tips), items: view.legends.corpus(text), keep: keep('corpus') }),
     paras(C.facts(s)),
     tests('corpus', s),
     paras(C.modelsIntro),
@@ -734,7 +828,7 @@ function updateAlgorithm() {
   fill(
     regions.algorithmLive,
     check(crack.key === shift, A.live(crack, shift)),
-    figure(A.posteriorChart, hw.drawBarChart, chart, { wide: true, tip: view.tips.posterior(crack, text.tips), link: view.links.candidates(candidates) }),
+    figure(A.posteriorChart, hw.drawBarChart, chart, { wide: true, tip: view.tips.posterior(crack, text.tips), link: view.links.candidates(candidates), items: view.legends.posterior(text), keep: keep('posterior') }),
     subtitle(A.candidatesTitle),
     table('discussion candidates', [A.candidateCols.shift, A.candidateCols.perLetter, A.candidateCols.posterior, A.candidateCols.text], candidates.map((r) => ({
       class: r.shift === crack.key ? 'is-current' : null,
@@ -753,14 +847,17 @@ function updateLengths() {
     return;
   }
   const chart = view.successChart(s, F.decimal);
+  // il tasso di successo (con il suo intervallo) e il limite di Chernoff sono anche colonne della tabella
+  const lengths = table('compact lengths', [L.cols.length, L.cols.trials, L.cols.rate, L.cols.interval, L.cols.bound], view.lengthRows(s).map((r) => ({
+    cells: [{ text: r.length }, { text: F.int(r.trials) }, { text: F.pct(r.rates.unigram) }, { text: `${F.pct(r.interval[0])} - ${F.pct(r.interval[1])}` }, { text: F.pct(r.bound) }],
+  })), view.LINKED_TABLES.lengths, [null, null, 'series:0', 'series:0', 'series:1']);
+  hideParts(lengths, partsOf(view.legends.success(text), keep('success')));
   fill(
     regions.lengths,
     paras(L.intro(s)),
-    figure(L.chart, hw.drawLineChart, chart, { wide: true, tip: view.tips.success(s, text.tips), link: view.links.lengths, items: [{ label: L.legend[0] }, { label: L.legend[1], dashed: true }] }),
+    figure(L.chart, hw.drawLineChart, chart, { wide: true, tip: view.tips.success(s, text.tips), link: view.links.lengths, items: view.legends.success(text), keep: keep('success'), onHide: (parts) => hideParts(lengths, parts) }),
     subtitle(L.tableTitle),
-    h('div', { class: 'scroll' }, table('compact lengths', [L.cols.length, L.cols.trials, L.cols.rate, L.cols.interval, L.cols.bound], view.lengthRows(s).map((r) => ({
-      cells: [{ text: r.length }, { text: F.int(r.trials) }, { text: F.pct(r.rates.unigram) }, { text: `${F.pct(r.interval[0])} - ${F.pct(r.interval[1])}` }, { text: F.pct(r.bound) }],
-    })), view.LINKED_TABLES.lengths)),
+    h('div', { class: 'scroll' }, lengths),
     paras(L.explain(s)),
   );
 }
@@ -774,13 +871,17 @@ function updateMethods() {
     return;
   }
   const chart = view.methodsChart(s, F.decimal);
+  // ogni metodo e' una curva del grafico e una riga della tabella delle soglie
+  const thresholds = table('discussion thresholds', [M.cols.method, ...M.cols.levels], view.thresholds(s).map((row) => ({
+    part: `series:${hw.METHODS.indexOf(row.method)}`,
+    cells: [{ head: true, text: text.methodNames[row.method] }, ...row.levels.map((v) => ({ text: v === null ? M.never : String(v) }))],
+  })));
+  hideParts(thresholds, partsOf(view.legends.methods(text), keep('methods')));
   fill(
     regions.methods,
-    figure(M.chart, hw.drawLineChart, chart, { wide: true, tip: view.tips.methods(s, text.tips), items: hw.METHODS.map((m) => ({ label: text.methodNames[m] })) }),
+    figure(M.chart, hw.drawLineChart, chart, { wide: true, tip: view.tips.methods(s, text.tips), items: view.legends.methods(text), keep: keep('methods'), onHide: (parts) => hideParts(thresholds, parts) }),
     subtitle(M.tableTitle),
-    table('discussion thresholds', [M.cols.method, ...M.cols.levels], view.thresholds(s).map((row) => ({
-      cells: [{ head: true, text: text.methodNames[row.method] }, ...row.levels.map((v) => ({ text: v === null ? M.never : String(v) }))],
-    }))),
+    thresholds,
     paras(M.explain(s)),
   );
 }
@@ -859,14 +960,18 @@ function updateScaling() {
     return;
   }
   const chart = view.scalingChart(sc, F.decimal);
+  // ogni attacco: i suoi punti, la sua retta e la sua riga della tabella delle pendenze
+  const fits = table('discussion fits', [C.fitCols.method, C.fitCols.slope, C.fitCols.theory, C.fitCols.constant], view.ATTACKS.map((m, i) => ({
+    part: `series:${i}`,
+    cells: [{ head: true, text: text.attackNames[m] }, { text: `${F.num(sc.fits[m].slope, 3)} ± ${F.num(sc.fits[m].slopeError, 3)}` }, { text: F.num(sc.fits[m].exponent, 1) }, { text: F.num(sc.fits[m].constant, 2) }],
+  })));
+  hideParts(fits, partsOf(view.legends.scaling(text), keep('scaling')));
   fill(
     regions.scaling,
     paras(C.intro(sc)),
-    figure(C.chart, hw.drawLineChart, chart, { wide: true, tip: view.tips.scaling(sc, text.tips), items: C.legend.map((label, i) => ({ label, color: i })) }),
+    figure(C.chart, hw.drawLineChart, chart, { wide: true, tip: view.tips.scaling(sc, text.tips), items: view.legends.scaling(text), keep: keep('scaling'), onHide: (parts) => hideParts(fits, parts) }),
     subtitle(C.fitsTitle),
-    table('discussion fits', [C.fitCols.method, C.fitCols.slope, C.fitCols.theory, C.fitCols.constant], view.ATTACKS.map((m) => ({
-      cells: [{ head: true, text: text.attackNames[m] }, { text: `${F.num(sc.fits[m].slope, 3)} ± ${F.num(sc.fits[m].slopeError, 3)}` }, { text: F.num(sc.fits[m].exponent, 1) }, { text: F.num(sc.fits[m].constant, 2) }],
-    }))),
+    fits,
     subtitle(C.extrapolationTitle),
     table('discussion extrapolation', ['bits', 'exhaustive', 'best', 'here', 'fast', 'memory'].map((k) => C.extrapolationCols[k]), view.extrapolationRows(sc).map((r) => ({
       cells: [{ head: true, text: r.bits }, { text: F.pow2(r.log2.exhaustive) }, { text: F.pow2(r.best) }, { text: F.duration(r.here) }, { text: F.duration(r.fast) }, { text: C.memory(r.memory) }],

@@ -685,15 +685,30 @@ const it = {
   ],
   methodNames: methodNamesIt,
   attackNames: { exhaustive: 'Ricerca esaustiva', bsgs: 'Baby-step giant-step', kangaroo: 'Canguro' },
+  // le legende dei grafici a barre: ogni voce si preme per nascondere la sua parte
+  legends: {
+    letters: ['conteggi delle lettere', 'attese dalle frequenze del corpus'],
+    cipher: ['conteggi delle lettere del cifrato', 'attese dalle frequenze del corpus'],
+    bytes: ['conteggi dei byte', 'attesa uniforme'],
+    corpus: ['capitoli di addestramento', 'capitoli di test'],
+    posterior: ['probabilità a posteriori', 'spostamento più probabile'],
+  },
   tips: {
-    letter: (letter, count, expected) => `${letter}: ${count} ${count === 1 ? 'volta' : 'volte'}, attese ${IT.num(expected, 1)}`,
-    byte: (b, count, expected) => `Byte ${b}: ${IT.int(count)} volte, attese ${IT.num(expected, 1)}`,
-    bytes: (from, to, min, max, expected) => `Byte da ${from} a ${to}: da ${IT.int(min)} a ${IT.int(max)} volte, attese ${IT.num(expected, 1)} ciascuno`,
-    frequency: (letter, training, test) => `${letter}: ${IT.pct(training, 2)} in addestramento, ${IT.pct(test, 2)} nel test`,
+    // a value hidden from the legend (null) is left out of the label
+    letter: (letter, count, expected) => `${letter}: ${count} ${count === 1 ? 'volta' : 'volte'}${expected === null ? '' : `, attese ${IT.num(expected, 1)}`}`,
+    byte: (b, count, expected) => `Byte ${b}: ${IT.int(count)} volte${expected === null ? '' : `, attese ${IT.num(expected, 1)}`}`,
+    bytes: (from, to, min, max, expected) => `Byte da ${from} a ${to}: da ${IT.int(min)} a ${IT.int(max)} volte${expected === null ? '' : `, attese ${IT.num(expected, 1)} ciascuno`}`,
+    frequency: (letter, training, test) => `${letter}: ${IT.pct(training, 2)} in addestramento${test === null ? '' : `, ${IT.pct(test, 2)} nel test`}`,
     shift: (s, p, text) => `s = ${s}: probabilità ${IT.prob(p)}; "${text.slice(0, 32)}${text.length > 32 ? '...' : ''}"`,
-    success: (L, n, rate, interval, bound) => `${L} ${L === 1 ? 'lettera' : 'lettere'}, ${n} brani: successo ${IT.pct(rate)} (95%: ${IT.pct(interval[0])}-${IT.pct(interval[1])}); limite di Chernoff ${IT.pct(bound)}`,
-    methods: (L, rates) => `${L} ${L === 1 ? 'lettera' : 'lettere'}: ${rates.map((r, i) => `${Object.values(methodNamesIt)[i]} ${IT.pct(r)}`).join(', ')}`,
-    scaling: (bits, means) => `${bits} bit: ${means.map((m, i) => (m === null ? null : `${['ricerca esaustiva', 'BSGS', 'canguro'][i]} ${IT.int(m)}`)).filter(Boolean).join(', ')} operazioni in media`,
+    success: (L, n, rate, interval, bound) => {
+      const parts = [rate !== null && `successo ${IT.pct(rate)} (95%: ${IT.pct(interval[0])}-${IT.pct(interval[1])})`, bound !== null && `limite di Chernoff ${IT.pct(bound)}`].filter(Boolean);
+      return parts.length ? `${L} ${L === 1 ? 'lettera' : 'lettere'}, ${n} brani: ${parts.join('; ')}` : null;
+    },
+    methods: (L, rates) => {
+      const parts = rates.map((r, i) => r !== null && `${Object.values(methodNamesIt)[i]} ${IT.pct(r)}`).filter(Boolean);
+      return parts.length ? `${L} ${L === 1 ? 'lettera' : 'lettere'}: ${parts.join(', ')}` : null;
+    },
+    scaling: (bits, means) => (means.some((m) => m !== null) ? `${bits} bit: ${means.map((m, i) => (m === null ? null : `${['ricerca esaustiva', 'BSGS', 'canguro'][i]} ${IT.int(m)}`)).filter(Boolean).join(', ')} operazioni in media` : null),
   },
   download: {
     title: 'Scarica il codice',
@@ -1313,15 +1328,30 @@ const en = {
   ],
   methodNames: methodNamesEn,
   attackNames: { exhaustive: 'Exhaustive search', bsgs: 'Baby-step giant-step', kangaroo: 'Kangaroo' },
+  // the legends of the bar charts: every item can be pressed to hide its part
+  legends: {
+    letters: ['letter counts', 'expected from the frequencies of the corpus'],
+    cipher: ['letter counts of the ciphertext', 'expected from the frequencies of the corpus'],
+    bytes: ['byte counts', 'uniform expectation'],
+    corpus: ['training chapters', 'test chapters'],
+    posterior: ['posterior probability', 'most probable shift'],
+  },
   tips: {
-    letter: (letter, count, expected) => `${letter}: ${count} ${count === 1 ? 'time' : 'times'}, ${EN.num(expected, 1)} expected`,
-    byte: (b, count, expected) => `Byte ${b}: ${EN.int(count)} times, ${EN.num(expected, 1)} expected`,
-    bytes: (from, to, min, max, expected) => `Bytes ${from} to ${to}: ${EN.int(min)} to ${EN.int(max)} times, ${EN.num(expected, 1)} expected each`,
-    frequency: (letter, training, test) => `${letter}: ${EN.pct(training, 2)} in training, ${EN.pct(test, 2)} in test`,
+    // a value hidden from the legend (null) is left out of the label
+    letter: (letter, count, expected) => `${letter}: ${count} ${count === 1 ? 'time' : 'times'}${expected === null ? '' : `, ${EN.num(expected, 1)} expected`}`,
+    byte: (b, count, expected) => `Byte ${b}: ${EN.int(count)} times${expected === null ? '' : `, ${EN.num(expected, 1)} expected`}`,
+    bytes: (from, to, min, max, expected) => `Bytes ${from} to ${to}: ${EN.int(min)} to ${EN.int(max)} times${expected === null ? '' : `, ${EN.num(expected, 1)} expected each`}`,
+    frequency: (letter, training, test) => `${letter}: ${EN.pct(training, 2)} in training${test === null ? '' : `, ${EN.pct(test, 2)} in test`}`,
     shift: (s, p, text) => `s = ${s}: probability ${EN.prob(p)}; "${text.slice(0, 32)}${text.length > 32 ? '...' : ''}"`,
-    success: (L, n, rate, interval, bound) => `${L} ${L === 1 ? 'letter' : 'letters'}, ${n} passages: success ${EN.pct(rate)} (95%: ${EN.pct(interval[0])}-${EN.pct(interval[1])}); Chernoff bound ${EN.pct(bound)}`,
-    methods: (L, rates) => `${L} ${L === 1 ? 'letter' : 'letters'}: ${rates.map((r, i) => `${Object.values(methodNamesEn)[i]} ${EN.pct(r)}`).join(', ')}`,
-    scaling: (bits, means) => `${bits} bits: ${means.map((m, i) => (m === null ? null : `${['exhaustive search', 'BSGS', 'kangaroo'][i]} ${EN.int(m)}`)).filter(Boolean).join(', ')} operations on average`,
+    success: (L, n, rate, interval, bound) => {
+      const parts = [rate !== null && `success ${EN.pct(rate)} (95%: ${EN.pct(interval[0])}-${EN.pct(interval[1])})`, bound !== null && `Chernoff bound ${EN.pct(bound)}`].filter(Boolean);
+      return parts.length ? `${L} ${L === 1 ? 'letter' : 'letters'}, ${n} passages: ${parts.join('; ')}` : null;
+    },
+    methods: (L, rates) => {
+      const parts = rates.map((r, i) => r !== null && `${Object.values(methodNamesEn)[i]} ${EN.pct(r)}`).filter(Boolean);
+      return parts.length ? `${L} ${L === 1 ? 'letter' : 'letters'}: ${parts.join(', ')}` : null;
+    },
+    scaling: (bits, means) => (means.some((m) => m !== null) ? `${bits} bits: ${means.map((m, i) => (m === null ? null : `${['exhaustive search', 'BSGS', 'kangaroo'][i]} ${EN.int(m)}`)).filter(Boolean).join(', ')} operations on average` : null),
   },
   download: {
     title: 'Download the code',
