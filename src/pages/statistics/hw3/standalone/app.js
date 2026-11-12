@@ -109,7 +109,11 @@ const formulas = (content, label = null) => [label && subtitle(label), h('pre', 
 // The width of every chart comes from the ResizeObserver, measured after
 // layout; the height is set at once, the drawing happens a few
 // milliseconds per frame.
-const charts = new Map(); // canvas -> { draw, data, width, detach }
+const charts = new Map(); // canvas -> { draw, data, width, detach, link, tip, hidden }
+
+// what a chart draws: its data, without the parts hidden from the legend
+const shownData = (chart) => (chart.hidden.length ? { ...chart.data, hidden: chart.hidden } : chart.data);
+
 const resizer = new ResizeObserver((entries) => {
   for (const entry of entries) {
     const canvas = entry.target;
@@ -117,33 +121,143 @@ const resizer = new ResizeObserver((entries) => {
     const width = Math.round(entry.contentRect.width);
     if (!chart || width <= 0 || width === chart.width) continue;
     chart.width = width;
-    canvas.style.height = `${hw.chartHeight(chart.draw, chart.data, width)}px`;
+    canvas.style.height = `${hw.chartHeight(chart.draw, shownData(chart), width)}px`;
     view.scheduleFrameJob(() => {
-      if (charts.get(canvas) === chart && chart.width === width) chart.draw(canvas, { ...chart.data, width }, palette());
+      if (charts.get(canvas) === chart && chart.width === width) chart.draw(canvas, { ...shownData(chart), width }, palette());
     });
   }
 });
 
-/** The legend of a chart, in the page: { label, color?, dashed? }. */
-function legend(items) {
+/** Ties the label under the pointer to a chart: it describes what is on screen, and leaves out the hidden parts. */
+function attachTip(canvas, chart) {
+  if (chart.detach) chart.detach();
+  const tip = chart.tip;
+  chart.detach = tip ? hw.attachChartTooltip(canvas, { draw: chart.draw, data: shownData(chart), describe: (hit) => tip(hit, chart.hidden), link: chart.link }) : null;
+}
+
+/** Draws a chart again at its width, with its data and hidden parts. */
+function redraw(canvas, chart) {
+  if (chart.width > 0) {
+    canvas.style.height = `${hw.chartHeight(chart.draw, shownData(chart), chart.width)}px`;
+    chart.draw(canvas, { ...shownData(chart), width: chart.width }, palette());
+  }
+}
+
+// what the reader hid in the legends, by chart: a region filled anew (a step, a result) keeps it
+const kept = {};
+const keep = (name) => {
+  if (!kept[name]) kept[name] = new Set();
+  return kept[name];
+};
+
+/** The parts of the drawing covered by the hidden items of a legend. */
+const partsOf = (items, hidden) => items.flatMap((item, i) => (hidden.has(i) ? item.parts || [] : []));
+
+/**
+ * The legend of a chart, or of a group of charts: { label, color? |
+ * paletteKey?, dashed?, box?, parts }. Every item is a button: pressed (as
+ * the page opens) its parts are on screen, released they are hidden;
+ * onChange(parts) receives the hidden parts after every press. `hidden`,
+ * the set of the hidden items, outlives the legend when its chart is built
+ * again.
+ */
+function legend(items, onChange = null, hidden = new Set()) {
   const pal = palette();
   return h(
     'ul',
     { class: 'series-legend' },
     items.map((item, i) => {
-      const color = pal.series[item.color ?? i];
-      return h('li', null, h('span', { class: item.dashed ? 'is-dashed' : null, 'aria-hidden': 'true', style: { borderColor: color, backgroundColor: item.dashed ? 'transparent' : color } }), item.label);
+      const color = item.paletteKey ? pal[item.paletteKey] : pal.series[(item.color ?? i) % pal.series.length];
+      let swatch = null;
+      if (item.box) swatch = 'is-box';
+      else if (item.dashed) swatch = 'is-dashed';
+      const button = h(
+        'button',
+        {
+          type: 'button',
+          'aria-pressed': String(!hidden.has(i)),
+          class: hidden.has(i) ? 'is-off' : null,
+          onclick: () => {
+            if (hidden.has(i)) hidden.delete(i);
+            else hidden.add(i);
+            button.setAttribute('aria-pressed', String(!hidden.has(i)));
+            button.classList.toggle('is-off', hidden.has(i));
+            if (onChange) onChange(partsOf(items, hidden));
+          },
+        },
+        h('span', { class: swatch, 'aria-hidden': 'true', style: { borderColor: color, backgroundColor: item.box ? color : 'transparent' } }),
+        item.label,
+      );
+      return h('li', null, button);
     }),
   );
 }
 
-function figure(caption, draw, data, { wide = false, tip = null, items = null, note = null, link = null } = {}) {
+/** Hides the cells and rows of a table that belong to hidden parts (data-part), and shows the others. */
+function hideParts(tableEl, parts) {
+  for (const el of tableEl.querySelectorAll('[data-part]')) el.hidden = parts.includes(el.dataset.part);
+}
+
+/** Hides parts of a chart (the legend of a group of charts calls it on each of them). */
+function setHidden(fig, parts) {
+  const canvas = fig.querySelector('canvas.chart');
+  const chart = charts.get(canvas);
+  if (!chart) return;
+  chart.hidden = parts;
+  attachTip(canvas, chart);
+  redraw(canvas, chart);
+}
+
+/**
+ * A chart with its legend (`items`) and its label under the pointer.
+ * onHide(parts) runs when the reader hides or shows a part, for the table
+ * tied to the chart, and `keep` (a set, keep(name)) remembers the hidden
+ * items when the chart is built again. The charts of a group share one
+ * legend (groupLegend) and have no `items`.
+ */
+function figure(caption, draw, data, { wide = false, tip = null, items = null, note = null, link = null, onHide = null, keep: kept = null } = {}) {
   const canvas = h('canvas', { class: 'chart', role: 'img', 'aria-label': caption });
-  const fig = h('figure', { class: wide ? 'figure wide' : 'figure' }, canvas, items && legend(items), note && h('p', { class: 'figure-note', text: note }), h('figcaption', { text: caption }));
-  const detach = tip ? hw.attachChartTooltip(canvas, { draw, data, describe: tip, link }) : null;
-  charts.set(canvas, { draw, data, width: -1, detach });
+  const hidden = kept || new Set();
+  const chart = { draw, data, width: -1, detach: null, link, tip, hidden: items ? partsOf(items, hidden) : [] };
+  const fig = h(
+    'figure',
+    { class: wide ? 'figure wide' : 'figure' },
+    canvas,
+    items &&
+      legend(
+        items,
+        (parts) => {
+          setHidden(fig, parts);
+          if (onHide) onHide(parts);
+        },
+        hidden,
+      ),
+    note && h('p', { class: 'figure-note', text: note }),
+    h('figcaption', { text: caption }),
+  );
+  attachTip(canvas, chart);
+  charts.set(canvas, chart);
   resizer.observe(canvas);
   return fig;
+}
+
+/**
+ * One legend for a group of charts (the two models side by side): every
+ * press hides or shows the same parts in all of them, and onHide(parts)
+ * updates the table they share. The charts start with what `name` keeps.
+ */
+function groupLegend(name, items, figs, onHide = null) {
+  const hidden = keep(name);
+  const parts = partsOf(items, hidden);
+  for (const fig of figs) setHidden(fig, parts);
+  return legend(
+    items,
+    (next) => {
+      for (const fig of figs) setHidden(fig, next);
+      if (onHide) onHide(next);
+    },
+    hidden,
+  );
 }
 
 /** Replaces the content of a region, releasing the charts it contained and their labels. */
@@ -157,19 +271,19 @@ function fill(region, ...nodes) {
   region.replaceChildren(...nodes.flat(Infinity).filter((n) => n !== null && n !== undefined && n !== false));
 }
 
-/** A table: column headers, then rows of cells, each { text | node, class?, head? } (head: a row header, th); `id` for a table tied to a chart (view.LINKED_TABLES). */
-function table(className, headers, rows, id = null) {
+/** A table: column headers, then rows of cells, each { text | node, class?, head? } (head: a row header, th); `id` for a table tied to a chart (view.LINKED_TABLES); `columns` gives the part of a chart each column belongs to, and a row can have its own `part`: hideParts() hides them with their curve. */
+function table(className, headers, rows, id = null, columns = []) {
   return h(
     'table',
     { id, class: `table ${className}` },
-    h('thead', null, h('tr', null, headers.map((x) => h('th', { text: x })))),
+    h('thead', null, h('tr', null, headers.map((x, i) => h('th', { text: x, 'data-part': columns[i] || null })))),
     h(
       'tbody',
       null,
       rows.map((row) => h(
         'tr',
-        { class: row.class || null },
-        row.cells.map((cell, i) => h(cell.head ? 'th' : 'td', { 'data-label': cell.head ? null : headers[i], class: cell.class || null }, cell.node || cell.text)),
+        { class: row.class || null, 'data-part': row.part || null },
+        row.cells.map((cell, i) => h(cell.head ? 'th' : 'td', { 'data-label': cell.head ? null : headers[i], class: cell.class || null, 'data-part': columns[i] || null }, cell.node || cell.text)),
       )),
     ),
   );
@@ -441,7 +555,8 @@ function trajectoriesBlock() {
     h('div', { class: 'controls' }, h('label', null, T.speedLabel, speed), h('span', { class: 'buttons' }, controls.play, button(T.step, 'step'), button(T.reset, 'reset'), button(T.end, 'toEnd'))),
     // posizionato: ci stanno dentro l'evidenziazione e l'etichetta sotto il puntatore
     h('div', { class: 'figure' }, controls.canvas),
-    legend([{ label: T.legend[0], color: 0 }, { label: T.legend[1], color: 1 }, { label: T.legend[2], color: 2, dashed: true }, { label: T.legend[3], color: 3, dashed: true }]),
+    // la legenda sotto l'animazione: le parti nascoste si ridisegnano dal primo sistema
+    legend(view.legends.trajectories(text), (parts) => animation && animation.setHidden(parts), keep('trajectories')),
     controls.caption,
     paras(T.after),
   ];
@@ -480,6 +595,7 @@ function createAnimation() {
     palette: palette(),
     decimal: text.fmt.decimal,
     describe: view.tips.trajectory(text),
+    hidden: partsOf(view.legends.trajectories(text), keep('trajectories')),
     onUpdate: updateCaption,
   });
   canvasWidth = canvas.clientWidth;
@@ -553,7 +669,14 @@ function distributionsSection() {
     }),
     h('div', { class: 'slider-row' }, controls.sweepSlider.el, controls.sweepPlay),
     regions.sweep,
-    legend([{ label: W.legend[0], color: 0 }, { label: W.legend[1], color: 1, dashed: true }, { label: W.legend[2], color: 2 }]),
+    // una legenda sola per i due istogrammi, che si ridisegnano a ogni n
+    legend(
+      view.legends.sweep(text),
+      (parts) => {
+        for (const fig of regions.sweep.querySelectorAll('figure')) setHidden(fig, parts);
+      },
+      keep('sweep'),
+    ),
     paras(W.after),
     title('hw3-moments', 1, S.moments),
     regions.moments,
@@ -622,7 +745,9 @@ function updateSweep() {
       hw.MODELS.map((model) => {
         const M = s.models[model];
         const data = view.sweepChart(M, g, q, text.fmt.decimal);
-        return figure(W.chart(text.modelNames[model], text.quantityNames[q], n, s.params.m), hw.drawHistogram, data, { tip: view.tips.histogram(data, text.tips), note: W.stats(text.modelNames[model], view.quantityStats(M, g, q), q) });
+        const fig = figure(W.chart(text.modelNames[model], text.quantityNames[q], n, s.params.m), hw.drawHistogram, data, { tip: view.tips.histogram(data, text.tips), note: W.stats(text.modelNames[model], view.quantityStats(M, g, q), q) });
+        setHidden(fig, partsOf(view.legends.sweep(text), keep('sweep')));
+        return fig;
       }),
     ),
   );
@@ -742,21 +867,22 @@ function updateConvergence() {
   const cell = (x) => h('span', null, F.num(x.rate, 4), h('span', { class: 'interval', text: `${F.num(x.interval[0], 4)}-${F.num(x.interval[1], 4)}` }));
   const B = text.modelNames.bernoulli;
   const R = text.modelNames.rademacher;
+  // una legenda per i due grafici; la frazione simulata e quella esatta sono anche le colonne della tabella
+  const figs = hw.MODELS.map((model) => figure(C.chart(text.modelNames[model], eps), hw.drawLineChart, view.llnChart(rows[model], F.decimal), { tip: view.tips.lln(rows[model], text.tips), link: view.links.lln }));
+  const frequencies = table(
+    'compact lln',
+    [C.cols.n, `${B}: ${C.cols.simulated}`, `${B}: ${C.cols.exact}`, `${R}: ${C.cols.simulated}`, `${R}: ${C.cols.exact}`],
+    rows.bernoulli.map((b, i) => ({ cells: [{ text: F.int(b.n) }, { node: cell(b) }, { text: F.small(b.exact) }, { node: cell(rows.rademacher[i]) }, { text: F.small(rows.rademacher[i].exact) }] })),
+    view.LINKED_TABLES.lln,
+    [null, 'series:0', 'series:1', 'series:0', 'series:1'],
+  );
+  hideParts(frequencies, partsOf(view.legends.lln(text), keep('lln')));
   fill(
     regions.convergence,
-    h('div', { class: 'charts' }, hw.MODELS.map((model) => figure(C.chart(text.modelNames[model], eps), hw.drawLineChart, view.llnChart(rows[model], F.decimal), { tip: view.tips.lln(rows[model], text.tips), link: view.links.lln }))),
-    legend([{ label: C.legend[0], color: 0 }, { label: C.legend[1], color: 2 }, { label: C.legend[2], color: 3, dashed: true }, { label: C.legend[3], color: 4, dashed: true }]),
+    h('div', { class: 'charts' }, figs),
+    groupLegend('lln', view.legends.lln(text), figs, (parts) => hideParts(frequencies, parts)),
     subtitle(C.tableTitle(eps)),
-    h(
-      'div',
-      { class: 'scroll' },
-      table(
-        'compact lln',
-        [C.cols.n, `${B}: ${C.cols.simulated}`, `${B}: ${C.cols.exact}`, `${R}: ${C.cols.simulated}`, `${R}: ${C.cols.exact}`],
-        rows.bernoulli.map((b, i) => ({ cells: [{ text: F.int(b.n) }, { node: cell(b) }, { text: F.small(b.exact) }, { node: cell(rows.rademacher[i]) }, { text: F.small(rows.rademacher[i].exact) }] })),
-        view.LINKED_TABLES.lln,
-      ),
-    ),
+    h('div', { class: 'scroll' }, frequencies),
     paras(C.after(s, eps)),
     tests('lln', s),
   );
@@ -785,24 +911,31 @@ function updateVariance() {
     return;
   }
   const fits = view.varianceFits(s);
+  // una legenda per i due grafici: le tre grandezze sono anche le righe della tabella, i valori esatti la colonna della teoria
+  const figs = hw.MODELS.map((model) => figure(V.chart(text.modelNames[model]), hw.drawLineChart, view.varianceChart(s.models[model], F.decimal), { tip: view.tips.variance(s.models[model], text.tips) }));
+  const slopes = table(
+    'discussion fits',
+    [V.fitCols.quantity, V.fitCols.bernoulli, V.fitCols.rademacher, V.fitCols.theory],
+    hw.QUANTITIES.map((q, i) => ({
+      part: `series:${2 * i}`,
+      cells: [
+        { text: text.quantityNames[q], head: true },
+        { text: `${F.num(fits.bernoulli[q], 4)} ± ${F.num(fits.bernoulli.error, 4)}` },
+        { text: `${F.num(fits.rademacher[q], 4)} ± ${F.num(fits.rademacher.error, 4)}` },
+        { text: F.int(view.VARIANCE_SLOPES[q]) },
+      ],
+    })),
+    null,
+    [null, null, null, 'theory'],
+  );
+  hideParts(slopes, partsOf(view.legends.variance(text), keep('variance')));
   fill(
     regions.variance,
     h('p', { text: V.intro }),
-    h('div', { class: 'charts' }, hw.MODELS.map((model) => figure(V.chart(text.modelNames[model]), hw.drawLineChart, view.varianceChart(s.models[model], F.decimal), { tip: view.tips.variance(s.models[model], text.tips) }))),
-    legend([{ label: V.legend[0], color: 0 }, { label: V.legend[1], color: 1 }, { label: V.legend[2], color: 2 }, { label: V.legend[3], color: 6, dashed: true }]),
+    h('div', { class: 'charts' }, figs),
+    groupLegend('variance', view.legends.variance(text), figs, (parts) => hideParts(slopes, parts)),
     subtitle(V.fitTitle),
-    table(
-      'discussion fits',
-      [V.fitCols.quantity, V.fitCols.bernoulli, V.fitCols.rademacher, V.fitCols.theory],
-      hw.QUANTITIES.map((q) => ({
-        cells: [
-          { text: text.quantityNames[q], head: true },
-          { text: `${F.num(fits.bernoulli[q], 4)} ± ${F.num(fits.bernoulli.error, 4)}` },
-          { text: `${F.num(fits.rademacher[q], 4)} ± ${F.num(fits.rademacher.error, 4)}` },
-          { text: F.int(view.VARIANCE_SLOPES[q]) },
-        ],
-      })),
-    ),
+    slopes,
     paras(V.after(s)),
   );
 }
@@ -866,8 +999,8 @@ function updateNormal() {
     h(
       'div',
       { class: 'charts' },
-      figure(N.histChart(label, n), hw.drawHistogram, hist, { tip: view.tips.histogram(hist, text.tips), items: [{ label: N.legend[0], color: 0 }, { label: N.legend[1], color: 1, dashed: true }, { label: N.legend[2], color: 2 }] }),
-      figure(N.qqChart(label, n), hw.drawQQ, qq, { tip: view.tips.qq(qq, text.tips), items: [{ label: N.qqLegend[0], color: 0 }, { label: N.qqLegend[1], color: 1, dashed: true }] }),
+      figure(N.histChart(label, n), hw.drawHistogram, hist, { tip: view.tips.histogram(hist, text.tips), items: view.legends.clt(text), keep: keep('clt') }),
+      figure(N.qqChart(label, n), hw.drawQQ, qq, { tip: view.tips.qq(qq, text.tips), items: view.legends.qq(text), keep: keep('qq') }),
     ),
     h('p', { class: 'stats', text: N.stats(view.shapeAt(M, g)) }),
     paras(N.after),
@@ -883,11 +1016,13 @@ function updateSpeed() {
     fill(regions.speed, pending());
     return;
   }
+  // una legenda per i due grafici
+  const figs = ['rademacher', 'bernoulli'].map((model) => figure(P.chart(text.modelNames[model]), hw.drawLineChart, view.distanceChart(s.models[model], s.params.m, F.decimal), { tip: view.tips.distance(s.models[model], text.tips) }));
   fill(
     regions.speed,
     h('p', { text: P.intro }),
-    h('div', { class: 'charts' }, ['rademacher', 'bernoulli'].map((model) => figure(P.chart(text.modelNames[model]), hw.drawLineChart, view.distanceChart(s.models[model], s.params.m, F.decimal), { tip: view.tips.distance(s.models[model], text.tips) }))),
-    legend([{ label: P.legend[0], color: 1 }, { label: P.legend[1], color: 2 }, { label: P.legend[2], color: 3, dashed: true }, { label: P.legend[3], color: 0 }, { label: P.legend[4], color: 6, dashed: true }]),
+    h('div', { class: 'charts' }, figs),
+    groupLegend('speed', view.legends.speed(text), figs),
     paras(P.after(s)),
   );
 }
@@ -954,7 +1089,7 @@ function updateSize() {
   fill(
     regions.size,
     paras(Z.paras(s)),
-    figure(Z.arcsineChart(W.even, s.params.m), hw.drawHistogram, data, { wide: true, tip: view.tips.arcsine(data, text.tips), items: [{ label: Z.arcsineLegend[0], color: 0 }, { label: Z.arcsineLegend[1], color: 1, dashed: true }, { label: Z.arcsineLegend[2], color: 2 }] }),
+    figure(Z.arcsineChart(W.even, s.params.m), hw.drawHistogram, data, { wide: true, tip: view.tips.arcsine(data, text.tips), items: view.legends.arcsine(text), keep: keep('arcsine') }),
     paras(Z.after),
     tests('walk', s),
   );
@@ -976,8 +1111,8 @@ function updateAttackers() {
     h(
       'div',
       { class: 'charts' },
-      figure(A.bestChart(n), hw.drawLineChart, view.bestChart(G, F.decimal), { tip: view.tips.best(G, text.tips), items: [{ label: A.bestLegend[0], color: 0 }, { label: A.bestLegend[1], color: 1 }, { label: A.bestLegend[2], color: 2, dashed: true }, { label: A.bestLegend[3], color: 3, dashed: true }] }),
-      figure(A.probabilityChart(n), hw.drawLineChart, view.probabilityChart(G, F.decimal), { tip: view.tips.probability(G, text.tips), items: [{ label: A.probabilityLegend[0], color: 0 }, { label: A.probabilityLegend[1], color: 0, dashed: true }, { label: A.probabilityLegend[2], color: 2 }, { label: A.probabilityLegend[3], color: 2, dashed: true }] }),
+      figure(A.bestChart(n), hw.drawLineChart, view.bestChart(G, F.decimal), { tip: view.tips.best(G, text.tips), items: view.legends.best(text), keep: keep('best') }),
+      figure(A.probabilityChart(n), hw.drawLineChart, view.probabilityChart(G, F.decimal), { tip: view.tips.probability(G, text.tips), items: view.legends.probability(text), keep: keep('probability') }),
     ),
     paras(A.after(s)),
   );
@@ -994,7 +1129,7 @@ function updateAggregate() {
   fill(
     regions.aggregate,
     paras(G.paras(s)),
-    figure(G.systemsChart(s.params.n, s.params.m), hw.drawHistogram, data, { wide: true, tip: view.tips.histogram(data, text.tips), items: [{ label: G.systemsLegend[0], color: 0 }, { label: G.systemsLegend[1], color: 1, dashed: true }, { label: G.systemsLegend[2], color: 2 }] }),
+    figure(G.systemsChart(s.params.n, s.params.m), hw.drawHistogram, data, { wide: true, tip: view.tips.histogram(data, text.tips), items: view.legends.systems(text), keep: keep('systems') }),
     paras(G.after),
   );
 }

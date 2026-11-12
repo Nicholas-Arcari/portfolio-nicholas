@@ -638,33 +638,109 @@ export function testSummary(s) {
 const normalShare = (normal, from, to) => (normal ? hw.normalCdf((to - normal.mean) / normal.sd) - hw.normalCdf((from - normal.mean) / normal.sd) : null);
 
 /** The texts under the pointer: functions of the hit, built from the data of a chart and the words of a language (T = text.tips). */
+// ---------------------------------------------------------------------------
+// Le legende dei grafici, per la pagina e per il programma scaricabile: ogni
+// voce { label, color, dashed?, parts } e' un pulsante che nasconde le sue
+// parti del disegno (`hidden` dei dati di ogni grafico, o setHidden()
+// dell'animazione); i grafici dei due modelli affiancati hanno una legenda sola
+// ---------------------------------------------------------------------------
+
+const seriesItem = (label, color, i, extra = {}) => ({ label, color, parts: [`series:${i}`], ...extra });
+const partItem = (label, color, part, extra = {}) => ({ label, color, parts: [part], ...extra });
+
+// a histogram against a law: the simulation, the exact law (dashed) and the continuous curve
+const histogramItems = (labels) => [partItem(labels[0], 0, 'bars'), partItem(labels[1], 1, 'expected', { dashed: true }), partItem(labels[2], 2, 'curve')];
+
+export const legends = {
+  trajectories: (text) => [
+    partItem(text.trajectories.legend[0], 0, 'others'),
+    partItem(text.trajectories.legend[1], 1, 'first'),
+    partItem(text.trajectories.legend[2], 2, 'band', { dashed: true }),
+    partItem(text.trajectories.legend[3], 3, 'envelope', { dashed: true }),
+  ],
+  sweep: (text) => histogramItems(text.sweep.legend),
+  lln: (text) => [
+    seriesItem(text.convergence.legend[0], 0, 0),
+    seriesItem(text.convergence.legend[1], 2, 1),
+    seriesItem(text.convergence.legend[2], 3, 2, { dashed: true }),
+    seriesItem(text.convergence.legend[3], 4, 3, { dashed: true }),
+  ],
+  // the three quantities, each with its simulated points and its exact line; the last item is all the exact lines
+  variance: (text) => [
+    { label: text.variance.legend[0], color: 0, parts: ['series:0', 'series:1'] },
+    { label: text.variance.legend[1], color: 1, parts: ['series:2', 'series:3'] },
+    { label: text.variance.legend[2], color: 2, parts: ['series:4', 'series:5'] },
+    // 'theory': the column of the exact slopes in the table, which only this item hides
+    { label: text.variance.legend[3], color: 6, dashed: true, parts: ['series:1', 'series:3', 'series:5', 'theory'] },
+  ],
+  clt: (text) => histogramItems(text.normal.legend),
+  qq: (text) => [partItem(text.normal.qqLegend[0], 0, 'points'), partItem(text.normal.qqLegend[1], 1, 'line', { dashed: true })],
+  speed: (text) => [
+    seriesItem(text.speed.legend[0], 1, 0),
+    seriesItem(text.speed.legend[1], 2, 1),
+    seriesItem(text.speed.legend[2], 3, 2, { dashed: true }),
+    seriesItem(text.speed.legend[3], 0, 3),
+    seriesItem(text.speed.legend[4], 6, 4, { dashed: true }),
+  ],
+  arcsine: (text) => histogramItems(text.size.arcsineLegend),
+  best: (text) => [
+    seriesItem(text.attackers.bestLegend[0], 0, 0),
+    seriesItem(text.attackers.bestLegend[1], 1, 1),
+    seriesItem(text.attackers.bestLegend[2], 2, 2, { dashed: true }),
+    seriesItem(text.attackers.bestLegend[3], 3, 3, { dashed: true }),
+  ],
+  probability: (text) => [
+    seriesItem(text.attackers.probabilityLegend[0], 0, 0),
+    seriesItem(text.attackers.probabilityLegend[1], 0, 1, { dashed: true }),
+    seriesItem(text.attackers.probabilityLegend[2], 2, 2),
+    seriesItem(text.attackers.probabilityLegend[3], 2, 3, { dashed: true }),
+  ],
+  systems: (text) => histogramItems(text.aggregate.systemsLegend),
+};
+
+/** Whether series i of a chart is on screen: the reader can hide it from the legend. */
+const seriesOn = (hidden, i) => !hidden.includes(`series:${i}`);
+
+/**
+ * The labels under the pointer, one factory per chart: each returns
+ * (hit, hidden) => text, where `hidden` lists the parts of the chart that
+ * the reader turned off in the legend, and the label leaves them out.
+ */
 export const tips = {
-  // the animation: the words for a bar of its histogram or a system of its trajectories
+  // the animation: the words for a bar of its histogram or a system of its trajectories (hit.show: what is on screen)
   trajectory: (text) => (hit) => text.tips.trajectory(hit, text.trajectoryNames[hit.quantity]),
-  histogram: (h, T) => (hit) => {
+  histogram: (h, T) => (hit, hidden = []) => {
     const b = h.bars[hit.index];
-    return b ? T.bin(b.from, b.to, b.share, h.expected ? b.prob : null, normalShare(h.normal, b.from, b.to)) : null;
+    return b ? T.bin(b.from, b.to, b.share, h.expected && !hidden.includes('expected') ? b.prob : null, hidden.includes('curve') ? null : normalShare(h.normal, b.from, b.to)) : null;
   },
-  arcsine: (h, T) => (hit) => {
+  arcsine: (h, T) => (hit, hidden = []) => {
     const b = h.bars[hit.index];
-    return b ? T.share(Math.max(0, b.from), Math.min(1, b.to), b.share, b.prob, hw.arcsineCdf(b.to) - hw.arcsineCdf(b.from)) : null;
+    return b ? T.share(Math.max(0, b.from), Math.min(1, b.to), b.share, hidden.includes('expected') ? null : b.prob, hidden.includes('curve') ? null : hw.arcsineCdf(b.to) - hw.arcsineCdf(b.from)) : null;
   },
-  lln: (rows, T) => (hit) => T.lln(rows[hit.index]),
-  variance: (M, T) => (hit) => {
+  lln: (rows, T) => (hit, hidden = []) => T.lln(rows[hit.index], { rate: seriesOn(hidden, 0), exact: seriesOn(hidden, 1), chebyshev: seriesOn(hidden, 2), hoeffding: seriesOn(hidden, 3) }),
+  variance: (M, T) => (hit, hidden = []) => {
     const pt = M.points[hit.index];
-    return T.variance(pt.n, hw.QUANTITIES.map((q) => [pt.sample.variance * hw.quantityScale(q, pt.n) ** 2, hw.quantityMoments(M.mom, pt.n, q).variance]));
+    return T.variance(
+      pt.n,
+      hw.QUANTITIES.map((q, i) => {
+        const sample = seriesOn(hidden, 2 * i) ? pt.sample.variance * hw.quantityScale(q, pt.n) ** 2 : null;
+        const exact = seriesOn(hidden, 2 * i + 1) ? hw.quantityMoments(M.mom, pt.n, q).variance : null;
+        return sample === null && exact === null ? null : [sample, exact];
+      }),
+    );
   },
-  distance: (M, T) => (hit) => {
+  distance: (M, T) => (hit, hidden = []) => {
     const n = M.curve.ns[hit.index];
     const pt = M.points.find((x) => x.n === n);
-    return T.distance(n, M.curve.distance[hit.index], M.curve.corrected[hit.index], M.curve.bound[hit.index], pt ? pt.ks : null);
+    const pick = (i, v) => (seriesOn(hidden, i) ? v : null);
+    return T.distance(n, pick(0, M.curve.distance[hit.index]), pick(1, M.curve.corrected[hit.index]), pick(2, M.curve.bound[hit.index]), pt ? pick(3, pt.ks) : null);
   },
   qq: (q, T) => (hit) => {
     const [a, b] = q.points[hit.index];
     return T.qq(a, b);
   },
-  best: (G, T) => (hit) => T.best(G.rows[hit.index]),
-  probability: (G, T) => (hit) => T.probability(G.rows[hit.index]),
+  best: (G, T) => (hit, hidden = []) => T.best(G.rows[hit.index], { mean: seriesOn(hidden, 0), exact: seriesOn(hidden, 1), normal: seriesOn(hidden, 2), asymptote: seriesOn(hidden, 3) }),
+  probability: (G, T) => (hit, hidden = []) => T.probability(G.rows[hit.index], { beyond: seriesOn(hidden, 0), beyondExact: seriesOn(hidden, 1), coverage: seriesOn(hidden, 2), coverageExact: seriesOn(hidden, 3) }),
 };
 
 // ---------------------------------------------------------------------------

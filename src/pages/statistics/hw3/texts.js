@@ -135,6 +135,17 @@ const DIGITS = { sum: 1, mean: 4, normalized: 3 };
 // ITALIANO
 // ---------------------------------------------------------------------------
 
+/**
+ * The labels under the pointer list only what is on screen: `show` says
+ * which parts of the chart the reader has not hidden from the legend (a
+ * missing key counts as shown), and a label with nothing left is null.
+ */
+const on = (show, key) => !show || show[key] !== false;
+const said = (head, items, sep = ', ') => {
+  const kept = items.filter(Boolean);
+  return kept.length ? `${head}: ${kept.join(sep)}` : null;
+};
+
 const IT = formatters(',', '.', 'n/d', '×');
 
 /** A number of attackers: digits, powers of ten when huge, ∞ when no number is enough. */
@@ -662,19 +673,20 @@ const it = {
   tips: {
     trajectory: (hit, name) =>
       hit.kind === 'bin'
-        ? `${name} fra ${valueIt(hit.from, hit.quantity)} e ${valueIt(hit.to, hit.quantity)} al sistema ${IT.int(hit.k)}: ${IT.int(hit.count)} attaccanti su ${IT.int(hit.sample)}, ${IT.num(hit.expected, 1)} attesi dalla normale`
-        : `Sistema ${IT.int(hit.step)}: ${name} dell’attaccante 1 ${valueIt(hit.first, hit.quantity)}; media ${valueIt(hit.mean, hit.quantity)}, fascia fra ${valueIt(hit.mean - 2 * hit.sd, hit.quantity)} e ${valueIt(hit.mean + 2 * hit.sd, hit.quantity)}`,
+        ? said(`${name} fra ${valueIt(hit.from, hit.quantity)} e ${valueIt(hit.to, hit.quantity)} al sistema ${IT.int(hit.k)}`, [on(hit.show, 'bars') && `${IT.int(hit.count)} attaccanti su ${IT.int(hit.sample)}`, on(hit.show, 'normal') && `${IT.num(hit.expected, 1)} attesi dalla normale`])
+        : said(`Sistema ${IT.int(hit.step)}`, [on(hit.show, 'first') && `${name} dell’attaccante 1 ${valueIt(hit.first, hit.quantity)}`, on(hit.show, 'band') && `media ${valueIt(hit.mean, hit.quantity)}, fascia fra ${valueIt(hit.mean - 2 * hit.sd, hit.quantity)} e ${valueIt(hit.mean + 2 * hit.sd, hit.quantity)}`], '; '),
     bin: (from, to, share, prob, normal) => {
       const d = edgeDigits(from, to);
-      return `Da ${IT.num(from, d)} a ${IT.num(to, d)}: simulazione ${IT.pct(share, 2)}${prob === null ? '' : `, legge esatta ${IT.pct(prob, 2)}`}${normal === null ? '' : `, normale ${IT.pct(normal, 2)}`}`;
+      return said(`Da ${IT.num(from, d)} a ${IT.num(to, d)}`, [`simulazione ${IT.pct(share, 2)}`, prob !== null && `legge esatta ${IT.pct(prob, 2)}`, normal !== null && `normale ${IT.pct(normal, 2)}`]);
     },
-    share: (from, to, share, prob, limit) => `In vantaggio fra il ${IT.pct(from, 1)} e il ${IT.pct(to, 1)} del tempo: simulazione ${IT.pct(share, 2)}, legge esatta ${IT.pct(prob, 2)}, arcoseno ${IT.pct(limit, 2)}`,
-    lln: (r) => `n = ${IT.int(r.n)}: simulata ${IT.num(r.rate, 4)} (95%: ${IT.num(r.interval[0], 4)}-${IT.num(r.interval[1], 4)}), esatta ${IT.small(r.exact)}, Chebyshev ${IT.small(r.chebyshev)}, Hoeffding ${IT.small(r.hoeffding)}`,
-    variance: (n, pairs) => `n = ${IT.int(n)}: ${['S_n', 'S_n/n', 'S_n/√n'].map((q, i) => `Var(${q}) ${IT.small(pairs[i][0])} (esatta ${IT.small(pairs[i][1])})`).join(', ')}`,
-    distance: (n, d, dc, bound, ks) => `n = ${IT.int(n)}: esatta ${IT.small(d)}, con correzione ${IT.small(dc)}, Berry-Esseen ${IT.small(bound)}${ks === null ? '' : `, simulata ${IT.num(ks, 4)}`}`,
+    share: (from, to, share, prob, limit) => said(`In vantaggio fra il ${IT.pct(from, 1)} e il ${IT.pct(to, 1)} del tempo`, [`simulazione ${IT.pct(share, 2)}`, prob !== null && `legge esatta ${IT.pct(prob, 2)}`, limit !== null && `arcoseno ${IT.pct(limit, 2)}`]),
+    lln: (r, show) => said(`n = ${IT.int(r.n)}`, [on(show, 'rate') && `simulata ${IT.num(r.rate, 4)} (95%: ${IT.num(r.interval[0], 4)}-${IT.num(r.interval[1], 4)})`, on(show, 'exact') && `esatta ${IT.small(r.exact)}`, on(show, 'chebyshev') && `Chebyshev ${IT.small(r.chebyshev)}`, on(show, 'hoeffding') && `Hoeffding ${IT.small(r.hoeffding)}`]),
+    // pairs: [simulated, exact] for S_n, S_n/n and S_n/√n, null where hidden
+    variance: (n, pairs) => said(`n = ${IT.int(n)}`, ['S_n', 'S_n/n', 'S_n/√n'].map((q, i) => pairs[i] && [pairs[i][0] !== null && `Var(${q}) ${IT.small(pairs[i][0])}`, pairs[i][1] !== null && `esatta ${IT.small(pairs[i][1])}`].filter(Boolean).join(' ')).filter(Boolean)),
+    distance: (n, d, dc, bound, ks) => said(`n = ${IT.int(n)}`, [d !== null && `esatta ${IT.small(d)}`, dc !== null && `con correzione ${IT.small(dc)}`, bound !== null && `Berry-Esseen ${IT.small(bound)}`, ks !== null && `simulata ${IT.num(ks, 4)}`]),
     qq: (a, b) => `Quantile di N(0, 1) ${IT.num(a, 2)}: simulato ${IT.num(b, 2)}`,
-    best: (r) => `b = ${IT.int(r.b)} (${IT.int(r.groups)} gruppi): simulato ${IT.num(r.mean, 2)} ± ${IT.num(1.96 * r.error, 2)}, esatto ${IT.num(r.exact, 2)}, normale ${IT.num(r.normal, 2)}`,
-    probability: (r) => `b = ${IT.int(r.b)}: almeno uno oltre +3σ ${IT.pct(r.beyond)} (esatta ${IT.pct(r.beyondExact)}); sistemi penetrati ${IT.pct(r.coverage)} (esatta ${IT.pct(r.coverageExact)})`,
+    best: (r, show) => said(`b = ${IT.int(r.b)} (${IT.int(r.groups)} gruppi)`, [on(show, 'mean') && `simulato ${IT.num(r.mean, 2)} ± ${IT.num(1.96 * r.error, 2)}`, on(show, 'exact') && `esatto ${IT.num(r.exact, 2)}`, on(show, 'normal') && `normale ${IT.num(r.normal, 2)}`, on(show, 'asymptote') && `√(2 ln b) ${IT.num(r.asymptote, 2)}`]),
+    probability: (r, show) => said(`b = ${IT.int(r.b)}`, [on(show, 'beyond') && `almeno uno oltre +3σ ${IT.pct(r.beyond)}`, on(show, 'beyondExact') && `almeno uno oltre +3σ, esatta ${IT.pct(r.beyondExact)}`, on(show, 'coverage') && `sistemi penetrati ${IT.pct(r.coverage)}`, on(show, 'coverageExact') && `sistemi penetrati, esatta ${IT.pct(r.coverageExact)}`], '; '),
   },
   download: {
     title: 'Scarica il codice',
@@ -1210,19 +1222,20 @@ const en = {
   tips: {
     trajectory: (hit, name) =>
       hit.kind === 'bin'
-        ? `${name} between ${valueEn(hit.from, hit.quantity)} and ${valueEn(hit.to, hit.quantity)} at system ${EN.int(hit.k)}: ${EN.int(hit.count)} attackers out of ${EN.int(hit.sample)}, ${EN.num(hit.expected, 1)} expected from the normal`
-        : `System ${EN.int(hit.step)}: ${name} of attacker 1 ${valueEn(hit.first, hit.quantity)}; mean ${valueEn(hit.mean, hit.quantity)}, band between ${valueEn(hit.mean - 2 * hit.sd, hit.quantity)} and ${valueEn(hit.mean + 2 * hit.sd, hit.quantity)}`,
+        ? said(`${name} between ${valueEn(hit.from, hit.quantity)} and ${valueEn(hit.to, hit.quantity)} at system ${EN.int(hit.k)}`, [on(hit.show, 'bars') && `${EN.int(hit.count)} attackers out of ${EN.int(hit.sample)}`, on(hit.show, 'normal') && `${EN.num(hit.expected, 1)} expected from the normal`])
+        : said(`System ${EN.int(hit.step)}`, [on(hit.show, 'first') && `${name} of attacker 1 ${valueEn(hit.first, hit.quantity)}`, on(hit.show, 'band') && `mean ${valueEn(hit.mean, hit.quantity)}, band between ${valueEn(hit.mean - 2 * hit.sd, hit.quantity)} and ${valueEn(hit.mean + 2 * hit.sd, hit.quantity)}`], '; '),
     bin: (from, to, share, prob, normal) => {
       const d = edgeDigits(from, to);
-      return `From ${EN.num(from, d)} to ${EN.num(to, d)}: simulation ${EN.pct(share, 2)}${prob === null ? '' : `, exact law ${EN.pct(prob, 2)}`}${normal === null ? '' : `, normal ${EN.pct(normal, 2)}`}`;
+      return said(`From ${EN.num(from, d)} to ${EN.num(to, d)}`, [`simulation ${EN.pct(share, 2)}`, prob !== null && `exact law ${EN.pct(prob, 2)}`, normal !== null && `normal ${EN.pct(normal, 2)}`]);
     },
-    share: (from, to, share, prob, limit) => `Ahead between ${EN.pct(from, 1)} and ${EN.pct(to, 1)} of the time: simulation ${EN.pct(share, 2)}, exact law ${EN.pct(prob, 2)}, arcsine ${EN.pct(limit, 2)}`,
-    lln: (r) => `n = ${EN.int(r.n)}: simulated ${EN.num(r.rate, 4)} (95%: ${EN.num(r.interval[0], 4)}-${EN.num(r.interval[1], 4)}), exact ${EN.small(r.exact)}, Chebyshev ${EN.small(r.chebyshev)}, Hoeffding ${EN.small(r.hoeffding)}`,
-    variance: (n, pairs) => `n = ${EN.int(n)}: ${['S_n', 'S_n/n', 'S_n/√n'].map((q, i) => `Var(${q}) ${EN.small(pairs[i][0])} (exact ${EN.small(pairs[i][1])})`).join(', ')}`,
-    distance: (n, d, dc, bound, ks) => `n = ${EN.int(n)}: exact ${EN.small(d)}, corrected ${EN.small(dc)}, Berry-Esseen ${EN.small(bound)}${ks === null ? '' : `, simulated ${EN.num(ks, 4)}`}`,
+    share: (from, to, share, prob, limit) => said(`Ahead between ${EN.pct(from, 1)} and ${EN.pct(to, 1)} of the time`, [`simulation ${EN.pct(share, 2)}`, prob !== null && `exact law ${EN.pct(prob, 2)}`, limit !== null && `arcsine ${EN.pct(limit, 2)}`]),
+    lln: (r, show) => said(`n = ${EN.int(r.n)}`, [on(show, 'rate') && `simulated ${EN.num(r.rate, 4)} (95%: ${EN.num(r.interval[0], 4)}-${EN.num(r.interval[1], 4)})`, on(show, 'exact') && `exact ${EN.small(r.exact)}`, on(show, 'chebyshev') && `Chebyshev ${EN.small(r.chebyshev)}`, on(show, 'hoeffding') && `Hoeffding ${EN.small(r.hoeffding)}`]),
+    // pairs: [simulated, exact] for S_n, S_n/n and S_n/√n, null where hidden
+    variance: (n, pairs) => said(`n = ${EN.int(n)}`, ['S_n', 'S_n/n', 'S_n/√n'].map((q, i) => pairs[i] && [pairs[i][0] !== null && `Var(${q}) ${EN.small(pairs[i][0])}`, pairs[i][1] !== null && `exact ${EN.small(pairs[i][1])}`].filter(Boolean).join(' ')).filter(Boolean)),
+    distance: (n, d, dc, bound, ks) => said(`n = ${EN.int(n)}`, [d !== null && `exact ${EN.small(d)}`, dc !== null && `corrected ${EN.small(dc)}`, bound !== null && `Berry-Esseen ${EN.small(bound)}`, ks !== null && `simulated ${EN.num(ks, 4)}`]),
     qq: (a, b) => `Quantile of N(0, 1) ${EN.num(a, 2)}: simulated ${EN.num(b, 2)}`,
-    best: (r) => `b = ${EN.int(r.b)} (${EN.int(r.groups)} groups): simulated ${EN.num(r.mean, 2)} ± ${EN.num(1.96 * r.error, 2)}, exact ${EN.num(r.exact, 2)}, normal ${EN.num(r.normal, 2)}`,
-    probability: (r) => `b = ${EN.int(r.b)}: at least one beyond +3σ ${EN.pct(r.beyond)} (exact ${EN.pct(r.beyondExact)}); systems penetrated ${EN.pct(r.coverage)} (exact ${EN.pct(r.coverageExact)})`,
+    best: (r, show) => said(`b = ${EN.int(r.b)} (${EN.int(r.groups)} groups)`, [on(show, 'mean') && `simulated ${EN.num(r.mean, 2)} ± ${EN.num(1.96 * r.error, 2)}`, on(show, 'exact') && `exact ${EN.num(r.exact, 2)}`, on(show, 'normal') && `normal ${EN.num(r.normal, 2)}`, on(show, 'asymptote') && `√(2 ln b) ${EN.num(r.asymptote, 2)}`]),
+    probability: (r, show) => said(`b = ${EN.int(r.b)}`, [on(show, 'beyond') && `at least one beyond +3σ ${EN.pct(r.beyond)}`, on(show, 'beyondExact') && `at least one beyond +3σ, exact ${EN.pct(r.beyondExact)}`, on(show, 'coverage') && `systems penetrated ${EN.pct(r.coverage)}`, on(show, 'coverageExact') && `systems penetrated, exact ${EN.pct(r.coverageExact)}`], '; '),
   },
   download: {
     title: 'Download the code',

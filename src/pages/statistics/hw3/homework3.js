@@ -1675,6 +1675,9 @@ export function createTrajectoryAnimation(canvas, options) {
   let speed = options.speed || 1;
   let decimal = options.decimal || '.';
   let palette = { ...DEFAULT_PALETTE, ...(options.palette || {}) };
+  // the parts hidden from the legend: 'others' (with the bars of the histogram), 'first' (attacker 1),
+  // 'band' (the mean, the band and the normal law of the histogram), 'envelope'
+  let hidden = options.hidden || [];
 
   // the drawn trajectories, whole, and the extremes of every quantity over all attackers and steps (fixed axes)
   const paths = Array.from({ length: D }, () => new Int32Array(n + 1));
@@ -1772,6 +1775,7 @@ export function createTrajectoryAnimation(canvas, options) {
     const first = quantity === 'sum' ? Math.max(0, from) : Math.max(1, from);
     const stride = Math.max(1, Math.floor((to - first) / (2 * G.plotW)));
     for (let j = D - 1; j >= 0; j--) {
+      if (hidden.includes(j === 0 ? 'first' : 'others')) continue;
       const path = paths[j];
       ctx.strokeStyle = j === 0 ? palette.highlight : palette.series[0];
       ctx.globalAlpha = j === 0 ? 1 : 0.32;
@@ -1886,29 +1890,37 @@ export function createTrajectoryAnimation(canvas, options) {
     ctx.beginPath();
     ctx.rect(m.left, m.top, G.plotW, G.h);
     ctx.clip();
-    const upper = band(1, 2);
-    const lower = band(-1, 2);
-    ctx.globalAlpha = 0.12;
-    ctx.fillStyle = palette.series[2];
-    ctx.beginPath();
-    upper.forEach(([s, v], i) => (i ? ctx.lineTo(G.px(s), G.py(v)) : ctx.moveTo(G.px(s), G.py(v))));
-    for (let i = lower.length - 1; i >= 0; i--) ctx.lineTo(G.px(lower[i][0]), G.py(lower[i][1]));
-    ctx.closePath();
-    ctx.fill();
-    ctx.globalAlpha = 1;
-    ctx.drawImage(layer, 0, 0, layer.width, layer.height, 0, 0, G.width, G.height);
-    ctx.strokeStyle = palette.series[2];
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([5, 4]);
-    ctx.beginPath();
-    band(0, 0).forEach(([s, v], i) => (i ? ctx.lineTo(G.px(s), G.py(v)) : ctx.moveTo(G.px(s), G.py(v))));
-    ctx.stroke();
-    ctx.setLineDash([2, 3]);
-    ctx.strokeStyle = palette.series[3];
-    for (const sign of [1, -1]) {
+    const showBand = !hidden.includes('band');
+    if (showBand) {
+      const upper = band(1, 2);
+      const lower = band(-1, 2);
+      ctx.globalAlpha = 0.12;
+      ctx.fillStyle = palette.series[2];
       ctx.beginPath();
-      envelope(sign).forEach(([s, v], i) => (i ? ctx.lineTo(G.px(s), G.py(v)) : ctx.moveTo(G.px(s), G.py(v))));
+      upper.forEach(([s, v], i) => (i ? ctx.lineTo(G.px(s), G.py(v)) : ctx.moveTo(G.px(s), G.py(v))));
+      for (let i = lower.length - 1; i >= 0; i--) ctx.lineTo(G.px(lower[i][0]), G.py(lower[i][1]));
+      ctx.closePath();
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+    ctx.drawImage(layer, 0, 0, layer.width, layer.height, 0, 0, G.width, G.height);
+    if (showBand) {
+      ctx.strokeStyle = palette.series[2];
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([5, 4]);
+      ctx.beginPath();
+      band(0, 0).forEach(([s, v], i) => (i ? ctx.lineTo(G.px(s), G.py(v)) : ctx.moveTo(G.px(s), G.py(v))));
       ctx.stroke();
+    }
+    if (!hidden.includes('envelope')) {
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([2, 3]);
+      ctx.strokeStyle = palette.series[3];
+      for (const sign of [1, -1]) {
+        ctx.beginPath();
+        envelope(sign).forEach(([s, v], i) => (i ? ctx.lineTo(G.px(s), G.py(v)) : ctx.moveTo(G.px(s), G.py(v))));
+        ctx.stroke();
+      }
     }
     ctx.setLineDash([]);
     if (k < n) {
@@ -1937,22 +1949,24 @@ export function createTrajectoryAnimation(canvas, options) {
       ctx.fillStyle = palette.series[0];
       ctx.globalAlpha = 0.85;
       counts.forEach((c, b) => {
-        if (!c) return;
+        if (!c || hidden.includes('others')) return;
         const yTop = G.py(G.y0 + (b + 1) * binH);
         const yBottom = G.py(G.y0 + b * binH);
         ctx.fillRect(G.panelX + 1, yTop + 0.5, ((G.panelW - 2) * c) / top, Math.max(0.8, yBottom - yTop - 1));
       });
       ctx.globalAlpha = 1;
-      ctx.strokeStyle = palette.series[2];
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      expected.forEach((e, b) => {
-        const X = G.panelX + 1 + ((G.panelW - 2) * e) / top;
-        const Y = G.py(G.y0 + (b + 0.5) * binH);
-        if (b) ctx.lineTo(X, Y);
-        else ctx.moveTo(X, Y);
-      });
-      ctx.stroke();
+      if (showBand) {
+        ctx.strokeStyle = palette.series[2];
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        expected.forEach((e, b) => {
+          const X = G.panelX + 1 + ((G.panelW - 2) * e) / top;
+          const Y = G.py(G.y0 + (b + 0.5) * binH);
+          if (b) ctx.lineTo(X, Y);
+          else ctx.moveTo(X, Y);
+        });
+        ctx.stroke();
+      }
     }
     onUpdate(status());
     // the label under a still pointer follows the frames
@@ -1973,14 +1987,14 @@ export function createTrajectoryAnimation(canvas, options) {
       if (b < 0 || b >= histogram.counts.length) return null;
       const from = G.y0 + b * histogram.binH;
       const yTop = G.py(from + histogram.binH);
-      const text = describe({ kind: 'bin', quantity, k, from, to: from + histogram.binH, count: histogram.counts[b], expected: histogram.expected[b], sample: A });
+      const text = describe({ kind: 'bin', quantity, k, from, to: from + histogram.binH, count: histogram.counts[b], expected: histogram.expected[b], sample: A, show: { bars: !hidden.includes('others'), normal: !hidden.includes('band') } });
       return text ? { rect: { x: G.panelX, y: yTop, width: G.panelW, height: G.py(from) - yTop }, text } : null;
     }
     if (x < m.left || x > m.left + G.plotW) return null;
     const step = Math.max(1, Math.min(k, Math.round(((x - m.left) / G.plotW) * n)));
     if (k === 0) return null;
     const theory = quantityMoments(mom, step, quantity);
-    const text = describe({ kind: 'step', quantity, step, first: value(paths[0][step], step), mean: theory.mean, sd: theory.sd });
+    const text = describe({ kind: 'step', quantity, step, first: value(paths[0][step], step), mean: theory.mean, sd: theory.sd, show: { first: !hidden.includes('first'), band: !hidden.includes('band') } });
     return text ? { rect: { x: G.px(step) - 3, y: m.top, width: 6, height: G.h }, text } : null;
   };
   const detachLabel = typeof document !== 'undefined' && canvas.parentElement ? attachPointerLabel(canvas, locate) : null;
@@ -2057,6 +2071,12 @@ export function createTrajectoryAnimation(canvas, options) {
     },
     setSpeed(s) {
       speed = s > 0 ? s : 1;
+    },
+    // the legend under the animation: the hidden parts are drawn again from the first system
+    setHidden(parts) {
+      hidden = parts;
+      drawnK = -1;
+      render();
     },
     setPalette(next) {
       palette = { ...DEFAULT_PALETTE, ...next };
