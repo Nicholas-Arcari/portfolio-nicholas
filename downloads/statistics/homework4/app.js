@@ -865,34 +865,109 @@ function testSummary(s) {
 const normalShare = (normal, from, to) => (normal ? hw.normalCdf((to - normal.mean) / normal.sd) - hw.normalCdf((from - normal.mean) / normal.sd) : null);
 
 /** The texts under the pointer: functions of the hit, built from the data of a chart and the words of a language (T = text.tips). */
+// ---------------------------------------------------------------------------
+// Le legende dei grafici, per la pagina e per il programma scaricabile: ogni
+// voce { label, color | paletteKey, dashed?, box?, parts } e' un pulsante che
+// nasconde le sue parti del disegno (`hidden` dei dati di ogni grafico, o
+// setHidden() delle due animazioni)
+// ---------------------------------------------------------------------------
+
+const seriesItem = (label, color, i, extra = {}) => ({ label, color, parts: [`series:${i}`], ...extra });
+const partItem = (label, color, part, extra = {}) => ({ label, color, parts: [part], ...extra });
+
+const legends = {
+  steps: (text) => ['points', 'mean', 'band', 'delta', 'after'].map((part, i) => partItem(text.steps.legend[i], i, part)),
+  stability: (text) => [seriesItem(text.stability.legend[0], 1, 0), seriesItem(text.stability.legend[1], 3, 1), seriesItem(text.stability.legend[2], 0, 2)],
+  // the law of the scores: the bars, the law per interval (dashed) and the density, as many as the labels
+  scores: (text, discrete, simulated) =>
+    text.scores
+      .legend(discrete, simulated)
+      .map((label, i) => label && partItem(label, i, ['bars', 'expected', 'curve'][i], { dashed: i === 1 }))
+      .filter(Boolean),
+  trajectories: (text) => [
+    partItem(text.trajectories.legend[0], 0, 'others'),
+    partItem(text.trajectories.legend[1], 1, 'first'),
+    partItem(text.trajectories.legend[2], 2, 'band', { dashed: true }),
+    partItem(text.trajectories.legend[3], 3, 'envelope', { dashed: true }),
+  ],
+  means: (text) => [seriesItem(text.averages.legendMeans[0], 2, 0, { dashed: true }), seriesItem(text.averages.legendMeans[1], 0, 1)],
+  variances: (text) => [
+    seriesItem(text.averages.legendVariances[0], 2, 0, { dashed: true }),
+    seriesItem(text.averages.legendVariances[1], 0, 1),
+    seriesItem(text.averages.legendVariances[2], 1, 2, { dashed: true }),
+    seriesItem(text.averages.legendVariances[3], 1, 3),
+  ],
+  // one legend under the two histograms of section 2.6
+  histograms: (text) => [partItem(text.spread.legendHist[0], 0, 'bars'), partItem(text.spread.legendHist[1], 2, 'curve')],
+  spread: (text) => [
+    seriesItem(text.spread.legend[0], 0, 0),
+    seriesItem(text.spread.legend[1], 0, 1, { dashed: true }),
+    seriesItem(text.spread.legend[2], 1, 2),
+    seriesItem(text.spread.legend[3], 1, 3, { dashed: true }),
+    seriesItem(text.spread.legend[4], 3, 4, { dashed: true }),
+  ],
+  coverage: (text) => [
+    seriesItem(text.inference.coverageLegend[0], 2, 0, { dashed: true }),
+    seriesItem(text.inference.coverageLegend[1], 1, 1, { dashed: true }),
+    seriesItem(text.inference.coverageLegend[2], 0, 2),
+    seriesItem(text.inference.coverageLegend[3], 1, 3),
+  ],
+  scatter: (text) => [partItem(text.inference.scatterLegend[0], 0, 'points'), partItem(text.inference.scatterLegend[1], 1, 'center', { dashed: true }), partItem(text.inference.scatterLegend[2], 2, 'slope', { dashed: true })],
+  drag: (text) => [
+    partItem(text.tryDrag.legend[0], 0, 'points'),
+    partItem(text.tryDrag.legend[1], 1, 'new'),
+    partItem(text.tryDrag.legend[2], 1, 'means', { dashed: true }),
+    partItem(text.tryDrag.legend[3], 3, 'delta'),
+    partItem(text.tryDrag.legend[4], 4, 'after'),
+    partItem(text.tryDrag.legend[5], 0, 'previousSS'),
+    partItem(text.tryDrag.legend[6], 2, 'directSS'),
+  ],
+  bessel: (text) => [
+    seriesItem(text.tryBessel.legend[0], 2, 0, { dashed: true }),
+    seriesItem(text.tryBessel.legend[1], 1, 1, { dashed: true }),
+    seriesItem(text.tryBessel.legend[2], 0, 2),
+    seriesItem(text.tryBessel.legend[3], 1, 3),
+  ],
+  intervals: (text) => [partItem(text.tryIntervals.legend[0], 2, 'covered'), partItem(text.tryIntervals.legend[1], 1, 'missed'), partItem(text.tryIntervals.legend[2], 6, 'truth', { dashed: true })],
+};
+
+/** Whether series i of a chart is on screen: the reader can hide it from the legend. */
+const seriesOn = (hidden, i) => !hidden.includes(`series:${i}`);
+
+/**
+ * The labels under the pointer, one factory per chart: each returns
+ * (hit, hidden) => text, where `hidden` lists the parts of the chart that
+ * the reader turned off in the legend, and the label leaves them out.
+ */
 const tips = {
-  // the animation: the words for a bar of its histogram or a score of its trajectories
+  // the animation: the words for a bar of its histogram or a score of its trajectories (hit.show: what is on screen)
   trajectory: (text) => (hit) => text.tips.trajectory(hit, text.quantityNames[hit.quantity]),
-  steps: (rows, T) => (hit) => T.step(rows[hit.index]),
-  stability: (curve, T) => (hit) => T.stability(curve.rows[hit.index]),
-  scores: (data, discrete, T) => (hit) => {
+  steps: (rows, T) => (hit, hidden = []) => T.step(rows[hit.index], Object.fromEntries(['points', 'mean', 'band', 'delta', 'after'].map((part) => [part, !hidden.includes(part)]))),
+  stability: (curve, T) => (hit, hidden = []) => T.stability(curve.rows[hit.index], { naive: seriesOn(hidden, 0), twoPass: seriesOn(hidden, 1), welford: seriesOn(hidden, 2) }),
+  scores: (data, discrete, T) => (hit, hidden = []) => {
     const b = data.bars[hit.index];
-    return b ? T.score(b, discrete) : null;
+    return b ? T.score(b, discrete, { law: !hidden.includes('expected') }) : null;
   },
-  means: (s, T) => (hit) => {
+  means: (s, T) => (hit, hidden = []) => {
     const pt = s.points[hit.index];
-    return T.mean(pt, s.law, s.m);
+    return T.mean(pt, s.law, s.m, { truth: seriesOn(hidden, 0), average: seriesOn(hidden, 1) });
   },
-  variances: (s, T) => (hit) => {
+  variances: (s, T) => (hit, hidden = []) => {
     const pt = s.points[hit.index];
-    return T.variance(pt, s.law, s.m);
+    return T.variance(pt, s.law, s.m, { truth: seriesOn(hidden, 0), average: seriesOn(hidden, 1), biasedTheory: seriesOn(hidden, 2), biased: seriesOn(hidden, 3) });
   },
-  spread: (s, T) => (hit) => T.spread(spreadRows(s)[hit.index]),
-  histogram: (h, T) => (hit) => {
+  spread: (s, T) => (hit, hidden = []) =>
+    T.spread(spreadRows(s)[hit.index], { varMean: seriesOn(hidden, 0), varMeanTheory: seriesOn(hidden, 1), varVariance: seriesOn(hidden, 2), varVarianceTheory: seriesOn(hidden, 3), normalVariance: seriesOn(hidden, 4) }),
+  histogram: (h, T) => (hit, hidden = []) => {
     const b = h.bars[hit.index];
-    return b ? T.bin(b.from, b.to, b.share, normalShare(h.normal, b.from, b.to)) : null;
+    return b ? T.bin(b.from, b.to, b.share, hidden.includes('curve') ? null : normalShare(h.normal, b.from, b.to)) : null;
   },
-  coverage: (s, T) => (hit) => T.coverage(inferenceRows(s)[hit.index]),
+  coverage: (s, T) => (hit, hidden = []) => T.coverage(inferenceRows(s)[hit.index], { t: seriesOn(hidden, 2), chi2: seriesOn(hidden, 3) }),
   scatter: (data, T) => (hit) => T.hacker(hit.index + 1, data.xs[hit.index], data.ys[hit.index]),
-  bessel: (state, data, T) => (hit) => {
+  bessel: (state, data, T) => (hit, hidden = []) => {
     const c = data.x[hit.index];
     const h = state.history.find((row) => row[0] === c);
-    return h ? T.bessel(h[0], h[1], h[2]) : null;
+    return h ? T.bessel(h[0], h[1], h[2], { variance: seriesOn(hidden, 2), biased: seriesOn(hidden, 3) }) : null;
   },
   intervals: (batch, T) => (hit) => T.interval(batch.rows[hit.index], batch.param),
 };
@@ -969,7 +1044,7 @@ function scheduleFrameJob(job) {
   }
 }
 
-return { SECTIONS, tocEntries, DEFAULT_DATA_TEXT, DATA_LENGTH, stepsChart, stepsCheck, ERROR_FLOOR, ERROR_CEILING, stabilityChart, stabilityFacts, FIELD_LENGTH, DEFAULT_PARAMS, fieldsOf, DEFAULT_INPUTS, readInputs, sameParams, applyInputs, allValid, paramsKey, parseParamsKey, inputBadge, lawRows, scoresChart, ANIMATION, animationOptions, averageRows, averageFacts, comparisonFacts, meansChart, variancesChart, spreadRows, spreadChart, spreadFacts, latticeBins, normalCurve, AXIS_MODES, spreadHistogram, inferenceRows, coverageChart, inferenceFacts, scatterData, DRAG, DIGIT_DATASETS, DIGIT_POWERS, digitMarks, digitsReport, BESSEL_N, BESSEL_MAX, INTERVAL_NS, LEVELS, INTERVAL_SIZE, besselStart, besselAdvance, besselChart, intervalBatch, intervalChart, TEST_GROUPS, statTests, expectedVerdicts, testSummary, tips, LINKED_TABLES, links, scheduleFrameJob };
+return { SECTIONS, tocEntries, DEFAULT_DATA_TEXT, DATA_LENGTH, stepsChart, stepsCheck, ERROR_FLOOR, ERROR_CEILING, stabilityChart, stabilityFacts, FIELD_LENGTH, DEFAULT_PARAMS, fieldsOf, DEFAULT_INPUTS, readInputs, sameParams, applyInputs, allValid, paramsKey, parseParamsKey, inputBadge, lawRows, scoresChart, ANIMATION, animationOptions, averageRows, averageFacts, comparisonFacts, meansChart, variancesChart, spreadRows, spreadChart, spreadFacts, latticeBins, normalCurve, AXIS_MODES, spreadHistogram, inferenceRows, coverageChart, inferenceFacts, scatterData, DRAG, DIGIT_DATASETS, DIGIT_POWERS, digitMarks, digitsReport, BESSEL_N, BESSEL_MAX, INTERVAL_NS, LEVELS, INTERVAL_SIZE, besselStart, besselAdvance, besselChart, intervalBatch, intervalChart, TEST_GROUPS, statTests, expectedVerdicts, testSummary, legends, tips, LINKED_TABLES, links, scheduleFrameJob };
 })();
 
 var texts$ = (function () {
@@ -1096,6 +1171,17 @@ const spreadFormulas = (large, normal) =>
 // ---------------------------------------------------------------------------
 // ITALIANO
 // ---------------------------------------------------------------------------
+
+/**
+ * The labels under the pointer list only what is on screen: `show` says
+ * which parts of the chart the reader has not hidden from the legend (a
+ * missing key counts as shown), and a label with nothing left is null.
+ */
+const on = (show, key) => !show || show[key] !== false;
+const said = (head, items, sep = ', ') => {
+  const kept = items.filter(Boolean);
+  return kept.length ? `${head}: ${kept.join(sep)}` : null;
+};
 
 const IT = formatters(',', '.', 'n/d', '×');
 
@@ -1638,20 +1724,20 @@ const it = {
     trajectory: (hit, name) =>
       hit.kind === 'bin'
         ? `${name} fra ${IT.num(hit.from, 3)} e ${IT.num(hit.to, 3)} al punteggio ${IT.int(hit.k)}: ${IT.int(hit.count)} hacker su ${IT.int(hit.sample)}, ${IT.num(hit.expected, 1)} attesi dalla normale`
-        : `Punteggio ${IT.int(hit.step)}: ${name} dell’hacker 1 ${IT.num(hit.first, 4)}; valore vero ${IT.num(hit.mean, 4)}, fascia fra ${IT.num(hit.mean - 2 * hit.sd, 4)} e ${IT.num(hit.mean + 2 * hit.sd, 4)}`,
-    step: (r) => (r.k === 1 ? `Passo 1: x = ${IT.sig(r.x)}, M = ${IT.sig(r.mean)}, SS = 0` : `Passo ${r.k}: x = ${IT.sig(r.x)}, δ = ${IT.sig(r.delta)}, M = ${IT.sig(r.mean)}, SS = ${IT.sig(r.ss)}, s² = ${IT.sig(r.variance)}`),
-    stability: (r) => `c = 10^${r.power}: errore relativo ${IT.sci(r.errors.naive)} (manuale), ${IT.sci(r.errors.twoPass)} (due passate), ${IT.sci(r.errors.welford)} (Welford)`,
-    score: (b, discrete) => {
+        : said(`Punteggio ${IT.int(hit.step)}`, [on(hit.show, 'first') && `${name} dell’hacker 1 ${IT.num(hit.first, 4)}`, on(hit.show, 'band') && `valore vero ${IT.num(hit.mean, 4)}, fascia fra ${IT.num(hit.mean - 2 * hit.sd, 4)} e ${IT.num(hit.mean + 2 * hit.sd, 4)}`], '; '),
+    step: (r, show) => said(`Passo ${r.k}`, [on(show, 'points') && `x = ${IT.sig(r.x)}`, r.k > 1 && on(show, 'delta') && `δ = ${IT.sig(r.delta)}`, on(show, 'mean') && `M = ${IT.sig(r.mean)}`, r.k > 1 && on(show, 'after') && `x - M = ${IT.sig(r.after)}`, `SS = ${r.k === 1 ? '0' : IT.sig(r.ss)}`, r.k > 1 && on(show, 'band') && `s² = ${IT.sig(r.variance)}`]),
+    stability: (r, show) => said(`c = 10^${r.power}, errore relativo`, [on(show, 'naive') && `${IT.sci(r.errors.naive)} (manuale)`, on(show, 'twoPass') && `${IT.sci(r.errors.twoPass)} (due passate)`, on(show, 'welford') && `${IT.sci(r.errors.welford)} (Welford)`]),
+    score: (b, discrete, show) => {
       const where = discrete ? `Punteggio ${b.k}` : `Da ${b.k} a ${b.k + 1}`;
-      return b.share === null ? `${where}: legge ${IT.pct(b.prob, 2)}` : `${where}: simulazione ${IT.pct(b.share, 3)}, legge ${IT.pct(b.prob, 3)}`;
+      return b.share === null ? `${where}: legge ${IT.pct(b.prob, 2)}` : said(where, [`simulazione ${IT.pct(b.share, 3)}`, on(show, 'law') && `legge ${IT.pct(b.prob, 3)}`]);
     },
-    mean: (pt, law, m) => `n = ${IT.int(pt.n)}: media delle M_n ${IT.num(pt.meanStats.mean, 4)}, μ = ${IT.sig(law.mu)}, fascia ± ${IT.num(1.959963984540054 * pt.theory.sdMean / Math.sqrt(m), 4)}`,
-    variance: (pt, law, m) => `n = ${IT.int(pt.n)}: media delle s_n² ${IT.num(pt.varStats.mean, 4)}, σ² = ${IT.sig(law.variance)} (fascia ± ${IT.num(1.959963984540054 * pt.theory.sdVariance / Math.sqrt(m), 4)}); media di SS_n/n ${IT.num(pt.biased, 4)}, attesa ${IT.num(pt.theory.biased, 4)}`,
-    spread: (r) => `n = ${IT.int(r.n)}: Var(M_n) ${IT.small(r.varMean)} (teoria ${IT.small(r.varMeanTheory)}), Var(s_n²) ${IT.small(r.varVariance)} (teoria ${IT.small(r.varVarianceTheory)}, dati normali ${IT.small(r.normalVariance)})`,
+    mean: (pt, law, m, show) => said(`n = ${IT.int(pt.n)}`, [on(show, 'average') && `media delle M_n ${IT.num(pt.meanStats.mean, 4)}`, on(show, 'truth') && `μ = ${IT.sig(law.mu)}, fascia ± ${IT.num(1.959963984540054 * pt.theory.sdMean / Math.sqrt(m), 4)}`]),
+    variance: (pt, law, m, show) => said(`n = ${IT.int(pt.n)}`, [on(show, 'average') && `media delle s_n² ${IT.num(pt.varStats.mean, 4)}`, on(show, 'truth') && `σ² = ${IT.sig(law.variance)} (fascia ± ${IT.num(1.959963984540054 * pt.theory.sdVariance / Math.sqrt(m), 4)})`, on(show, 'biased') && `media di SS_n/n ${IT.num(pt.biased, 4)}`, on(show, 'biasedTheory') && `σ² (n - 1)/n ${IT.num(pt.theory.biased, 4)}`]),
+    spread: (r, show) => said(`n = ${IT.int(r.n)}`, [on(show, 'varMean') && `Var(M_n) ${IT.small(r.varMean)}`, on(show, 'varMeanTheory') && `σ²/n ${IT.small(r.varMeanTheory)}`, on(show, 'varVariance') && `Var(s_n²) ${IT.small(r.varVariance)}`, on(show, 'varVarianceTheory') && `teoria ${IT.small(r.varVarianceTheory)}`, on(show, 'normalVariance') && `dati normali ${IT.small(r.normalVariance)}`]),
     bin: (from, to, share, normal) => `Da ${IT.sig(from, 4)} a ${IT.sig(to, 4)}: hacker ${IT.pct(share, 2)}${normal === null ? '' : `, normale ${IT.pct(normal, 2)}`}`,
-    coverage: (r) => `n = ${IT.int(r.n)}: intervallo t ${IT.pct(r.t, 2)} (t = ${IT.num(r.tQuantile, 3)}), intervallo χ² ${IT.pct(r.chi2, 2)}`,
+    coverage: (r, show) => said(`n = ${IT.int(r.n)}`, [on(show, 't') && `intervallo t ${IT.pct(r.t, 2)} (t = ${IT.num(r.tQuantile, 3)})`, on(show, 'chi2') && `intervallo χ² ${IT.pct(r.chi2, 2)}`]),
     hacker: (j, mean, variance) => `Hacker ${IT.int(j)}: M_n = ${IT.num(mean, 4)}, s_n² = ${IT.num(variance, 4)}`,
-    bessel: (count, variance, biased) => `${IT.int(count)} campioni: media delle s² ${IT.num(variance, 4)}, media di SS/n ${IT.num(biased, 4)}`,
+    bessel: (count, variance, biased, show) => said(`${IT.int(count)} campioni`, [on(show, 'variance') && `media delle s² ${IT.num(variance, 4)}`, on(show, 'biased') && `media di SS/n ${IT.num(biased, 4)}`]),
     interval: (r, param) => `Hacker ${IT.int(r.hacker)}: media ${IT.num(r.mean, 3)}, s² ${IT.num(r.variance, 3)}; intervallo per ${param === 'mean' ? 'μ' : 'σ²'} da ${IT.num(r.lo, 3)} a ${IT.num(r.hi, 3)}, ${r.ok ? 'contiene' : 'manca'} il valore vero`,
   },
   download: {
@@ -2212,20 +2298,20 @@ const en = {
     trajectory: (hit, name) =>
       hit.kind === 'bin'
         ? `${name} between ${EN.num(hit.from, 3)} and ${EN.num(hit.to, 3)} at score ${EN.int(hit.k)}: ${EN.int(hit.count)} hackers of ${EN.int(hit.sample)}, ${EN.num(hit.expected, 1)} expected from the normal law`
-        : `Score ${EN.int(hit.step)}: ${name} of hacker 1 ${EN.num(hit.first, 4)}; true value ${EN.num(hit.mean, 4)}, band between ${EN.num(hit.mean - 2 * hit.sd, 4)} and ${EN.num(hit.mean + 2 * hit.sd, 4)}`,
-    step: (r) => (r.k === 1 ? `Step 1: x = ${EN.sig(r.x)}, M = ${EN.sig(r.mean)}, SS = 0` : `Step ${r.k}: x = ${EN.sig(r.x)}, δ = ${EN.sig(r.delta)}, M = ${EN.sig(r.mean)}, SS = ${EN.sig(r.ss)}, s² = ${EN.sig(r.variance)}`),
-    stability: (r) => `c = 10^${r.power}: relative error ${EN.sci(r.errors.naive)} (textbook), ${EN.sci(r.errors.twoPass)} (two passes), ${EN.sci(r.errors.welford)} (Welford)`,
-    score: (b, discrete) => {
+        : said(`Score ${EN.int(hit.step)}`, [on(hit.show, 'first') && `${name} of hacker 1 ${EN.num(hit.first, 4)}`, on(hit.show, 'band') && `true value ${EN.num(hit.mean, 4)}, band between ${EN.num(hit.mean - 2 * hit.sd, 4)} and ${EN.num(hit.mean + 2 * hit.sd, 4)}`], '; '),
+    step: (r, show) => said(`Step ${r.k}`, [on(show, 'points') && `x = ${EN.sig(r.x)}`, r.k > 1 && on(show, 'delta') && `δ = ${EN.sig(r.delta)}`, on(show, 'mean') && `M = ${EN.sig(r.mean)}`, r.k > 1 && on(show, 'after') && `x - M = ${EN.sig(r.after)}`, `SS = ${r.k === 1 ? '0' : EN.sig(r.ss)}`, r.k > 1 && on(show, 'band') && `s² = ${EN.sig(r.variance)}`]),
+    stability: (r, show) => said(`c = 10^${r.power}, relative error`, [on(show, 'naive') && `${EN.sci(r.errors.naive)} (textbook)`, on(show, 'twoPass') && `${EN.sci(r.errors.twoPass)} (two passes)`, on(show, 'welford') && `${EN.sci(r.errors.welford)} (Welford)`]),
+    score: (b, discrete, show) => {
       const where = discrete ? `Score ${b.k}` : `From ${b.k} to ${b.k + 1}`;
-      return b.share === null ? `${where}: law ${EN.pct(b.prob, 2)}` : `${where}: simulation ${EN.pct(b.share, 3)}, law ${EN.pct(b.prob, 3)}`;
+      return b.share === null ? `${where}: law ${EN.pct(b.prob, 2)}` : said(where, [`simulation ${EN.pct(b.share, 3)}`, on(show, 'law') && `law ${EN.pct(b.prob, 3)}`]);
     },
-    mean: (pt, law, m) => `n = ${EN.int(pt.n)}: average of M_n ${EN.num(pt.meanStats.mean, 4)}, μ = ${EN.sig(law.mu)}, band ± ${EN.num(1.959963984540054 * pt.theory.sdMean / Math.sqrt(m), 4)}`,
-    variance: (pt, law, m) => `n = ${EN.int(pt.n)}: average of s_n² ${EN.num(pt.varStats.mean, 4)}, σ² = ${EN.sig(law.variance)} (band ± ${EN.num(1.959963984540054 * pt.theory.sdVariance / Math.sqrt(m), 4)}); average of SS_n/n ${EN.num(pt.biased, 4)}, expected ${EN.num(pt.theory.biased, 4)}`,
-    spread: (r) => `n = ${EN.int(r.n)}: Var(M_n) ${EN.small(r.varMean)} (theory ${EN.small(r.varMeanTheory)}), Var(s_n²) ${EN.small(r.varVariance)} (theory ${EN.small(r.varVarianceTheory)}, normal data ${EN.small(r.normalVariance)})`,
+    mean: (pt, law, m, show) => said(`n = ${EN.int(pt.n)}`, [on(show, 'average') && `average of M_n ${EN.num(pt.meanStats.mean, 4)}`, on(show, 'truth') && `μ = ${EN.sig(law.mu)}, band ± ${EN.num(1.959963984540054 * pt.theory.sdMean / Math.sqrt(m), 4)}`]),
+    variance: (pt, law, m, show) => said(`n = ${EN.int(pt.n)}`, [on(show, 'average') && `average of s_n² ${EN.num(pt.varStats.mean, 4)}`, on(show, 'truth') && `σ² = ${EN.sig(law.variance)} (band ± ${EN.num(1.959963984540054 * pt.theory.sdVariance / Math.sqrt(m), 4)})`, on(show, 'biased') && `average of SS_n/n ${EN.num(pt.biased, 4)}`, on(show, 'biasedTheory') && `σ² (n - 1)/n ${EN.num(pt.theory.biased, 4)}`]),
+    spread: (r, show) => said(`n = ${EN.int(r.n)}`, [on(show, 'varMean') && `Var(M_n) ${EN.small(r.varMean)}`, on(show, 'varMeanTheory') && `σ²/n ${EN.small(r.varMeanTheory)}`, on(show, 'varVariance') && `Var(s_n²) ${EN.small(r.varVariance)}`, on(show, 'varVarianceTheory') && `theory ${EN.small(r.varVarianceTheory)}`, on(show, 'normalVariance') && `normal data ${EN.small(r.normalVariance)}`]),
     bin: (from, to, share, normal) => `From ${EN.sig(from, 4)} to ${EN.sig(to, 4)}: hackers ${EN.pct(share, 2)}${normal === null ? '' : `, normal ${EN.pct(normal, 2)}`}`,
-    coverage: (r) => `n = ${EN.int(r.n)}: t interval ${EN.pct(r.t, 2)} (t = ${EN.num(r.tQuantile, 3)}), χ² interval ${EN.pct(r.chi2, 2)}`,
+    coverage: (r, show) => said(`n = ${EN.int(r.n)}`, [on(show, 't') && `t interval ${EN.pct(r.t, 2)} (t = ${EN.num(r.tQuantile, 3)})`, on(show, 'chi2') && `χ² interval ${EN.pct(r.chi2, 2)}`]),
     hacker: (j, mean, variance) => `Hacker ${EN.int(j)}: M_n = ${EN.num(mean, 4)}, s_n² = ${EN.num(variance, 4)}`,
-    bessel: (count, variance, biased) => `${EN.int(count)} samples: average of s² ${EN.num(variance, 4)}, average of SS/n ${EN.num(biased, 4)}`,
+    bessel: (count, variance, biased, show) => said(`${EN.int(count)} samples`, [on(show, 'variance') && `average of s² ${EN.num(variance, 4)}`, on(show, 'biased') && `average of SS/n ${EN.num(biased, 4)}`]),
     interval: (r, param) => `Hacker ${EN.int(r.hacker)}: mean ${EN.num(r.mean, 3)}, s² ${EN.num(r.variance, 3)}; interval for ${param === 'mean' ? 'μ' : 'σ²'} from ${EN.num(r.lo, 3)} to ${EN.num(r.hi, 3)}, ${r.ok ? 'contains' : 'misses'} the true value`,
   },
   download: {
@@ -2368,7 +2454,11 @@ const formulas = (content, label = null) => [label && subtitle(label), h('pre', 
 // The width of every chart comes from the ResizeObserver, measured after
 // layout; the height is set at once, the drawing happens a few
 // milliseconds per frame.
-const charts = new Map(); // canvas -> { draw, data, width, detach }
+const charts = new Map(); // canvas -> { draw, data, width, detach, link, tip, hidden }
+
+// what a chart draws: its data, without the parts hidden from the legend
+const shownData = (chart) => (chart.hidden.length ? { ...chart.data, hidden: chart.hidden } : chart.data);
+
 const resizer = new ResizeObserver((entries) => {
   for (const entry of entries) {
     const canvas = entry.target;
@@ -2376,31 +2466,121 @@ const resizer = new ResizeObserver((entries) => {
     const width = Math.round(entry.contentRect.width);
     if (!chart || width <= 0 || width === chart.width) continue;
     chart.width = width;
-    canvas.style.height = `${hw.chartHeight(chart.draw, chart.data, width)}px`;
+    canvas.style.height = `${hw.chartHeight(chart.draw, shownData(chart), width)}px`;
     view.scheduleFrameJob(() => {
-      if (charts.get(canvas) === chart && chart.width === width) chart.draw(canvas, { ...chart.data, width }, palette());
+      if (charts.get(canvas) === chart && chart.width === width) chart.draw(canvas, { ...shownData(chart), width }, palette());
     });
   }
 });
 
-/** The legend of a chart, in the page: { label, color?, dashed? }. */
-function legend(items) {
+/** Ties the label under the pointer to a chart: it describes what is on screen, and leaves out the hidden parts. */
+function attachTip(canvas, chart) {
+  if (chart.detach) chart.detach();
+  const tip = chart.tip;
+  chart.detach = tip ? hw.attachChartTooltip(canvas, { draw: chart.draw, data: shownData(chart), describe: (hit) => tip(hit, chart.hidden), link: chart.link }) : null;
+}
+
+/** Draws a chart again at its width, with its data and hidden parts. */
+function redraw(canvas, chart) {
+  if (chart.width > 0) {
+    canvas.style.height = `${hw.chartHeight(chart.draw, shownData(chart), chart.width)}px`;
+    chart.draw(canvas, { ...shownData(chart), width: chart.width }, palette());
+  }
+}
+
+// what the reader hid in the legends: the charts of a region are built again at every step or result
+const kept = { steps: new Set(), stability: new Set(), scores: new Set(), trajectories: new Set(), means: new Set(), variances: new Set(), histograms: new Set(), spread: new Set(), coverage: new Set(), scatter: new Set(), drag: new Set() };
+
+/** The parts of the drawing covered by the hidden items of a legend. */
+const partsOf = (items, hidden) => items.flatMap((item, i) => (hidden.has(i) ? item.parts || [] : []));
+
+/**
+ * The legend of a chart, or of a group of charts: { label, color? |
+ * paletteKey?, dashed?, box?, parts }. Every item is a button: pressed (as
+ * the page opens) its parts are on screen, released they are hidden;
+ * onChange(parts) receives the hidden parts after every press. `hidden`,
+ * the set of the hidden items, outlives the legend when its chart is built
+ * again.
+ */
+function legend(items, onChange = null, hidden = new Set()) {
   const pal = palette();
   return h(
     'ul',
     { class: 'series-legend' },
     items.map((item, i) => {
-      const color = pal.series[item.color ?? i];
-      return h('li', null, h('span', { class: item.dashed ? 'is-dashed' : null, 'aria-hidden': 'true', style: { borderColor: color, backgroundColor: item.dashed ? 'transparent' : color } }), item.label);
+      const color = item.paletteKey ? pal[item.paletteKey] : pal.series[(item.color ?? i) % pal.series.length];
+      let swatch = null;
+      if (item.box) swatch = 'is-box';
+      else if (item.dashed) swatch = 'is-dashed';
+      const button = h(
+        'button',
+        {
+          type: 'button',
+          'aria-pressed': String(!hidden.has(i)),
+          class: hidden.has(i) ? 'is-off' : null,
+          onclick: () => {
+            if (hidden.has(i)) hidden.delete(i);
+            else hidden.add(i);
+            button.setAttribute('aria-pressed', String(!hidden.has(i)));
+            button.classList.toggle('is-off', hidden.has(i));
+            if (onChange) onChange(partsOf(items, hidden));
+          },
+        },
+        h('span', { class: swatch, 'aria-hidden': 'true', style: { borderColor: color, backgroundColor: item.box ? color : 'transparent' } }),
+        item.label,
+      );
+      return h('li', null, button);
     }),
   );
 }
 
-function figure(caption, draw, data, { wide = false, tip = null, items = null, note = null, link = null } = {}) {
+// the hidden parts of several charts that share one table, each with its own prefix ('means/series:1')
+const prefixed = (groups) => groups.flatMap(([name, items, set]) => partsOf(items, set).map((part) => `${name}/${part}`));
+
+/** Hides the cells and rows of a table that belong to hidden parts (data-part), and shows the others. */
+function hideParts(tableEl, parts) {
+  for (const el of tableEl.querySelectorAll('[data-part]')) el.hidden = parts.includes(el.dataset.part);
+}
+
+/** Hides parts of a chart (the legend of a group of charts calls it on each of them). */
+function setHidden(fig, parts) {
+  const canvas = fig.querySelector('canvas.chart');
+  const chart = charts.get(canvas);
+  if (!chart) return;
+  chart.hidden = parts;
+  attachTip(canvas, chart);
+  redraw(canvas, chart);
+}
+
+/**
+ * A chart with its legend (`items`) and its label under the pointer.
+ * onHide(parts) runs when the reader hides or shows a part, for the table
+ * tied to the chart, and `keep` (a set) remembers the hidden items when
+ * the chart is built again; the charts of a group share one legend outside them
+ * (groupLegend) and have no `items`.
+ */
+function figure(caption, draw, data, { wide = false, tip = null, items = null, note = null, link = null, onHide = null, keep = null } = {}) {
   const canvas = h('canvas', { class: 'chart', role: 'img', 'aria-label': caption });
-  const fig = h('figure', { class: wide ? 'figure wide' : 'figure' }, canvas, items && legend(items), note && h('p', { class: 'figure-note', text: note }), h('figcaption', { text: caption }));
-  const detach = tip ? hw.attachChartTooltip(canvas, { draw, data, describe: tip, link }) : null;
-  charts.set(canvas, { draw, data, width: -1, detach });
+  const kept = keep || new Set();
+  const chart = { draw, data, width: -1, detach: null, link, tip, hidden: items ? partsOf(items, kept) : [] };
+  const fig = h(
+    'figure',
+    { class: wide ? 'figure wide' : 'figure' },
+    canvas,
+    items &&
+      legend(
+        items,
+        (parts) => {
+          setHidden(fig, parts);
+          if (onHide) onHide(parts);
+        },
+        kept,
+      ),
+    note && h('p', { class: 'figure-note', text: note }),
+    h('figcaption', { text: caption }),
+  );
+  attachTip(canvas, chart);
+  charts.set(canvas, chart);
   resizer.observe(canvas);
   return fig;
 }
@@ -2416,19 +2596,19 @@ function fill(region, ...nodes) {
   region.replaceChildren(...nodes.flat(Infinity).filter((n) => n !== null && n !== undefined && n !== false));
 }
 
-/** A table: column headers, then rows of cells, each { text | node, class?, head? } (head: a row header, th); `id` for a table tied to a chart (view.LINKED_TABLES). */
-function table(className, headers, rows, id = null) {
+/** A table: column headers, then rows of cells, each { text | node, class?, head? } (head: a row header, th); `id` for a table tied to a chart (view.LINKED_TABLES); `columns` gives the part of a chart each column belongs to, and a row can have its own `part`: hideParts() hides them with their curve. */
+function table(className, headers, rows, id = null, columns = []) {
   return h(
     'table',
     { id, class: `table ${className}` },
-    h('thead', null, h('tr', null, headers.map((x) => h('th', { text: x })))),
+    h('thead', null, h('tr', null, headers.map((x, i) => h('th', { text: x, 'data-part': columns[i] || null })))),
     h(
       'tbody',
       null,
       rows.map((row) => h(
         'tr',
-        { class: row.class || null },
-        row.cells.map((cell, i) => h(cell.head ? 'th' : 'td', { 'data-label': cell.head ? null : headers[i], class: cell.class || null }, cell.node || cell.text)),
+        { class: row.class || null, 'data-part': row.part || null },
+        row.cells.map((cell, i) => h(cell.head ? 'th' : 'td', { 'data-label': cell.head ? null : headers[i], class: cell.class || null, 'data-part': columns[i] || null }, cell.node || cell.text)),
       )),
     ),
   );
@@ -2689,29 +2869,32 @@ function updateSteps() {
   controls.stepsPlay.textContent = play;
   const c = view.stepsCheck(state.data.values);
   const cell = (v) => ({ text: F.sig(v) });
+  // i dati, la media, la fascia, delta e x - M sono anche colonne della tabella
+  const items = view.legends.steps(text);
+  const steps = table(
+    'compact steps',
+    ['k', 'x', 'delta', 'mean', 'after', 'increment', 'ss', 'variance'].map((key) => S.cols[key]),
+    rows.map((r, i) => ({
+      class: i === g ? 'is-current' : i > g ? 'is-future' : null,
+      cells: [{ text: String(r.k), head: true }, cell(r.x), cell(r.delta), cell(r.mean), cell(r.after), cell(r.increment), cell(r.ss), { text: r.k > 1 ? F.sig(r.variance) : '-' }],
+    })),
+    view.LINKED_TABLES.steps,
+    [null, 'points', 'delta', 'mean', 'after', null, null, 'band'],
+  );
+  hideParts(steps, partsOf(items, kept.steps));
   fill(
     regions.steps,
     figure(label, hw.drawWelfordChart, view.stepsChart(rows, g + 1, F.decimal), {
       wide: true,
       tip: view.tips.steps(rows, text.tips),
       link: view.links.steps,
-      items: S.legend.map((item, i) => ({ label: item, color: i })),
+      items,
+      keep: kept.steps,
+      onHide: (parts) => hideParts(steps, parts),
     }),
     h('p', { class: 'caption line', 'aria-live': state.steps.playing ? 'off' : 'polite', text: S.line(rows[g], rows[g - 1]) }),
     subtitle(S.tableTitle),
-    h(
-      'div',
-      { class: rows.length > 16 ? 'scroll' : null },
-      table(
-        'compact steps',
-        ['k', 'x', 'delta', 'mean', 'after', 'increment', 'ss', 'variance'].map((key) => S.cols[key]),
-        rows.map((r, i) => ({
-          class: i === g ? 'is-current' : i > g ? 'is-future' : null,
-          cells: [{ text: String(r.k), head: true }, cell(r.x), cell(r.delta), cell(r.mean), cell(r.after), cell(r.increment), cell(r.ss), { text: r.k > 1 ? F.sig(r.variance) : '-' }],
-        })),
-        view.LINKED_TABLES.steps,
-      ),
-    ),
+    h('div', { class: rows.length > 16 ? 'scroll' : null }, steps),
     check(c.welfordError < 1e-9, S.check(c)),
   );
 }
@@ -2725,19 +2908,19 @@ function stabilityBlock() {
   const F = text.fmt;
   if (!stability) stability = { rows: hw.cancellationRows(), curve: hw.stabilityCurve() };
   const offset = (c) => (c === 0 ? '0' : F.pow(Math.round(Math.log10(c))));
+  // le tre formule sono le tre curve del grafico e le tre colonne della tabella
+  const cancellation = table(
+    'compact cancellation',
+    [S.cols.offset, S.cols.naive, S.cols.twoPass, S.cols.welford],
+    stability.rows.map((r) => ({ cells: [{ text: offset(r.offset), head: true }, { text: F.sig(r.naive, 17), class: Math.abs(r.naive - 30) > 1e-9 ? 'over' : null }, { text: F.sig(r.twoPass, 17) }, { text: F.sig(r.welford, 17) }] })),
+    view.LINKED_TABLES.cancellation,
+    [null, 'series:0', 'series:1', 'series:2'],
+  );
+  hideParts(cancellation, partsOf(view.legends.stability(text), kept.stability));
   return [
     paras(S.intro),
     subtitle(S.tableTitle),
-    h(
-      'div',
-      { class: 'scroll' },
-      table(
-        'compact cancellation',
-        [S.cols.offset, S.cols.naive, S.cols.twoPass, S.cols.welford],
-        stability.rows.map((r) => ({ cells: [{ text: offset(r.offset), head: true }, { text: F.sig(r.naive, 17), class: Math.abs(r.naive - 30) > 1e-9 ? 'over' : null }, { text: F.sig(r.twoPass, 17) }, { text: F.sig(r.welford, 17) }] })),
-        view.LINKED_TABLES.cancellation,
-      ),
-    ),
+    h('div', { class: 'scroll' }, cancellation),
     h(
       'div',
       { class: 'charts' },
@@ -2745,11 +2928,9 @@ function stabilityBlock() {
         wide: true,
         tip: view.tips.stability(stability.curve, text.tips),
         link: view.links.cancellation,
-        items: [
-          { label: S.legend[0], color: 1 },
-          { label: S.legend[1], color: 3 },
-          { label: S.legend[2], color: 0 },
-        ],
+        items: view.legends.stability(text),
+        keep: kept.stability,
+        onHide: (parts) => hideParts(cancellation, parts),
       }),
     ),
     paras(S.facts(view.stabilityFacts(stability.curve))),
@@ -2860,9 +3041,12 @@ function updateScores() {
   const s = computation.shown;
   const data = view.scoresChart(law, s, F.decimal);
   const simulated = Boolean(data.expected);
-  const items = S.legend(law.discrete, simulated)
-    .map((label, i) => label && { label, color: i, dashed: i === 1 })
-    .filter(Boolean);
+  const items = view.legends.scores(text, law.discrete, simulated);
+  // la legenda cambia voci quando arriva la simulazione: si riparte con tutto visibile
+  if (kept.scoresSimulated !== simulated) {
+    kept.scores = new Set();
+    kept.scoresSimulated = simulated;
+  }
   fill(
     regions.scores,
     paras(S.intro(params.p)),
@@ -2881,7 +3065,7 @@ function updateScores() {
       ),
     ),
     paras(S.after),
-    h('div', { class: 'charts' }, figure(S.chartTitle(text.distNames[params.dist], simulated), hw.drawHistogram, data, { wide: true, tip: view.tips.scores(data, law.discrete, text.tips), items })),
+    h('div', { class: 'charts' }, figure(S.chartTitle(text.distNames[params.dist], simulated), hw.drawHistogram, data, { wide: true, tip: view.tips.scores(data, law.discrete, text.tips), items, keep: kept.scores })),
     s && simulated && tests('sim', s),
   );
 }
@@ -3040,7 +3224,8 @@ function trajectoriesBlock() {
     h('div', { class: 'controls' }, h('label', null, T.speedLabel, speed), h('span', { class: 'buttons' }, controls.play, button(T.step, 'step'), button(T.reset, 'reset'), button(T.end, 'toEnd'))),
     // posizionato: ci stanno dentro l'evidenziazione e l'etichetta sotto il puntatore
     h('div', { class: 'figure' }, controls.canvas),
-    legend([{ label: T.legend[0], color: 0 }, { label: T.legend[1], color: 1 }, { label: T.legend[2], color: 2, dashed: true }, { label: T.legend[3], color: 3, dashed: true }]),
+    // la legenda sotto l'animazione: le parti nascoste si ridisegnano dal primo punteggio
+    legend(view.legends.trajectories(text), (parts) => animation && animation.setHidden(parts), kept.trajectories),
     controls.caption,
     paras(T.after),
   ];
@@ -3079,6 +3264,7 @@ function createAnimation() {
     palette: palette(),
     decimal: text.fmt.decimal,
     describe: view.tips.trajectory(text),
+    hidden: partsOf(view.legends.trajectories(text), kept.trajectories),
     onUpdate: updateCaption,
   });
   canvasWidth = canvas.clientWidth;
@@ -3098,28 +3284,40 @@ function updateAverages() {
     fill(regions.averages, paras(A.intro(null)), pending());
     return;
   }
+  // i due grafici hanno una tabella sola: la media delle M_n, la media delle s_n² e le due versioni con n
+  const meansItems = view.legends.means(text);
+  const variancesItems = view.legends.variances(text);
+  const averages = table(
+    'compact averages',
+    ['n', 'mean', 'meanZ', 'variance', 'varianceZ', 'biased', 'biasedTheory'].map((k) => A.cols[k]),
+    view.averageRows(s).map((r) => ({ cells: [{ text: F.int(r.n), head: true }, { text: F.num(r.mean, 4) }, zCell(r.meanZ), { text: F.num(r.variance, 4) }, zCell(r.varianceZ), { text: F.num(r.biased, 4) }, { text: F.num(r.biasedTheory, 4) }] })),
+    view.LINKED_TABLES.averages,
+    [null, 'means/series:1', 'means/series:1', 'variances/series:1', 'variances/series:1', 'variances/series:3', 'variances/series:2'],
+  );
+  const hideAverages = () =>
+    hideParts(
+      averages,
+      prefixed([
+        ['means', meansItems, kept.means],
+        ['variances', variancesItems, kept.variances],
+      ]),
+    );
+  hideAverages();
   fill(
     regions.averages,
     paras(A.intro(s)),
     subtitle(A.tableTitle(s.m)),
-    h(
-      'div',
-      { class: 'scroll' },
-      table(
-        'compact averages',
-        ['n', 'mean', 'meanZ', 'variance', 'varianceZ', 'biased', 'biasedTheory'].map((k) => A.cols[k]),
-        view.averageRows(s).map((r) => ({ cells: [{ text: F.int(r.n), head: true }, { text: F.num(r.mean, 4) }, zCell(r.meanZ), { text: F.num(r.variance, 4) }, zCell(r.varianceZ), { text: F.num(r.biased, 4) }, { text: F.num(r.biasedTheory, 4) }] })),
-        view.LINKED_TABLES.averages,
-      ),
-    ),
+    h('div', { class: 'scroll' }, averages),
     h(
       'div',
       { class: 'charts' },
-      figure(A.meansChart(s.m), hw.drawLineChart, view.meansChart(s, F.decimal), { tip: view.tips.means(s, text.tips), link: view.links.averages, items: [{ label: A.legendMeans[0], color: 2, dashed: true }, { label: A.legendMeans[1], color: 0 }] }),
+      figure(A.meansChart(s.m), hw.drawLineChart, view.meansChart(s, F.decimal), { tip: view.tips.means(s, text.tips), link: view.links.averages, items: meansItems, keep: kept.means, onHide: hideAverages }),
       figure(A.variancesChart(s.m), hw.drawLineChart, view.variancesChart(s, F.decimal), {
         tip: view.tips.variances(s, text.tips),
         link: view.links.averages,
-        items: [{ label: A.legendVariances[0], color: 2, dashed: true }, { label: A.legendVariances[1], color: 0 }, { label: A.legendVariances[2], color: 1, dashed: true }, { label: A.legendVariances[3], color: 1 }],
+        items: variancesItems,
+        keep: kept.variances,
+        onHide: hideAverages,
       }),
     ),
     paras(A.facts(s)),
@@ -3149,15 +3347,30 @@ function updateSpread() {
   controls.spreadSlider.set(lastIndex(), g, S.nLabel(pt.n));
   const mean = view.spreadHistogram(s, g, 'mean', state.spread.mode, F.decimal);
   const variance = view.spreadHistogram(s, g, 'variance', state.spread.mode, F.decimal);
+  // una legenda per i due istogrammi; le cinque curve del grafico sono cinque colonne della tabella
+  const histItems = view.legends.histograms(text);
+  const histMean = figure(S.histMean(pt.n, s.m), hw.drawHistogram, mean, { tip: view.tips.histogram(mean, text.tips), note: S.histNote(pt.meanStats, pt.theory, 'mean') });
+  const histVariance = figure(S.histVariance(pt.n, s.m), hw.drawHistogram, variance, { tip: view.tips.histogram(variance, text.tips), note: S.histNote(pt.varStats, pt.theory, 'variance') });
+  for (const fig of [histMean, histVariance]) setHidden(fig, partsOf(histItems, kept.histograms));
+  const items = view.legends.spread(text);
+  const spread = table(
+    'compact spread',
+    ['n', 'varMean', 'varMeanTheory', 'varVariance', 'varVarianceTheory', 'normalVariance', 'skewMean'].map((k) => S.cols[k]),
+    view.spreadRows(s).map((r) => ({ cells: [{ text: F.int(r.n), head: true }, { text: F.sig(r.varMean, 4) }, { text: F.sig(r.varMeanTheory, 4) }, { text: F.sig(r.varVariance, 4) }, { text: F.sig(r.varVarianceTheory, 4) }, { text: F.sig(r.normalVariance, 4) }, { text: `${F.num(r.skewMean, 3)} (${F.num(r.skewMeanTheory, 3)})` }] })),
+    view.LINKED_TABLES.spread,
+    [null, 'series:0', 'series:1', 'series:2', 'series:3', 'series:4', null],
+  );
+  hideParts(spread, partsOf(items, kept.spread));
   fill(
     regions.spread,
-    h(
-      'div',
-      { class: 'charts' },
-      figure(S.histMean(pt.n, s.m), hw.drawHistogram, mean, { tip: view.tips.histogram(mean, text.tips), note: S.histNote(pt.meanStats, pt.theory, 'mean') }),
-      figure(S.histVariance(pt.n, s.m), hw.drawHistogram, variance, { tip: view.tips.histogram(variance, text.tips), note: S.histNote(pt.varStats, pt.theory, 'variance') }),
+    h('div', { class: 'charts' }, histMean, histVariance),
+    legend(
+      histItems,
+      (parts) => {
+        for (const fig of [histMean, histVariance]) setHidden(fig, parts);
+      },
+      kept.histograms,
     ),
-    legend([{ label: S.legendHist[0], color: 0 }, { label: S.legendHist[1], color: 2 }]),
     h(
       'div',
       { class: 'charts' },
@@ -3165,26 +3378,13 @@ function updateSpread() {
         wide: true,
         tip: view.tips.spread(s, text.tips),
         link: view.links.spread,
-        items: [
-          { label: S.legend[0], color: 0 },
-          { label: S.legend[1], color: 0, dashed: true },
-          { label: S.legend[2], color: 1 },
-          { label: S.legend[3], color: 1, dashed: true },
-          { label: S.legend[4], color: 3, dashed: true },
-        ],
+        items,
+        keep: kept.spread,
+        onHide: (parts) => hideParts(spread, parts),
       }),
     ),
     subtitle(S.tableTitle),
-    h(
-      'div',
-      { class: 'scroll' },
-      table(
-        'compact spread',
-        ['n', 'varMean', 'varMeanTheory', 'varVariance', 'varVarianceTheory', 'normalVariance', 'skewMean'].map((k) => S.cols[k]),
-        view.spreadRows(s).map((r) => ({ cells: [{ text: F.int(r.n), head: true }, { text: F.sig(r.varMean, 4) }, { text: F.sig(r.varMeanTheory, 4) }, { text: F.sig(r.varVariance, 4) }, { text: F.sig(r.varVarianceTheory, 4) }, { text: F.sig(r.normalVariance, 4) }, { text: `${F.num(r.skewMean, 3)} (${F.num(r.skewMeanTheory, 3)})` }] })),
-        view.LINKED_TABLES.spread,
-      ),
-    ),
+    h('div', { class: 'scroll' }, spread),
     paras(S.facts(s)),
     tests('spread', s),
   );
@@ -3206,6 +3406,25 @@ function updateInference() {
   const pt = s.points[g];
   controls.inferenceSlider.set(last, g, I.nLabel(pt.n));
   const scatter = view.scatterData(s, g, F.decimal);
+  // la copertura dei due intervalli e la correlazione degli hacker sono colonne della tabella
+  const coverageItems = view.legends.coverage(text);
+  const scatterItems = view.legends.scatter(text);
+  const inference = table(
+    'compact inference',
+    ['n', 't', 'tQuantile', 'chi2', 'corr', 'corrTheory'].map((k) => I.cols[k]),
+    view.inferenceRows(s).map((r) => ({ cells: [{ text: F.int(r.n), head: true }, { text: F.pct(r.t, 2) }, { text: F.num(r.tQuantile, 3) }, { text: F.pct(r.chi2, 2) }, { text: F.num(r.corr, 3) }, { text: F.num(r.corrTheory, 3) }] })),
+    view.LINKED_TABLES.inference,
+    [null, 'coverage/series:2', 'coverage/series:2', 'coverage/series:3', 'scatter/points', 'scatter/slope'],
+  );
+  const hideInference = () =>
+    hideParts(
+      inference,
+      prefixed([
+        ['coverage', coverageItems, kept.coverage],
+        ['scatter', scatterItems, kept.scatter],
+      ]),
+    );
+  hideInference();
   fill(
     regions.inference,
     h(
@@ -3214,21 +3433,14 @@ function updateInference() {
       figure(I.coverageTitle, hw.drawLineChart, view.coverageChart(s, F.decimal), {
         tip: view.tips.coverage(s, text.tips),
         link: view.links.inference,
-        items: [{ label: I.coverageLegend[0], color: 2, dashed: true }, { label: I.coverageLegend[1], color: 1, dashed: true }, { label: I.coverageLegend[2], color: 0 }, { label: I.coverageLegend[3], color: 1 }],
+        items: coverageItems,
+        keep: kept.coverage,
+        onHide: hideInference,
       }),
-      figure(I.scatterTitle(pt.n, s.m), hw.drawScatter, scatter, { tip: view.tips.scatter(scatter, text.tips), items: [{ label: I.scatterLegend[0], color: 0 }, { label: I.scatterLegend[1], color: 1, dashed: true }, { label: I.scatterLegend[2], color: 2, dashed: true }] }),
+      figure(I.scatterTitle(pt.n, s.m), hw.drawScatter, scatter, { tip: view.tips.scatter(scatter, text.tips), items: scatterItems, keep: kept.scatter, onHide: hideInference }),
     ),
     subtitle(I.tableTitle),
-    h(
-      'div',
-      { class: 'scroll' },
-      table(
-        'compact inference',
-        ['n', 't', 'tQuantile', 'chi2', 'corr', 'corrTheory'].map((k) => I.cols[k]),
-        view.inferenceRows(s).map((r) => ({ cells: [{ text: F.int(r.n), head: true }, { text: F.pct(r.t, 2) }, { text: F.num(r.tQuantile, 3) }, { text: F.pct(r.chi2, 2) }, { text: F.num(r.corr, 3) }, { text: F.num(r.corrTheory, 3) }] })),
-        view.LINKED_TABLES.inference,
-      ),
-    ),
+    h('div', { class: 'scroll' }, inference),
     paras(I.facts(s)),
     tests('inference', s),
   );
@@ -3238,20 +3450,17 @@ function updateInference() {
 // Gli esempi interattivi ("Prova")
 // ---------------------------------------------------------------------------
 
-/** Redraws a chart in place, with new data and labels, without replacing its canvas (no flicker while it plays). */
+/** Redraws a chart in place, with new data and labels, without replacing its canvas (no flicker while it plays); the hidden parts stay hidden. */
 function refreshFigure(fig, caption, data, tip) {
   const canvas = fig.querySelector('canvas.chart');
   const chart = charts.get(canvas);
   if (!chart) return;
-  if (chart.detach) chart.detach();
   chart.data = data;
-  chart.detach = tip ? hw.attachChartTooltip(canvas, { draw: chart.draw, data, describe: tip }) : null;
+  chart.tip = tip;
+  attachTip(canvas, chart);
   canvas.setAttribute('aria-label', caption);
   fig.querySelector('figcaption').textContent = caption;
-  if (chart.width > 0) {
-    canvas.style.height = `${hw.chartHeight(chart.draw, data, chart.width)}px`;
-    chart.draw(canvas, { ...data, width: chart.width }, palette());
-  }
+  redraw(canvas, chart);
 }
 
 // --- 1.2 I dati da trascinare ---------------------------------------------------------
@@ -3282,15 +3491,8 @@ function tryDragBlock() {
     h('div', { class: 'slider-row' }, controls.dragSlider.el, h('span', { class: 'buttons' }, controls.dragAdd, controls.dragRemove, reset)),
     // posizionato: ci stanno dentro l'evidenziazione e l'etichetta sotto il puntatore
     h('div', { class: 'figure' }, controls.dragCanvas),
-    legend([
-      { label: D.legend[0], color: 0 },
-      { label: D.legend[1], color: 1 },
-      { label: D.legend[2], color: 1, dashed: true },
-      { label: D.legend[3], color: 3 },
-      { label: D.legend[4], color: 4 },
-      { label: D.legend[5], color: 0 },
-      { label: D.legend[6], color: 2 },
-    ]),
+    // la legenda: le parti nascoste non si disegnano, e un punto nascosto non si trascina
+    legend(view.legends.drag(text), (parts) => drag && drag.setHidden(parts), kept.drag),
     controls.dragCaption,
     paras(D.after),
   );
@@ -3311,7 +3513,7 @@ function createDrag() {
   drag = null;
   const canvas = controls.dragCanvas;
   if (!canvas || !canvas.isConnected) return;
-  drag = hw.createWelfordDrag(canvas, { ...view.DRAG, initial: view.DRAG.values, values: state.drag.values || view.DRAG.values, palette: palette(), decimal: text.fmt.decimal, onChange: updateDrag });
+  drag = hw.createWelfordDrag(canvas, { ...view.DRAG, initial: view.DRAG.values, values: state.drag.values || view.DRAG.values, palette: palette(), decimal: text.fmt.decimal, hidden: partsOf(view.legends.drag(text), kept.drag), onChange: updateDrag });
   dragWidth = canvas.clientWidth;
   dragResizer.disconnect();
   dragResizer.observe(canvas);
@@ -3382,12 +3584,7 @@ function tryBesselBlock() {
   const data = view.besselChart(view.besselStart(state.target, state.bessel.n), text.fmt.decimal);
   controls.besselFigure = figure(B.chartTitle(state.bessel.n), hw.drawLineChart, data, {
     wide: true,
-    items: [
-      { label: B.legend[0], color: 2, dashed: true },
-      { label: B.legend[1], color: 1, dashed: true },
-      { label: B.legend[2], color: 0 },
-      { label: B.legend[3], color: 1 },
-    ],
+    items: view.legends.bessel(text),
   });
   return h(
     'div',
@@ -3539,11 +3736,7 @@ function updateIntervals() {
       figure(I.chartTitle(current, text.distNames[dist]), hw.drawIntervals, data, {
         wide: true,
         tip: view.tips.intervals(current, text.tips),
-        items: [
-          { label: I.legend[0], color: 2 },
-          { label: I.legend[1], color: 1 },
-          { label: I.legend[2], color: 6, dashed: true },
-        ],
+        items: view.legends.intervals(text),
       }),
     ),
     h('p', { class: 'caption line', 'aria-live': 'polite', text: I.counts(current.misses, S.level, (S.batch + 1) * view.INTERVAL_SIZE, total) }),

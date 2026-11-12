@@ -501,6 +501,16 @@ function chartData(s, { decimal = '.', axes = {} } = {}) {
 }
 
 /**
+ * The legend of a bar chart of chartData: the bars and the dashed
+ * expectation, each a button that hides its part of the drawing (`hidden`
+ * of the data: 'bars', 'expected'). `labels` are the two words of the texts.
+ */
+const barLegend = (labels) => [
+  { label: labels[0], paletteKey: 'bars', box: true, parts: ['bars'] },
+  { label: labels[1], paletteKey: 'reference', dashed: true, parts: ['expected'] },
+];
+
+/**
  * What the label over each chart of chartData says for the bar or the cell
  * under the pointer (hw.attachChartTooltip), from the same statistics and
  * chart data. P is the `tips` part of the texts. A bar may stand for
@@ -510,20 +520,22 @@ function chartData(s, { decimal = '.', axes = {} } = {}) {
 function chartTips(s, data, P) {
   const sum = (list, from, to) => list.slice(from, to).reduce((a, b) => a + b, 0);
   const words = s.bip39.words.counts;
-  const bit = (b, what) => ({ from }) => P.bit(what, from, b.fractions[from], b.z[from]);
+  // `hidden`: the parts hidden from the legend; a hidden expectation is left out of the label
+  const expect = (hidden, value) => (hidden.includes('expected') ? null : value);
+  const bit = (b, what) => ({ from }, hidden = []) => P.bit(what, from, b.fractions[from], b.z[from], !hidden.includes('expected'));
   // classes of `width` distances from `lo`; the first and the last also hold anything beyond the range
-  const distances = (chart, d) => ({ from, to }) => {
+  const distances = (chart, d) => ({ from, to }, hidden = []) => {
     const first = chart.lo + from * chart.width;
     const last = Math.min(d.n, chart.lo + to * chart.width - 1);
-    return P.distances(from === 0 && chart.lo > 0 ? null : first, to === chart.values.length && chart.hi < d.n ? null : last, sum(chart.values, from, to), sum(chart.expected, from, to));
+    return P.distances(from === 0 && chart.lo > 0 ? null : first, to === chart.values.length && chart.hi < d.n ? null : last, sum(chart.values, from, to), expect(hidden, sum(chart.expected, from, to)));
   };
   return {
-    words: ({ from, to }) => {
-      if (to - from === 1) return P.word(from, hw.WORDLIST[from], words[from], data.words.expected);
+    words: ({ from, to }, hidden = []) => {
+      if (to - from === 1) return P.word(from, hw.WORDLIST[from], words[from], expect(hidden, data.words.expected));
       const part = words.slice(from, to);
       return P.words(from, to - 1, hw.WORDLIST[from], hw.WORDLIST[to - 1], Math.min(...part), Math.max(...part));
     },
-    nibble: ({ from }) => P.nibble(from, s.bip39.checksumNibble.counts[from], data.nibble.expected),
+    nibble: ({ from }, hidden = []) => P.nibble(from, s.bip39.checksumNibble.counts[from], expect(hidden, data.nibble.expected)),
     seedBits: bit(s.seed.bits, P.of.seed),
     seedDistances: distances(data.seedDistances, s.seed.avalanche),
     keyBits: bit(s.bip32.bits, P.of.key),
@@ -533,10 +545,10 @@ function chartTips(s, data, P) {
     yBits: bit(s.secp256k1.bitsY, P.of.y),
     pointDistances: distances(data.pointDistances, s.secp256k1.avalanche),
     addressBits: bit(s.keccak.addressBits, P.of.address),
-    firstHex: ({ from }) => P.firstHex('0123456789abcdef'[from], s.keccak.firstHex.counts[from], data.firstHex.expected),
+    firstHex: ({ from }, hidden = []) => P.firstHex('0123456789abcdef'[from], s.keccak.firstHex.counts[from], expect(hidden, data.firstHex.expected)),
     keccakDistances: distances(data.keccakDistances, s.keccak.avalanche),
     sac: ({ row, col }) => P.sacBlock(16 * row, 16 * row + 15, 8 * col, 8 * col + 7, data.sac.values[row][col]),
-    letters: ({ from }) => P.letters(from, s.eip55.letters.counts[from], data.letters.expected[from]),
+    letters: ({ from }, hidden = []) => P.letters(from, s.eip55.letters.counts[from], expect(hidden, data.letters.expected[from])),
   };
 }
 
@@ -565,7 +577,7 @@ function scheduleFrameJob(job) {
   }
 }
 
-return { SECTIONS, tocEntries, MNEMONIC_MAX_LENGTH, PASSPHRASE_MAX_LENGTH, PATH_MAX_LENGTH, ADDRESS_MAX_LENGTH, INDEX_MAX_LENGTH, INDEX_MAX, PRESETS, DEFAULT_INPUTS, parseIndex, parsePathInput, readInputs, appliedInput, inputKind, inputBadge, suggestWords, WORD_ROWS_MAX, wordRows, bitGroups, entropyHash, shortHex, flowNodes, levelRows, parentPath, recoverParentKey, leakDemo, bip44Levels, COMPARISON_ACCOUNTS, presetComparison, testAccount, curveParameters, curveChecks, hashParts, emptyDigests, wrongCasePositions, checkTypedAddress, vectorGroups, STAT_SECTIONS, statTests, testSummary, addressesWithAtMost, CORRELATION_BLOCK, chartData, chartTips, scheduleFrameJob };
+return { SECTIONS, tocEntries, MNEMONIC_MAX_LENGTH, PASSPHRASE_MAX_LENGTH, PATH_MAX_LENGTH, ADDRESS_MAX_LENGTH, INDEX_MAX_LENGTH, INDEX_MAX, PRESETS, DEFAULT_INPUTS, parseIndex, parsePathInput, readInputs, appliedInput, inputKind, inputBadge, suggestWords, WORD_ROWS_MAX, wordRows, bitGroups, entropyHash, shortHex, flowNodes, levelRows, parentPath, recoverParentKey, leakDemo, bip44Levels, COMPARISON_ACCOUNTS, presetComparison, testAccount, curveParameters, curveChecks, hashParts, emptyDigests, wrongCasePositions, checkTypedAddress, vectorGroups, STAT_SECTIONS, statTests, testSummary, addressesWithAtMost, CORRELATION_BLOCK, chartData, barLegend, chartTips, scheduleFrameJob };
 })();
 
 var texts$ = (function () {
@@ -1120,22 +1132,32 @@ const it = {
       },
     },
     // the label over a chart, for the bar or the cell under the pointer
+    // the legends of the bar charts: the bars and the dashed expectation, each a button that hides its part
+    legends: {
+      words: ['volte per parola', 'attese se uniformi'],
+      nibble: ['frasi per checksum', 'attese se uniformi'],
+      bits: ['quota di 1 per bit', 'attesa 1/2'],
+      distances: ['coppie per distanza', 'attese dalla binomiale'],
+      firstHex: ['indirizzi per prima cifra', 'attesi se uniformi'],
+      letters: ['indirizzi per numero di lettere', 'attesi dalla binomiale'],
+    },
+    // an expectation hidden from the legend (null, or false for the bits) is left out of the label
     tips: {
-      word: (index, word, count, expected) => `parola ${index}, "${word}": ${count === 1 ? 'una volta' : `${count} volte`} (attese ${IT.approx(expected)})`,
+      word: (index, word, count, expected) => `parola ${index}, "${word}": ${count === 1 ? 'una volta' : `${count} volte`}${expected === null ? '' : ` (attese ${IT.approx(expected)})`}`,
       words: (from, to, fromWord, toWord, min, max) => `parole da ${from} ("${fromWord}") a ${to} ("${toWord}"): ${min === max ? `${max} volte` : `da ${min} a ${max} volte`} ciascuna`,
-      nibble: (value, count, expected) => `checksum ${value.toString(2).padStart(4, '0')} (${value}): ${count} ${count === 1 ? 'frase' : 'frasi'} (attese ${IT.approx(expected)})`,
+      nibble: (value, count, expected) => `checksum ${value.toString(2).padStart(4, '0')} (${value}): ${count} ${count === 1 ? 'frase' : 'frasi'}${expected === null ? '' : ` (attese ${IT.approx(expected)})`}`,
       of: { seed: 'del seed', key: 'della chiave', x: 'di x', y: 'di y', address: 'dell’indirizzo' },
-      bit: (what, index, fraction, z) => `bit ${index} ${what}: quota di 1 = ${IT.num(fraction, 3)} (attesa 0,500), z = ${IT.num(z, 2)}`,
+      bit: (what, index, fraction, z, withExpected = true) => `bit ${index} ${what}: quota di 1 = ${IT.num(fraction, 3)}${withExpected ? ' (attesa 0,500)' : ''}, z = ${IT.num(z, 2)}`,
       distances: (from, to, count, expected) => {
         let what = from === to ? `distanza ${from}` : `distanze da ${from} a ${to}`;
         if (from === null) what = `distanze fino a ${to}`;
         else if (to === null) what = `distanze da ${from} in su`;
-        return `${what}: ${count} ${count === 1 ? 'coppia' : 'coppie'} (attese ${IT.approx(expected)})`;
+        return `${what}: ${count} ${count === 1 ? 'coppia' : 'coppie'}${expected === null ? '' : ` (attese ${IT.approx(expected)})`}`;
       },
       indexKey: (row, from, to, z) => `bit ${row} dell’indice, bit ${from}-${to} della chiave: ${z === null ? 'non definito' : `z = ${IT.num(z, 2)}`}`,
-      firstHex: (digit, count, expected) => `prima cifra ${digit}: ${count} ${count === 1 ? 'indirizzo' : 'indirizzi'} (attesi ${IT.approx(expected)})`,
+      firstHex: (digit, count, expected) => `prima cifra ${digit}: ${count} ${count === 1 ? 'indirizzo' : 'indirizzi'}${expected === null ? '' : ` (attesi ${IT.approx(expected)})`}`,
       sacBlock: (inFrom, inTo, outFrom, outTo, z) => `bit d’ingresso ${inFrom}-${inTo}, bit d’uscita ${outFrom}-${outTo}: z = ${IT.num(z, 2)}`,
-      letters: (n, count, expected) => `${n} ${n === 1 ? 'lettera' : 'lettere'}: ${count} ${count === 1 ? 'indirizzo' : 'indirizzi'} (attesi ${IT.approx(expected)})`,
+      letters: (n, count, expected) => `${n} ${n === 1 ? 'lettera' : 'lettere'}: ${count} ${count === 1 ? 'indirizzo' : 'indirizzi'}${expected === null ? '' : ` (attesi ${IT.approx(expected)})`}`,
     },
     axes: {
       indexBits: 'bit dell’indice',
@@ -1744,22 +1766,32 @@ const en = {
     steps: { bip39: 'BIP-39', seed: 'Seed', bip32: 'BIP-32', secp256k1: 'secp256k1', keccak: 'Keccak-256', eip55: 'EIP-55' },
     labels: TEST_LABELS, // the same English labels as the command line
     // the label over a chart, for the bar or the cell under the pointer
+    // the legends of the bar charts: the bars and the dashed expectation, each a button that hides its part
+    legends: {
+      words: ['times per word', 'expected if uniform'],
+      nibble: ['sentences per checksum', 'expected if uniform'],
+      bits: ['share of ones per bit', 'expected 1/2'],
+      distances: ['pairs per distance', 'expected from the binomial'],
+      firstHex: ['addresses per first digit', 'expected if uniform'],
+      letters: ['addresses per number of letters', 'expected from the binomial'],
+    },
+    // an expectation hidden from the legend (null, or false for the bits) is left out of the label
     tips: {
-      word: (index, word, count, expected) => `word ${index}, "${word}": ${count === 1 ? 'once' : `${count} times`} (expected ${EN.approx(expected)})`,
+      word: (index, word, count, expected) => `word ${index}, "${word}": ${count === 1 ? 'once' : `${count} times`}${expected === null ? '' : ` (expected ${EN.approx(expected)})`}`,
       words: (from, to, fromWord, toWord, min, max) => `words from ${from} ("${fromWord}") to ${to} ("${toWord}"): ${min === max ? `${max} times` : `from ${min} to ${max} times`} each`,
-      nibble: (value, count, expected) => `checksum ${value.toString(2).padStart(4, '0')} (${value}): ${count} ${count === 1 ? 'sentence' : 'sentences'} (expected ${EN.approx(expected)})`,
+      nibble: (value, count, expected) => `checksum ${value.toString(2).padStart(4, '0')} (${value}): ${count} ${count === 1 ? 'sentence' : 'sentences'}${expected === null ? '' : ` (expected ${EN.approx(expected)})`}`,
       of: { seed: 'of the seed', key: 'of the key', x: 'of x', y: 'of y', address: 'of the address' },
-      bit: (what, index, fraction, z) => `bit ${index} ${what}: share of ones = ${EN.num(fraction, 3)} (expected 0.500), z = ${EN.num(z, 2)}`,
+      bit: (what, index, fraction, z, withExpected = true) => `bit ${index} ${what}: share of ones = ${EN.num(fraction, 3)}${withExpected ? ' (expected 0.500)' : ''}, z = ${EN.num(z, 2)}`,
       distances: (from, to, count, expected) => {
         let what = from === to ? `distance ${from}` : `distances from ${from} to ${to}`;
         if (from === null) what = `distances up to ${to}`;
         else if (to === null) what = `distances from ${from} up`;
-        return `${what}: ${count} ${count === 1 ? 'pair' : 'pairs'} (expected ${EN.approx(expected)})`;
+        return `${what}: ${count} ${count === 1 ? 'pair' : 'pairs'}${expected === null ? '' : ` (expected ${EN.approx(expected)})`}`;
       },
       indexKey: (row, from, to, z) => `bit ${row} of the index, bits ${from}-${to} of the key: ${z === null ? 'not defined' : `z = ${EN.num(z, 2)}`}`,
-      firstHex: (digit, count, expected) => `first digit ${digit}: ${count} ${count === 1 ? 'address' : 'addresses'} (expected ${EN.approx(expected)})`,
+      firstHex: (digit, count, expected) => `first digit ${digit}: ${count} ${count === 1 ? 'address' : 'addresses'}${expected === null ? '' : ` (expected ${EN.approx(expected)})`}`,
       sacBlock: (inFrom, inTo, outFrom, outTo, z) => `input bits ${inFrom}-${inTo}, output bits ${outFrom}-${outTo}: z = ${EN.num(z, 2)}`,
-      letters: (n, count, expected) => `${n} ${n === 1 ? 'letter' : 'letters'}: ${count} ${count === 1 ? 'address' : 'addresses'} (expected ${EN.approx(expected)})`,
+      letters: (n, count, expected) => `${n} ${n === 1 ? 'letter' : 'letters'}: ${count} ${count === 1 ? 'address' : 'addresses'}${expected === null ? '' : ` (expected ${EN.approx(expected)})`}`,
     },
     axes: {
       indexBits: 'index bits',
@@ -2108,7 +2140,11 @@ const value = (label, content, extra = '') => h('div', { class: `value ${extra}`
 // layout: reading clientWidth right after another chart has been resized
 // would make the browser lay out the whole page again, once per chart. The
 // height is set at once, the drawing happens a few milliseconds per frame.
-const charts = new Map(); // canvas -> { draw, data, width, detach }
+const charts = new Map(); // canvas -> { draw, data, width, detach, tip, hidden }
+
+// what a chart draws: its data, without the parts hidden from the legend
+const shownData = (chart) => (chart.hidden.length ? { ...chart.data, hidden: chart.hidden } : chart.data);
+
 const resizer = new ResizeObserver((entries) => {
   for (const entry of entries) {
     const canvas = entry.target;
@@ -2116,19 +2152,92 @@ const resizer = new ResizeObserver((entries) => {
     const width = Math.round(entry.contentRect.width);
     if (!chart || width <= 0 || width === chart.width) continue;
     chart.width = width;
-    canvas.style.height = `${hw.chartHeight(chart.draw, chart.data, width)}px`;
+    canvas.style.height = `${hw.chartHeight(chart.draw, shownData(chart), width)}px`;
     view.scheduleFrameJob(() => {
-      if (charts.get(canvas) === chart && chart.width === width) chart.draw(canvas, { ...chart.data, width }, palette());
+      if (charts.get(canvas) === chart && chart.width === width) chart.draw(canvas, { ...shownData(chart), width }, palette());
     });
   }
 });
 
-function figure(caption, draw, data, wide = false, tip = null) {
+// the label with the values of the bar or the cell under the pointer: it describes what is on screen and leaves out the hidden parts
+function attachTip(canvas, chart) {
+  if (chart.detach) chart.detach();
+  const tip = chart.tip;
+  chart.detach = tip ? hw.attachChartTooltip(canvas, { draw: chart.draw, data: shownData(chart), describe: (hit) => tip(hit, chart.hidden) }) : null;
+}
+
+// what the reader hid in the legends, by chart: the statistics are built again with a new sample
+const kept = {};
+const keep = (name) => {
+  if (!kept[name]) kept[name] = new Set();
+  return kept[name];
+};
+
+/** The parts of the drawing covered by the hidden items of a legend. */
+const partsOf = (items, hidden) => items.flatMap((item, i) => (hidden.has(i) ? item.parts || [] : []));
+
+/**
+ * The legend of a chart: { label, paletteKey, dashed?, box?, parts }.
+ * Every item is a button: pressed (as the page opens) its parts are on
+ * screen, released they are hidden; onChange(parts) receives the hidden
+ * parts after every press. `hidden`, the set of the hidden items, outlives
+ * the legend when its chart is built again.
+ */
+function legend(items, onChange = null, hidden = new Set()) {
+  const pal = palette();
+  return h(
+    'ul',
+    { class: 'series-legend' },
+    items.map((item, i) => {
+      const color = pal[item.paletteKey];
+      let swatch = null;
+      if (item.box) swatch = 'is-box';
+      else if (item.dashed) swatch = 'is-dashed';
+      const button = h(
+        'button',
+        {
+          type: 'button',
+          'aria-pressed': String(!hidden.has(i)),
+          class: hidden.has(i) ? 'is-off' : null,
+          onclick: () => {
+            if (hidden.has(i)) hidden.delete(i);
+            else hidden.add(i);
+            button.setAttribute('aria-pressed', String(!hidden.has(i)));
+            button.classList.toggle('is-off', hidden.has(i));
+            if (onChange) onChange(partsOf(items, hidden));
+          },
+        },
+        h('span', { class: swatch, 'aria-hidden': 'true', style: { borderColor: color, backgroundColor: item.box ? color : 'transparent' } }),
+        item.label,
+      );
+      return h('li', null, button);
+    }),
+  );
+}
+
+/** A chart, with the label under the pointer and, with `items`, its legend; `keep` remembers the hidden items when the chart is built again. */
+function figure(caption, draw, data, wide = false, tip = null, { items = null, keep: hiddenItems = null } = {}) {
   const canvas = h('canvas', { class: 'chart', role: 'img', 'aria-label': caption });
-  const fig = h('figure', { class: wide ? 'figure wide' : 'figure' }, canvas, h('figcaption', { text: caption }));
-  // the label with the values of the bar or the cell under the pointer
-  const detach = tip ? hw.attachChartTooltip(canvas, { draw, data, describe: tip }) : null;
-  charts.set(canvas, { draw, data, width: -1, detach });
+  const hidden = hiddenItems || new Set();
+  const chart = { draw, data, width: -1, detach: null, tip, hidden: items ? partsOf(items, hidden) : [] };
+  const fig = h(
+    'figure',
+    { class: wide ? 'figure wide' : 'figure' },
+    canvas,
+    items &&
+      legend(
+        items,
+        (parts) => {
+          chart.hidden = parts;
+          attachTip(canvas, chart);
+          if (chart.width > 0) chart.draw(canvas, { ...shownData(chart), width: chart.width }, palette());
+        },
+        hidden,
+      ),
+    h('figcaption', { text: caption }),
+  );
+  attachTip(canvas, chart);
+  charts.set(canvas, chart);
   resizer.observe(canvas);
   return fig;
 }
@@ -2750,14 +2859,16 @@ function updateStats() {
   const F = text.fmt;
   const data = view.chartData(s, { decimal: F.decimal, axes: T.axes });
   const tips = view.chartTips(s, data, T.tips);
+  // the legends of the bar charts: the bars and the dashed expectation
+  const bars = (name, key) => ({ items: view.barLegend(T.legends[key]), keep: keep(name) });
   const summary = view.testSummary(s);
   const smallest = summary.smallest;
   fill(
     regions.stats,
     titles[0],
     h('p', { text: T.bip39.intro }),
-    figure(T.bip39.wordsChart(s.bip39.words.test.N, s.samples.mnemonics), hw.drawBarChart, data.words, true, tips.words),
-    h('div', { class: 'charts' }, figure(T.bip39.nibbleChart(s.samples.mnemonics), hw.drawBarChart, data.nibble, false, tips.nibble)),
+    figure(T.bip39.wordsChart(s.bip39.words.test.N, s.samples.mnemonics), hw.drawBarChart, data.words, true, tips.words, bars('words', 'words')),
+    h('div', { class: 'charts' }, figure(T.bip39.nibbleChart(s.samples.mnemonics), hw.drawBarChart, data.nibble, false, tips.nibble, bars('nibble', 'nibble'))),
     tests('bip39', s),
     paras(T.bip39.explain(s)),
 
@@ -2766,8 +2877,8 @@ function updateStats() {
     h(
       'div',
       { class: 'charts' },
-      figure(T.seed.bitsChart(s.seed.bits.N), hw.drawBarChart, data.seedBits, false, tips.seedBits),
-      figure(T.seed.distanceChart(s.seed.avalanche, data.seedDistances), hw.drawBarChart, data.seedDistances, false, tips.seedDistances),
+      figure(T.seed.bitsChart(s.seed.bits.N), hw.drawBarChart, data.seedBits, false, tips.seedBits, bars('seedBits', 'bits')),
+      figure(T.seed.distanceChart(s.seed.avalanche, data.seedDistances), hw.drawBarChart, data.seedDistances, false, tips.seedDistances, bars('seedDistances', 'distances')),
     ),
     tests('seed', s),
     paras(T.seed.explain(s)),
@@ -2777,8 +2888,8 @@ function updateStats() {
     h(
       'div',
       { class: 'charts' },
-      figure(T.bip32.bitsChart(s.bip32.bits.N), hw.drawBarChart, data.keyBits, false, tips.keyBits),
-      figure(T.bip32.distanceChart(s.bip32.siblings, data.siblings), hw.drawBarChart, data.siblings, false, tips.siblings),
+      figure(T.bip32.bitsChart(s.bip32.bits.N), hw.drawBarChart, data.keyBits, false, tips.keyBits, bars('keyBits', 'bits')),
+      figure(T.bip32.distanceChart(s.bip32.siblings, data.siblings), hw.drawBarChart, data.siblings, false, tips.siblings, bars('siblings', 'distances')),
     ),
     figure(T.bip32.heatmap(s.bip32.correlation), hw.drawHeatmap, data.correlation, true, tips.correlation),
     tests('bip32', s),
@@ -2789,10 +2900,10 @@ function updateStats() {
     h(
       'div',
       { class: 'charts' },
-      figure(T.secp.xChart(s.secp256k1.bitsX.N), hw.drawBarChart, data.xBits, false, tips.xBits),
-      figure(T.secp.yChart(s.secp256k1.bitsY.N), hw.drawBarChart, data.yBits, false, tips.yBits),
+      figure(T.secp.xChart(s.secp256k1.bitsX.N), hw.drawBarChart, data.xBits, false, tips.xBits, bars('xBits', 'bits')),
+      figure(T.secp.yChart(s.secp256k1.bitsY.N), hw.drawBarChart, data.yBits, false, tips.yBits, bars('yBits', 'bits')),
     ),
-    figure(T.secp.distanceChart(s.secp256k1.avalanche, data.pointDistances), hw.drawBarChart, data.pointDistances, false, tips.pointDistances),
+    figure(T.secp.distanceChart(s.secp256k1.avalanche, data.pointDistances), hw.drawBarChart, data.pointDistances, false, tips.pointDistances, bars('pointDistances', 'distances')),
     tests('secp256k1', s),
     h('p', { class: 'structure', text: T.secp.homomorphism(s.secp256k1.homomorphism) }),
     paras(T.secp.explain(s)),
@@ -2802,17 +2913,17 @@ function updateStats() {
     h(
       'div',
       { class: 'charts' },
-      figure(T.keccak.bitsChart(s.keccak.addressBits.N), hw.drawBarChart, data.addressBits, false, tips.addressBits),
-      figure(T.keccak.hexChart(s.keccak.firstHex.test.N), hw.drawBarChart, data.firstHex, false, tips.firstHex),
+      figure(T.keccak.bitsChart(s.keccak.addressBits.N), hw.drawBarChart, data.addressBits, false, tips.addressBits, bars('addressBits', 'bits')),
+      figure(T.keccak.hexChart(s.keccak.firstHex.test.N), hw.drawBarChart, data.firstHex, false, tips.firstHex, bars('firstHex', 'firstHex')),
     ),
-    figure(T.keccak.distanceChart(s.keccak.avalanche, data.keccakDistances), hw.drawBarChart, data.keccakDistances, false, tips.keccakDistances),
+    figure(T.keccak.distanceChart(s.keccak.avalanche, data.keccakDistances), hw.drawBarChart, data.keccakDistances, false, tips.keccakDistances, bars('keccakDistances', 'distances')),
     figure(T.keccak.heatmap, hw.drawHeatmap, data.sac, true, tips.sac),
     tests('keccak', s),
     paras(T.keccak.explain(s)),
 
     titles[5],
     h('p', { text: T.eip55.intro }),
-    figure(T.eip55.lettersChart(s.eip55.letters.test.N), hw.drawBarChart, data.letters, false, tips.letters),
+    figure(T.eip55.lettersChart(s.eip55.letters.test.N), hw.drawBarChart, data.letters, false, tips.letters, bars('letters', 'letters')),
     tests('eip55', s),
     paras(T.eip55.explain(s)),
 

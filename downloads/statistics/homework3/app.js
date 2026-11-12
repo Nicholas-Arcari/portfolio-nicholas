@@ -654,33 +654,109 @@ function testSummary(s) {
 const normalShare = (normal, from, to) => (normal ? hw.normalCdf((to - normal.mean) / normal.sd) - hw.normalCdf((from - normal.mean) / normal.sd) : null);
 
 /** The texts under the pointer: functions of the hit, built from the data of a chart and the words of a language (T = text.tips). */
+// ---------------------------------------------------------------------------
+// Le legende dei grafici, per la pagina e per il programma scaricabile: ogni
+// voce { label, color, dashed?, parts } e' un pulsante che nasconde le sue
+// parti del disegno (`hidden` dei dati di ogni grafico, o setHidden()
+// dell'animazione); i grafici dei due modelli affiancati hanno una legenda sola
+// ---------------------------------------------------------------------------
+
+const seriesItem = (label, color, i, extra = {}) => ({ label, color, parts: [`series:${i}`], ...extra });
+const partItem = (label, color, part, extra = {}) => ({ label, color, parts: [part], ...extra });
+
+// a histogram against a law: the simulation, the exact law (dashed) and the continuous curve
+const histogramItems = (labels) => [partItem(labels[0], 0, 'bars'), partItem(labels[1], 1, 'expected', { dashed: true }), partItem(labels[2], 2, 'curve')];
+
+const legends = {
+  trajectories: (text) => [
+    partItem(text.trajectories.legend[0], 0, 'others'),
+    partItem(text.trajectories.legend[1], 1, 'first'),
+    partItem(text.trajectories.legend[2], 2, 'band', { dashed: true }),
+    partItem(text.trajectories.legend[3], 3, 'envelope', { dashed: true }),
+  ],
+  sweep: (text) => histogramItems(text.sweep.legend),
+  lln: (text) => [
+    seriesItem(text.convergence.legend[0], 0, 0),
+    seriesItem(text.convergence.legend[1], 2, 1),
+    seriesItem(text.convergence.legend[2], 3, 2, { dashed: true }),
+    seriesItem(text.convergence.legend[3], 4, 3, { dashed: true }),
+  ],
+  // the three quantities, each with its simulated points and its exact line; the last item is all the exact lines
+  variance: (text) => [
+    { label: text.variance.legend[0], color: 0, parts: ['series:0', 'series:1'] },
+    { label: text.variance.legend[1], color: 1, parts: ['series:2', 'series:3'] },
+    { label: text.variance.legend[2], color: 2, parts: ['series:4', 'series:5'] },
+    // 'theory': the column of the exact slopes in the table, which only this item hides
+    { label: text.variance.legend[3], color: 6, dashed: true, parts: ['series:1', 'series:3', 'series:5', 'theory'] },
+  ],
+  clt: (text) => histogramItems(text.normal.legend),
+  qq: (text) => [partItem(text.normal.qqLegend[0], 0, 'points'), partItem(text.normal.qqLegend[1], 1, 'line', { dashed: true })],
+  speed: (text) => [
+    seriesItem(text.speed.legend[0], 1, 0),
+    seriesItem(text.speed.legend[1], 2, 1),
+    seriesItem(text.speed.legend[2], 3, 2, { dashed: true }),
+    seriesItem(text.speed.legend[3], 0, 3),
+    seriesItem(text.speed.legend[4], 6, 4, { dashed: true }),
+  ],
+  arcsine: (text) => histogramItems(text.size.arcsineLegend),
+  best: (text) => [
+    seriesItem(text.attackers.bestLegend[0], 0, 0),
+    seriesItem(text.attackers.bestLegend[1], 1, 1),
+    seriesItem(text.attackers.bestLegend[2], 2, 2, { dashed: true }),
+    seriesItem(text.attackers.bestLegend[3], 3, 3, { dashed: true }),
+  ],
+  probability: (text) => [
+    seriesItem(text.attackers.probabilityLegend[0], 0, 0),
+    seriesItem(text.attackers.probabilityLegend[1], 0, 1, { dashed: true }),
+    seriesItem(text.attackers.probabilityLegend[2], 2, 2),
+    seriesItem(text.attackers.probabilityLegend[3], 2, 3, { dashed: true }),
+  ],
+  systems: (text) => histogramItems(text.aggregate.systemsLegend),
+};
+
+/** Whether series i of a chart is on screen: the reader can hide it from the legend. */
+const seriesOn = (hidden, i) => !hidden.includes(`series:${i}`);
+
+/**
+ * The labels under the pointer, one factory per chart: each returns
+ * (hit, hidden) => text, where `hidden` lists the parts of the chart that
+ * the reader turned off in the legend, and the label leaves them out.
+ */
 const tips = {
-  // the animation: the words for a bar of its histogram or a system of its trajectories
+  // the animation: the words for a bar of its histogram or a system of its trajectories (hit.show: what is on screen)
   trajectory: (text) => (hit) => text.tips.trajectory(hit, text.trajectoryNames[hit.quantity]),
-  histogram: (h, T) => (hit) => {
+  histogram: (h, T) => (hit, hidden = []) => {
     const b = h.bars[hit.index];
-    return b ? T.bin(b.from, b.to, b.share, h.expected ? b.prob : null, normalShare(h.normal, b.from, b.to)) : null;
+    return b ? T.bin(b.from, b.to, b.share, h.expected && !hidden.includes('expected') ? b.prob : null, hidden.includes('curve') ? null : normalShare(h.normal, b.from, b.to)) : null;
   },
-  arcsine: (h, T) => (hit) => {
+  arcsine: (h, T) => (hit, hidden = []) => {
     const b = h.bars[hit.index];
-    return b ? T.share(Math.max(0, b.from), Math.min(1, b.to), b.share, b.prob, hw.arcsineCdf(b.to) - hw.arcsineCdf(b.from)) : null;
+    return b ? T.share(Math.max(0, b.from), Math.min(1, b.to), b.share, hidden.includes('expected') ? null : b.prob, hidden.includes('curve') ? null : hw.arcsineCdf(b.to) - hw.arcsineCdf(b.from)) : null;
   },
-  lln: (rows, T) => (hit) => T.lln(rows[hit.index]),
-  variance: (M, T) => (hit) => {
+  lln: (rows, T) => (hit, hidden = []) => T.lln(rows[hit.index], { rate: seriesOn(hidden, 0), exact: seriesOn(hidden, 1), chebyshev: seriesOn(hidden, 2), hoeffding: seriesOn(hidden, 3) }),
+  variance: (M, T) => (hit, hidden = []) => {
     const pt = M.points[hit.index];
-    return T.variance(pt.n, hw.QUANTITIES.map((q) => [pt.sample.variance * hw.quantityScale(q, pt.n) ** 2, hw.quantityMoments(M.mom, pt.n, q).variance]));
+    return T.variance(
+      pt.n,
+      hw.QUANTITIES.map((q, i) => {
+        const sample = seriesOn(hidden, 2 * i) ? pt.sample.variance * hw.quantityScale(q, pt.n) ** 2 : null;
+        const exact = seriesOn(hidden, 2 * i + 1) ? hw.quantityMoments(M.mom, pt.n, q).variance : null;
+        return sample === null && exact === null ? null : [sample, exact];
+      }),
+    );
   },
-  distance: (M, T) => (hit) => {
+  distance: (M, T) => (hit, hidden = []) => {
     const n = M.curve.ns[hit.index];
     const pt = M.points.find((x) => x.n === n);
-    return T.distance(n, M.curve.distance[hit.index], M.curve.corrected[hit.index], M.curve.bound[hit.index], pt ? pt.ks : null);
+    const pick = (i, v) => (seriesOn(hidden, i) ? v : null);
+    return T.distance(n, pick(0, M.curve.distance[hit.index]), pick(1, M.curve.corrected[hit.index]), pick(2, M.curve.bound[hit.index]), pt ? pick(3, pt.ks) : null);
   },
   qq: (q, T) => (hit) => {
     const [a, b] = q.points[hit.index];
     return T.qq(a, b);
   },
-  best: (G, T) => (hit) => T.best(G.rows[hit.index]),
-  probability: (G, T) => (hit) => T.probability(G.rows[hit.index]),
+  best: (G, T) => (hit, hidden = []) => T.best(G.rows[hit.index], { mean: seriesOn(hidden, 0), exact: seriesOn(hidden, 1), normal: seriesOn(hidden, 2), asymptote: seriesOn(hidden, 3) }),
+  probability: (G, T) => (hit, hidden = []) => T.probability(G.rows[hit.index], { beyond: seriesOn(hidden, 0), beyondExact: seriesOn(hidden, 1), coverage: seriesOn(hidden, 2), coverageExact: seriesOn(hidden, 3) }),
 };
 
 // ---------------------------------------------------------------------------
@@ -726,7 +802,7 @@ function scheduleFrameJob(job) {
   }
 }
 
-return { SECTIONS, tocEntries, FIELD_LENGTH, DEFAULT_PARAMS, fieldsOf, DEFAULT_INPUTS, readInputs, sameParams, applyInputs, allValid, paramsKey, parseParamsKey, inputBadge, ANIMATION, animationOptions, displayOf, latticeHistogram, normalCurve, sweepRange, sweepChart, quantityStats, pointIndex, momentRows, momentFacts, powerTicks, exceedance, llnRows, llnChart, llnFacts, varianceChart, varianceFits, VARIANCE_SLOPES, cltHistogram, qqData, shapeAt, distanceChart, curveAt, driftRows, normalRule, neededFor, M_TARGET, neededForProbability, neededForVariance, choiceRows, enoughUpTo, arcsineChart, bestChart, probabilityChart, groupRow, systemsChart, aggregateFacts, TEST_GROUPS, statTests, expectedVerdicts, testSummary, tips, LINKED_TABLES, links, scheduleFrameJob };
+return { SECTIONS, tocEntries, FIELD_LENGTH, DEFAULT_PARAMS, fieldsOf, DEFAULT_INPUTS, readInputs, sameParams, applyInputs, allValid, paramsKey, parseParamsKey, inputBadge, ANIMATION, animationOptions, displayOf, latticeHistogram, normalCurve, sweepRange, sweepChart, quantityStats, pointIndex, momentRows, momentFacts, powerTicks, exceedance, llnRows, llnChart, llnFacts, varianceChart, varianceFits, VARIANCE_SLOPES, cltHistogram, qqData, shapeAt, distanceChart, curveAt, driftRows, normalRule, neededFor, M_TARGET, neededForProbability, neededForVariance, choiceRows, enoughUpTo, arcsineChart, bestChart, probabilityChart, groupRow, systemsChart, aggregateFacts, TEST_GROUPS, statTests, expectedVerdicts, testSummary, legends, tips, LINKED_TABLES, links, scheduleFrameJob };
 })();
 
 var texts$ = (function () {
@@ -868,6 +944,17 @@ const DIGITS = { sum: 1, mean: 4, normalized: 3 };
 // ---------------------------------------------------------------------------
 // ITALIANO
 // ---------------------------------------------------------------------------
+
+/**
+ * The labels under the pointer list only what is on screen: `show` says
+ * which parts of the chart the reader has not hidden from the legend (a
+ * missing key counts as shown), and a label with nothing left is null.
+ */
+const on = (show, key) => !show || show[key] !== false;
+const said = (head, items, sep = ', ') => {
+  const kept = items.filter(Boolean);
+  return kept.length ? `${head}: ${kept.join(sep)}` : null;
+};
 
 const IT = formatters(',', '.', 'n/d', '×');
 
@@ -1396,19 +1483,20 @@ const it = {
   tips: {
     trajectory: (hit, name) =>
       hit.kind === 'bin'
-        ? `${name} fra ${valueIt(hit.from, hit.quantity)} e ${valueIt(hit.to, hit.quantity)} al sistema ${IT.int(hit.k)}: ${IT.int(hit.count)} attaccanti su ${IT.int(hit.sample)}, ${IT.num(hit.expected, 1)} attesi dalla normale`
-        : `Sistema ${IT.int(hit.step)}: ${name} dell’attaccante 1 ${valueIt(hit.first, hit.quantity)}; media ${valueIt(hit.mean, hit.quantity)}, fascia fra ${valueIt(hit.mean - 2 * hit.sd, hit.quantity)} e ${valueIt(hit.mean + 2 * hit.sd, hit.quantity)}`,
+        ? said(`${name} fra ${valueIt(hit.from, hit.quantity)} e ${valueIt(hit.to, hit.quantity)} al sistema ${IT.int(hit.k)}`, [on(hit.show, 'bars') && `${IT.int(hit.count)} attaccanti su ${IT.int(hit.sample)}`, on(hit.show, 'normal') && `${IT.num(hit.expected, 1)} attesi dalla normale`])
+        : said(`Sistema ${IT.int(hit.step)}`, [on(hit.show, 'first') && `${name} dell’attaccante 1 ${valueIt(hit.first, hit.quantity)}`, on(hit.show, 'band') && `media ${valueIt(hit.mean, hit.quantity)}, fascia fra ${valueIt(hit.mean - 2 * hit.sd, hit.quantity)} e ${valueIt(hit.mean + 2 * hit.sd, hit.quantity)}`], '; '),
     bin: (from, to, share, prob, normal) => {
       const d = edgeDigits(from, to);
-      return `Da ${IT.num(from, d)} a ${IT.num(to, d)}: simulazione ${IT.pct(share, 2)}${prob === null ? '' : `, legge esatta ${IT.pct(prob, 2)}`}${normal === null ? '' : `, normale ${IT.pct(normal, 2)}`}`;
+      return said(`Da ${IT.num(from, d)} a ${IT.num(to, d)}`, [`simulazione ${IT.pct(share, 2)}`, prob !== null && `legge esatta ${IT.pct(prob, 2)}`, normal !== null && `normale ${IT.pct(normal, 2)}`]);
     },
-    share: (from, to, share, prob, limit) => `In vantaggio fra il ${IT.pct(from, 1)} e il ${IT.pct(to, 1)} del tempo: simulazione ${IT.pct(share, 2)}, legge esatta ${IT.pct(prob, 2)}, arcoseno ${IT.pct(limit, 2)}`,
-    lln: (r) => `n = ${IT.int(r.n)}: simulata ${IT.num(r.rate, 4)} (95%: ${IT.num(r.interval[0], 4)}-${IT.num(r.interval[1], 4)}), esatta ${IT.small(r.exact)}, Chebyshev ${IT.small(r.chebyshev)}, Hoeffding ${IT.small(r.hoeffding)}`,
-    variance: (n, pairs) => `n = ${IT.int(n)}: ${['S_n', 'S_n/n', 'S_n/√n'].map((q, i) => `Var(${q}) ${IT.small(pairs[i][0])} (esatta ${IT.small(pairs[i][1])})`).join(', ')}`,
-    distance: (n, d, dc, bound, ks) => `n = ${IT.int(n)}: esatta ${IT.small(d)}, con correzione ${IT.small(dc)}, Berry-Esseen ${IT.small(bound)}${ks === null ? '' : `, simulata ${IT.num(ks, 4)}`}`,
+    share: (from, to, share, prob, limit) => said(`In vantaggio fra il ${IT.pct(from, 1)} e il ${IT.pct(to, 1)} del tempo`, [`simulazione ${IT.pct(share, 2)}`, prob !== null && `legge esatta ${IT.pct(prob, 2)}`, limit !== null && `arcoseno ${IT.pct(limit, 2)}`]),
+    lln: (r, show) => said(`n = ${IT.int(r.n)}`, [on(show, 'rate') && `simulata ${IT.num(r.rate, 4)} (95%: ${IT.num(r.interval[0], 4)}-${IT.num(r.interval[1], 4)})`, on(show, 'exact') && `esatta ${IT.small(r.exact)}`, on(show, 'chebyshev') && `Chebyshev ${IT.small(r.chebyshev)}`, on(show, 'hoeffding') && `Hoeffding ${IT.small(r.hoeffding)}`]),
+    // pairs: [simulated, exact] for S_n, S_n/n and S_n/√n, null where hidden
+    variance: (n, pairs) => said(`n = ${IT.int(n)}`, ['S_n', 'S_n/n', 'S_n/√n'].map((q, i) => pairs[i] && [pairs[i][0] !== null && `Var(${q}) ${IT.small(pairs[i][0])}`, pairs[i][1] !== null && `esatta ${IT.small(pairs[i][1])}`].filter(Boolean).join(' ')).filter(Boolean)),
+    distance: (n, d, dc, bound, ks) => said(`n = ${IT.int(n)}`, [d !== null && `esatta ${IT.small(d)}`, dc !== null && `con correzione ${IT.small(dc)}`, bound !== null && `Berry-Esseen ${IT.small(bound)}`, ks !== null && `simulata ${IT.num(ks, 4)}`]),
     qq: (a, b) => `Quantile di N(0, 1) ${IT.num(a, 2)}: simulato ${IT.num(b, 2)}`,
-    best: (r) => `b = ${IT.int(r.b)} (${IT.int(r.groups)} gruppi): simulato ${IT.num(r.mean, 2)} ± ${IT.num(1.96 * r.error, 2)}, esatto ${IT.num(r.exact, 2)}, normale ${IT.num(r.normal, 2)}`,
-    probability: (r) => `b = ${IT.int(r.b)}: almeno uno oltre +3σ ${IT.pct(r.beyond)} (esatta ${IT.pct(r.beyondExact)}); sistemi penetrati ${IT.pct(r.coverage)} (esatta ${IT.pct(r.coverageExact)})`,
+    best: (r, show) => said(`b = ${IT.int(r.b)} (${IT.int(r.groups)} gruppi)`, [on(show, 'mean') && `simulato ${IT.num(r.mean, 2)} ± ${IT.num(1.96 * r.error, 2)}`, on(show, 'exact') && `esatto ${IT.num(r.exact, 2)}`, on(show, 'normal') && `normale ${IT.num(r.normal, 2)}`, on(show, 'asymptote') && `√(2 ln b) ${IT.num(r.asymptote, 2)}`]),
+    probability: (r, show) => said(`b = ${IT.int(r.b)}`, [on(show, 'beyond') && `almeno uno oltre +3σ ${IT.pct(r.beyond)}`, on(show, 'beyondExact') && `almeno uno oltre +3σ, esatta ${IT.pct(r.beyondExact)}`, on(show, 'coverage') && `sistemi penetrati ${IT.pct(r.coverage)}`, on(show, 'coverageExact') && `sistemi penetrati, esatta ${IT.pct(r.coverageExact)}`], '; '),
   },
   download: {
     title: 'Scarica il codice',
@@ -1944,19 +2032,20 @@ const en = {
   tips: {
     trajectory: (hit, name) =>
       hit.kind === 'bin'
-        ? `${name} between ${valueEn(hit.from, hit.quantity)} and ${valueEn(hit.to, hit.quantity)} at system ${EN.int(hit.k)}: ${EN.int(hit.count)} attackers out of ${EN.int(hit.sample)}, ${EN.num(hit.expected, 1)} expected from the normal`
-        : `System ${EN.int(hit.step)}: ${name} of attacker 1 ${valueEn(hit.first, hit.quantity)}; mean ${valueEn(hit.mean, hit.quantity)}, band between ${valueEn(hit.mean - 2 * hit.sd, hit.quantity)} and ${valueEn(hit.mean + 2 * hit.sd, hit.quantity)}`,
+        ? said(`${name} between ${valueEn(hit.from, hit.quantity)} and ${valueEn(hit.to, hit.quantity)} at system ${EN.int(hit.k)}`, [on(hit.show, 'bars') && `${EN.int(hit.count)} attackers out of ${EN.int(hit.sample)}`, on(hit.show, 'normal') && `${EN.num(hit.expected, 1)} expected from the normal`])
+        : said(`System ${EN.int(hit.step)}`, [on(hit.show, 'first') && `${name} of attacker 1 ${valueEn(hit.first, hit.quantity)}`, on(hit.show, 'band') && `mean ${valueEn(hit.mean, hit.quantity)}, band between ${valueEn(hit.mean - 2 * hit.sd, hit.quantity)} and ${valueEn(hit.mean + 2 * hit.sd, hit.quantity)}`], '; '),
     bin: (from, to, share, prob, normal) => {
       const d = edgeDigits(from, to);
-      return `From ${EN.num(from, d)} to ${EN.num(to, d)}: simulation ${EN.pct(share, 2)}${prob === null ? '' : `, exact law ${EN.pct(prob, 2)}`}${normal === null ? '' : `, normal ${EN.pct(normal, 2)}`}`;
+      return said(`From ${EN.num(from, d)} to ${EN.num(to, d)}`, [`simulation ${EN.pct(share, 2)}`, prob !== null && `exact law ${EN.pct(prob, 2)}`, normal !== null && `normal ${EN.pct(normal, 2)}`]);
     },
-    share: (from, to, share, prob, limit) => `Ahead between ${EN.pct(from, 1)} and ${EN.pct(to, 1)} of the time: simulation ${EN.pct(share, 2)}, exact law ${EN.pct(prob, 2)}, arcsine ${EN.pct(limit, 2)}`,
-    lln: (r) => `n = ${EN.int(r.n)}: simulated ${EN.num(r.rate, 4)} (95%: ${EN.num(r.interval[0], 4)}-${EN.num(r.interval[1], 4)}), exact ${EN.small(r.exact)}, Chebyshev ${EN.small(r.chebyshev)}, Hoeffding ${EN.small(r.hoeffding)}`,
-    variance: (n, pairs) => `n = ${EN.int(n)}: ${['S_n', 'S_n/n', 'S_n/√n'].map((q, i) => `Var(${q}) ${EN.small(pairs[i][0])} (exact ${EN.small(pairs[i][1])})`).join(', ')}`,
-    distance: (n, d, dc, bound, ks) => `n = ${EN.int(n)}: exact ${EN.small(d)}, corrected ${EN.small(dc)}, Berry-Esseen ${EN.small(bound)}${ks === null ? '' : `, simulated ${EN.num(ks, 4)}`}`,
+    share: (from, to, share, prob, limit) => said(`Ahead between ${EN.pct(from, 1)} and ${EN.pct(to, 1)} of the time`, [`simulation ${EN.pct(share, 2)}`, prob !== null && `exact law ${EN.pct(prob, 2)}`, limit !== null && `arcsine ${EN.pct(limit, 2)}`]),
+    lln: (r, show) => said(`n = ${EN.int(r.n)}`, [on(show, 'rate') && `simulated ${EN.num(r.rate, 4)} (95%: ${EN.num(r.interval[0], 4)}-${EN.num(r.interval[1], 4)})`, on(show, 'exact') && `exact ${EN.small(r.exact)}`, on(show, 'chebyshev') && `Chebyshev ${EN.small(r.chebyshev)}`, on(show, 'hoeffding') && `Hoeffding ${EN.small(r.hoeffding)}`]),
+    // pairs: [simulated, exact] for S_n, S_n/n and S_n/√n, null where hidden
+    variance: (n, pairs) => said(`n = ${EN.int(n)}`, ['S_n', 'S_n/n', 'S_n/√n'].map((q, i) => pairs[i] && [pairs[i][0] !== null && `Var(${q}) ${EN.small(pairs[i][0])}`, pairs[i][1] !== null && `exact ${EN.small(pairs[i][1])}`].filter(Boolean).join(' ')).filter(Boolean)),
+    distance: (n, d, dc, bound, ks) => said(`n = ${EN.int(n)}`, [d !== null && `exact ${EN.small(d)}`, dc !== null && `corrected ${EN.small(dc)}`, bound !== null && `Berry-Esseen ${EN.small(bound)}`, ks !== null && `simulated ${EN.num(ks, 4)}`]),
     qq: (a, b) => `Quantile of N(0, 1) ${EN.num(a, 2)}: simulated ${EN.num(b, 2)}`,
-    best: (r) => `b = ${EN.int(r.b)} (${EN.int(r.groups)} groups): simulated ${EN.num(r.mean, 2)} ± ${EN.num(1.96 * r.error, 2)}, exact ${EN.num(r.exact, 2)}, normal ${EN.num(r.normal, 2)}`,
-    probability: (r) => `b = ${EN.int(r.b)}: at least one beyond +3σ ${EN.pct(r.beyond)} (exact ${EN.pct(r.beyondExact)}); systems penetrated ${EN.pct(r.coverage)} (exact ${EN.pct(r.coverageExact)})`,
+    best: (r, show) => said(`b = ${EN.int(r.b)} (${EN.int(r.groups)} groups)`, [on(show, 'mean') && `simulated ${EN.num(r.mean, 2)} ± ${EN.num(1.96 * r.error, 2)}`, on(show, 'exact') && `exact ${EN.num(r.exact, 2)}`, on(show, 'normal') && `normal ${EN.num(r.normal, 2)}`, on(show, 'asymptote') && `√(2 ln b) ${EN.num(r.asymptote, 2)}`]),
+    probability: (r, show) => said(`b = ${EN.int(r.b)}`, [on(show, 'beyond') && `at least one beyond +3σ ${EN.pct(r.beyond)}`, on(show, 'beyondExact') && `at least one beyond +3σ, exact ${EN.pct(r.beyondExact)}`, on(show, 'coverage') && `systems penetrated ${EN.pct(r.coverage)}`, on(show, 'coverageExact') && `systems penetrated, exact ${EN.pct(r.coverageExact)}`], '; '),
   },
   download: {
     title: 'Download the code',
@@ -2092,7 +2181,11 @@ const formulas = (content, label = null) => [label && subtitle(label), h('pre', 
 // The width of every chart comes from the ResizeObserver, measured after
 // layout; the height is set at once, the drawing happens a few
 // milliseconds per frame.
-const charts = new Map(); // canvas -> { draw, data, width, detach }
+const charts = new Map(); // canvas -> { draw, data, width, detach, link, tip, hidden }
+
+// what a chart draws: its data, without the parts hidden from the legend
+const shownData = (chart) => (chart.hidden.length ? { ...chart.data, hidden: chart.hidden } : chart.data);
+
 const resizer = new ResizeObserver((entries) => {
   for (const entry of entries) {
     const canvas = entry.target;
@@ -2100,33 +2193,143 @@ const resizer = new ResizeObserver((entries) => {
     const width = Math.round(entry.contentRect.width);
     if (!chart || width <= 0 || width === chart.width) continue;
     chart.width = width;
-    canvas.style.height = `${hw.chartHeight(chart.draw, chart.data, width)}px`;
+    canvas.style.height = `${hw.chartHeight(chart.draw, shownData(chart), width)}px`;
     view.scheduleFrameJob(() => {
-      if (charts.get(canvas) === chart && chart.width === width) chart.draw(canvas, { ...chart.data, width }, palette());
+      if (charts.get(canvas) === chart && chart.width === width) chart.draw(canvas, { ...shownData(chart), width }, palette());
     });
   }
 });
 
-/** The legend of a chart, in the page: { label, color?, dashed? }. */
-function legend(items) {
+/** Ties the label under the pointer to a chart: it describes what is on screen, and leaves out the hidden parts. */
+function attachTip(canvas, chart) {
+  if (chart.detach) chart.detach();
+  const tip = chart.tip;
+  chart.detach = tip ? hw.attachChartTooltip(canvas, { draw: chart.draw, data: shownData(chart), describe: (hit) => tip(hit, chart.hidden), link: chart.link }) : null;
+}
+
+/** Draws a chart again at its width, with its data and hidden parts. */
+function redraw(canvas, chart) {
+  if (chart.width > 0) {
+    canvas.style.height = `${hw.chartHeight(chart.draw, shownData(chart), chart.width)}px`;
+    chart.draw(canvas, { ...shownData(chart), width: chart.width }, palette());
+  }
+}
+
+// what the reader hid in the legends, by chart: a region filled anew (a step, a result) keeps it
+const kept = {};
+const keep = (name) => {
+  if (!kept[name]) kept[name] = new Set();
+  return kept[name];
+};
+
+/** The parts of the drawing covered by the hidden items of a legend. */
+const partsOf = (items, hidden) => items.flatMap((item, i) => (hidden.has(i) ? item.parts || [] : []));
+
+/**
+ * The legend of a chart, or of a group of charts: { label, color? |
+ * paletteKey?, dashed?, box?, parts }. Every item is a button: pressed (as
+ * the page opens) its parts are on screen, released they are hidden;
+ * onChange(parts) receives the hidden parts after every press. `hidden`,
+ * the set of the hidden items, outlives the legend when its chart is built
+ * again.
+ */
+function legend(items, onChange = null, hidden = new Set()) {
   const pal = palette();
   return h(
     'ul',
     { class: 'series-legend' },
     items.map((item, i) => {
-      const color = pal.series[item.color ?? i];
-      return h('li', null, h('span', { class: item.dashed ? 'is-dashed' : null, 'aria-hidden': 'true', style: { borderColor: color, backgroundColor: item.dashed ? 'transparent' : color } }), item.label);
+      const color = item.paletteKey ? pal[item.paletteKey] : pal.series[(item.color ?? i) % pal.series.length];
+      let swatch = null;
+      if (item.box) swatch = 'is-box';
+      else if (item.dashed) swatch = 'is-dashed';
+      const button = h(
+        'button',
+        {
+          type: 'button',
+          'aria-pressed': String(!hidden.has(i)),
+          class: hidden.has(i) ? 'is-off' : null,
+          onclick: () => {
+            if (hidden.has(i)) hidden.delete(i);
+            else hidden.add(i);
+            button.setAttribute('aria-pressed', String(!hidden.has(i)));
+            button.classList.toggle('is-off', hidden.has(i));
+            if (onChange) onChange(partsOf(items, hidden));
+          },
+        },
+        h('span', { class: swatch, 'aria-hidden': 'true', style: { borderColor: color, backgroundColor: item.box ? color : 'transparent' } }),
+        item.label,
+      );
+      return h('li', null, button);
     }),
   );
 }
 
-function figure(caption, draw, data, { wide = false, tip = null, items = null, note = null, link = null } = {}) {
+/** Hides the cells and rows of a table that belong to hidden parts (data-part), and shows the others. */
+function hideParts(tableEl, parts) {
+  for (const el of tableEl.querySelectorAll('[data-part]')) el.hidden = parts.includes(el.dataset.part);
+}
+
+/** Hides parts of a chart (the legend of a group of charts calls it on each of them). */
+function setHidden(fig, parts) {
+  const canvas = fig.querySelector('canvas.chart');
+  const chart = charts.get(canvas);
+  if (!chart) return;
+  chart.hidden = parts;
+  attachTip(canvas, chart);
+  redraw(canvas, chart);
+}
+
+/**
+ * A chart with its legend (`items`) and its label under the pointer.
+ * onHide(parts) runs when the reader hides or shows a part, for the table
+ * tied to the chart, and `keep` (a set, keep(name)) remembers the hidden
+ * items when the chart is built again. The charts of a group share one
+ * legend (groupLegend) and have no `items`.
+ */
+function figure(caption, draw, data, { wide = false, tip = null, items = null, note = null, link = null, onHide = null, keep: kept = null } = {}) {
   const canvas = h('canvas', { class: 'chart', role: 'img', 'aria-label': caption });
-  const fig = h('figure', { class: wide ? 'figure wide' : 'figure' }, canvas, items && legend(items), note && h('p', { class: 'figure-note', text: note }), h('figcaption', { text: caption }));
-  const detach = tip ? hw.attachChartTooltip(canvas, { draw, data, describe: tip, link }) : null;
-  charts.set(canvas, { draw, data, width: -1, detach });
+  const hidden = kept || new Set();
+  const chart = { draw, data, width: -1, detach: null, link, tip, hidden: items ? partsOf(items, hidden) : [] };
+  const fig = h(
+    'figure',
+    { class: wide ? 'figure wide' : 'figure' },
+    canvas,
+    items &&
+      legend(
+        items,
+        (parts) => {
+          setHidden(fig, parts);
+          if (onHide) onHide(parts);
+        },
+        hidden,
+      ),
+    note && h('p', { class: 'figure-note', text: note }),
+    h('figcaption', { text: caption }),
+  );
+  attachTip(canvas, chart);
+  charts.set(canvas, chart);
   resizer.observe(canvas);
   return fig;
+}
+
+/**
+ * One legend for a group of charts (the two models side by side): every
+ * press hides or shows the same parts in all of them, and onHide(parts)
+ * updates the table they share. The charts start with what `name` keeps.
+ */
+function groupLegend(name, items, figs, onHide = null) {
+  const hidden = keep(name);
+  const parts = partsOf(items, hidden);
+  for (const fig of figs) setHidden(fig, parts);
+  return legend(
+    items,
+    (next) => {
+      for (const fig of figs) setHidden(fig, next);
+      if (onHide) onHide(next);
+    },
+    hidden,
+  );
 }
 
 /** Replaces the content of a region, releasing the charts it contained and their labels. */
@@ -2140,19 +2343,19 @@ function fill(region, ...nodes) {
   region.replaceChildren(...nodes.flat(Infinity).filter((n) => n !== null && n !== undefined && n !== false));
 }
 
-/** A table: column headers, then rows of cells, each { text | node, class?, head? } (head: a row header, th); `id` for a table tied to a chart (view.LINKED_TABLES). */
-function table(className, headers, rows, id = null) {
+/** A table: column headers, then rows of cells, each { text | node, class?, head? } (head: a row header, th); `id` for a table tied to a chart (view.LINKED_TABLES); `columns` gives the part of a chart each column belongs to, and a row can have its own `part`: hideParts() hides them with their curve. */
+function table(className, headers, rows, id = null, columns = []) {
   return h(
     'table',
     { id, class: `table ${className}` },
-    h('thead', null, h('tr', null, headers.map((x) => h('th', { text: x })))),
+    h('thead', null, h('tr', null, headers.map((x, i) => h('th', { text: x, 'data-part': columns[i] || null })))),
     h(
       'tbody',
       null,
       rows.map((row) => h(
         'tr',
-        { class: row.class || null },
-        row.cells.map((cell, i) => h(cell.head ? 'th' : 'td', { 'data-label': cell.head ? null : headers[i], class: cell.class || null }, cell.node || cell.text)),
+        { class: row.class || null, 'data-part': row.part || null },
+        row.cells.map((cell, i) => h(cell.head ? 'th' : 'td', { 'data-label': cell.head ? null : headers[i], class: cell.class || null, 'data-part': columns[i] || null }, cell.node || cell.text)),
       )),
     ),
   );
@@ -2424,7 +2627,8 @@ function trajectoriesBlock() {
     h('div', { class: 'controls' }, h('label', null, T.speedLabel, speed), h('span', { class: 'buttons' }, controls.play, button(T.step, 'step'), button(T.reset, 'reset'), button(T.end, 'toEnd'))),
     // posizionato: ci stanno dentro l'evidenziazione e l'etichetta sotto il puntatore
     h('div', { class: 'figure' }, controls.canvas),
-    legend([{ label: T.legend[0], color: 0 }, { label: T.legend[1], color: 1 }, { label: T.legend[2], color: 2, dashed: true }, { label: T.legend[3], color: 3, dashed: true }]),
+    // la legenda sotto l'animazione: le parti nascoste si ridisegnano dal primo sistema
+    legend(view.legends.trajectories(text), (parts) => animation && animation.setHidden(parts), keep('trajectories')),
     controls.caption,
     paras(T.after),
   ];
@@ -2463,6 +2667,7 @@ function createAnimation() {
     palette: palette(),
     decimal: text.fmt.decimal,
     describe: view.tips.trajectory(text),
+    hidden: partsOf(view.legends.trajectories(text), keep('trajectories')),
     onUpdate: updateCaption,
   });
   canvasWidth = canvas.clientWidth;
@@ -2536,7 +2741,14 @@ function distributionsSection() {
     }),
     h('div', { class: 'slider-row' }, controls.sweepSlider.el, controls.sweepPlay),
     regions.sweep,
-    legend([{ label: W.legend[0], color: 0 }, { label: W.legend[1], color: 1, dashed: true }, { label: W.legend[2], color: 2 }]),
+    // una legenda sola per i due istogrammi, che si ridisegnano a ogni n
+    legend(
+      view.legends.sweep(text),
+      (parts) => {
+        for (const fig of regions.sweep.querySelectorAll('figure')) setHidden(fig, parts);
+      },
+      keep('sweep'),
+    ),
     paras(W.after),
     title('hw3-moments', 1, S.moments),
     regions.moments,
@@ -2605,7 +2817,9 @@ function updateSweep() {
       hw.MODELS.map((model) => {
         const M = s.models[model];
         const data = view.sweepChart(M, g, q, text.fmt.decimal);
-        return figure(W.chart(text.modelNames[model], text.quantityNames[q], n, s.params.m), hw.drawHistogram, data, { tip: view.tips.histogram(data, text.tips), note: W.stats(text.modelNames[model], view.quantityStats(M, g, q), q) });
+        const fig = figure(W.chart(text.modelNames[model], text.quantityNames[q], n, s.params.m), hw.drawHistogram, data, { tip: view.tips.histogram(data, text.tips), note: W.stats(text.modelNames[model], view.quantityStats(M, g, q), q) });
+        setHidden(fig, partsOf(view.legends.sweep(text), keep('sweep')));
+        return fig;
       }),
     ),
   );
@@ -2725,21 +2939,22 @@ function updateConvergence() {
   const cell = (x) => h('span', null, F.num(x.rate, 4), h('span', { class: 'interval', text: `${F.num(x.interval[0], 4)}-${F.num(x.interval[1], 4)}` }));
   const B = text.modelNames.bernoulli;
   const R = text.modelNames.rademacher;
+  // una legenda per i due grafici; la frazione simulata e quella esatta sono anche le colonne della tabella
+  const figs = hw.MODELS.map((model) => figure(C.chart(text.modelNames[model], eps), hw.drawLineChart, view.llnChart(rows[model], F.decimal), { tip: view.tips.lln(rows[model], text.tips), link: view.links.lln }));
+  const frequencies = table(
+    'compact lln',
+    [C.cols.n, `${B}: ${C.cols.simulated}`, `${B}: ${C.cols.exact}`, `${R}: ${C.cols.simulated}`, `${R}: ${C.cols.exact}`],
+    rows.bernoulli.map((b, i) => ({ cells: [{ text: F.int(b.n) }, { node: cell(b) }, { text: F.small(b.exact) }, { node: cell(rows.rademacher[i]) }, { text: F.small(rows.rademacher[i].exact) }] })),
+    view.LINKED_TABLES.lln,
+    [null, 'series:0', 'series:1', 'series:0', 'series:1'],
+  );
+  hideParts(frequencies, partsOf(view.legends.lln(text), keep('lln')));
   fill(
     regions.convergence,
-    h('div', { class: 'charts' }, hw.MODELS.map((model) => figure(C.chart(text.modelNames[model], eps), hw.drawLineChart, view.llnChart(rows[model], F.decimal), { tip: view.tips.lln(rows[model], text.tips), link: view.links.lln }))),
-    legend([{ label: C.legend[0], color: 0 }, { label: C.legend[1], color: 2 }, { label: C.legend[2], color: 3, dashed: true }, { label: C.legend[3], color: 4, dashed: true }]),
+    h('div', { class: 'charts' }, figs),
+    groupLegend('lln', view.legends.lln(text), figs, (parts) => hideParts(frequencies, parts)),
     subtitle(C.tableTitle(eps)),
-    h(
-      'div',
-      { class: 'scroll' },
-      table(
-        'compact lln',
-        [C.cols.n, `${B}: ${C.cols.simulated}`, `${B}: ${C.cols.exact}`, `${R}: ${C.cols.simulated}`, `${R}: ${C.cols.exact}`],
-        rows.bernoulli.map((b, i) => ({ cells: [{ text: F.int(b.n) }, { node: cell(b) }, { text: F.small(b.exact) }, { node: cell(rows.rademacher[i]) }, { text: F.small(rows.rademacher[i].exact) }] })),
-        view.LINKED_TABLES.lln,
-      ),
-    ),
+    h('div', { class: 'scroll' }, frequencies),
     paras(C.after(s, eps)),
     tests('lln', s),
   );
@@ -2768,24 +2983,31 @@ function updateVariance() {
     return;
   }
   const fits = view.varianceFits(s);
+  // una legenda per i due grafici: le tre grandezze sono anche le righe della tabella, i valori esatti la colonna della teoria
+  const figs = hw.MODELS.map((model) => figure(V.chart(text.modelNames[model]), hw.drawLineChart, view.varianceChart(s.models[model], F.decimal), { tip: view.tips.variance(s.models[model], text.tips) }));
+  const slopes = table(
+    'discussion fits',
+    [V.fitCols.quantity, V.fitCols.bernoulli, V.fitCols.rademacher, V.fitCols.theory],
+    hw.QUANTITIES.map((q, i) => ({
+      part: `series:${2 * i}`,
+      cells: [
+        { text: text.quantityNames[q], head: true },
+        { text: `${F.num(fits.bernoulli[q], 4)} ± ${F.num(fits.bernoulli.error, 4)}` },
+        { text: `${F.num(fits.rademacher[q], 4)} ± ${F.num(fits.rademacher.error, 4)}` },
+        { text: F.int(view.VARIANCE_SLOPES[q]) },
+      ],
+    })),
+    null,
+    [null, null, null, 'theory'],
+  );
+  hideParts(slopes, partsOf(view.legends.variance(text), keep('variance')));
   fill(
     regions.variance,
     h('p', { text: V.intro }),
-    h('div', { class: 'charts' }, hw.MODELS.map((model) => figure(V.chart(text.modelNames[model]), hw.drawLineChart, view.varianceChart(s.models[model], F.decimal), { tip: view.tips.variance(s.models[model], text.tips) }))),
-    legend([{ label: V.legend[0], color: 0 }, { label: V.legend[1], color: 1 }, { label: V.legend[2], color: 2 }, { label: V.legend[3], color: 6, dashed: true }]),
+    h('div', { class: 'charts' }, figs),
+    groupLegend('variance', view.legends.variance(text), figs, (parts) => hideParts(slopes, parts)),
     subtitle(V.fitTitle),
-    table(
-      'discussion fits',
-      [V.fitCols.quantity, V.fitCols.bernoulli, V.fitCols.rademacher, V.fitCols.theory],
-      hw.QUANTITIES.map((q) => ({
-        cells: [
-          { text: text.quantityNames[q], head: true },
-          { text: `${F.num(fits.bernoulli[q], 4)} ± ${F.num(fits.bernoulli.error, 4)}` },
-          { text: `${F.num(fits.rademacher[q], 4)} ± ${F.num(fits.rademacher.error, 4)}` },
-          { text: F.int(view.VARIANCE_SLOPES[q]) },
-        ],
-      })),
-    ),
+    slopes,
     paras(V.after(s)),
   );
 }
@@ -2849,8 +3071,8 @@ function updateNormal() {
     h(
       'div',
       { class: 'charts' },
-      figure(N.histChart(label, n), hw.drawHistogram, hist, { tip: view.tips.histogram(hist, text.tips), items: [{ label: N.legend[0], color: 0 }, { label: N.legend[1], color: 1, dashed: true }, { label: N.legend[2], color: 2 }] }),
-      figure(N.qqChart(label, n), hw.drawQQ, qq, { tip: view.tips.qq(qq, text.tips), items: [{ label: N.qqLegend[0], color: 0 }, { label: N.qqLegend[1], color: 1, dashed: true }] }),
+      figure(N.histChart(label, n), hw.drawHistogram, hist, { tip: view.tips.histogram(hist, text.tips), items: view.legends.clt(text), keep: keep('clt') }),
+      figure(N.qqChart(label, n), hw.drawQQ, qq, { tip: view.tips.qq(qq, text.tips), items: view.legends.qq(text), keep: keep('qq') }),
     ),
     h('p', { class: 'stats', text: N.stats(view.shapeAt(M, g)) }),
     paras(N.after),
@@ -2866,11 +3088,13 @@ function updateSpeed() {
     fill(regions.speed, pending());
     return;
   }
+  // una legenda per i due grafici
+  const figs = ['rademacher', 'bernoulli'].map((model) => figure(P.chart(text.modelNames[model]), hw.drawLineChart, view.distanceChart(s.models[model], s.params.m, F.decimal), { tip: view.tips.distance(s.models[model], text.tips) }));
   fill(
     regions.speed,
     h('p', { text: P.intro }),
-    h('div', { class: 'charts' }, ['rademacher', 'bernoulli'].map((model) => figure(P.chart(text.modelNames[model]), hw.drawLineChart, view.distanceChart(s.models[model], s.params.m, F.decimal), { tip: view.tips.distance(s.models[model], text.tips) }))),
-    legend([{ label: P.legend[0], color: 1 }, { label: P.legend[1], color: 2 }, { label: P.legend[2], color: 3, dashed: true }, { label: P.legend[3], color: 0 }, { label: P.legend[4], color: 6, dashed: true }]),
+    h('div', { class: 'charts' }, figs),
+    groupLegend('speed', view.legends.speed(text), figs),
     paras(P.after(s)),
   );
 }
@@ -2937,7 +3161,7 @@ function updateSize() {
   fill(
     regions.size,
     paras(Z.paras(s)),
-    figure(Z.arcsineChart(W.even, s.params.m), hw.drawHistogram, data, { wide: true, tip: view.tips.arcsine(data, text.tips), items: [{ label: Z.arcsineLegend[0], color: 0 }, { label: Z.arcsineLegend[1], color: 1, dashed: true }, { label: Z.arcsineLegend[2], color: 2 }] }),
+    figure(Z.arcsineChart(W.even, s.params.m), hw.drawHistogram, data, { wide: true, tip: view.tips.arcsine(data, text.tips), items: view.legends.arcsine(text), keep: keep('arcsine') }),
     paras(Z.after),
     tests('walk', s),
   );
@@ -2959,8 +3183,8 @@ function updateAttackers() {
     h(
       'div',
       { class: 'charts' },
-      figure(A.bestChart(n), hw.drawLineChart, view.bestChart(G, F.decimal), { tip: view.tips.best(G, text.tips), items: [{ label: A.bestLegend[0], color: 0 }, { label: A.bestLegend[1], color: 1 }, { label: A.bestLegend[2], color: 2, dashed: true }, { label: A.bestLegend[3], color: 3, dashed: true }] }),
-      figure(A.probabilityChart(n), hw.drawLineChart, view.probabilityChart(G, F.decimal), { tip: view.tips.probability(G, text.tips), items: [{ label: A.probabilityLegend[0], color: 0 }, { label: A.probabilityLegend[1], color: 0, dashed: true }, { label: A.probabilityLegend[2], color: 2 }, { label: A.probabilityLegend[3], color: 2, dashed: true }] }),
+      figure(A.bestChart(n), hw.drawLineChart, view.bestChart(G, F.decimal), { tip: view.tips.best(G, text.tips), items: view.legends.best(text), keep: keep('best') }),
+      figure(A.probabilityChart(n), hw.drawLineChart, view.probabilityChart(G, F.decimal), { tip: view.tips.probability(G, text.tips), items: view.legends.probability(text), keep: keep('probability') }),
     ),
     paras(A.after(s)),
   );
@@ -2977,7 +3201,7 @@ function updateAggregate() {
   fill(
     regions.aggregate,
     paras(G.paras(s)),
-    figure(G.systemsChart(s.params.n, s.params.m), hw.drawHistogram, data, { wide: true, tip: view.tips.histogram(data, text.tips), items: [{ label: G.systemsLegend[0], color: 0 }, { label: G.systemsLegend[1], color: 1, dashed: true }, { label: G.systemsLegend[2], color: 2 }] }),
+    figure(G.systemsChart(s.params.n, s.params.m), hw.drawHistogram, data, { wide: true, tip: view.tips.histogram(data, text.tips), items: view.legends.systems(text), keep: keep('systems') }),
     paras(G.after),
   );
 }

@@ -1039,36 +1039,101 @@ function testSummary(s) {
 // ---------------------------------------------------------------------------
 
 /** The texts under the pointer: functions of the hit, built from the data of a chart and the words of a language (T = text.tips). */
+// ---------------------------------------------------------------------------
+// Le legende dei grafici, per la pagina e per il programma scaricabile: ogni
+// voce { label, color | paletteKey, dashed?, box?, parts } e' un pulsante che
+// nasconde le sue parti del disegno (`hidden` dei dati di ogni grafico)
+// ---------------------------------------------------------------------------
+
+const seriesItem = (label, color, i, extra = {}) => ({ label, color, parts: [`series:${i}`], ...extra });
+
+// la densita', l'area, i pezzi della regola e l'estremo (sezioni 1.3 e 2.3)
+const areaItems = (labels, withPieces) => [
+  { label: labels[0], color: 0, parts: ['curve'] },
+  { label: labels[1], color: 0, box: true, parts: ['area'] },
+  ...(withPieces ? [{ label: labels[2], color: 1, box: true, parts: ['pieces'] }] : []),
+  { label: labels[withPieces ? 3 : 2], paletteKey: 'reference', dashed: true, parts: ['marker'] },
+];
+
+// f e le strisce di Riemann, o f e gli strati di Lebesgue
+const integralItems = (labels, mode) => [
+  { label: labels[0], color: 4, parts: ['curve'] },
+  mode === 'riemann' ? { label: labels[1], color: 1, box: true, parts: ['strips'] } : { label: labels[1], color: 0, box: true, parts: ['layers'] },
+];
+
+const legends = {
+  bell: (text) => areaItems(text.legends.bell(AREA.defaults.z), false),
+  area: (text) => areaItems(text.legends.area, true),
+  convergence: (text) => hw.RULES.map((r, i) => seriesItem(text.ruleNames[r], i, i)),
+  tails: (text) => [seriesItem(text.tails.legend[0], 1, 0), seriesItem(text.tails.legend[1], 2, 1)],
+  alarm: (text) => [seriesItem(text.tryAlarm.legend[0], 0, 0), seriesItem(text.tryAlarm.legend[1], 1, 1), seriesItem(text.tryAlarm.legend[2], 6, 2, { dashed: true })],
+  ecdf: (text) => [seriesItem(text.data.legend[0], 0, 0), seriesItem(text.data.legend[1], 2, 1, { dashed: true })],
+  riemann: (text) => integralItems(text.legends.riemann, 'riemann'),
+  lebesgue: (text) => integralItems(text.legends.lebesgue, 'lebesgue'),
+  rearrangement: (text) => [seriesItem(text.legends.rearrangement[0], 4, 0), seriesItem(text.legends.rearrangement[1], 0, 1)],
+  compare: (text) => [
+    seriesItem(text.compare.legend[0], 1, 0),
+    seriesItem(text.compare.legend[1], 0, 1),
+    seriesItem(text.compare.legend[2], 1, 2, { dashed: true }),
+    seriesItem(text.compare.legend[3], 0, 3, { dashed: true }),
+  ],
+  traffic: (text) => [{ label: text.legends.traffic[0], color: 4, parts: ['curve'] }, { label: text.legends.traffic[1], color: 0, box: true, parts: ['layers'] }],
+  // la curva di durata e, con un solo pulsante, tutte le soglie
+  duration: (text, chart) => [seriesItem(text.legends.duration[0], 0, 0), { label: text.legends.duration[1], color: 6, dashed: true, parts: chart.series.slice(1).map((_, i) => `series:${i + 1}`) }],
+  estimates: (text) => [
+    { label: text.montecarlo.legend[0], color: 0, box: true, parts: ['bars'] },
+    { label: text.montecarlo.legend[1], color: 2, parts: ['curve'] },
+    { label: text.montecarlo.legend[2], color: 1, dashed: true, parts: ['marker'] },
+  ],
+  mcPath: (text) => [seriesItem(text.tryMc.legend[0], 0, 0), seriesItem(text.tryMc.legend[1], 1, 1, { dashed: true })],
+  cost: (text) => [seriesItem(text.efficiency.legend[0], 1, 0), seriesItem(text.efficiency.legend[1], 0, 1)],
+  thomae: (text) => [{ label: text.legends.thomae[0], color: 0, box: true, parts: ['bars'] }, { label: text.legends.thomae[1], color: 2, parts: ['curve'] }],
+  series: (text) => [seriesItem(text.series.legend[0], 1, 0), seriesItem(text.series.legend[1], 1, 1, { dashed: true }), seriesItem(text.series.legend[2], 0, 2)],
+  approximation: (text) => [
+    seriesItem(text.approximations.legend[0], 0, 0),
+    seriesItem(text.approximations.legend[1], 1, 1),
+    { label: text.approximations.legend[2], color: 6, dashed: true, parts: ['series:2', 'series:3'] },
+  ],
+  methods: (text) => hw.CDF_METHODS.map((key, i) => seriesItem(text.methodNames[key], METHOD_STYLE[key].colorIndex, i, { dashed: !!METHOD_STYLE[key].dashed })),
+};
+
+/** Whether series i of a chart is on screen: the reader can hide it from the legend (ChartLegend.jsx). */
+const seriesOn = (hidden, i) => !hidden.includes(`series:${i}`);
+
+/**
+ * The labels under the pointer, one factory per chart: each returns
+ * (hit, hidden) => text, where `hidden` lists the parts of the chart that
+ * the reader turned off in the legend, and the label leaves them out.
+ */
 const tips = {
   area: (state, T) => (hit) => T.piece(state.chart.pieces[hit.index], hit.index, state.sign),
-  convergence: (study, T) => (hit) => T.convergence(study.rows[hit.index]),
-  newton: (rows, T) => (hit) => T.newton(rows[hit.index]),
-  tails: (rows, T) => (hit) => T.tail(rows[hit.index]),
-  alarm: (state, chart, T) => (hit) => T.alarm(chart.x[hit.index], state.events),
-  ecdf: (chart, T) => (hit) => {
+  convergence: (study, T) => (hit, hidden = []) => T.convergence(study.rows[hit.index], hw.RULES.filter((_, i) => seriesOn(hidden, i))),
+  newton: (rows, T) => (hit, hidden = []) => (seriesOn(hidden, 0) ? T.newton(rows[hit.index]) : null),
+  tails: (rows, T) => (hit, hidden = []) => T.tail(rows[hit.index], { subtraction: seriesOn(hidden, 0), direct: seriesOn(hidden, 1) }),
+  alarm: (state, chart, T) => (hit, hidden = []) => T.alarm(chart.x[hit.index], state.events, { normal: seriesOn(hidden, 0), heavy: seriesOn(hidden, 1) }),
+  ecdf: (chart, T) => (hit, hidden = []) => {
     const [x, F] = chart.points[hit.index];
-    return T.ecdf(x, F, hw.cdfStandard(x));
+    return T.ecdf(x, F, hw.cdfStandard(x), { empirical: seriesOn(hidden, 0), normal: seriesOn(hidden, 1) });
   },
   strip: (chart, T) => (hit) => T.strip(chart.strips[hit.index], chart.kind),
   level: (chart, T) => (hit) => T.level(chart.levels[hit.index - 1], chart.levels[hit.index], (chart.sets[hit.index - 1] || []).reduce((s, [a, b]) => s + b - a, 0), (chart.sets[hit.index - 1] || []).length),
   traffic: (chart, T) => (hit) => T.traffic(chart.levels[hit.index], chart.sets[hit.index - 1] || []),
-  distribution: (chart, T) => (hit) => T.distribution(chart.x[hit.index], chart.series[0].values[hit.index]),
-  rearrangement: (chart, T) => (hit) => T.rearrangement(chart.x[hit.index], chart.series[1].values[hit.index], chart.series[0].values[hit.index]),
-  duration: (chart, T) => (hit) => T.duration(chart.x[hit.index], chart.series[0].values[hit.index]),
-  compare: (study, T) => (hit) => T.compare(study.rows[hit.index]),
+  distribution: (chart, T) => (hit, hidden = []) => (seriesOn(hidden, 0) ? T.distribution(chart.x[hit.index], chart.series[0].values[hit.index]) : null),
+  rearrangement: (chart, T) => (hit, hidden = []) => T.rearrangement(chart.x[hit.index], chart.series[1].values[hit.index], chart.series[0].values[hit.index], { sorted: seriesOn(hidden, 1), original: seriesOn(hidden, 0) }),
+  duration: (chart, T) => (hit, hidden = []) => (seriesOn(hidden, 0) ? T.duration(chart.x[hit.index], chart.series[0].values[hit.index]) : null),
+  compare: (study, T) => (hit, hidden = []) => T.compare(study.rows[hit.index], { riemann: seriesOn(hidden, 0), lebesgue: seriesOn(hidden, 1), riemannGap: seriesOn(hidden, 2), lebesgueGap: seriesOn(hidden, 3) }),
   histogram: (h, T) => (hit) => {
     const b = h.bars[hit.index];
     return b ? T.estimates(b.from, b.to, b.count, b.share) : null;
   },
-  // i sei grafici che prima non avevano etichetta: 1.7, 1.8, 2.3, 2.7, 2.8, 2.11
-  cost: (chart, T) => (hit) => T.cost(chart.x[hit.index], chart.series[0].values[hit.index], chart.series[1].values[hit.index]),
-  thomae: (chart, T) => (hit) => {
+  cost: (chart, T) => (hit, hidden = []) => T.cost(chart.x[hit.index], seriesOn(hidden, 0) ? chart.series[0].values[hit.index] : NaN, seriesOn(hidden, 1) ? chart.series[1].values[hit.index] : NaN),
+  thomae: (chart, T) => (hit, hidden = []) => {
     const b = chart.bars[hit.index];
     if (!b) return null;
     // lo stelo sta nella striscia che lo contiene; uno sul bordo fra due strisce conta per entrambe
     const at = b.p / b.q;
     const strips = [];
-    for (let i = 0; i < chart.strips; i++) if (at >= i / chart.strips - 1e-12 && at <= (i + 1) / chart.strips + 1e-12) strips.push(i);
+    if (!hidden.includes('curve')) for (let i = 0; i < chart.strips; i++) if (at >= i / chart.strips - 1e-12 && at <= (i + 1) / chart.strips + 1e-12) strips.push(i);
     return T.thomae(b.p, b.q, strips.map((i) => ({ from: i / chart.strips, to: (i + 1) / chart.strips, top: 1 / hw.smallestDenominator(i, chart.strips) })));
   },
   bell: (chart, T) => (hit) => {
@@ -1077,18 +1142,25 @@ const tips = {
     const [x, density] = point;
     return T.bell(x, density, hw.normalCdf((x - chart.mu) / chart.sigma));
   },
-  series: (chart, T) => (hit) => {
+  series: (chart, T) => (hit, hidden = []) => {
     const p = chart.path[hit.index];
-    return p ? T.series(chart.z, p) : null;
+    return p ? T.series(chart.z, p, { alternating: seriesOn(hidden, 0), bound: seriesOn(hidden, 1), positive: seriesOn(hidden, 2) }) : null;
   },
-  approximation: (chart, T) => (hit) => T.approximation(chart.x[hit.index], chart.series[0].values[hit.index], chart.series[1].values[hit.index], chart.series[2].values[hit.index]),
-  methods: (chart, T, names) => (hit) => {
+  approximation: (chart, T) => (hit, hidden = []) =>
+    T.approximation(
+      chart.x[hit.index],
+      seriesOn(hidden, 0) ? chart.series[0].values[hit.index] : null,
+      seriesOn(hidden, 1) ? chart.series[1].values[hit.index] : null,
+      seriesOn(hidden, 2) ? chart.series[2].values[hit.index] : null,
+    ),
+  methods: (chart, T, names) => (hit, hidden = []) => {
     const z = chart.x[hit.index];
-    return T.methods(z, hw.CDF_METHODS.map((key) => ({ name: names[key], error: Math.abs(hw.cdfBy[key](z) - hw.referencePhi(z)) })));
+    const shown = hw.CDF_METHODS.filter((_, i) => seriesOn(hidden, i));
+    return T.methods(z, shown.map((key) => ({ name: names[key], error: Math.abs(hw.cdfBy[key](z) - hw.referencePhi(z)) })));
   },
-  mcPath: (run, T) => (hit) => {
+  mcPath: (run, T) => (hit, hidden = []) => {
     const p = run.path[hit.index];
-    return p ? T.mcPath(p, run.exact) : null;
+    return p ? T.mcPath(p, run.exact, { estimate: seriesOn(hidden, 0), exact: seriesOn(hidden, 1) }) : null;
   },
 };
 
@@ -1147,7 +1219,7 @@ function scheduleFrameJob(job) {
   }
 }
 
-return { SECTIONS, tocEntries, AREA, Z_STEPS, zOfIndex, indexOfZ, areaState, bellChart, RULES_N, ruleRows, gaussRows, STRATEGY_COLUMNS, strategyTable, strategyFacts, convergenceChart, convergenceFacts, ZTABLE_MARKS, isMarkedZ, quantileRows, NEWTON_P, newtonRows, newtonChart, tailChart, tailFacts, ALARM_EVENTS, ALARM_RATES, ALARM_DEFAULT, ALARM_KS, alarmRows, alarmState, alarmChart, FIELD_LENGTH, DEFAULT_PARAMS, fieldsOf, DEFAULT_INPUTS, readInputs, sameParams, applyInputs, allValid, paramsKey, parseParamsKey, inputBadge, ECDF_WINDOW, ecdfChart, FUNCTION_KEYS, DEFAULT_CUSTOM, RANGE_LENGTH, readCustom, specOf, integralChart, SUM_SIZES, riemannRows, lebesgueRows, referenceOf, distributionChart, rearrangementChart, compareChart, compareFacts, SUMMARY_N, summaryRows, SAME_LIMIT, resultsRows, efficiencyRows, efficiencyFacts, efficiencyChart, THOMAE_Q, THOMAE_STRIPS, pathological, thomaeChart, thomaeUpper, clock, trafficChart, durationChart, mcRows, mcHistogram, MC_CHECKPOINTS, mcPath, mcPathChart, DIRICHLET_NUMBERS, SERIES_CHOICES, SERIES_TERMS, seriesChart, approximationChart, approximationFacts, METHOD_STYLE, methodsChart, methodsRows, methodsFacts, referenceFacts, TEST_GROUPS, statTests, expectedVerdicts, testSummary, tips, LINKED_TABLES, links, scheduleFrameJob };
+return { SECTIONS, tocEntries, AREA, Z_STEPS, zOfIndex, indexOfZ, areaState, bellChart, RULES_N, ruleRows, gaussRows, STRATEGY_COLUMNS, strategyTable, strategyFacts, convergenceChart, convergenceFacts, ZTABLE_MARKS, isMarkedZ, quantileRows, NEWTON_P, newtonRows, newtonChart, tailChart, tailFacts, ALARM_EVENTS, ALARM_RATES, ALARM_DEFAULT, ALARM_KS, alarmRows, alarmState, alarmChart, FIELD_LENGTH, DEFAULT_PARAMS, fieldsOf, DEFAULT_INPUTS, readInputs, sameParams, applyInputs, allValid, paramsKey, parseParamsKey, inputBadge, ECDF_WINDOW, ecdfChart, FUNCTION_KEYS, DEFAULT_CUSTOM, RANGE_LENGTH, readCustom, specOf, integralChart, SUM_SIZES, riemannRows, lebesgueRows, referenceOf, distributionChart, rearrangementChart, compareChart, compareFacts, SUMMARY_N, summaryRows, SAME_LIMIT, resultsRows, efficiencyRows, efficiencyFacts, efficiencyChart, THOMAE_Q, THOMAE_STRIPS, pathological, thomaeChart, thomaeUpper, clock, trafficChart, durationChart, mcRows, mcHistogram, MC_CHECKPOINTS, mcPath, mcPathChart, DIRICHLET_NUMBERS, SERIES_CHOICES, SERIES_TERMS, seriesChart, approximationChart, approximationFacts, METHOD_STYLE, methodsChart, methodsRows, methodsFacts, referenceFacts, TEST_GROUPS, statTests, expectedVerdicts, testSummary, legends, tips, LINKED_TABLES, links, scheduleFrameJob };
 })();
 
 var texts$ = (function () {
@@ -1224,6 +1296,17 @@ function formatters(decimal, thousands, na, times) {
     euro: (cents) => (decimal === ',' ? `${local((cents / 100).toFixed(2))} €` : `€ ${(cents / 100).toFixed(2)}`),
   };
 }
+
+/**
+ * The labels under the pointer list only what is on screen: `show` says
+ * which parts of the chart the reader has not hidden (a missing key counts
+ * as shown), and a label with nothing left to say is null.
+ */
+const on = (show, key) => !show || show[key] !== false;
+const said = (head, items) => {
+  const kept = items.filter(Boolean);
+  return kept.length ? `${head}: ${kept.join(', ')}` : null;
+};
 
 /** A name inside a sentence: the first letter in lower case ("traffico di un giorno"). */
 const inline = (name) => name.charAt(0).toLowerCase() + name.slice(1);
@@ -2042,32 +2125,43 @@ const it = {
     return out;
   },
   ruleNames: ruleNamesIt,
+  // le legende dei grafici che prima non ne avevano: ogni voce si preme per nascondere la sua parte
+  legends: {
+    bell: (z) => ['densità φ', `area Φ(${IT.plain(z)})`, `estremo x = ${IT.plain(z)}`],
+    area: ['densità', 'area esatta', 'pezzi della regola', 'estremo x'],
+    riemann: ['f', 'strisce di Riemann'],
+    lebesgue: ['f', 'strati di Lebesgue'],
+    rearrangement: ['f originale', 'f riordinata dal valore più alto'],
+    traffic: ['traffico del giorno', 'strati sopra le soglie'],
+    duration: ['curva di durata', 'soglie da 350 Mb/s in su'],
+    thomae: ['f di Thomae: un’asta alta 1/q su ogni p/q', 'somma superiore con 10 strisce'],
+  },
   tips: {
     piece: (p, i, sign) => {
       const F = IT;
       const what = { rect: 'rettangolo', trap: 'trapezio', parab: 'arco di parabola', node: 'nodo di Gauss' }[p.kind];
       return `${what[0].toUpperCase()}${what.slice(1)} ${i + 1}: da ${F.num(p.x0, 3)} a ${F.num(p.x1, 3)}${p.kind === 'node' ? `, nodo in ${F.num(p.tag, 3)}, peso ${F.num(p.weight, 4)}` : ''}, area ${F.num(p.area, 6)}${sign < 0 ? ' (tolta da 1/2)' : ''}`;
     },
-    convergence: (r) => `n = ${IT.int(r.n)}: ${Object.entries(r.errors).map(([rule, e]) => `${ruleNamesIt[rule]} ${e === null ? '-' : IT.err(e)}`).join(', ')}`,
+    convergence: (r, rules = Object.keys(r.errors)) => said(`n = ${IT.int(r.n)}`, rules.map((rule) => `${ruleNamesIt[rule]} ${r.errors[rule] === null ? '-' : IT.err(r.errors[rule])}`)),
     newton: (r) => `Passo ${r.k}: z = ${IT.num(r.z, 12)}, errore ${IT.err(r.error)}`,
-    tail: (r) => `k = ${r.k}: P(Z > k) = ${IT.sci(r.reference, 3)}; 1 - Φ(k) sbaglia di ${IT.err(r.subtractionError)}, la coda diretta di ${IT.err(r.directError)}`,
-    alarm: (k, events) => `k = ${IT.num(k, 1)}: dati normali ${IT.sci(tailDirect(k))} (${IT.num(events * tailDirect(k), 1)} al giorno), code pesanti ${IT.sci(heavySf(k))} (${IT.num(events * heavySf(k), 1)} al giorno)`,
-    ecdf: (x, F, P) => `x = ${IT.num(x, 3)}: empirica ${IT.num(F, 4)}, Φ ${IT.num(P, 4)}, scarto ${IT.num(Math.abs(F - P), 4)}`,
+    tail: (r, show) => said(`k = ${r.k}, P(Z > k) = ${IT.sci(r.reference, 3)}`, [on(show, 'subtraction') && `1 - Φ(k) sbaglia di ${IT.err(r.subtractionError)}`, on(show, 'direct') && `la coda diretta di ${IT.err(r.directError)}`]),
+    alarm: (k, events, show) => said(`k = ${IT.num(k, 1)}`, [on(show, 'normal') && `dati normali ${IT.sci(tailDirect(k))} (${IT.num(events * tailDirect(k), 1)} al giorno)`, on(show, 'heavy') && `code pesanti ${IT.sci(heavySf(k))} (${IT.num(events * heavySf(k), 1)} al giorno)`]),
+    ecdf: (x, F, P, show) => said(`x = ${IT.num(x, 3)}`, [on(show, 'empirical') && `empirica ${IT.num(F, 4)}`, on(show, 'normal') && `Φ ${IT.num(P, 4)}`, on(show, 'empirical') && on(show, 'normal') && `scarto ${IT.num(Math.abs(F - P), 4)}`]),
     strip: (s, kind) => `Da ${IT.sig(s.x0, 4)} a ${IT.sig(s.x1, 4)}: altezza ${IT.sig(s[kind], 5)}, minimo ${IT.sig(s.lower, 5)}, massimo ${IT.sig(s.upper, 5)}`,
     level: (y0, y1, measure, pieces) => `Fascia da ${IT.sig(y0, 4)} a ${IT.sig(y1, 4)}: f ≥ ${IT.sig(y1, 4)} su una lunghezza ${IT.sig(measure, 5)} (${pieces} ${pieces === 1 ? 'intervallo' : 'intervalli'}), area ${IT.sig((y1 - y0) * measure, 5)}`,
     traffic: (y, set) => `Sopra ${IT.int(y)} Mb/s: ${IT.num(set.reduce((s, [a, b]) => s + b - a, 0) * 60, 1)} minuti${set.length ? `, ${set.map(([a, b]) => `${clock(a)}-${clock(b)}`).join(', ')}` : ''}`,
     distribution: (y, m) => `y = ${IT.sig(y, 4)}: f ≥ y su una lunghezza ${IT.sig(m, 5)}`,
-    rearrangement: (s, sorted, original) => `s = ${IT.sig(s, 4)}: riordinata ${IT.sig(sorted, 5)}, originale ${IT.sig(original, 5)}`,
+    rearrangement: (s, sorted, original, show) => said(`s = ${IT.sig(s, 4)}`, [on(show, 'sorted') && `riordinata ${IT.sig(sorted, 5)}`, on(show, 'original') && `originale ${IT.sig(original, 5)}`]),
     duration: (h, v) => `${IT.num(h, 2)} ore al giorno sopra ${IT.int(v)} Mb/s`,
-    compare: (r) => `n = K = ${IT.int(r.n)}: Riemann ${IT.err(r.errors.riemann)}, Lebesgue ${IT.err(r.errors.lebesgue)}`,
+    compare: (r, show) => said(`n = K = ${IT.int(r.n)}`, [on(show, 'riemann') && `Riemann ${IT.err(r.errors.riemann)}`, on(show, 'lebesgue') && `Lebesgue ${IT.err(r.errors.lebesgue)}`, on(show, 'riemannGap') && `garanzia di Riemann ${IT.err(r.gaps.riemann)}`, on(show, 'lebesgueGap') && `garanzia di Lebesgue ${IT.err(r.gaps.lebesgue)}`]),
     estimates: (from, to, count, share) => `Da ${IT.sig(from, 5)} a ${IT.sig(to, 5)}: ${IT.int(count)} stime, ${IT.pct(share, 1)}`,
-    cost: (n, r, l) => `${IT.int(n)} valori di f: errore relativo ${[Number.isFinite(r) ? `di Riemann ${IT.err(r)}` : null, Number.isFinite(l) ? `di Lebesgue ${IT.err(l)}` : null].filter(Boolean).join(', ')}`,
-    thomae: (p, q, strips) => `x = ${p}/${q}: Thomae vale 1/${q} = ${IT.sig(1 / q, 4)}; ${strips.map((st) => `nella striscia da ${IT.num(st.from, 1)} a ${IT.num(st.to, 1)} la somma superiore prende ${IT.sig(st.top, 4)}`).join('; ')}`,
+    cost: (n, r, l) => said(`${IT.int(n)} valori di f, errore relativo`, [Number.isFinite(r) && `di Riemann ${IT.err(r)}`, Number.isFinite(l) && `di Lebesgue ${IT.err(l)}`]),
+    thomae: (p, q, strips) => [`x = ${p}/${q}: Thomae vale 1/${q} = ${IT.sig(1 / q, 4)}`, ...strips.map((st) => `nella striscia da ${IT.num(st.from, 1)} a ${IT.num(st.to, 1)} la somma superiore prende ${IT.sig(st.top, 4)}`)].join('; '),
     bell: (x, density, area) => `x = ${IT.num(x, 2)}: densità φ(x) = ${IT.num(density, 4)}, area a sinistra Φ(x) = ${IT.num(area, 4)}`,
-    series: (z, p) => `z = ${IT.plain(z)}, ${p.terms} termini: serie degli appunti ${IT.err(p.alternating)} (limite ${IT.err(p.bound)}), serie a termini positivi ${IT.err(p.positive)}`,
-    approximation: (z, as, zs, bound) => `z = ${IT.num(z, 2)}: errore di 7.1.26 ${IT.sig(as, 3)}, di 26.2.17 ${IT.sig(zs, 3)}, limite pubblicato ± ${IT.sig(bound, 3)}`,
-    methods: (z, list) => `z = ${IT.num(z, 1)}: ${list.map((m) => `${m.name}: ${IT.err(m.error)}`).join('; ')}`,
-    mcPath: (p, exact) => `${IT.int(p.k)} punti: stima ${IT.sig(p.estimate, 6)} ± ${IT.sig(1.96 * p.se, 3)}, esatto ${IT.sig(exact, 6)}`,
+    series: (z, p, show) => said(`z = ${IT.plain(z)}, ${p.terms} termini`, [on(show, 'alternating') && `serie degli appunti ${IT.err(p.alternating)}`, on(show, 'bound') && `limite della serie degli appunti ${IT.err(p.bound)}`, on(show, 'positive') && `serie a termini positivi ${IT.err(p.positive)}`]),
+    approximation: (z, as, zs, bound) => said(`z = ${IT.num(z, 2)}`, [as !== null && `errore di 7.1.26 ${IT.sig(as, 3)}`, zs !== null && `errore di 26.2.17 ${IT.sig(zs, 3)}`, bound !== null && `limite pubblicato ± ${IT.sig(bound, 3)}`]),
+    methods: (z, list) => (list.length ? `z = ${IT.num(z, 1)}: ${list.map((m) => `${m.name}: ${IT.err(m.error)}`).join('; ')}` : null),
+    mcPath: (p, exact, show) => said(`${IT.int(p.k)} punti`, [on(show, 'estimate') && `stima ${IT.sig(p.estimate, 6)} ± ${IT.sig(1.96 * p.se, 3)}`, on(show, 'exact') && `esatto ${IT.sig(exact, 6)}`]),
   },
   download: {
     title: 'Scarica il codice',
@@ -2809,32 +2903,43 @@ const en = {
     return out;
   },
   ruleNames: ruleNamesEn,
+  // the legends of the charts that had none: every item can be pressed to hide its part
+  legends: {
+    bell: (z) => ['density φ', `area Φ(${EN.plain(z)})`, `end point x = ${EN.plain(z)}`],
+    area: ['density', 'exact area', 'pieces of the rule', 'end point x'],
+    riemann: ['f', 'Riemann strips'],
+    lebesgue: ['f', 'Lebesgue layers'],
+    rearrangement: ['original f', 'f sorted from the highest value'],
+    traffic: ['traffic of the day', 'layers above the thresholds'],
+    duration: ['load duration curve', 'thresholds from 350 Mb/s up'],
+    thomae: ['Thomae’s function: a stem 1/q high on every p/q', 'upper sum with 10 strips'],
+  },
   tips: {
     piece: (p, i, sign) => {
       const F = EN;
       const what = { rect: 'rectangle', trap: 'trapezoid', parab: 'arc of parabola', node: 'Gauss node' }[p.kind];
       return `${what[0].toUpperCase()}${what.slice(1)} ${i + 1}: from ${F.num(p.x0, 3)} to ${F.num(p.x1, 3)}${p.kind === 'node' ? `, node at ${F.num(p.tag, 3)}, weight ${F.num(p.weight, 4)}` : ''}, area ${F.num(p.area, 6)}${sign < 0 ? ' (taken away from 1/2)' : ''}`;
     },
-    convergence: (r) => `n = ${EN.int(r.n)}: ${Object.entries(r.errors).map(([rule, e]) => `${ruleNamesEn[rule]} ${e === null ? '-' : EN.err(e)}`).join(', ')}`,
+    convergence: (r, rules = Object.keys(r.errors)) => said(`n = ${EN.int(r.n)}`, rules.map((rule) => `${ruleNamesEn[rule]} ${r.errors[rule] === null ? '-' : EN.err(r.errors[rule])}`)),
     newton: (r) => `Step ${r.k}: z = ${EN.num(r.z, 12)}, error ${EN.err(r.error)}`,
-    tail: (r) => `k = ${r.k}: P(Z > k) = ${EN.sci(r.reference, 3)}; 1 - Φ(k) is off by ${EN.err(r.subtractionError)}, the direct tail by ${EN.err(r.directError)}`,
-    alarm: (k, events) => `k = ${EN.num(k, 1)}: normal data ${EN.sci(tailDirect(k))} (${EN.num(events * tailDirect(k), 1)} a day), heavy tails ${EN.sci(heavySf(k))} (${EN.num(events * heavySf(k), 1)} a day)`,
-    ecdf: (x, F, P) => `x = ${EN.num(x, 3)}: empirical ${EN.num(F, 4)}, Φ ${EN.num(P, 4)}, gap ${EN.num(Math.abs(F - P), 4)}`,
+    tail: (r, show) => said(`k = ${r.k}, P(Z > k) = ${EN.sci(r.reference, 3)}`, [on(show, 'subtraction') && `1 - Φ(k) is off by ${EN.err(r.subtractionError)}`, on(show, 'direct') && `the direct tail by ${EN.err(r.directError)}`]),
+    alarm: (k, events, show) => said(`k = ${EN.num(k, 1)}`, [on(show, 'normal') && `normal data ${EN.sci(tailDirect(k))} (${EN.num(events * tailDirect(k), 1)} a day)`, on(show, 'heavy') && `heavy tails ${EN.sci(heavySf(k))} (${EN.num(events * heavySf(k), 1)} a day)`]),
+    ecdf: (x, F, P, show) => said(`x = ${EN.num(x, 3)}`, [on(show, 'empirical') && `empirical ${EN.num(F, 4)}`, on(show, 'normal') && `Φ ${EN.num(P, 4)}`, on(show, 'empirical') && on(show, 'normal') && `gap ${EN.num(Math.abs(F - P), 4)}`]),
     strip: (s, kind) => `From ${EN.sig(s.x0, 4)} to ${EN.sig(s.x1, 4)}: height ${EN.sig(s[kind], 5)}, minimum ${EN.sig(s.lower, 5)}, maximum ${EN.sig(s.upper, 5)}`,
     level: (y0, y1, measure, pieces) => `Band from ${EN.sig(y0, 4)} to ${EN.sig(y1, 4)}: f ≥ ${EN.sig(y1, 4)} over a length ${EN.sig(measure, 5)} (${pieces} ${pieces === 1 ? 'interval' : 'intervals'}), area ${EN.sig((y1 - y0) * measure, 5)}`,
     traffic: (y, set) => `Above ${EN.int(y)} Mb/s: ${EN.num(set.reduce((s, [a, b]) => s + b - a, 0) * 60, 1)} minutes${set.length ? `, ${set.map(([a, b]) => `${clock(a)}-${clock(b)}`).join(', ')}` : ''}`,
     distribution: (y, m) => `y = ${EN.sig(y, 4)}: f ≥ y over a length ${EN.sig(m, 5)}`,
-    rearrangement: (s, sorted, original) => `s = ${EN.sig(s, 4)}: sorted ${EN.sig(sorted, 5)}, original ${EN.sig(original, 5)}`,
+    rearrangement: (s, sorted, original, show) => said(`s = ${EN.sig(s, 4)}`, [on(show, 'sorted') && `sorted ${EN.sig(sorted, 5)}`, on(show, 'original') && `original ${EN.sig(original, 5)}`]),
     duration: (h, v) => `${EN.num(h, 2)} hours a day above ${EN.int(v)} Mb/s`,
-    compare: (r) => `n = K = ${EN.int(r.n)}: Riemann ${EN.err(r.errors.riemann)}, Lebesgue ${EN.err(r.errors.lebesgue)}`,
+    compare: (r, show) => said(`n = K = ${EN.int(r.n)}`, [on(show, 'riemann') && `Riemann ${EN.err(r.errors.riemann)}`, on(show, 'lebesgue') && `Lebesgue ${EN.err(r.errors.lebesgue)}`, on(show, 'riemannGap') && `Riemann’s guarantee ${EN.err(r.gaps.riemann)}`, on(show, 'lebesgueGap') && `Lebesgue’s guarantee ${EN.err(r.gaps.lebesgue)}`]),
     estimates: (from, to, count, share) => `From ${EN.sig(from, 5)} to ${EN.sig(to, 5)}: ${EN.int(count)} estimates, ${EN.pct(share, 1)}`,
-    cost: (n, r, l) => `${EN.int(n)} values of f: relative error ${[Number.isFinite(r) ? `of Riemann ${EN.err(r)}` : null, Number.isFinite(l) ? `of Lebesgue ${EN.err(l)}` : null].filter(Boolean).join(', ')}`,
-    thomae: (p, q, strips) => `x = ${p}/${q}: Thomae's function is 1/${q} = ${EN.sig(1 / q, 4)}; ${strips.map((st) => `in the strip from ${EN.num(st.from, 1)} to ${EN.num(st.to, 1)} the upper sum takes ${EN.sig(st.top, 4)}`).join('; ')}`,
+    cost: (n, r, l) => said(`${EN.int(n)} values of f, relative error`, [Number.isFinite(r) && `of Riemann ${EN.err(r)}`, Number.isFinite(l) && `of Lebesgue ${EN.err(l)}`]),
+    thomae: (p, q, strips) => [`x = ${p}/${q}: Thomae's function is 1/${q} = ${EN.sig(1 / q, 4)}`, ...strips.map((st) => `in the strip from ${EN.num(st.from, 1)} to ${EN.num(st.to, 1)} the upper sum takes ${EN.sig(st.top, 4)}`)].join('; '),
     bell: (x, density, area) => `x = ${EN.num(x, 2)}: density φ(x) = ${EN.num(density, 4)}, area to the left Φ(x) = ${EN.num(area, 4)}`,
-    series: (z, p) => `z = ${EN.plain(z)}, ${p.terms} terms: series of the notes ${EN.err(p.alternating)} (bound ${EN.err(p.bound)}), positive series ${EN.err(p.positive)}`,
-    approximation: (z, as, zs, bound) => `z = ${EN.num(z, 2)}: error of 7.1.26 ${EN.sig(as, 3)}, of 26.2.17 ${EN.sig(zs, 3)}, published bound ± ${EN.sig(bound, 3)}`,
-    methods: (z, list) => `z = ${EN.num(z, 1)}: ${list.map((m) => `${m.name}: ${EN.err(m.error)}`).join('; ')}`,
-    mcPath: (p, exact) => `${EN.int(p.k)} points: estimate ${EN.sig(p.estimate, 6)} ± ${EN.sig(1.96 * p.se, 3)}, exact ${EN.sig(exact, 6)}`,
+    series: (z, p, show) => said(`z = ${EN.plain(z)}, ${p.terms} terms`, [on(show, 'alternating') && `series of the notes ${EN.err(p.alternating)}`, on(show, 'bound') && `bound of the series of the notes ${EN.err(p.bound)}`, on(show, 'positive') && `positive series ${EN.err(p.positive)}`]),
+    approximation: (z, as, zs, bound) => said(`z = ${EN.num(z, 2)}`, [as !== null && `error of 7.1.26 ${EN.sig(as, 3)}`, zs !== null && `error of 26.2.17 ${EN.sig(zs, 3)}`, bound !== null && `published bound ± ${EN.sig(bound, 3)}`]),
+    methods: (z, list) => (list.length ? `z = ${EN.num(z, 1)}: ${list.map((m) => `${m.name}: ${EN.err(m.error)}`).join('; ')}` : null),
+    mcPath: (p, exact, show) => said(`${EN.int(p.k)} points`, [on(show, 'estimate') && `estimate ${EN.sig(p.estimate, 6)} ± ${EN.sig(1.96 * p.se, 3)}`, on(show, 'exact') && `exact ${EN.sig(exact, 6)}`]),
   },
   download: {
     title: 'Download the code',
@@ -2980,7 +3085,11 @@ const formulas = (content, label = null) => [label && subtitle(label), h('pre', 
 // The width of every chart comes from the ResizeObserver, measured after
 // layout; the height is set at once, the drawing happens a few
 // milliseconds per frame.
-const charts = new Map(); // canvas -> { draw, data, width, detach, link }
+const charts = new Map(); // canvas -> { draw, data, width, detach, link, tip, hidden }
+
+// what a chart draws: its data, without the parts hidden from the legend
+const shownData = (chart) => (chart.hidden.length ? { ...chart.data, hidden: chart.hidden } : chart.data);
+
 const resizer = new ResizeObserver((entries) => {
   for (const entry of entries) {
     const canvas = entry.target;
@@ -2988,51 +3097,133 @@ const resizer = new ResizeObserver((entries) => {
     const width = Math.round(entry.contentRect.width);
     if (!chart || width <= 0 || width === chart.width) continue;
     chart.width = width;
-    canvas.style.height = `${hw.chartHeight(chart.draw, chart.data, width)}px`;
+    canvas.style.height = `${hw.chartHeight(chart.draw, shownData(chart), width)}px`;
     view.scheduleFrameJob(() => {
-      if (charts.get(canvas) === chart && chart.width === width) chart.draw(canvas, { ...chart.data, width }, palette());
+      if (charts.get(canvas) === chart && chart.width === width) chart.draw(canvas, { ...shownData(chart), width }, palette());
     });
   }
 });
 
-/** The legend of a chart, in the page: { label, color?, dashed? }. */
-function legend(items) {
+/** Ties the label under the pointer to a chart: it describes what is on screen, and leaves out the hidden parts. */
+function attachTip(canvas, chart) {
+  if (chart.detach) chart.detach();
+  const tip = chart.tip;
+  chart.detach = tip ? hw.attachChartTooltip(canvas, { draw: chart.draw, data: shownData(chart), describe: (hit) => tip(hit, chart.hidden), link: chart.link }) : null;
+}
+
+/** Draws a chart again at its width, with its data and hidden parts. */
+function redraw(canvas, chart) {
+  if (chart.width > 0) {
+    canvas.style.height = `${hw.chartHeight(chart.draw, shownData(chart), chart.width)}px`;
+    chart.draw(canvas, { ...shownData(chart), width: chart.width }, palette());
+  }
+}
+
+// what the reader hid in the legends of the charts that are built again (a new result, another function)
+const kept = { efficiency: new Set(), compare: new Set(), methods: new Set(), ecdfNormal: new Set(), ecdfHeavy: new Set(), estimates: new Set() };
+
+/** The parts of the drawing covered by the hidden items of a legend. */
+const partsOf = (items, hidden) => items.flatMap((item, i) => (hidden.has(i) ? item.parts || [] : []));
+
+/**
+ * The legend of a chart, or of a group of charts: { label, color? |
+ * paletteKey?, dashed?, box?, parts }. Every item is a button: pressed (as
+ * the page opens) its parts are on screen, released they are hidden;
+ * onChange(parts) receives the hidden parts after every press. `hidden`,
+ * the set of the hidden items, outlives the legend when its chart is built
+ * again.
+ */
+function legend(items, onChange = null, hidden = new Set()) {
   const pal = palette();
   return h(
     'ul',
     { class: 'series-legend' },
     items.map((item, i) => {
-      const color = pal.series[item.color ?? i];
-      return h('li', null, h('span', { class: item.dashed ? 'is-dashed' : null, 'aria-hidden': 'true', style: { borderColor: color, backgroundColor: item.dashed ? 'transparent' : color } }), item.label);
+      const color = item.paletteKey ? pal[item.paletteKey] : pal.series[(item.color ?? i) % pal.series.length];
+      let swatch = null;
+      if (item.box) swatch = 'is-box';
+      else if (item.dashed) swatch = 'is-dashed';
+      const button = h(
+        'button',
+        {
+          type: 'button',
+          'aria-pressed': String(!hidden.has(i)),
+          class: hidden.has(i) ? 'is-off' : null,
+          onclick: () => {
+            if (hidden.has(i)) hidden.delete(i);
+            else hidden.add(i);
+            button.setAttribute('aria-pressed', String(!hidden.has(i)));
+            button.classList.toggle('is-off', hidden.has(i));
+            if (onChange) onChange(partsOf(items, hidden));
+          },
+        },
+        h('span', { class: swatch, 'aria-hidden': 'true', style: { borderColor: color, backgroundColor: item.box ? color : 'transparent' } }),
+        item.label,
+      );
+      return h('li', null, button);
     }),
   );
 }
 
-function figure(caption, draw, data, { wide = false, tip: given = null, tipOf = null, items = null, note = null, link = null } = {}) {
+/** Hides the cells and rows of a table that belong to hidden parts (data-part), and shows the others. */
+function hideParts(tableEl, parts) {
+  for (const el of tableEl.querySelectorAll('[data-part]')) el.hidden = parts.includes(el.dataset.part);
+}
+
+/** Hides parts of a chart (the legend of a group of charts calls it on each of them). */
+function setHidden(fig, parts) {
+  const canvas = fig.querySelector('canvas.chart');
+  const chart = charts.get(canvas);
+  if (!chart) return;
+  chart.hidden = parts;
+  attachTip(canvas, chart);
+  redraw(canvas, chart);
+}
+
+/**
+ * A chart with its legend (`items`) and its label under the pointer.
+ * onHide(parts) runs when the reader hides or shows a part, for the table
+ * tied to the chart.
+ */
+function figure(caption, draw, data, { wide = false, tip: given = null, tipOf = null, items = null, note = null, link = null, onHide = null, keep = null } = {}) {
   // tipOf(data): the label built from the same data the chart draws
   const tip = given || (tipOf ? tipOf(data) : null);
   const canvas = h('canvas', { class: 'chart', role: 'img', 'aria-label': caption });
-  const fig = h('figure', { class: wide ? 'figure wide' : 'figure' }, canvas, items && legend(items), note && h('p', { class: 'figure-note', text: note }), h('figcaption', { text: caption }));
-  const detach = tip ? hw.attachChartTooltip(canvas, { draw, data, describe: tip, link }) : null;
-  charts.set(canvas, { draw, data, width: -1, detach, link });
+  const kept = keep || new Set();
+  const chart = { draw, data, width: -1, detach: null, link, tip, hidden: items ? partsOf(items, kept) : [] };
+  const fig = h(
+    'figure',
+    { class: wide ? 'figure wide' : 'figure' },
+    canvas,
+    items &&
+      legend(
+        items,
+        (parts) => {
+          setHidden(fig, parts);
+          if (onHide) onHide(parts);
+        },
+        kept,
+      ),
+    note && h('p', { class: 'figure-note', text: note }),
+    h('figcaption', { text: caption }),
+  );
+  attachTip(canvas, chart);
+  charts.set(canvas, chart);
   resizer.observe(canvas);
   return fig;
 }
 
-/** Redraws a chart in place, with new data and labels, without replacing its canvas (no flicker while it plays or a slider moves). */
+/** Redraws a chart in place, with new data and labels, without replacing its canvas (no flicker while it plays or a slider moves); the hidden parts stay hidden. */
 function refreshFigure(fig, caption, data, tip) {
   const canvas = fig.querySelector('canvas.chart');
   const chart = charts.get(canvas);
   if (!chart) return;
-  if (chart.detach) chart.detach();
   chart.data = data;
-  chart.detach = tip ? hw.attachChartTooltip(canvas, { draw: chart.draw, data, describe: tip, link: chart.link }) : null;
+  chart.tip = tip;
+  attachTip(canvas, chart);
   canvas.setAttribute('aria-label', caption);
   fig.querySelector('figcaption').textContent = caption;
-  if (chart.width > 0) {
-    canvas.style.height = `${hw.chartHeight(chart.draw, data, chart.width)}px`;
-    chart.draw(canvas, { ...data, width: chart.width }, palette());
-  }
+  redraw(canvas, chart);
 }
 
 /** Replaces the content of a region, releasing the charts it contained and their labels. */
@@ -3046,19 +3237,25 @@ function fill(region, ...nodes) {
   region.replaceChildren(...nodes.flat(Infinity).filter((n) => n !== null && n !== undefined && n !== false));
 }
 
-/** A table: column headers, then rows of cells, each { text | node, class?, head?, title? } (head: a row header, th); `id` for a table tied to a chart (view.LINKED_TABLES). */
-function table(className, headers, rows, id = null) {
+/**
+ * A table: column headers, then rows of cells, each { text | node, class?,
+ * head?, title? } (head: a row header, th); `id` for a table tied to a chart
+ * (view.LINKED_TABLES). `columns` gives the part of the chart each column
+ * belongs to, and a row can have its own `part`: hideParts() hides them
+ * with their curve.
+ */
+function table(className, headers, rows, id = null, columns = []) {
   return h(
     'table',
     { id, class: `table ${className}` },
-    h('thead', null, h('tr', null, headers.map((x) => h('th', { text: x })))),
+    h('thead', null, h('tr', null, headers.map((x, i) => h('th', { text: x, 'data-part': columns[i] || null })))),
     h(
       'tbody',
       null,
       rows.map((row) => h(
         'tr',
-        { class: row.class || null },
-        row.cells.map((cell, i) => h(cell.head ? 'th' : 'td', { 'data-label': cell.head ? null : headers[i], class: cell.class || null, title: cell.title || null }, cell.node || cell.text)),
+        { class: row.class || null, 'data-part': row.part || null },
+        row.cells.map((cell, i) => h(cell.head ? 'th' : 'td', { 'data-label': cell.head ? null : headers[i], class: cell.class || null, title: cell.title || null, 'data-part': columns[i] || null }, cell.node || cell.text)),
       )),
     ),
   );
@@ -3160,7 +3357,7 @@ function tryAreaBlock() {
     updateArea();
   });
   const st = view.areaState(a, F.decimal);
-  tryArea.fig = figure(T.chartTitle(st, a.rule), hw.drawQuadrature, st.chart, { wide: true, tip: view.tips.area(st, text.tips) });
+  tryArea.fig = figure(T.chartTitle(st, a.rule), hw.drawQuadrature, st.chart, { wide: true, tip: view.tips.area(st, text.tips), items: view.legends.area(text) });
   tryArea.line = h('p', { class: 'caption line', 'aria-live': 'polite' });
   return h(
     'div',
@@ -3250,24 +3447,23 @@ function convergenceBlock() {
   const C = text.convergence;
   const F = text.fmt;
   const study = hw.convergenceStudy();
+  // una regola nascosta nella legenda sparisce anche dalle colonne della tabella
+  const rules = table(
+    'compact convergence',
+    [C.cols.n, ...hw.RULES.map((r) => text.ruleNames[r])],
+    study.rows.map((r) => ({ cells: [{ text: F.int(r.n), head: true }, ...hw.RULES.map((rule) => ({ text: r.errors[rule] === null ? '-' : F.err(r.errors[rule]) }))] })),
+    view.LINKED_TABLES.convergence,
+    [null, ...hw.RULES.map((_, i) => `series:${i}`)],
+  );
   return [
     paras(C.intro),
     h(
       'div',
       { class: 'charts' },
-      figure(C.chartTitle(study.z), hw.drawLineChart, view.convergenceChart(study, F.decimal), { wide: true, tip: view.tips.convergence(study, text.tips), link: view.links.convergence, items: hw.RULES.map((r, i) => ({ label: text.ruleNames[r], color: i })) }),
+      figure(C.chartTitle(study.z), hw.drawLineChart, view.convergenceChart(study, F.decimal), { wide: true, tip: view.tips.convergence(study, text.tips), link: view.links.convergence, items: view.legends.convergence(text), onHide: (parts) => hideParts(rules, parts) }),
     ),
     subtitle(C.tableTitle),
-    h(
-      'div',
-      { class: 'scroll' },
-      table(
-        'compact convergence',
-        [C.cols.n, ...hw.RULES.map((r) => text.ruleNames[r])],
-        study.rows.map((r) => ({ cells: [{ text: F.int(r.n), head: true }, ...hw.RULES.map((rule) => ({ text: r.errors[rule] === null ? '-' : F.err(r.errors[rule]) }))] })),
-        view.LINKED_TABLES.convergence,
-      ),
-    ),
+    h('div', { class: 'scroll' }, rules),
     paras(C.after(view.convergenceFacts(study))),
   ];
 }
@@ -3327,16 +3523,19 @@ function tailsBlock() {
   const F = text.fmt;
   const rows = hw.tailRows();
   const alarms = view.alarmRows();
+  // nascondere una curva toglie dalla tabella il suo valore e il suo errore
+  const tails = table(
+    'compact tails',
+    [T.cols.k, T.cols.reference, T.cols.subtraction, T.cols.subtractionError, T.cols.direct, T.cols.directError],
+    rows.map((r) => ({ cells: [{ text: String(r.k), head: true }, { text: F.sci(r.reference, 2) }, { text: F.sci(r.subtraction, 2) }, { text: F.err(r.subtractionError), class: r.subtractionError > 1e-6 ? 'over' : null }, { text: F.sci(r.direct, 2) }, { text: F.err(r.directError) }] })),
+    view.LINKED_TABLES.tails,
+    [null, null, 'series:0', 'series:0', 'series:1', 'series:1'],
+  );
   return [
     paras(T.intro),
     subtitle(T.tableTitle),
-    table(
-      'compact tails',
-      [T.cols.k, T.cols.reference, T.cols.subtraction, T.cols.subtractionError, T.cols.direct, T.cols.directError],
-      rows.map((r) => ({ cells: [{ text: String(r.k), head: true }, { text: F.sci(r.reference, 2) }, { text: F.sci(r.subtraction, 2) }, { text: F.err(r.subtractionError), class: r.subtractionError > 1e-6 ? 'over' : null }, { text: F.sci(r.direct, 2) }, { text: F.err(r.directError) }] })),
-      view.LINKED_TABLES.tails,
-    ),
-    h('div', { class: 'charts' }, figure(T.chartTitle, hw.drawLineChart, view.tailChart(rows, F.decimal), { wide: true, tip: view.tips.tails(rows, text.tips), link: view.links.tails, items: [{ label: T.legend[0], color: 1 }, { label: T.legend[1], color: 2 }] })),
+    tails,
+    h('div', { class: 'charts' }, figure(T.chartTitle, hw.drawLineChart, view.tailChart(rows, F.decimal), { wide: true, tip: view.tips.tails(rows, text.tips), link: view.links.tails, items: view.legends.tails(text), onHide: (parts) => hideParts(tails, parts) })),
     paras(T.after(view.tailFacts(rows))),
     paras(T.alarmIntro),
     subtitle(T.alarmTitle),
@@ -3356,7 +3555,7 @@ function tryAlarmBlock() {
   const F = text.fmt;
   const st = view.alarmState(state.alarm.events, state.alarm.rate);
   const data = view.alarmChart(st, F.decimal);
-  tryAlarm.fig = figure(T.chartTitle, hw.drawLineChart, data, { wide: true, tip: view.tips.alarm(st, data, text.tips), items: [{ label: T.legend[0], color: 0 }, { label: T.legend[1], color: 1 }, { label: T.legend[2], color: 6, dashed: true }] });
+  tryAlarm.fig = figure(T.chartTitle, hw.drawLineChart, data, { wide: true, tip: view.tips.alarm(st, data, text.tips), items: view.legends.alarm(text) });
   tryAlarm.line = h('p', { class: 'caption line', 'aria-live': 'polite', text: T.result(st) });
   return h(
     'div',
@@ -3506,7 +3705,7 @@ function updateData() {
     fill(regions.data, pending());
     return;
   }
-  const items = [{ label: D.legend[0], color: 0 }, { label: D.legend[1], color: 2, dashed: true }];
+  const items = view.legends.ecdf(text);
   const normal = view.ecdfChart(s.normal, F.decimal);
   const heavy = view.ecdfChart(s.heavy, F.decimal);
   fill(
@@ -3514,8 +3713,8 @@ function updateData() {
     h(
       'div',
       { class: 'charts' },
-      figure(D.normalTitle(s.normal.n), hw.drawLineChart, normal, { tip: view.tips.ecdf(normal, text.tips), items }),
-      figure(D.heavyTitle(s.heavy.n), hw.drawLineChart, heavy, { tip: view.tips.ecdf(heavy, text.tips), items }),
+      figure(D.normalTitle(s.normal.n), hw.drawLineChart, normal, { tip: view.tips.ecdf(normal, text.tips), items, keep: kept.ecdfNormal }),
+      figure(D.heavyTitle(s.heavy.n), hw.drawLineChart, heavy, { tip: view.tips.ecdf(heavy, text.tips), items, keep: kept.ecdfHeavy }),
     ),
     tests('model', s),
     paras(D.after(s)),
@@ -3666,22 +3865,25 @@ function updateEfficiency() {
     study = s.efficiency[state.fnKey];
   }
   const rows = s ? view.efficiencyRows(s) : null;
+  // le due curve sono le colonne Riemann e Lebesgue della tabella
+  const costs = rows
+    ? table(
+        'compact efficiency',
+        [E.cols.name, E.cols.target, E.cols.riemann, E.cols.lebesgue],
+        rows.flatMap((r) => r.targets.map((t) => ({ cells: [{ text: text.functionNames[r.key], head: true }, { text: F.pow(Math.round(Math.log10(t.target))) }, { text: E.cell(t.riemann, 'riemann') }, { text: E.cell(t.lebesgue, 'lebesgue') }] }))),
+        null,
+        [null, null, 'series:0', 'series:1'],
+      )
+    : null;
+  if (costs) hideParts(costs, partsOf(view.legends.cost(text), kept.efficiency));
   fill(
     regions.efficiency,
     !study
       ? pending()
-      : h('div', { class: 'charts' }, figure(E.chartTitle(text.functionNames[state.fnKey]), hw.drawLineChart, view.efficiencyChart(study, F.decimal), { wide: true, tipOf: (data) => view.tips.cost(data, text.tips), items: [{ label: E.legend[0], color: 1 }, { label: E.legend[1], color: 0 }] })),
+      : h('div', { class: 'charts' }, figure(E.chartTitle(text.functionNames[state.fnKey]), hw.drawLineChart, view.efficiencyChart(study, F.decimal), { wide: true, tipOf: (data) => view.tips.cost(data, text.tips), items: view.legends.cost(text), keep: kept.efficiency, onHide: (parts) => costs && hideParts(costs, parts) })),
     rows && [
       subtitle(E.tableTitle),
-      h(
-        'div',
-        { class: 'scroll' },
-        table(
-          'compact efficiency',
-          [E.cols.name, E.cols.target, E.cols.riemann, E.cols.lebesgue],
-          rows.flatMap((r) => r.targets.map((t) => ({ cells: [{ text: text.functionNames[r.key], head: true }, { text: F.pow(Math.round(Math.log10(t.target))) }, { text: E.cell(t.riemann, 'riemann') }, { text: E.cell(t.lebesgue, 'lebesgue') }] }))),
-        ),
-      ),
+      h('div', { class: 'scroll' }, costs),
       paras(E.after(view.efficiencyFacts(s))),
     ],
   );
@@ -3704,7 +3906,7 @@ function pathologicalBlock() {
       }),
     ),
     h('p', { text: P.thomaeIntro }),
-    h('div', { class: 'charts' }, figure(P.chartTitle(view.thomaeUpper()), hw.drawHistogram, view.thomaeChart(F.decimal), { wide: true, tipOf: (data) => view.tips.thomae(data, text.tips) })),
+    h('div', { class: 'charts' }, figure(P.chartTitle(view.thomaeUpper()), hw.drawHistogram, view.thomaeChart(F.decimal), { wide: true, tipOf: (data) => view.tips.thomae(data, text.tips), items: view.legends.thomae(text) })),
     subtitle(P.tableTitle),
     h(
       'div',
@@ -3743,7 +3945,7 @@ function exercise2Section() {
     title('hw5-area', 1, S.area),
     paras(text.area.intro),
     formulas(text.formulas.cdf),
-    h('div', { class: 'charts' }, figure(text.area.chartTitle, hw.drawQuadrature, view.bellChart(F.decimal), { wide: true, tipOf: (data) => view.tips.bell(data, text.tips) })),
+    h('div', { class: 'charts' }, figure(text.area.chartTitle, hw.drawQuadrature, view.bellChart(F.decimal), { wide: true, tipOf: (data) => view.tips.bell(data, text.tips), items: view.legends.bell(text) })),
     tryAreaBlock(),
     title('hw5-rules', 1, S.rules),
     rulesBlock(),
@@ -3821,20 +4023,20 @@ function seriesBlock() {
   const S = text.series;
   const F = text.fmt;
   const rows = hw.seriesRows();
-  series.fig = figure(S.chartTitle(series.z), hw.drawLineChart, view.seriesChart(series.z, F.decimal), { wide: true, tipOf: (data) => view.tips.series(data, text.tips), items: [{ label: S.legend[0], color: 1 }, { label: S.legend[1], color: 1, dashed: true }, { label: S.legend[2], color: 0 }] });
+  // la serie degli appunti ha quattro colonne, quella a termini positivi due; il limite non ne ha
+  const terms = table(
+    'compact series',
+    [S.cols.z, S.cols.altTerms, S.cols.largest, S.cols.lost, S.cols.altError, S.cols.posTerms, S.cols.posError],
+    rows.map((r) => ({ cells: [{ text: String(r.z), head: true }, { text: String(r.alternating.terms) }, { text: F.sci(r.alternating.largest) }, { text: F.num(r.alternating.lost, 1) }, { text: F.err(r.alternating.error) }, { text: String(r.positive.terms) }, { text: F.err(r.positive.error) }] })),
+    null,
+    [null, 'series:0', 'series:0', 'series:0', 'series:0', 'series:2', 'series:2'],
+  );
+  series.fig = figure(S.chartTitle(series.z), hw.drawLineChart, view.seriesChart(series.z, F.decimal), { wide: true, tipOf: (data) => view.tips.series(data, text.tips), items: view.legends.series(text), onHide: (parts) => hideParts(terms, parts) });
   return [
     paras(S.intro),
     formulas(S.formulas),
     subtitle(S.tableTitle),
-    h(
-      'div',
-      { class: 'scroll' },
-      table(
-        'compact series',
-        [S.cols.z, S.cols.altTerms, S.cols.largest, S.cols.lost, S.cols.altError, S.cols.posTerms, S.cols.posError],
-        rows.map((r) => ({ cells: [{ text: String(r.z), head: true }, { text: String(r.alternating.terms) }, { text: F.sci(r.alternating.largest) }, { text: F.num(r.alternating.lost, 1) }, { text: F.err(r.alternating.error) }, { text: String(r.positive.terms) }, { text: F.err(r.positive.error) }] })),
-      ),
-    ),
+    h('div', { class: 'scroll' }, terms),
     choices(S.chooseLabel, view.SERIES_CHOICES.map((v) => [v, F.plain(v)]), series.z, (z) => {
       series.z = z;
       const data = view.seriesChart(z, F.decimal);
@@ -3850,7 +4052,7 @@ function approximationsBlock() {
   const F = text.fmt;
   return [
     paras(A.intro),
-    h('div', { class: 'charts' }, figure(A.chartTitle, hw.drawLineChart, view.approximationChart(F.decimal), { wide: true, tipOf: (data) => view.tips.approximation(data, text.tips), items: [{ label: A.legend[0], color: 0 }, { label: A.legend[1], color: 1 }, { label: A.legend[2], color: 6, dashed: true }] })),
+    h('div', { class: 'charts' }, figure(A.chartTitle, hw.drawLineChart, view.approximationChart(F.decimal), { wide: true, tipOf: (data) => view.tips.approximation(data, text.tips), items: view.legends.approximation(text) })),
     paras(A.after(view.approximationFacts())),
   ];
 }
@@ -3892,20 +4094,19 @@ function updateMethods() {
   const F = text.fmt;
   const s = computation.shown;
   const rows = view.methodsRows(s);
+  // ogni metodo e' una curva del grafico e una riga della tabella: nascosto nella legenda, sparisce da entrambi
+  const methods = table(
+    'compact methods',
+    [M.cols.method, M.cols.absolute, M.cols.relative, M.cols.exp, M.cols.terms, M.cols.time],
+    rows.map((r) => ({ class: r.key === 'ours' ? 'ours' : null, part: `series:${hw.CDF_METHODS.indexOf(r.key)}`, cells: [{ text: text.methodNames[r.key], head: true }, { text: F.err(r.absolute) }, { text: M.relativeCell(r.relative) }, { text: F.int(r.exp) }, { text: r.terms ? F.int(r.terms) : '-' }, { text: M.timeCell(r.time) }] })),
+  );
+  hideParts(methods, partsOf(view.legends.methods(text), kept.methods));
   fill(
     regions.methods,
     subtitle(M.tableTitle),
-    h(
-      'div',
-      { class: 'scroll' },
-      table(
-        'compact methods',
-        [M.cols.method, M.cols.absolute, M.cols.relative, M.cols.exp, M.cols.terms, M.cols.time],
-        rows.map((r) => ({ class: r.key === 'ours' ? 'ours' : null, cells: [{ text: text.methodNames[r.key], head: true }, { text: F.err(r.absolute) }, { text: M.relativeCell(r.relative) }, { text: F.int(r.exp) }, { text: r.terms ? F.int(r.terms) : '-' }, { text: M.timeCell(r.time) }] })),
-      ),
-    ),
+    h('div', { class: 'scroll' }, methods),
     !s && pending(),
-    h('div', { class: 'charts' }, figure(M.chartTitle, hw.drawLineChart, view.methodsChart(F.decimal), { wide: true, tipOf: (data) => view.tips.methods(data, text.tips, text.methodNames), items: hw.CDF_METHODS.map((key) => ({ label: text.methodNames[key], color: view.METHOD_STYLE[key].colorIndex, dashed: !!view.METHOD_STYLE[key].dashed })) })),
+    h('div', { class: 'charts' }, figure(M.chartTitle, hw.drawLineChart, view.methodsChart(F.decimal), { wide: true, tipOf: (data) => view.tips.methods(data, text.tips, text.methodNames), items: view.legends.methods(text), keep: kept.methods, onHide: (parts) => hideParts(methods, parts) })),
     paras(M.after(view.methodsFacts(s))),
   );
 }
@@ -4068,7 +4269,7 @@ function updateRiemann() {
   const keys = ['left', 'right', 'midpoint', 'lower', 'upper', 'gap'];
   fill(
     regions.riemann,
-    h('div', { class: 'charts' }, figure(R.chartTitle(name, 10, kind), hw.drawIntegral, chart.chart, { wide: true, tip: view.tips.strip(chart.chart, text.tips) })),
+    h('div', { class: 'charts' }, figure(R.chartTitle(name, 10, kind), hw.drawIntegral, chart.chart, { wide: true, tip: view.tips.strip(chart.chart, text.tips), items: view.legends.riemann(text) })),
     subtitle(R.tableTitle(reference)),
     table('discussion sums', [R.cols.n, ...keys.map((k) => R.cols[k])], rows.map((r) => ({ cells: [{ text: String(r.n), head: true }, ...sumCells(r, keys, F)] }))),
     h('p', { class: 'note', text: R.note }),
@@ -4088,7 +4289,7 @@ function updateLebesgue() {
   const rear = view.rearrangementChart(spec, F.decimal);
   fill(
     regions.lebesgue,
-    h('div', { class: 'charts' }, figure(L.chartTitle(name, 10), hw.drawIntegral, chart.chart, { wide: true, tip: view.tips.level(chart.chart, text.tips) })),
+    h('div', { class: 'charts' }, figure(L.chartTitle(name, 10), hw.drawIntegral, chart.chart, { wide: true, tip: view.tips.level(chart.chart, text.tips), items: view.legends.lebesgue(text) })),
     subtitle(L.tableTitle(reference)),
     table('discussion sums', [L.cols.K, ...keys.map((k) => L.cols[k])], rows.map((r) => ({ cells: [{ text: String(r.K), head: true }, ...sumCells(r, keys, F)] }))),
     state.fnKey === 'unbounded' && h('p', { class: 'note', text: L.capNote(spec.cap, 2 - 1 / spec.cap) }),
@@ -4096,7 +4297,7 @@ function updateLebesgue() {
       'div',
       { class: 'charts' },
       figure(L.distributionTitle, hw.drawLineChart, dist, { tip: view.tips.distribution(dist, text.tips) }),
-      figure(L.rearrangementTitle, hw.drawLineChart, rear.chart, { tip: view.tips.rearrangement(rear.chart, text.tips) }),
+      figure(L.rearrangementTitle, hw.drawLineChart, rear.chart, { tip: view.tips.rearrangement(rear.chart, text.tips), items: view.legends.rearrangement(text) }),
     ),
     paras(L.after(rows, state.fnKey)),
   );
@@ -4141,8 +4342,8 @@ function updateSlices() {
   const l = view.integralChart(spec, 'lebesgue', { K }, F.decimal);
   // the two figures are kept while only n and K change; a new function rebuilds them
   if (!trySlices.riemann || trySlices.spec !== spec) {
-    trySlices.riemann = figure(T.riemannTitle(n), hw.drawIntegral, r.chart, { tip: view.tips.strip(r.chart, text.tips) });
-    trySlices.lebesgue = figure(T.lebesgueTitle(K), hw.drawIntegral, l.chart, { tip: view.tips.level(l.chart, text.tips) });
+    trySlices.riemann = figure(T.riemannTitle(n), hw.drawIntegral, r.chart, { tip: view.tips.strip(r.chart, text.tips), items: view.legends.riemann(text) });
+    trySlices.lebesgue = figure(T.lebesgueTitle(K), hw.drawIntegral, l.chart, { tip: view.tips.level(l.chart, text.tips), items: view.legends.lebesgue(text) });
     trySlices.spec = spec;
     fill(regions.slicesCharts, trySlices.riemann, trySlices.lebesgue);
   } else {
@@ -4195,6 +4396,25 @@ function updateCompare() {
   // the nine functions come with the simulation; the reader's one is compared here
   const study = state.fnKey === hw.CUSTOM ? customStudy() : s ? s.compare[state.fnKey] : null;
   const summary = s ? view.summaryRows(s) : null;
+  // le quattro curve sono le quattro colonne della tabella, nello stesso ordine
+  const compared = study
+    ? table(
+        'compact compare',
+        [C.cols.n, C.cols.riemann, C.cols.lebesgue, C.cols.riemannGap, C.cols.lebesgueGap],
+        study.rows.map((r) => ({
+          cells: [
+            { text: F.int(r.n), head: true },
+            { text: F.err(r.errors.riemann), class: r.errors.riemann < r.errors.lebesgue ? 'win' : null },
+            { text: F.err(r.errors.lebesgue), class: r.errors.lebesgue < r.errors.riemann ? 'win' : null },
+            { text: F.err(r.gaps.riemann) },
+            { text: F.err(r.gaps.lebesgue) },
+          ],
+        })),
+        view.LINKED_TABLES.compare,
+        [null, 'series:0', 'series:1', 'series:2', 'series:3'],
+      )
+    : null;
+  if (compared) hideParts(compared, partsOf(view.legends.compare(text), kept.compare));
   fill(
     regions.compare,
     state.fnKey === hw.CUSTOM && h('p', { class: 'note', text: C.customPending }),
@@ -4208,27 +4428,16 @@ function updateCompare() {
             wide: true,
             tip: view.tips.compare(study, text.tips),
             link: view.links.compare,
-            items: [{ label: C.legend[0], color: 1 }, { label: C.legend[1], color: 0 }, { label: C.legend[2], color: 1, dashed: true }, { label: C.legend[3], color: 0, dashed: true }],
+            items: view.legends.compare(text),
+            keep: kept.compare,
+            onHide: (parts) => hideParts(compared, parts),
           }),
         ),
         subtitle(C.tableTitle),
         h(
           'div',
           { class: 'scroll' },
-          table(
-            'compact compare',
-            [C.cols.n, C.cols.riemann, C.cols.lebesgue, C.cols.riemannGap, C.cols.lebesgueGap],
-            study.rows.map((r) => ({
-              cells: [
-                { text: F.int(r.n), head: true },
-                { text: F.err(r.errors.riemann), class: r.errors.riemann < r.errors.lebesgue ? 'win' : null },
-                { text: F.err(r.errors.lebesgue), class: r.errors.lebesgue < r.errors.riemann ? 'win' : null },
-                { text: F.err(r.gaps.riemann) },
-                { text: F.err(r.gaps.lebesgue) },
-              ],
-            })),
-            view.LINKED_TABLES.compare,
-          ),
+          compared,
         ),
         paras(C.after(view.compareFacts(study), name)),
       ],
@@ -4254,14 +4463,14 @@ function trafficBlock() {
   const duration = view.durationChart(F.decimal);
   return [
     paras(T.intro),
-    h('div', { class: 'charts' }, figure(T.chartTitle, hw.drawIntegral, chart, { wide: true, tip: view.tips.traffic(chart, text.tips) })),
+    h('div', { class: 'charts' }, figure(T.chartTitle, hw.drawIntegral, chart, { wide: true, tip: view.tips.traffic(chart, text.tips), items: view.legends.traffic(text) })),
     subtitle(T.tableTitle),
     table(
       'discussion traffic',
       [T.cols.y, T.cols.hours, T.cols.minutes, T.cols.when],
       report.rows.map((r) => ({ cells: [{ text: F.int(r.y), head: true }, { text: F.num(r.hours, 3) }, { text: F.num(r.hours * 60, 1) }, { text: r.intervals.map(([a, b]) => `${view.clock(a)}-${view.clock(b)}`).join(', ') }] })),
     ),
-    h('div', { class: 'charts' }, figure(T.durationTitle, hw.drawLineChart, duration, { wide: true, tip: view.tips.duration(duration, text.tips) })),
+    h('div', { class: 'charts' }, figure(T.durationTitle, hw.drawLineChart, duration, { wide: true, tip: view.tips.duration(duration, text.tips), items: view.legends.duration(text, duration) })),
     paras(T.after(report)),
   ];
 }
@@ -4289,7 +4498,7 @@ function updateMc() {
       state.histKey = k;
       updateMc();
     }),
-    h('div', { class: 'charts' }, figure(M.histogramTitle(text.functionNames[state.histKey], s), hw.drawHistogram, hist, { wide: true, tip: view.tips.histogram(hist, text.tips), items: [{ label: M.legend[0], color: 0 }, { label: M.legend[1], color: 2 }, { label: M.legend[2], color: 1, dashed: true }] })),
+    h('div', { class: 'charts' }, figure(M.histogramTitle(text.functionNames[state.histKey], s), hw.drawHistogram, hist, { wide: true, tip: view.tips.histogram(hist, text.tips), items: view.legends.estimates(text), keep: kept.estimates })),
     tests('coverage', s),
     paras(M.after(s)),
   );
@@ -4303,7 +4512,7 @@ function tryMcBlock() {
   tryMc.play = h('button', { type: 'button', class: 'btn', text: T.play, onclick: toggleMc });
   tryMc.line = h('p', { class: 'caption line', 'aria-live': 'polite' });
   tryMc.run = view.mcPath(state.target.seed, state.mc.key, state.mc.draw);
-  tryMc.fig = figure(T.chartTitle(text.functionNames[state.mc.key]), hw.drawLineChart, view.mcPathChart(tryMc.run, state.mc.shown, text.fmt.decimal), { wide: true, tip: view.tips.mcPath(tryMc.run, text.tips), items: [{ label: T.legend[0], color: 0 }, { label: T.legend[1], color: 1, dashed: true }] });
+  tryMc.fig = figure(T.chartTitle(text.functionNames[state.mc.key]), hw.drawLineChart, view.mcPathChart(tryMc.run, state.mc.shown, text.fmt.decimal), { wide: true, tip: view.tips.mcPath(tryMc.run, text.tips), items: view.legends.mcPath(text) });
   return h(
     'div',
     { class: 'try' },

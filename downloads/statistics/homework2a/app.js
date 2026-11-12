@@ -481,19 +481,59 @@ function testSummary(s) {
  * pointer (hw.attachChartTooltip), from the same data the chart draws. P
  * is the `tips` part of the texts.
  */
+// ---------------------------------------------------------------------------
+// Le legende dei grafici, per la pagina e per il programma scaricabile: ogni
+// voce { label, color | paletteKey, dashed?, box?, parts } e' un pulsante che
+// nasconde le sue parti del disegno (`hidden` dei dati di ogni grafico)
+// ---------------------------------------------------------------------------
+
+const seriesItem = (label, color, i, extra = {}) => ({ label, color, parts: [`series:${i}`], ...extra });
+
+// a bar chart: the counts and the expected values (dashed)
+const barItems = (labels) => [
+  { label: labels[0], paletteKey: 'bars', box: true, parts: ['bars'] },
+  { label: labels[1], paletteKey: 'reference', dashed: true, parts: ['expected'] },
+];
+
+const legends = {
+  letters: (text) => barItems(text.legends.letters),
+  cipher: (text) => barItems(text.legends.cipher),
+  bytes: (text) => barItems(text.legends.bytes),
+  corpus: (text) => barItems(text.legends.corpus),
+  posterior: (text) => [
+    { label: text.legends.posterior[0], paletteKey: 'bars', box: true, parts: ['bars'] },
+    { label: text.legends.posterior[1], paletteKey: 'highlight', box: true, parts: ['highlight'] },
+  ],
+  success: (text) => [seriesItem(text.lengths.legend[0], 0, 0), seriesItem(text.lengths.legend[1], 1, 1, { dashed: true })],
+  methods: (text) => hw.METHODS.map((m, i) => seriesItem(text.methodNames[m], i, i)),
+  // every attack: its measured points and its fitted line
+  scaling: (text) => ATTACKS.map((m, i) => ({ label: text.scaling.legend[i], color: i, parts: [`series:${i}`, `series:${ATTACKS.length + i}`] })),
+};
+
+/** Whether series i of a chart is on screen: the reader can hide it from the legend. */
+const seriesOn = (hidden, i) => !hidden.includes(`series:${i}`);
+
+/**
+ * The labels under the pointer, one factory per chart: each returns
+ * (hit, hidden) => text, where `hidden` lists the parts of the chart that
+ * the reader turned off in the legend, and the label leaves them out.
+ */
 const tips = {
-  letters: (data, P) => ({ from }) => P.letter(UPPER[from], data.values[from], data.expected[from]),
-  ecBytes: (data, P) => ({ from, to }) => {
+  letters: (data, P) => ({ from }, hidden = []) => P.letter(UPPER[from], data.values[from], hidden.includes('expected') ? null : data.expected[from]),
+  ecBytes: (data, P) => ({ from, to }, hidden = []) => {
     const part = data.values.slice(from, to);
-    return to - from === 1 ? P.byte(from, data.values[from], data.expected) : P.bytes(from, to - 1, Math.min(...part), Math.max(...part), data.expected);
+    const expected = hidden.includes('expected') ? null : data.expected;
+    return to - from === 1 ? P.byte(from, data.values[from], expected) : P.bytes(from, to - 1, Math.min(...part), Math.max(...part), expected);
   },
-  corpus: (data, P) => ({ from }) => P.frequency(UPPER[from], data.values[from], data.expected[from]),
+  corpus: (data, P) => ({ from }, hidden = []) => P.frequency(UPPER[from], data.values[from], hidden.includes('expected') ? null : data.expected[from]),
   posterior: (crack, P) => ({ from }) => P.shift(from, crack.posterior[from], crack.candidates[from].text),
-  success: (s, P) => ({ index }) => P.success(s.caesar.lengths[index], s.caesar.trials[index], s.caesar.rates.unigram[index], s.caesar.intervals.unigram[index], s.caesar.bound[index]),
-  methods: (s, P) => ({ index }) => P.methods(s.caesar.lengths[index], hw.METHODS.map((m) => s.caesar.rates[m][index])),
-  scaling: (sc, P) => ({ index }) => {
+  success: (s, P) => ({ index }, hidden = []) =>
+    P.success(s.caesar.lengths[index], s.caesar.trials[index], seriesOn(hidden, 0) ? s.caesar.rates.unigram[index] : null, s.caesar.intervals.unigram[index], seriesOn(hidden, 1) ? s.caesar.bound[index] : null),
+  methods: (s, P) => ({ index }, hidden = []) => P.methods(s.caesar.lengths[index], hw.METHODS.map((m, i) => (seriesOn(hidden, i) ? s.caesar.rates[m][index] : null))),
+  scaling: (sc, P) => ({ index }, hidden = []) => {
     const bits = scalingBits(sc)[index];
-    return P.scaling(bits, ATTACKS.map((m) => {
+    return P.scaling(bits, ATTACKS.map((m, i) => {
+      if (!seriesOn(hidden, i)) return null;
       const row = sc.rows[m].find((r) => r.bits === bits);
       return row ? row.mean : null;
     }));
@@ -550,7 +590,7 @@ function scheduleFrameJob(job) {
   }
 }
 
-return { SECTIONS, tocEntries, KEY_MAX_LENGTH, MESSAGE_MAX_LENGTH, SHIFT_MAX_LENGTH, DEFAULT_INPUTS, parseMessage, readInputs, isDefaultInput, inputBadge, shortHex, charOf, keyFacts, blockRows, firstBlock, ciphertextSize, cipherSummary, checkGroups, substitution, caesarFacts, letterChart, cipherRows, ecBytesChart, chapterRows, corpusChart, modelRows, candidateRows, posteriorChart, fitChecks, LENGTH_TICKS, successChart, methodsChart, LEVELS, thresholds, rateAt, lengthRows, exhaustiveSummary, bsgsSummary, scalingBits, ATTACKS, scalingChart, EXTRAPOLATION_BITS, FAST_RATE, extrapolationRows, reuseDemo, augustusDemo, TEST_GROUPS, EXPECTED_VERDICTS, statTests, testSummary, tips, LINKED_TABLES, links, scheduleFrameJob };
+return { SECTIONS, tocEntries, KEY_MAX_LENGTH, MESSAGE_MAX_LENGTH, SHIFT_MAX_LENGTH, DEFAULT_INPUTS, parseMessage, readInputs, isDefaultInput, inputBadge, shortHex, charOf, keyFacts, blockRows, firstBlock, ciphertextSize, cipherSummary, checkGroups, substitution, caesarFacts, letterChart, cipherRows, ecBytesChart, chapterRows, corpusChart, modelRows, candidateRows, posteriorChart, fitChecks, LENGTH_TICKS, successChart, methodsChart, LEVELS, thresholds, rateAt, lengthRows, exhaustiveSummary, bsgsSummary, scalingBits, ATTACKS, scalingChart, EXTRAPOLATION_BITS, FAST_RATE, extrapolationRows, reuseDemo, augustusDemo, TEST_GROUPS, EXPECTED_VERDICTS, statTests, testSummary, legends, tips, LINKED_TABLES, links, scheduleFrameJob };
 })();
 
 var texts$ = (function () {
@@ -1243,15 +1283,30 @@ const it = {
   ],
   methodNames: methodNamesIt,
   attackNames: { exhaustive: 'Ricerca esaustiva', bsgs: 'Baby-step giant-step', kangaroo: 'Canguro' },
+  // le legende dei grafici a barre: ogni voce si preme per nascondere la sua parte
+  legends: {
+    letters: ['conteggi delle lettere', 'attese dalle frequenze del corpus'],
+    cipher: ['conteggi delle lettere del cifrato', 'attese dalle frequenze del corpus'],
+    bytes: ['conteggi dei byte', 'attesa uniforme'],
+    corpus: ['capitoli di addestramento', 'capitoli di test'],
+    posterior: ['probabilità a posteriori', 'spostamento più probabile'],
+  },
   tips: {
-    letter: (letter, count, expected) => `${letter}: ${count} ${count === 1 ? 'volta' : 'volte'}, attese ${IT.num(expected, 1)}`,
-    byte: (b, count, expected) => `Byte ${b}: ${IT.int(count)} volte, attese ${IT.num(expected, 1)}`,
-    bytes: (from, to, min, max, expected) => `Byte da ${from} a ${to}: da ${IT.int(min)} a ${IT.int(max)} volte, attese ${IT.num(expected, 1)} ciascuno`,
-    frequency: (letter, training, test) => `${letter}: ${IT.pct(training, 2)} in addestramento, ${IT.pct(test, 2)} nel test`,
+    // a value hidden from the legend (null) is left out of the label
+    letter: (letter, count, expected) => `${letter}: ${count} ${count === 1 ? 'volta' : 'volte'}${expected === null ? '' : `, attese ${IT.num(expected, 1)}`}`,
+    byte: (b, count, expected) => `Byte ${b}: ${IT.int(count)} volte${expected === null ? '' : `, attese ${IT.num(expected, 1)}`}`,
+    bytes: (from, to, min, max, expected) => `Byte da ${from} a ${to}: da ${IT.int(min)} a ${IT.int(max)} volte${expected === null ? '' : `, attese ${IT.num(expected, 1)} ciascuno`}`,
+    frequency: (letter, training, test) => `${letter}: ${IT.pct(training, 2)} in addestramento${test === null ? '' : `, ${IT.pct(test, 2)} nel test`}`,
     shift: (s, p, text) => `s = ${s}: probabilità ${IT.prob(p)}; "${text.slice(0, 32)}${text.length > 32 ? '...' : ''}"`,
-    success: (L, n, rate, interval, bound) => `${L} ${L === 1 ? 'lettera' : 'lettere'}, ${n} brani: successo ${IT.pct(rate)} (95%: ${IT.pct(interval[0])}-${IT.pct(interval[1])}); limite di Chernoff ${IT.pct(bound)}`,
-    methods: (L, rates) => `${L} ${L === 1 ? 'lettera' : 'lettere'}: ${rates.map((r, i) => `${Object.values(methodNamesIt)[i]} ${IT.pct(r)}`).join(', ')}`,
-    scaling: (bits, means) => `${bits} bit: ${means.map((m, i) => (m === null ? null : `${['ricerca esaustiva', 'BSGS', 'canguro'][i]} ${IT.int(m)}`)).filter(Boolean).join(', ')} operazioni in media`,
+    success: (L, n, rate, interval, bound) => {
+      const parts = [rate !== null && `successo ${IT.pct(rate)} (95%: ${IT.pct(interval[0])}-${IT.pct(interval[1])})`, bound !== null && `limite di Chernoff ${IT.pct(bound)}`].filter(Boolean);
+      return parts.length ? `${L} ${L === 1 ? 'lettera' : 'lettere'}, ${n} brani: ${parts.join('; ')}` : null;
+    },
+    methods: (L, rates) => {
+      const parts = rates.map((r, i) => r !== null && `${Object.values(methodNamesIt)[i]} ${IT.pct(r)}`).filter(Boolean);
+      return parts.length ? `${L} ${L === 1 ? 'lettera' : 'lettere'}: ${parts.join(', ')}` : null;
+    },
+    scaling: (bits, means) => (means.some((m) => m !== null) ? `${bits} bit: ${means.map((m, i) => (m === null ? null : `${['ricerca esaustiva', 'BSGS', 'canguro'][i]} ${IT.int(m)}`)).filter(Boolean).join(', ')} operazioni in media` : null),
   },
   download: {
     title: 'Scarica il codice',
@@ -1871,15 +1926,30 @@ const en = {
   ],
   methodNames: methodNamesEn,
   attackNames: { exhaustive: 'Exhaustive search', bsgs: 'Baby-step giant-step', kangaroo: 'Kangaroo' },
+  // the legends of the bar charts: every item can be pressed to hide its part
+  legends: {
+    letters: ['letter counts', 'expected from the frequencies of the corpus'],
+    cipher: ['letter counts of the ciphertext', 'expected from the frequencies of the corpus'],
+    bytes: ['byte counts', 'uniform expectation'],
+    corpus: ['training chapters', 'test chapters'],
+    posterior: ['posterior probability', 'most probable shift'],
+  },
   tips: {
-    letter: (letter, count, expected) => `${letter}: ${count} ${count === 1 ? 'time' : 'times'}, ${EN.num(expected, 1)} expected`,
-    byte: (b, count, expected) => `Byte ${b}: ${EN.int(count)} times, ${EN.num(expected, 1)} expected`,
-    bytes: (from, to, min, max, expected) => `Bytes ${from} to ${to}: ${EN.int(min)} to ${EN.int(max)} times, ${EN.num(expected, 1)} expected each`,
-    frequency: (letter, training, test) => `${letter}: ${EN.pct(training, 2)} in training, ${EN.pct(test, 2)} in test`,
+    // a value hidden from the legend (null) is left out of the label
+    letter: (letter, count, expected) => `${letter}: ${count} ${count === 1 ? 'time' : 'times'}${expected === null ? '' : `, ${EN.num(expected, 1)} expected`}`,
+    byte: (b, count, expected) => `Byte ${b}: ${EN.int(count)} times${expected === null ? '' : `, ${EN.num(expected, 1)} expected`}`,
+    bytes: (from, to, min, max, expected) => `Bytes ${from} to ${to}: ${EN.int(min)} to ${EN.int(max)} times${expected === null ? '' : `, ${EN.num(expected, 1)} expected each`}`,
+    frequency: (letter, training, test) => `${letter}: ${EN.pct(training, 2)} in training${test === null ? '' : `, ${EN.pct(test, 2)} in test`}`,
     shift: (s, p, text) => `s = ${s}: probability ${EN.prob(p)}; "${text.slice(0, 32)}${text.length > 32 ? '...' : ''}"`,
-    success: (L, n, rate, interval, bound) => `${L} ${L === 1 ? 'letter' : 'letters'}, ${n} passages: success ${EN.pct(rate)} (95%: ${EN.pct(interval[0])}-${EN.pct(interval[1])}); Chernoff bound ${EN.pct(bound)}`,
-    methods: (L, rates) => `${L} ${L === 1 ? 'letter' : 'letters'}: ${rates.map((r, i) => `${Object.values(methodNamesEn)[i]} ${EN.pct(r)}`).join(', ')}`,
-    scaling: (bits, means) => `${bits} bits: ${means.map((m, i) => (m === null ? null : `${['exhaustive search', 'BSGS', 'kangaroo'][i]} ${EN.int(m)}`)).filter(Boolean).join(', ')} operations on average`,
+    success: (L, n, rate, interval, bound) => {
+      const parts = [rate !== null && `success ${EN.pct(rate)} (95%: ${EN.pct(interval[0])}-${EN.pct(interval[1])})`, bound !== null && `Chernoff bound ${EN.pct(bound)}`].filter(Boolean);
+      return parts.length ? `${L} ${L === 1 ? 'letter' : 'letters'}, ${n} passages: ${parts.join('; ')}` : null;
+    },
+    methods: (L, rates) => {
+      const parts = rates.map((r, i) => r !== null && `${Object.values(methodNamesEn)[i]} ${EN.pct(r)}`).filter(Boolean);
+      return parts.length ? `${L} ${L === 1 ? 'letter' : 'letters'}: ${parts.join(', ')}` : null;
+    },
+    scaling: (bits, means) => (means.some((m) => m !== null) ? `${bits} bits: ${means.map((m, i) => (m === null ? null : `${['exhaustive search', 'BSGS', 'kangaroo'][i]} ${EN.int(m)}`)).filter(Boolean).join(', ')} operations on average` : null),
   },
   download: {
     title: 'Download the code',
@@ -2058,7 +2128,11 @@ const value = (label, content, extra = '') => h('div', { class: `value ${extra}`
 // The width of every chart comes from the ResizeObserver, measured after
 // layout; the height is set at once, the drawing happens a few
 // milliseconds per frame.
-const charts = new Map(); // canvas -> { draw, data, width, detach }
+const charts = new Map(); // canvas -> { draw, data, width, detach, link, tip, hidden }
+
+// what a chart draws: its data, without the parts hidden from the legend
+const shownData = (chart) => (chart.hidden.length ? { ...chart.data, hidden: chart.hidden } : chart.data);
+
 const resizer = new ResizeObserver((entries) => {
   for (const entry of entries) {
     const canvas = entry.target;
@@ -2066,31 +2140,121 @@ const resizer = new ResizeObserver((entries) => {
     const width = Math.round(entry.contentRect.width);
     if (!chart || width <= 0 || width === chart.width) continue;
     chart.width = width;
-    canvas.style.height = `${hw.chartHeight(chart.draw, chart.data, width)}px`;
+    canvas.style.height = `${hw.chartHeight(chart.draw, shownData(chart), width)}px`;
     view.scheduleFrameJob(() => {
-      if (charts.get(canvas) === chart && chart.width === width) chart.draw(canvas, { ...chart.data, width }, palette());
+      if (charts.get(canvas) === chart && chart.width === width) chart.draw(canvas, { ...shownData(chart), width }, palette());
     });
   }
 });
 
-/** The legend of a chart, in the page: { label, color?, dashed? }. */
-function legend(items) {
+/** Ties the label under the pointer to a chart: it describes what is on screen, and leaves out the hidden parts. */
+function attachTip(canvas, chart) {
+  if (chart.detach) chart.detach();
+  const tip = chart.tip;
+  chart.detach = tip ? hw.attachChartTooltip(canvas, { draw: chart.draw, data: shownData(chart), describe: (hit) => tip(hit, chart.hidden), link: chart.link }) : null;
+}
+
+/** Draws a chart again at its width, with its data and hidden parts. */
+function redraw(canvas, chart) {
+  if (chart.width > 0) {
+    canvas.style.height = `${hw.chartHeight(chart.draw, shownData(chart), chart.width)}px`;
+    chart.draw(canvas, { ...shownData(chart), width: chart.width }, palette());
+  }
+}
+
+// what the reader hid in the legends, by chart: a region filled anew (a step, a result) keeps it
+const kept = {};
+const keep = (name) => {
+  if (!kept[name]) kept[name] = new Set();
+  return kept[name];
+};
+
+/** The parts of the drawing covered by the hidden items of a legend. */
+const partsOf = (items, hidden) => items.flatMap((item, i) => (hidden.has(i) ? item.parts || [] : []));
+
+/**
+ * The legend of a chart, or of a group of charts: { label, color? |
+ * paletteKey?, dashed?, box?, parts }. Every item is a button: pressed (as
+ * the page opens) its parts are on screen, released they are hidden;
+ * onChange(parts) receives the hidden parts after every press. `hidden`,
+ * the set of the hidden items, outlives the legend when its chart is built
+ * again.
+ */
+function legend(items, onChange = null, hidden = new Set()) {
   const pal = palette();
   return h(
     'ul',
     { class: 'series-legend' },
     items.map((item, i) => {
-      const color = pal.series[item.color ?? i];
-      return h('li', null, h('span', { class: item.dashed ? 'is-dashed' : null, 'aria-hidden': 'true', style: { borderColor: color, backgroundColor: item.dashed ? 'transparent' : color } }), item.label);
+      const color = item.paletteKey ? pal[item.paletteKey] : pal.series[(item.color ?? i) % pal.series.length];
+      let swatch = null;
+      if (item.box) swatch = 'is-box';
+      else if (item.dashed) swatch = 'is-dashed';
+      const button = h(
+        'button',
+        {
+          type: 'button',
+          'aria-pressed': String(!hidden.has(i)),
+          class: hidden.has(i) ? 'is-off' : null,
+          onclick: () => {
+            if (hidden.has(i)) hidden.delete(i);
+            else hidden.add(i);
+            button.setAttribute('aria-pressed', String(!hidden.has(i)));
+            button.classList.toggle('is-off', hidden.has(i));
+            if (onChange) onChange(partsOf(items, hidden));
+          },
+        },
+        h('span', { class: swatch, 'aria-hidden': 'true', style: { borderColor: color, backgroundColor: item.box ? color : 'transparent' } }),
+        item.label,
+      );
+      return h('li', null, button);
     }),
   );
 }
 
-function figure(caption, draw, data, { wide = false, tip = null, items = null, link = null } = {}) {
+/** Hides the cells and rows of a table that belong to hidden parts (data-part), and shows the others. */
+function hideParts(tableEl, parts) {
+  for (const el of tableEl.querySelectorAll('[data-part]')) el.hidden = parts.includes(el.dataset.part);
+}
+
+/** Hides parts of a chart (the legend of a group of charts calls it on each of them). */
+function setHidden(fig, parts) {
+  const canvas = fig.querySelector('canvas.chart');
+  const chart = charts.get(canvas);
+  if (!chart) return;
+  chart.hidden = parts;
+  attachTip(canvas, chart);
+  redraw(canvas, chart);
+}
+
+/**
+ * A chart with its legend (`items`) and its label under the pointer.
+ * onHide(parts) runs when the reader hides or shows a part, for the table
+ * tied to the chart, and `keep` (a set, keep(name)) remembers the hidden
+ * items when the chart is built again.
+ */
+function figure(caption, draw, data, { wide = false, tip = null, items = null, note = null, link = null, onHide = null, keep: kept = null } = {}) {
   const canvas = h('canvas', { class: 'chart', role: 'img', 'aria-label': caption });
-  const fig = h('figure', { class: wide ? 'figure wide' : 'figure' }, canvas, items && legend(items), h('figcaption', { text: caption }));
-  const detach = tip ? hw.attachChartTooltip(canvas, { draw, data, describe: tip, link }) : null;
-  charts.set(canvas, { draw, data, width: -1, detach });
+  const hidden = kept || new Set();
+  const chart = { draw, data, width: -1, detach: null, link, tip, hidden: items ? partsOf(items, hidden) : [] };
+  const fig = h(
+    'figure',
+    { class: wide ? 'figure wide' : 'figure' },
+    canvas,
+    items &&
+      legend(
+        items,
+        (parts) => {
+          setHidden(fig, parts);
+          if (onHide) onHide(parts);
+        },
+        hidden,
+      ),
+    note && h('p', { class: 'figure-note', text: note }),
+    h('figcaption', { text: caption }),
+  );
+  attachTip(canvas, chart);
+  charts.set(canvas, chart);
   resizer.observe(canvas);
   return fig;
 }
@@ -2115,19 +2279,19 @@ function redrawAll() {
   updateScaling();
 }
 
-/** A table: column headers, then rows of cells, each { text | node, class?, head? } (head: a row header, th); `id` for a table tied to a chart (view.LINKED_TABLES). */
-function table(className, headers, rows, id = null) {
+/** A table: column headers, then rows of cells, each { text | node, class?, head? } (head: a row header, th); `id` for a table tied to a chart (view.LINKED_TABLES); `columns` gives the part of a chart each column belongs to, and a row can have its own `part`: hideParts() hides them with their curve. */
+function table(className, headers, rows, id = null, columns = []) {
   return h(
     'table',
     { id, class: `table ${className}` },
-    h('thead', null, h('tr', null, headers.map((x) => h('th', { text: x })))),
+    h('thead', null, h('tr', null, headers.map((x, i) => h('th', { text: x, 'data-part': columns[i] || null })))),
     h(
       'tbody',
       null,
       rows.map((row) => h(
         'tr',
-        { class: row.class || null },
-        row.cells.map((cell, i) => h(cell.head ? 'th' : 'td', { 'data-label': cell.head ? null : headers[i], class: cell.class || null }, cell.node || cell.text)),
+        { class: row.class || null, 'data-part': row.part || null },
+        row.cells.map((cell, i) => h(cell.head ? 'th' : 'td', { 'data-label': cell.head ? null : headers[i], class: cell.class || null, 'data-part': columns[i] || null }, cell.node || cell.text)),
       )),
     ),
   );
@@ -2519,8 +2683,8 @@ function updateCaesar() {
     h(
       'div',
       { class: 'charts' },
-      figure(P.lettersChart, hw.drawBarChart, letters, { tip: view.tips.letters(letters, text.tips) }),
-      figure(P.cipherChart(shift), hw.drawBarChart, cipherLetters, { tip: view.tips.letters(cipherLetters, text.tips) }),
+      figure(P.lettersChart, hw.drawBarChart, letters, { tip: view.tips.letters(letters, text.tips), items: view.legends.letters(text), keep: keep('letters') }),
+      figure(P.cipherChart(shift), hw.drawBarChart, cipherLetters, { tip: view.tips.letters(cipherLetters, text.tips), items: view.legends.cipher(text), keep: keep('cipher') }),
     ),
   );
   updateAlgorithm();
@@ -2550,7 +2714,7 @@ function updateProperties() {
   fill(
     regions.propertiesStats,
     h('p', { text: P.sampleIntro(s) }),
-    figure(P.bytesChart(s), hw.drawBarChart, bytes, { wide: true, tip: view.tips.ecBytes(bytes, text.tips) }),
+    figure(P.bytesChart(s), hw.drawBarChart, bytes, { wide: true, tip: view.tips.ecBytes(bytes, text.tips), items: view.legends.bytes(text), keep: keep('bytes') }),
     subtitle(P.tableTitle),
     table('discussion ciphers', [P.cols.text, P.cols.symbols, P.cols.entropy, P.cols.ic], view.cipherRows(s).map((r) => ({
       cells: [{ head: true, text: P.rowNames[r.key] }, { text: F.int(r.symbols) }, { text: P.entropyCell(r.entropy, r.max) }, { text: P.icCell(r.ic, r.uniformIc) }],
@@ -2611,7 +2775,7 @@ function updateCorpus() {
       class: `is-${c.role}`,
       cells: [{ head: true, text: c.number }, { text: c.title }, { text: F.int(c.letters) }, { text: C.roles[c.role] }],
     }))),
-    figure(C.chart(s), hw.drawBarChart, chart, { wide: true, tip: view.tips.corpus(chart, text.tips) }),
+    figure(C.chart(s), hw.drawBarChart, chart, { wide: true, tip: view.tips.corpus(chart, text.tips), items: view.legends.corpus(text), keep: keep('corpus') }),
     paras(C.facts(s)),
     tests('corpus', s),
     paras(C.modelsIntro),
@@ -2640,7 +2804,7 @@ function updateAlgorithm() {
   fill(
     regions.algorithmLive,
     check(crack.key === shift, A.live(crack, shift)),
-    figure(A.posteriorChart, hw.drawBarChart, chart, { wide: true, tip: view.tips.posterior(crack, text.tips), link: view.links.candidates(candidates) }),
+    figure(A.posteriorChart, hw.drawBarChart, chart, { wide: true, tip: view.tips.posterior(crack, text.tips), link: view.links.candidates(candidates), items: view.legends.posterior(text), keep: keep('posterior') }),
     subtitle(A.candidatesTitle),
     table('discussion candidates', [A.candidateCols.shift, A.candidateCols.perLetter, A.candidateCols.posterior, A.candidateCols.text], candidates.map((r) => ({
       class: r.shift === crack.key ? 'is-current' : null,
@@ -2659,14 +2823,17 @@ function updateLengths() {
     return;
   }
   const chart = view.successChart(s, F.decimal);
+  // il tasso di successo (con il suo intervallo) e il limite di Chernoff sono anche colonne della tabella
+  const lengths = table('compact lengths', [L.cols.length, L.cols.trials, L.cols.rate, L.cols.interval, L.cols.bound], view.lengthRows(s).map((r) => ({
+    cells: [{ text: r.length }, { text: F.int(r.trials) }, { text: F.pct(r.rates.unigram) }, { text: `${F.pct(r.interval[0])} - ${F.pct(r.interval[1])}` }, { text: F.pct(r.bound) }],
+  })), view.LINKED_TABLES.lengths, [null, null, 'series:0', 'series:0', 'series:1']);
+  hideParts(lengths, partsOf(view.legends.success(text), keep('success')));
   fill(
     regions.lengths,
     paras(L.intro(s)),
-    figure(L.chart, hw.drawLineChart, chart, { wide: true, tip: view.tips.success(s, text.tips), link: view.links.lengths, items: [{ label: L.legend[0] }, { label: L.legend[1], dashed: true }] }),
+    figure(L.chart, hw.drawLineChart, chart, { wide: true, tip: view.tips.success(s, text.tips), link: view.links.lengths, items: view.legends.success(text), keep: keep('success'), onHide: (parts) => hideParts(lengths, parts) }),
     subtitle(L.tableTitle),
-    h('div', { class: 'scroll' }, table('compact lengths', [L.cols.length, L.cols.trials, L.cols.rate, L.cols.interval, L.cols.bound], view.lengthRows(s).map((r) => ({
-      cells: [{ text: r.length }, { text: F.int(r.trials) }, { text: F.pct(r.rates.unigram) }, { text: `${F.pct(r.interval[0])} - ${F.pct(r.interval[1])}` }, { text: F.pct(r.bound) }],
-    })), view.LINKED_TABLES.lengths)),
+    h('div', { class: 'scroll' }, lengths),
     paras(L.explain(s)),
   );
 }
@@ -2680,13 +2847,17 @@ function updateMethods() {
     return;
   }
   const chart = view.methodsChart(s, F.decimal);
+  // ogni metodo e' una curva del grafico e una riga della tabella delle soglie
+  const thresholds = table('discussion thresholds', [M.cols.method, ...M.cols.levels], view.thresholds(s).map((row) => ({
+    part: `series:${hw.METHODS.indexOf(row.method)}`,
+    cells: [{ head: true, text: text.methodNames[row.method] }, ...row.levels.map((v) => ({ text: v === null ? M.never : String(v) }))],
+  })));
+  hideParts(thresholds, partsOf(view.legends.methods(text), keep('methods')));
   fill(
     regions.methods,
-    figure(M.chart, hw.drawLineChart, chart, { wide: true, tip: view.tips.methods(s, text.tips), items: hw.METHODS.map((m) => ({ label: text.methodNames[m] })) }),
+    figure(M.chart, hw.drawLineChart, chart, { wide: true, tip: view.tips.methods(s, text.tips), items: view.legends.methods(text), keep: keep('methods'), onHide: (parts) => hideParts(thresholds, parts) }),
     subtitle(M.tableTitle),
-    table('discussion thresholds', [M.cols.method, ...M.cols.levels], view.thresholds(s).map((row) => ({
-      cells: [{ head: true, text: text.methodNames[row.method] }, ...row.levels.map((v) => ({ text: v === null ? M.never : String(v) }))],
-    }))),
+    thresholds,
     paras(M.explain(s)),
   );
 }
@@ -2765,14 +2936,18 @@ function updateScaling() {
     return;
   }
   const chart = view.scalingChart(sc, F.decimal);
+  // ogni attacco: i suoi punti, la sua retta e la sua riga della tabella delle pendenze
+  const fits = table('discussion fits', [C.fitCols.method, C.fitCols.slope, C.fitCols.theory, C.fitCols.constant], view.ATTACKS.map((m, i) => ({
+    part: `series:${i}`,
+    cells: [{ head: true, text: text.attackNames[m] }, { text: `${F.num(sc.fits[m].slope, 3)} ± ${F.num(sc.fits[m].slopeError, 3)}` }, { text: F.num(sc.fits[m].exponent, 1) }, { text: F.num(sc.fits[m].constant, 2) }],
+  })));
+  hideParts(fits, partsOf(view.legends.scaling(text), keep('scaling')));
   fill(
     regions.scaling,
     paras(C.intro(sc)),
-    figure(C.chart, hw.drawLineChart, chart, { wide: true, tip: view.tips.scaling(sc, text.tips), items: C.legend.map((label, i) => ({ label, color: i })) }),
+    figure(C.chart, hw.drawLineChart, chart, { wide: true, tip: view.tips.scaling(sc, text.tips), items: view.legends.scaling(text), keep: keep('scaling'), onHide: (parts) => hideParts(fits, parts) }),
     subtitle(C.fitsTitle),
-    table('discussion fits', [C.fitCols.method, C.fitCols.slope, C.fitCols.theory, C.fitCols.constant], view.ATTACKS.map((m) => ({
-      cells: [{ head: true, text: text.attackNames[m] }, { text: `${F.num(sc.fits[m].slope, 3)} ± ${F.num(sc.fits[m].slopeError, 3)}` }, { text: F.num(sc.fits[m].exponent, 1) }, { text: F.num(sc.fits[m].constant, 2) }],
-    }))),
+    fits,
     subtitle(C.extrapolationTitle),
     table('discussion extrapolation', ['bits', 'exhaustive', 'best', 'here', 'fast', 'memory'].map((k) => C.extrapolationCols[k]), view.extrapolationRows(sc).map((r) => ({
       cells: [{ head: true, text: r.bits }, { text: F.pow2(r.log2.exhaustive) }, { text: F.pow2(r.best) }, { text: F.duration(r.here) }, { text: F.duration(r.fast) }, { text: C.memory(r.memory) }],

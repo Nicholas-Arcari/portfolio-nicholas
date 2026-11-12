@@ -711,6 +711,48 @@ pre {
   border-top-style: dashed;
 }
 
+/* le voci della legenda sono pulsanti: premute (all'apertura) la loro parte
+   del grafico si vede, rilasciate si nasconde */
+.series-legend button {
+  all: unset;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15em 0.35em;
+  border-radius: 3px;
+  color: inherit;
+  font: inherit;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.series-legend button:hover {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.series-legend button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.series-legend button.is-off {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+
+.series-legend span.is-box {
+  width: 0.85em;
+  height: 0.85em;
+  border-top: 0;
+  border-radius: 2px;
+}
+
+/* le colonne e le righe della tabella che appartengono a una curva nascosta */
+[data-part][hidden] {
+  display: none !important;
+}
+
 .table.candidates tr.is-current,
 
 /* ===== Homework #3: parametri, scelte, cursori, animazione ===== */

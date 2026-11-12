@@ -269,6 +269,16 @@ function chartData(s, { kBits = 'k', flipBits = 'k', decimal = '.' } = {}) {
 }
 
 /**
+ * The legend of a bar chart of chartData: the bars and the dashed
+ * expectation, each a button that hides its part of the drawing (`hidden`
+ * of the data: 'bars', 'expected'). `labels` are the two words of the texts.
+ */
+const barLegend = (labels) => [
+  { label: labels[0], paletteKey: 'subgroup', box: true, parts: ['bars'] },
+  { label: labels[1], paletteKey: 'operandP', dashed: true, parts: ['expected'] },
+];
+
+/**
  * What the label over each chart of chartData says for the bar or the cell
  * under the pointer (hw.attachChartTooltip), from the same statistics. P is
  * the `tips` part of the texts. A bar may stand for several values when
@@ -277,12 +287,14 @@ function chartData(s, { kBits = 'k', flipBits = 'k', decimal = '.' } = {}) {
 function chartTips(s, P) {
   const sum = (list, from, to) => list.slice(from, to).reduce((a, b) => a + b, 0);
   const classStart = (j) => Math.ceil((j * s.p) / s.histogram.bins);
-  const hist = (coord, counts) => ({ from, to }) => P.hist(coord, classStart(from), classStart(to) - 1, sum(counts, from, to), sum(s.histogram.expected, from, to));
-  const freq = (coord, counts) => ({ from, to }) => {
+  // `hidden`: the parts hidden from the legend; a hidden expectation is left out of the label
+  const expect = (hidden, value) => (hidden.includes('expected') ? null : value);
+  const hist = (coord, counts) => ({ from, to }, hidden = []) => P.hist(coord, classStart(from), classStart(to) - 1, sum(counts, from, to), expect(hidden, sum(s.histogram.expected, from, to)));
+  const freq = (coord, counts) => ({ from, to }, hidden = []) => {
     const part = counts.slice(from, to);
-    return P.freq(coord, from, to - 1, Math.min(...part), Math.max(...part), s.N / s.p);
+    return P.freq(coord, from, to - 1, Math.min(...part), Math.max(...part), expect(hidden, s.N / s.p));
   };
-  const bit = (coord, list) => ({ from }) => P.bit(coord, list[from]);
+  const bit = (coord, list) => ({ from }, hidden = []) => P.bit(coord, list[from], !hidden.includes('expected'));
   const L = s.bitLength;
   // the heatmaps have the bits of x in the first L columns, those of y after
   const cell = (values, describe) => ({ row, col }) => (col < L ? describe(row, 'x', col, values[row][col]) : describe(row, 'y', col - L, values[row][col]));
@@ -294,7 +306,7 @@ function chartTips(s, P) {
     freqY: freq('y', s.freqY),
     bitsX: bit('x', s.bits.x),
     bitsY: bit('y', s.bits.y),
-    distances: ({ from }) => P.distance(from, a.distances[from], a.expectedDistances[from]),
+    distances: ({ from }, hidden = []) => P.distance(from, a.distances[from], expect(hidden, a.expectedDistances[from])),
     correlation: cell(s.correlation.bits.values, P.correlation),
     sac: cell(a.exact.z, P.sac),
   };
@@ -343,7 +355,7 @@ function scheduleFrameJob(job) {
   }
 }
 
-return { ANALYSES, SECTIONS, tocEntries, VIZ_PRIMES, LIST_LIMIT, K_MAX, K_INPUT_MAX_LENGTH, parseK, testStatus, uniformityBlock, avalancheBlocks, factorize, formatFactors, curveFacts, pooledSize, basePointOptions, parseBase, bitsBeyond, worstBit, binLabels, correlationRange, frequencyRows, FREQUENCY_TABLE_MAX_P, chartData, chartTips, frequencyTable, frequencyLink, scheduleFrameJob };
+return { ANALYSES, SECTIONS, tocEntries, VIZ_PRIMES, LIST_LIMIT, K_MAX, K_INPUT_MAX_LENGTH, parseK, testStatus, uniformityBlock, avalancheBlocks, factorize, formatFactors, curveFacts, pooledSize, basePointOptions, parseBase, bitsBeyond, worstBit, binLabels, correlationRange, frequencyRows, FREQUENCY_TABLE_MAX_P, chartData, barLegend, chartTips, frequencyTable, frequencyLink, scheduleFrameJob };
 })();
 
 var texts$ = (function () {
@@ -635,20 +647,28 @@ const it = {
         : `G = ${fmtPoint(s.G)}, di ordine n = ${s.n}: N = ${s.N} osservazioni, una per ogni k da 1 a ${s.n - 1}.`,
     ordersLine: (orders) => `Ordini dei punti base: ${orders.map(([o, c]) => `${c} di ordine ${o}`).join(', ')}.`,
     smallSample: (N) => `Con N = ${N} le analisi che seguono hanno pochissima potenza statistica: i numeri sono riportati per completezza, ognuno con la sua avvertenza.`,
+    // the legends of the bar charts: the bars and the dashed expectation, each a button that hides its part
+    legends: {
+      hist: ['osservazioni per classe', 'attese se uniforme'],
+      freq: ['volte per valore', 'attese se uniforme, N/p'],
+      bits: ['quota di 1 per posizione', 'attesa'],
+      distances: ['coppie per numero di bit cambiati', 'riferimento ideale'],
+    },
     // the label over a chart, for the bar or the cell under the pointer
     tips: {
+      // an expectation hidden from the legend (null) is left out of the label
       hist: (coord, from, to, count, expected) =>
-        `${from === to ? `${coord} = ${from}` : `${coord} da ${from} a ${to}`}: ${count} ${count === 1 ? 'osservazione' : 'osservazioni'} (attese ${IT.approx(expected)})`,
+        `${from === to ? `${coord} = ${from}` : `${coord} da ${from} a ${to}`}: ${count} ${count === 1 ? 'osservazione' : 'osservazioni'}${expected === null ? '' : ` (attese ${IT.approx(expected)})`}`,
       freq: (coord, from, to, min, max, expected) => {
         const times = (n) => (n === 0 ? 'mai' : n === 1 ? 'una volta' : `${n} volte`);
         const what = from === to ? `${coord} = ${from}: ${times(max)}` : `${coord} da ${from} a ${to}: ${min === max ? times(max) : `da ${min} a ${max} volte`} ciascuno`;
-        return `${what} (attese ${IT.approx(expected)})`;
+        return expected === null ? what : `${what} (attese ${IT.approx(expected)})`;
       },
-      bit: (coord, b) =>
+      bit: (coord, b, withExpected = true) =>
         b.fraction === null
           ? `bit ${b.bit} di ${coord}: nessun valore osservato`
-          : `bit ${b.bit} di ${coord}: quota di 1 = ${IT.num(b.fraction, 3)} su ${b.distinct} valori distinti (attesa ${IT.num(b.expected, 3)})${b.z === null ? '' : `, z = ${IT.num(b.z, 2)}`}`,
-      distance: (d, count, expected) => `${d} ${d === 1 ? 'bit cambiato' : 'bit cambiati'}: ${count} ${count === 1 ? 'coppia' : 'coppie'} (attese ${IT.approx(expected)})`,
+          : `bit ${b.bit} di ${coord}: quota di 1 = ${IT.num(b.fraction, 3)} su ${b.distinct} valori distinti${withExpected ? ` (attesa ${IT.num(b.expected, 3)})` : ''}${b.z === null ? '' : `, z = ${IT.num(b.z, 2)}`}`,
+      distance: (d, count, expected) => `${d} ${d === 1 ? 'bit cambiato' : 'bit cambiati'}: ${count} ${count === 1 ? 'coppia' : 'coppie'}${expected === null ? '' : ` (attese ${IT.approx(expected)})`}`,
       correlation: (kBit, coord, bit, phi) => `bit ${kBit} di k, bit ${bit} di ${coord}: ${phi === null ? 'φ non definito (bit costante)' : `φ = ${IT.num(phi, 3)}`}`,
       sac: (kBit, coord, bit, z) => `bit ${kBit} di k invertito, bit ${bit} di ${coord}: ${z === null ? 'non definito' : `z = ${IT.num(z, 2)}`}`,
     },
@@ -1186,20 +1206,28 @@ const en = {
         : `G = ${fmtPoint(s.G)}, of order n = ${s.n}: N = ${s.N} observations, one for each k from 1 to ${s.n - 1}.`,
     ordersLine: (orders) => `Orders of the base points: ${orders.map(([o, c]) => `${c} of order ${o}`).join(', ')}.`,
     smallSample: (N) => `With N = ${N} the analyses below have very little statistical power: the numbers are reported for completeness, each with its caveat.`,
+    // the legends of the bar charts: the bars and the dashed expectation, each a button that hides its part
+    legends: {
+      hist: ['observations per class', 'expected if uniform'],
+      freq: ['times per value', 'expected if uniform, N/p'],
+      bits: ['share of ones per position', 'expected'],
+      distances: ['pairs per number of changed bits', 'ideal reference'],
+    },
     // the label over a chart, for the bar or the cell under the pointer
     tips: {
+      // an expectation hidden from the legend (null) is left out of the label
       hist: (coord, from, to, count, expected) =>
-        `${from === to ? `${coord} = ${from}` : `${coord} from ${from} to ${to}`}: ${count} ${count === 1 ? 'observation' : 'observations'} (expected ${EN.approx(expected)})`,
+        `${from === to ? `${coord} = ${from}` : `${coord} from ${from} to ${to}`}: ${count} ${count === 1 ? 'observation' : 'observations'}${expected === null ? '' : ` (expected ${EN.approx(expected)})`}`,
       freq: (coord, from, to, min, max, expected) => {
         const times = (n) => (n === 0 ? 'never' : n === 1 ? 'once' : n === 2 ? 'twice' : `${n} times`);
         const what = from === to ? `${coord} = ${from}: ${times(max)}` : `${coord} from ${from} to ${to}: ${min === max ? times(max) : `from ${min} to ${max} times`} each`;
-        return `${what} (expected ${EN.approx(expected)})`;
+        return expected === null ? what : `${what} (expected ${EN.approx(expected)})`;
       },
-      bit: (coord, b) =>
+      bit: (coord, b, withExpected = true) =>
         b.fraction === null
           ? `bit ${b.bit} of ${coord}: no value observed`
-          : `bit ${b.bit} of ${coord}: share of ones = ${EN.num(b.fraction, 3)} over ${b.distinct} distinct values (expected ${EN.num(b.expected, 3)})${b.z === null ? '' : `, z = ${EN.num(b.z, 2)}`}`,
-      distance: (d, count, expected) => `${d} ${d === 1 ? 'bit changed' : 'bits changed'}: ${count} ${count === 1 ? 'pair' : 'pairs'} (expected ${EN.approx(expected)})`,
+          : `bit ${b.bit} of ${coord}: share of ones = ${EN.num(b.fraction, 3)} over ${b.distinct} distinct values${withExpected ? ` (expected ${EN.num(b.expected, 3)})` : ''}${b.z === null ? '' : `, z = ${EN.num(b.z, 2)}`}`,
+      distance: (d, count, expected) => `${d} ${d === 1 ? 'bit changed' : 'bits changed'}: ${count} ${count === 1 ? 'pair' : 'pairs'}${expected === null ? '' : ` (expected ${EN.approx(expected)})`}`,
       correlation: (kBit, coord, bit, phi) => `bit ${kBit} of k, bit ${bit} of ${coord}: ${phi === null ? 'φ not defined (constant bit)' : `φ = ${EN.num(phi, 3)}`}`,
       sac: (kBit, coord, bit, z) => `bit ${kBit} of k flipped, bit ${bit} of ${coord}: ${z === null ? 'not defined' : `z = ${EN.num(z, 2)}`}`,
     },
@@ -1663,7 +1691,11 @@ const pending = () => h('p', { class: 'note pending', role: 'status', text: text
 // layout: reading clientWidth right after another chart has been resized
 // would make the browser lay out the whole page again, once per chart. The
 // height is set at once, the drawing happens a few milliseconds per frame.
-const charts = new Map(); // canvas -> { draw, data, width, detach }
+const charts = new Map(); // canvas -> { draw, data, width, detach, link, tip, hidden }
+
+// what a chart draws: its data, without the parts hidden from the legend
+const shownData = (chart) => (chart.hidden.length ? { ...chart.data, hidden: chart.hidden } : chart.data);
+
 const resizer = new ResizeObserver((entries) => {
   for (const entry of entries) {
     const canvas = entry.target;
@@ -1671,19 +1703,103 @@ const resizer = new ResizeObserver((entries) => {
     const width = Math.round(entry.contentRect.width);
     if (!chart || width <= 0 || width === chart.width) continue;
     chart.width = width;
-    canvas.style.height = `${hw.chartHeight(chart.draw, chart.data, width)}px`;
+    canvas.style.height = `${hw.chartHeight(chart.draw, shownData(chart), width)}px`;
     view.scheduleFrameJob(() => {
-      if (charts.get(canvas) === chart && chart.width === width) chart.draw(canvas, { ...chart.data, width }, palette());
+      if (charts.get(canvas) === chart && chart.width === width) chart.draw(canvas, { ...shownData(chart), width }, palette());
     });
   }
 });
 
-function figure(caption, draw, data, wide = false, tip = null, link = null) {
+// the label with the values of the bar or the cell under the pointer, and with `link` (view.links) the row of the table
+// tied to the chart: it describes what is on screen and leaves out the hidden parts
+function attachTip(canvas, chart) {
+  if (chart.detach) chart.detach();
+  const tip = chart.tip;
+  chart.detach = tip ? hw.attachChartTooltip(canvas, { draw: chart.draw, data: shownData(chart), describe: (hit) => tip(hit, chart.hidden), link: chart.link }) : null;
+}
+
+// what the reader hid in the legends, by chart: the analyses are built again when the curve changes
+const kept = {};
+const keep = (name) => {
+  if (!kept[name]) kept[name] = new Set();
+  return kept[name];
+};
+
+/** The parts of the drawing covered by the hidden items of a legend. */
+const partsOf = (items, hidden) => items.flatMap((item, i) => (hidden.has(i) ? item.parts || [] : []));
+
+/**
+ * The legend of a chart: { label, color? | paletteKey?, dashed?, box?,
+ * parts }. Every item is a button: pressed (as the page opens) its parts
+ * are on screen, released they are hidden; onChange(parts) receives the
+ * hidden parts after every press. `hidden`, the set of the hidden items,
+ * outlives the legend when its chart is built again.
+ */
+function legend(items, onChange = null, hidden = new Set()) {
+  const pal = palette();
+  return h(
+    'ul',
+    { class: 'series-legend' },
+    items.map((item, i) => {
+      const color = item.paletteKey ? pal[item.paletteKey] : pal.series[(item.color ?? i) % pal.series.length];
+      let swatch = null;
+      if (item.box) swatch = 'is-box';
+      else if (item.dashed) swatch = 'is-dashed';
+      const button = h(
+        'button',
+        {
+          type: 'button',
+          'aria-pressed': String(!hidden.has(i)),
+          class: hidden.has(i) ? 'is-off' : null,
+          onclick: () => {
+            if (hidden.has(i)) hidden.delete(i);
+            else hidden.add(i);
+            button.setAttribute('aria-pressed', String(!hidden.has(i)));
+            button.classList.toggle('is-off', hidden.has(i));
+            if (onChange) onChange(partsOf(items, hidden));
+          },
+        },
+        h('span', { class: swatch, 'aria-hidden': 'true', style: { borderColor: color, backgroundColor: item.box ? color : 'transparent' } }),
+        item.label,
+      );
+      return h('li', null, button);
+    }),
+  );
+}
+
+/** Hides the cells of a table that belong to hidden parts (data-part), and shows the others. */
+function hideParts(tableEl, parts) {
+  for (const el of tableEl.querySelectorAll('[data-part]')) el.hidden = parts.includes(el.dataset.part);
+}
+
+/**
+ * A chart, with the label under the pointer and, with `items`, its legend:
+ * `keep` remembers the hidden items when the chart is built again, and
+ * onHide(parts) updates the table tied to the chart.
+ */
+function figure(caption, draw, data, wide = false, tip = null, link = null, { items = null, keep: hiddenItems = null, onHide = null } = {}) {
   const canvas = h('canvas', { class: 'chart', role: 'img', 'aria-label': caption });
-  const fig = h('figure', { class: wide ? 'figure wide' : 'figure' }, canvas, h('figcaption', { text: caption }));
-  // the label with the values of the bar or the cell under the pointer, and with `link` (view.links) the row of the table tied to the chart
-  const detach = tip ? hw.attachChartTooltip(canvas, { draw, data, describe: tip, link }) : null;
-  charts.set(canvas, { draw, data, width: -1, detach });
+  const hidden = hiddenItems || new Set();
+  const chart = { draw, data, width: -1, detach: null, link, tip, hidden: items ? partsOf(items, hidden) : [] };
+  const fig = h(
+    'figure',
+    { class: wide ? 'figure wide' : 'figure' },
+    canvas,
+    items &&
+      legend(
+        items,
+        (parts) => {
+          chart.hidden = parts;
+          attachTip(canvas, chart);
+          if (chart.width > 0) chart.draw(canvas, { ...shownData(chart), width: chart.width }, palette());
+          if (onHide) onHide(parts);
+        },
+        hidden,
+      ),
+    h('figcaption', { text: caption }),
+  );
+  attachTip(canvas, chart);
+  charts.set(canvas, chart);
   resizer.observe(canvas);
   return fig;
 }
@@ -2118,36 +2234,44 @@ function analyses(prefix, result) {
   const link = view.frequencyLink(prefix);
   const C = T.correlation;
   const A = T.avalanche;
+  // the legends of the bar charts; the bars of the two frequency charts are the columns x and y of the table
+  const L = (key) => view.barLegend(T.legends[key]);
+  const bars = (name, key) => ({ items: L(key), keep: keep(`${prefix}-${name}`) });
+  const frequencies = h(
+    'table',
+    { id: view.frequencyTable(prefix), class: 'table compact' },
+    h('thead', null, h('tr', null, h('th', { text: T.frequency.colValue }), h('th', { text: T.frequency.colX, 'data-part': 'x' }), h('th', { text: T.frequency.colY, 'data-part': 'y' }))),
+    h('tbody', null, view.frequencyRows(s).map((r) => h('tr', { class: r.x || r.y ? null : 'is-empty' }, h('td', { text: r.v }), h('td', { text: r.x, 'data-part': 'x' }), h('td', { text: r.y, 'data-part': 'y' })))),
+  );
+  // a column is hidden when the bars of its chart are
+  const hideColumns = () => hideParts(frequencies, [['x', 'freqX'], ['y', 'freqY']].filter(([, name]) => partsOf(L('freq'), keep(`${prefix}-${name}`)).includes('bars')).map(([part]) => part));
+  hideColumns();
   const valueRows = ['pearsonKX', 'pearsonKY', 'spearmanKX', 'spearmanKY'];
   return [
     titles[0],
     h('p', { text: T.distribution.intro }),
-    h('div', { class: 'charts' }, figure(T.distribution.chartX, hw.drawBarChart, data.histX, false, tips.histX), figure(T.distribution.chartY, hw.drawBarChart, data.histY, false, tips.histY)),
+    h('div', { class: 'charts' }, figure(T.distribution.chartX, hw.drawBarChart, data.histX, false, tips.histX, null, bars('histX', 'hist')), figure(T.distribution.chartY, hw.drawBarChart, data.histY, false, tips.histY, null, bars('histY', 'hist'))),
     paras(T.distribution.explain(s)),
 
     titles[1],
     h('p', { text: T.frequency.intro }),
-    h('div', { class: 'charts' }, figure(T.frequency.chartX, hw.drawBarChart, data.freqX, false, tips.freqX, link), figure(T.frequency.chartY, hw.drawBarChart, data.freqY, false, tips.freqY, link)),
+    h(
+      'div',
+      { class: 'charts' },
+      figure(T.frequency.chartX, hw.drawBarChart, data.freqX, false, tips.freqX, link, { ...bars('freqX', 'freq'), onHide: hideColumns }),
+      figure(T.frequency.chartY, hw.drawBarChart, data.freqY, false, tips.freqY, link, { ...bars('freqY', 'freq'), onHide: hideColumns }),
+    ),
     s.p <= view.FREQUENCY_TABLE_MAX_P
       ? [
         h('p', { class: 'table-title' }, h('strong', { text: T.frequency.tableTitle }), ' ', h('span', { class: 'note', text: T.frequency.tableNote(s.p) })),
-        h(
-          'div',
-          { class: 'scroll' },
-          h(
-            'table',
-            { id: view.frequencyTable(prefix), class: 'table compact' },
-            h('thead', null, h('tr', null, h('th', { text: T.frequency.colValue }), h('th', { text: T.frequency.colX }), h('th', { text: T.frequency.colY }))),
-            h('tbody', null, view.frequencyRows(s).map((r) => h('tr', { class: r.x || r.y ? null : 'is-empty' }, h('td', { text: r.v }), h('td', { text: r.x }), h('td', { text: r.y })))),
-          ),
-        ),
+        h('div', { class: 'scroll' }, frequencies),
       ]
       : h('p', { class: 'note', text: T.frequency.bigNote(s.p) }),
     paras(T.frequency.explain(s)),
 
     titles[2],
     h('p', { text: T.bits.intro }),
-    h('div', { class: 'charts' }, figure(T.bits.chartX, hw.drawBarChart, data.bitsX, false, tips.bitsX), figure(T.bits.chartY, hw.drawBarChart, data.bitsY, false, tips.bitsY)),
+    h('div', { class: 'charts' }, figure(T.bits.chartX, hw.drawBarChart, data.bitsX, false, tips.bitsX, null, bars('bitsX', 'bits')), figure(T.bits.chartY, hw.drawBarChart, data.bitsY, false, tips.bitsY, null, bars('bitsY', 'bits'))),
     paras(T.bits.explain(s)),
 
     titles[3],
@@ -2191,7 +2315,7 @@ function analyses(prefix, result) {
     h('p', { text: A.intro }),
     s.avalanche.measurements > 0
       ? [
-        figure(A.chartTitle, hw.drawBarChart, data.distances, false, tips.distances),
+        figure(A.chartTitle, hw.drawBarChart, data.distances, false, tips.distances, null, bars('distances', 'distances')),
         figure(A.heatmapTitle(), hw.drawHeatmap, data.sac, true, tips.sac),
         h('div', { class: 'uniformity' }, view.avalancheBlocks(s, A, T.uniformity).map((block) => h('section', { class: 'coord' }, testResult(block)))),
       ]

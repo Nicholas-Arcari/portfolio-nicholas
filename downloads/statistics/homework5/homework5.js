@@ -2508,7 +2508,7 @@ function lineLayout(data, width) {
  * the one of `colorIndex`; the legend is written in the page, under the
  * figure, where it can be read and translated.
  */
-function drawLineChart(canvas, { x, series, logX = false, logY = false, yMin = 0, yMax = 1, yTicks = [], xTicks = [], yFormat = null, decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
+function drawLineChart(canvas, { x, series, logX = false, logY = false, yMin = 0, yMax = 1, yTicks = [], xTicks = [], yFormat = null, hidden = [], decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
   const pal = { ...DEFAULT_PALETTE, ...palette };
   const { ctx, width, height } = setupCanvas(canvas, LINE_ASPECT, knownWidth);
   const { margin, w, h, px } = lineLayout({ x, logX }, width);
@@ -2549,6 +2549,7 @@ function drawLineChart(canvas, { x, series, logX = false, logY = false, yMin = 0
   ctx.rect(margin.left, margin.top, w, h);
   ctx.clip();
   series.forEach((s, i) => {
+    if (hidden.includes(`series:${i}`)) return;
     const color = pal.series[(s.colorIndex ?? i) % pal.series.length];
     const points = x.map((v, j) => [px(v), s.values[j]]).filter(([, v]) => shown(v));
     if (s.band) {
@@ -2601,7 +2602,7 @@ function histLayout(data, width) {
  * such as the normal one) and an optional vertical line at `marker` (the
  * exact value). The legend is in the page.
  */
-function drawHistogram(canvas, { x0, x1, bars, curve = null, marker = null, yMax = null, xTicks = [], decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
+function drawHistogram(canvas, { x0, x1, bars, curve = null, marker = null, yMax = null, xTicks = [], hidden = [], decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
   const pal = { ...DEFAULT_PALETTE, ...palette };
   const { ctx, width, height } = setupCanvas(canvas, HIST_ASPECT, knownWidth);
   const { margin, w, h, px } = histLayout({ x0, x1 }, width);
@@ -2642,21 +2643,21 @@ function drawHistogram(canvas, { x0, x1, bars, curve = null, marker = null, yMax
   ctx.clip();
   ctx.fillStyle = pal.series[0];
   ctx.globalAlpha = 0.85;
-  for (const b of bars) {
+  for (const b of hidden.includes('bars') ? [] : bars) {
     const left = px(b.from);
     const right = px(b.to);
     const gap = right - left > 4 ? 0.6 : 0;
     ctx.fillRect(left + gap, py(b.value), Math.max(0.8, right - left - 2 * gap), margin.top + h - py(b.value));
   }
   ctx.globalAlpha = 1;
-  if (curve && curve.length > 1) {
+  if (curve && curve.length > 1 && !hidden.includes('curve')) {
     ctx.strokeStyle = pal.series[2];
     ctx.lineWidth = 2;
     ctx.beginPath();
     curve.forEach(([X, v], i) => (i ? ctx.lineTo(px(X), py(v)) : ctx.moveTo(px(X), py(v))));
     ctx.stroke();
   }
-  if (marker !== null) {
+  if (marker !== null && !hidden.includes('marker')) {
     ctx.strokeStyle = pal.reference;
     ctx.lineWidth = 1.5;
     ctx.setLineDash([5, 4]);
@@ -2693,7 +2694,7 @@ const parabolaAt = (p, x) => {
  * (rulePieces: rectangles, trapezoids, parabolas, Gauss's strips with their
  * nodes as dots) and a dashed marker at `to`.
  */
-function drawQuadrature(canvas, { x0, x1, yMin = 0, yMax, curve, from = null, to = null, pieces = [], xTicks = [], yTicks = [], decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
+function drawQuadrature(canvas, { x0, x1, yMin = 0, yMax, curve, from = null, to = null, pieces = [], xTicks = [], yTicks = [], hidden = [], decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
   const pal = { ...DEFAULT_PALETTE, ...palette };
   const { ctx, width, height } = setupCanvas(canvas, AREA_ASPECT, knownWidth);
   const L = areaLayout({ x0, x1, yMin, yMax }, width);
@@ -2702,7 +2703,7 @@ function drawQuadrature(canvas, { x0, x1, yMin = 0, yMax, curve, from = null, to
   ctx.beginPath();
   ctx.rect(L.margin.left, L.margin.top, L.w, L.h);
   ctx.clip();
-  if (from !== null && to !== null && to > from) {
+  if (from !== null && to !== null && to > from && !hidden.includes('area')) {
     const inside = curve.filter(([x]) => x >= from && x <= to);
     ctx.globalAlpha = 0.16;
     ctx.fillStyle = pal.series[0];
@@ -2714,7 +2715,7 @@ function drawQuadrature(canvas, { x0, x1, yMin = 0, yMax, curve, from = null, to
     ctx.fill();
     ctx.globalAlpha = 1;
   }
-  pieces.forEach((p, i) => {
+  (hidden.includes('pieces') ? [] : pieces).forEach((p, i) => {
     const color = i % 2 ? pal.series[3] : pal.series[1];
     ctx.fillStyle = color;
     ctx.strokeStyle = color;
@@ -2748,12 +2749,14 @@ function drawQuadrature(canvas, { x0, x1, yMin = 0, yMax, curve, from = null, to
       ctx.fill();
     }
   });
-  ctx.strokeStyle = pal.series[0];
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  curve.forEach(([x, y], i) => (i ? ctx.lineTo(L.px(x), L.py(y)) : ctx.moveTo(L.px(x), L.py(y))));
-  ctx.stroke();
-  if (to !== null) {
+  if (!hidden.includes('curve')) {
+    ctx.strokeStyle = pal.series[0];
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    curve.forEach(([x, y], i) => (i ? ctx.lineTo(L.px(x), L.py(y)) : ctx.moveTo(L.px(x), L.py(y))));
+    ctx.stroke();
+  }
+  if (to !== null && !hidden.includes('marker')) {
     ctx.strokeStyle = pal.reference;
     ctx.lineWidth = 1.5;
     ctx.setLineDash([5, 4]);
@@ -2788,7 +2791,7 @@ function complement(intervals, a, b) {
  * where f < y_k, for the levels below 0). The bands of one level have one
  * colour: a level set is rarely one interval.
  */
-function drawIntegral(canvas, { a, b, yMin, yMax, curve, mode = 'riemann', strips = [], kind = 'midpoint', levels = [], sets = [], xTicks = [], yTicks = [], decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
+function drawIntegral(canvas, { a, b, yMin, yMax, curve, mode = 'riemann', strips = [], kind = 'midpoint', levels = [], sets = [], xTicks = [], yTicks = [], hidden = [], decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
   const pal = { ...DEFAULT_PALETTE, ...palette };
   const { ctx, width, height } = setupCanvas(canvas, INTEGRAL_ASPECT, knownWidth);
   const L = areaLayout({ x0: a, x1: b, yMin, yMax }, width, INTEGRAL_ASPECT);
@@ -2800,7 +2803,7 @@ function drawIntegral(canvas, { a, b, yMin, yMax, curve, mode = 'riemann', strip
   const zero = L.py(0);
   const box = (x0, x1, y0, y1) => ctx.rect(L.px(x0), L.py(Math.max(y0, y1)), Math.max(0.6, L.px(x1) - L.px(x0)), Math.abs(L.py(y0) - L.py(y1)));
   if (mode === 'riemann') {
-    strips.forEach((s, i) => {
+    (hidden.includes('strips') ? [] : strips).forEach((s, i) => {
       const v = s[kind];
       if (!Number.isFinite(v) && v !== Infinity) return;
       ctx.fillStyle = i % 2 ? pal.series[3] : pal.series[1];
@@ -2814,7 +2817,7 @@ function drawIntegral(canvas, { a, b, yMin, yMax, curve, mode = 'riemann', strip
       ctx.stroke();
       ctx.globalAlpha = 1;
     });
-  } else {
+  } else if (!hidden.includes('layers')) {
     // the base, from 0 to the smallest value m, over the whole interval
     if (levels.length && levels[0] !== 0) {
       ctx.fillStyle = pal.series[6];
@@ -2862,7 +2865,7 @@ function drawIntegral(canvas, { a, b, yMin, yMax, curve, mode = 'riemann', strip
   ctx.lineWidth = 1.6;
   ctx.beginPath();
   let pen = false;
-  for (const [x, y] of curve) {
+  for (const [x, y] of hidden.includes('curve') ? [] : curve) {
     if (!Number.isFinite(y)) {
       pen = false;
       continue;
@@ -2903,14 +2906,17 @@ function chartHitTest(draw, data, width, x, y) {
   if (draw === drawQuadrature) {
     const L = areaLayout(data, width);
     if (x < L.margin.left || x > L.margin.left + L.w || y < L.margin.top || y > L.margin.top + L.h) return null;
+    const off = data.hidden || [];
     // senza pezzi (la campana della sezione 2.3) si indica il punto della curva piu' vicino
     if (!data.pieces.length && data.curve && data.curve.length) {
+      if (off.includes('curve')) return null;
       let index = 0;
       data.curve.forEach(([cx], i) => {
         if (Math.abs(L.px(cx) - x) < Math.abs(L.px(data.curve[index][0]) - x)) index = i;
       });
       return { kind: 'curve', index, rect: { x: L.px(data.curve[index][0]) - 3, y: L.margin.top, width: 6, height: L.h } };
     }
+    if (off.includes('pieces')) return null;
     const index = data.pieces.findIndex((p) => x >= L.px(p.x0) && x <= L.px(p.x1));
     if (index < 0) return null;
     const p = data.pieces[index];
@@ -2920,11 +2926,13 @@ function chartHitTest(draw, data, width, x, y) {
     const L = areaLayout({ x0: data.a, x1: data.b, yMin: data.yMin, yMax: data.yMax }, width, INTEGRAL_ASPECT);
     if (x < L.margin.left || x > L.margin.left + L.w || y < L.margin.top || y > L.margin.top + L.h) return null;
     if (data.mode === 'riemann') {
+      if ((data.hidden || []).includes('strips')) return null;
       const index = data.strips.findIndex((s) => x >= L.px(s.x0) && x <= L.px(s.x1));
       if (index < 0) return null;
       const s = data.strips[index];
       return { kind: 'strip', index, rect: { x: L.px(s.x0), y: L.margin.top, width: L.px(s.x1) - L.px(s.x0), height: L.h } };
     }
+    if ((data.hidden || []).includes('layers')) return null;
     const value = L.vy(y);
     const k = data.levels.findIndex((level, i) => i > 0 && value >= data.levels[i - 1] && value <= level);
     if (k < 1) return null;
@@ -2933,6 +2941,7 @@ function chartHitTest(draw, data, width, x, y) {
   }
   const { margin, w, h, px } = histLayout(data, width);
   if (x < margin.left || x > margin.left + w || y < margin.top || y > margin.top + h) return null;
+  if ((data.hidden || []).includes('bars')) return null;
   let index = data.bars.findIndex((b) => x >= px(b.from) && x < px(b.to));
   // barre sottili come aste (Thomae, sezione 1.8): vale la piu' vicina entro `snap` pixel
   if (index < 0 && data.snap) {

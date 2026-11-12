@@ -1167,7 +1167,7 @@ function lineLayout(data, width) {
  * the one of `colorIndex`; the legend is written in the page, under the
  * figure, where it can be read and translated.
  */
-function drawLineChart(canvas, { x, series, logX = false, logY = false, yMin = 0, yMax = 1, yTicks = [], xTicks = [], yFormat = null, decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
+function drawLineChart(canvas, { x, series, logX = false, logY = false, yMin = 0, yMax = 1, yTicks = [], xTicks = [], yFormat = null, hidden = [], decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
   const pal = { ...DEFAULT_PALETTE, ...palette };
   const { ctx, width, height } = setupCanvas(canvas, LINE_ASPECT, knownWidth);
   const { margin, w, h, px } = lineLayout({ x, logX }, width);
@@ -1208,6 +1208,8 @@ function drawLineChart(canvas, { x, series, logX = false, logY = false, yMin = 0
   ctx.rect(margin.left, margin.top, w, h);
   ctx.clip();
   series.forEach((s, i) => {
+    // a series hidden from the legend still counts for the axes, it is just not drawn
+    if (hidden.includes(`series:${i}`)) return;
     const color = pal.series[(s.colorIndex ?? i) % pal.series.length];
     const points = x.map((v, j) => [px(v), s.values[j]]).filter(([, v]) => shown(v));
     if (s.band) {
@@ -1260,7 +1262,7 @@ function histLayout(data, width) {
  * one value per bar, a dashed outline) and a curve (`curve`, points [x, y]
  * of a density, such as the normal one). The legend is in the page.
  */
-function drawHistogram(canvas, { x0, x1, bars, expected = null, curve = null, yMax = null, xTicks = [], decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
+function drawHistogram(canvas, { x0, x1, bars, expected = null, curve = null, yMax = null, xTicks = [], hidden = [], decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
   const pal = { ...DEFAULT_PALETTE, ...palette };
   const { ctx, width, height } = setupCanvas(canvas, HIST_ASPECT, knownWidth);
   const { margin, w, h, px } = histLayout({ x0, x1 }, width);
@@ -1302,14 +1304,14 @@ function drawHistogram(canvas, { x0, x1, bars, expected = null, curve = null, yM
   ctx.clip();
   ctx.fillStyle = pal.series[0];
   ctx.globalAlpha = 0.85;
-  for (const b of bars) {
+  for (const b of hidden.includes('bars') ? [] : bars) {
     const left = px(b.from);
     const right = px(b.to);
     const gap = right - left > 4 ? 0.6 : 0;
     ctx.fillRect(left + gap, py(b.value), Math.max(0.8, right - left - 2 * gap), margin.top + h - py(b.value));
   }
   ctx.globalAlpha = 1;
-  if (expected) {
+  if (expected && !hidden.includes('expected')) {
     ctx.strokeStyle = pal.series[1];
     ctx.lineWidth = 1.5;
     ctx.setLineDash([5, 4]);
@@ -1322,7 +1324,7 @@ function drawHistogram(canvas, { x0, x1, bars, expected = null, curve = null, yM
     ctx.stroke();
     ctx.setLineDash([]);
   }
-  if (curve && curve.length > 1) {
+  if (curve && curve.length > 1 && !hidden.includes('curve')) {
     ctx.strokeStyle = pal.series[2];
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -1344,7 +1346,7 @@ function qqLayout(data, width) {
 }
 
 /** Normal quantile plot: points [theoretical, sample] and the line y = x, on the same range [lo, hi] on both axes. */
-function drawQQ(canvas, { points, lo, hi, ticks = [], decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
+function drawQQ(canvas, { points, lo, hi, ticks = [], hidden = [], decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
   const pal = { ...DEFAULT_PALETTE, ...palette };
   const { ctx, width, height } = setupCanvas(canvas, QQ_ASPECT, knownWidth);
   const { margin, w, h, px, py } = qqLayout({ lo, hi }, width);
@@ -1371,16 +1373,18 @@ function drawQQ(canvas, { points, lo, hi, ticks = [], decimal = '.', width: know
   ctx.beginPath();
   ctx.rect(margin.left, margin.top, w, h);
   ctx.clip();
-  ctx.strokeStyle = pal.series[1];
-  ctx.setLineDash([5, 4]);
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(px(lo), py(lo));
-  ctx.lineTo(px(hi), py(hi));
-  ctx.stroke();
-  ctx.setLineDash([]);
+  if (!hidden.includes('line')) {
+    ctx.strokeStyle = pal.series[1];
+    ctx.setLineDash([5, 4]);
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(px(lo), py(lo));
+    ctx.lineTo(px(hi), py(hi));
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
   ctx.fillStyle = pal.series[0];
-  for (const [a, b] of points) {
+  for (const [a, b] of hidden.includes('points') ? [] : points) {
     ctx.beginPath();
     ctx.arc(px(a), py(b), 2.4, 0, 2 * Math.PI);
     ctx.fill();
@@ -1414,6 +1418,7 @@ function chartHitTest(draw, data, width, x, y) {
   if (draw === drawQQ) {
     const { margin, w, h, px, py } = qqLayout(data, width);
     if (x < margin.left || x > margin.left + w || y < margin.top || y > margin.top + h) return null;
+    if ((data.hidden || []).includes('points')) return null;
     let index = -1;
     let best = 144;
     data.points.forEach(([a, b], i) => {
@@ -1429,6 +1434,7 @@ function chartHitTest(draw, data, width, x, y) {
   }
   const { margin, w, h, px } = histLayout(data, width);
   if (x < margin.left || x > margin.left + w || y < margin.top || y > margin.top + h) return null;
+  if ((data.hidden || []).includes('bars')) return null;
   const index = data.bars.findIndex((b) => x >= px(b.from) && x < px(b.to));
   if (index < 0) return null;
   const b = data.bars[index];
@@ -1683,6 +1689,9 @@ function createTrajectoryAnimation(canvas, options) {
   let speed = options.speed || 1;
   let decimal = options.decimal || '.';
   let palette = { ...DEFAULT_PALETTE, ...(options.palette || {}) };
+  // the parts hidden from the legend: 'others' (with the bars of the histogram), 'first' (attacker 1),
+  // 'band' (the mean, the band and the normal law of the histogram), 'envelope'
+  let hidden = options.hidden || [];
 
   // the drawn trajectories, whole, and the extremes of every quantity over all attackers and steps (fixed axes)
   const paths = Array.from({ length: D }, () => new Int32Array(n + 1));
@@ -1780,6 +1789,7 @@ function createTrajectoryAnimation(canvas, options) {
     const first = quantity === 'sum' ? Math.max(0, from) : Math.max(1, from);
     const stride = Math.max(1, Math.floor((to - first) / (2 * G.plotW)));
     for (let j = D - 1; j >= 0; j--) {
+      if (hidden.includes(j === 0 ? 'first' : 'others')) continue;
       const path = paths[j];
       ctx.strokeStyle = j === 0 ? palette.highlight : palette.series[0];
       ctx.globalAlpha = j === 0 ? 1 : 0.32;
@@ -1894,29 +1904,37 @@ function createTrajectoryAnimation(canvas, options) {
     ctx.beginPath();
     ctx.rect(m.left, m.top, G.plotW, G.h);
     ctx.clip();
-    const upper = band(1, 2);
-    const lower = band(-1, 2);
-    ctx.globalAlpha = 0.12;
-    ctx.fillStyle = palette.series[2];
-    ctx.beginPath();
-    upper.forEach(([s, v], i) => (i ? ctx.lineTo(G.px(s), G.py(v)) : ctx.moveTo(G.px(s), G.py(v))));
-    for (let i = lower.length - 1; i >= 0; i--) ctx.lineTo(G.px(lower[i][0]), G.py(lower[i][1]));
-    ctx.closePath();
-    ctx.fill();
-    ctx.globalAlpha = 1;
-    ctx.drawImage(layer, 0, 0, layer.width, layer.height, 0, 0, G.width, G.height);
-    ctx.strokeStyle = palette.series[2];
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([5, 4]);
-    ctx.beginPath();
-    band(0, 0).forEach(([s, v], i) => (i ? ctx.lineTo(G.px(s), G.py(v)) : ctx.moveTo(G.px(s), G.py(v))));
-    ctx.stroke();
-    ctx.setLineDash([2, 3]);
-    ctx.strokeStyle = palette.series[3];
-    for (const sign of [1, -1]) {
+    const showBand = !hidden.includes('band');
+    if (showBand) {
+      const upper = band(1, 2);
+      const lower = band(-1, 2);
+      ctx.globalAlpha = 0.12;
+      ctx.fillStyle = palette.series[2];
       ctx.beginPath();
-      envelope(sign).forEach(([s, v], i) => (i ? ctx.lineTo(G.px(s), G.py(v)) : ctx.moveTo(G.px(s), G.py(v))));
+      upper.forEach(([s, v], i) => (i ? ctx.lineTo(G.px(s), G.py(v)) : ctx.moveTo(G.px(s), G.py(v))));
+      for (let i = lower.length - 1; i >= 0; i--) ctx.lineTo(G.px(lower[i][0]), G.py(lower[i][1]));
+      ctx.closePath();
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+    ctx.drawImage(layer, 0, 0, layer.width, layer.height, 0, 0, G.width, G.height);
+    if (showBand) {
+      ctx.strokeStyle = palette.series[2];
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([5, 4]);
+      ctx.beginPath();
+      band(0, 0).forEach(([s, v], i) => (i ? ctx.lineTo(G.px(s), G.py(v)) : ctx.moveTo(G.px(s), G.py(v))));
       ctx.stroke();
+    }
+    if (!hidden.includes('envelope')) {
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([2, 3]);
+      ctx.strokeStyle = palette.series[3];
+      for (const sign of [1, -1]) {
+        ctx.beginPath();
+        envelope(sign).forEach(([s, v], i) => (i ? ctx.lineTo(G.px(s), G.py(v)) : ctx.moveTo(G.px(s), G.py(v))));
+        ctx.stroke();
+      }
     }
     ctx.setLineDash([]);
     if (k < n) {
@@ -1945,22 +1963,24 @@ function createTrajectoryAnimation(canvas, options) {
       ctx.fillStyle = palette.series[0];
       ctx.globalAlpha = 0.85;
       counts.forEach((c, b) => {
-        if (!c) return;
+        if (!c || hidden.includes('others')) return;
         const yTop = G.py(G.y0 + (b + 1) * binH);
         const yBottom = G.py(G.y0 + b * binH);
         ctx.fillRect(G.panelX + 1, yTop + 0.5, ((G.panelW - 2) * c) / top, Math.max(0.8, yBottom - yTop - 1));
       });
       ctx.globalAlpha = 1;
-      ctx.strokeStyle = palette.series[2];
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      expected.forEach((e, b) => {
-        const X = G.panelX + 1 + ((G.panelW - 2) * e) / top;
-        const Y = G.py(G.y0 + (b + 0.5) * binH);
-        if (b) ctx.lineTo(X, Y);
-        else ctx.moveTo(X, Y);
-      });
-      ctx.stroke();
+      if (showBand) {
+        ctx.strokeStyle = palette.series[2];
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        expected.forEach((e, b) => {
+          const X = G.panelX + 1 + ((G.panelW - 2) * e) / top;
+          const Y = G.py(G.y0 + (b + 0.5) * binH);
+          if (b) ctx.lineTo(X, Y);
+          else ctx.moveTo(X, Y);
+        });
+        ctx.stroke();
+      }
     }
     onUpdate(status());
     // the label under a still pointer follows the frames
@@ -1981,14 +2001,14 @@ function createTrajectoryAnimation(canvas, options) {
       if (b < 0 || b >= histogram.counts.length) return null;
       const from = G.y0 + b * histogram.binH;
       const yTop = G.py(from + histogram.binH);
-      const text = describe({ kind: 'bin', quantity, k, from, to: from + histogram.binH, count: histogram.counts[b], expected: histogram.expected[b], sample: A });
+      const text = describe({ kind: 'bin', quantity, k, from, to: from + histogram.binH, count: histogram.counts[b], expected: histogram.expected[b], sample: A, show: { bars: !hidden.includes('others'), normal: !hidden.includes('band') } });
       return text ? { rect: { x: G.panelX, y: yTop, width: G.panelW, height: G.py(from) - yTop }, text } : null;
     }
     if (x < m.left || x > m.left + G.plotW) return null;
     const step = Math.max(1, Math.min(k, Math.round(((x - m.left) / G.plotW) * n)));
     if (k === 0) return null;
     const theory = quantityMoments(mom, step, quantity);
-    const text = describe({ kind: 'step', quantity, step, first: value(paths[0][step], step), mean: theory.mean, sd: theory.sd });
+    const text = describe({ kind: 'step', quantity, step, first: value(paths[0][step], step), mean: theory.mean, sd: theory.sd, show: { first: !hidden.includes('first'), band: !hidden.includes('band') } });
     return text ? { rect: { x: G.px(step) - 3, y: m.top, width: 6, height: G.h }, text } : null;
   };
   const detachLabel = typeof document !== 'undefined' && canvas.parentElement ? attachPointerLabel(canvas, locate) : null;
@@ -2065,6 +2085,12 @@ function createTrajectoryAnimation(canvas, options) {
     },
     setSpeed(s) {
       speed = s > 0 ? s : 1;
+    },
+    // the legend under the animation: the hidden parts are drawn again from the first system
+    setHidden(parts) {
+      hidden = parts;
+      drawnK = -1;
+      render();
     },
     setPalette(next) {
       palette = { ...DEFAULT_PALETTE, ...next };
