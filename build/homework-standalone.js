@@ -31,7 +31,11 @@ const STATIC_FILES = ['index.html', 'style.css', 'README.txt'];
  * calcoli, che diventa lo script globale `global`; `inner` sono i moduli che
  * la libreria importa e che finiscono dentro di lei (i parametri della
  * consegna dell'Exercise 1, la lista di parole di BIP-39 dell'Exercise 2, il
- * corpus dell'Homework #2; gli Homework #3, #4 e #5 non ne hanno).
+ * corpus dell'Homework #2; gli Homework #3, #4, #5 e #6 non ne hanno).
+ * `published: false` tiene un programma fuori dal sito pubblicato: la build
+ * lo genera comunque (cosi' una conversione rotta la ferma subito) ma non
+ * lo scrive in dist, e in sviluppo resta raggiungibile per provarlo. E' lo
+ * stato dell'Homework #6 finche' non arriva la consegna.
  */
 export const HOMEWORKS = [
   {
@@ -93,6 +97,18 @@ export const HOMEWORKS = [
     inner: [],
     contents: 'Computations: five quadrature rules, the normal CDF, its table, quantiles and tails, Riemann, Darboux and Lebesgue sums,\n * a formula reader, Monte Carlo, xoshiro128** and SplitMix64, Box-Muller, hypothesis tests, charts and command line (node homework5.js [options]).',
     description: 'Homework #5 - Statistics: the distribution function of the normal law by numerical integration, and the Riemann and Lebesgue integrals computed numerically.',
+  },
+  {
+    number: '6',
+    name: 'Homework #6',
+    source: 'hw6',
+    library: 'homework6.js',
+    global: 'Homework6',
+    inner: [],
+    contents: 'Computations: xoshiro128** and SplitMix64 with their checks, the computations of the page in slices,\n * line charts and histograms with labels and toggling legends, and command line (node homework6.js [options]).',
+    description: 'Homework #6 - Statistics: in preparation, the skeleton of the program before the assignment.',
+    // lo scheletro: si pubblica quando arriva la consegna
+    published: false,
   },
 ];
 
@@ -320,6 +336,8 @@ export default function homeworkStandalone() {
     generateBundle() {
       for (const hw of HOMEWORKS) {
         const files = standaloneFiles(hw);
+        // generato e quindi controllato, ma non ancora pubblicato
+        if (hw.published === false) continue;
         for (const [name, content] of Object.entries(files)) {
           this.emitFile({ type: 'asset', fileName: `${OUTPUT}/${folderOf(hw)}/${name}`, source: content });
         }
