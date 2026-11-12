@@ -284,20 +284,28 @@ const it = {
         : `G = ${fmtPoint(s.G)}, di ordine n = ${s.n}: N = ${s.N} osservazioni, una per ogni k da 1 a ${s.n - 1}.`,
     ordersLine: (orders) => `Ordini dei punti base: ${orders.map(([o, c]) => `${c} di ordine ${o}`).join(', ')}.`,
     smallSample: (N) => `Con N = ${N} le analisi che seguono hanno pochissima potenza statistica: i numeri sono riportati per completezza, ognuno con la sua avvertenza.`,
+    // the legends of the bar charts: the bars and the dashed expectation, each a button that hides its part
+    legends: {
+      hist: ['osservazioni per classe', 'attese se uniforme'],
+      freq: ['volte per valore', 'attese se uniforme, N/p'],
+      bits: ['quota di 1 per posizione', 'attesa'],
+      distances: ['coppie per numero di bit cambiati', 'riferimento ideale'],
+    },
     // the label over a chart, for the bar or the cell under the pointer
     tips: {
+      // an expectation hidden from the legend (null) is left out of the label
       hist: (coord, from, to, count, expected) =>
-        `${from === to ? `${coord} = ${from}` : `${coord} da ${from} a ${to}`}: ${count} ${count === 1 ? 'osservazione' : 'osservazioni'} (attese ${IT.approx(expected)})`,
+        `${from === to ? `${coord} = ${from}` : `${coord} da ${from} a ${to}`}: ${count} ${count === 1 ? 'osservazione' : 'osservazioni'}${expected === null ? '' : ` (attese ${IT.approx(expected)})`}`,
       freq: (coord, from, to, min, max, expected) => {
         const times = (n) => (n === 0 ? 'mai' : n === 1 ? 'una volta' : `${n} volte`);
         const what = from === to ? `${coord} = ${from}: ${times(max)}` : `${coord} da ${from} a ${to}: ${min === max ? times(max) : `da ${min} a ${max} volte`} ciascuno`;
-        return `${what} (attese ${IT.approx(expected)})`;
+        return expected === null ? what : `${what} (attese ${IT.approx(expected)})`;
       },
-      bit: (coord, b) =>
+      bit: (coord, b, withExpected = true) =>
         b.fraction === null
           ? `bit ${b.bit} di ${coord}: nessun valore osservato`
-          : `bit ${b.bit} di ${coord}: quota di 1 = ${IT.num(b.fraction, 3)} su ${b.distinct} valori distinti (attesa ${IT.num(b.expected, 3)})${b.z === null ? '' : `, z = ${IT.num(b.z, 2)}`}`,
-      distance: (d, count, expected) => `${d} ${d === 1 ? 'bit cambiato' : 'bit cambiati'}: ${count} ${count === 1 ? 'coppia' : 'coppie'} (attese ${IT.approx(expected)})`,
+          : `bit ${b.bit} di ${coord}: quota di 1 = ${IT.num(b.fraction, 3)} su ${b.distinct} valori distinti${withExpected ? ` (attesa ${IT.num(b.expected, 3)})` : ''}${b.z === null ? '' : `, z = ${IT.num(b.z, 2)}`}`,
+      distance: (d, count, expected) => `${d} ${d === 1 ? 'bit cambiato' : 'bit cambiati'}: ${count} ${count === 1 ? 'coppia' : 'coppie'}${expected === null ? '' : ` (attese ${IT.approx(expected)})`}`,
       correlation: (kBit, coord, bit, phi) => `bit ${kBit} di k, bit ${bit} di ${coord}: ${phi === null ? 'φ non definito (bit costante)' : `φ = ${IT.num(phi, 3)}`}`,
       sac: (kBit, coord, bit, z) => `bit ${kBit} di k invertito, bit ${bit} di ${coord}: ${z === null ? 'non definito' : `z = ${IT.num(z, 2)}`}`,
     },
@@ -835,20 +843,28 @@ const en = {
         : `G = ${fmtPoint(s.G)}, of order n = ${s.n}: N = ${s.N} observations, one for each k from 1 to ${s.n - 1}.`,
     ordersLine: (orders) => `Orders of the base points: ${orders.map(([o, c]) => `${c} of order ${o}`).join(', ')}.`,
     smallSample: (N) => `With N = ${N} the analyses below have very little statistical power: the numbers are reported for completeness, each with its caveat.`,
+    // the legends of the bar charts: the bars and the dashed expectation, each a button that hides its part
+    legends: {
+      hist: ['observations per class', 'expected if uniform'],
+      freq: ['times per value', 'expected if uniform, N/p'],
+      bits: ['share of ones per position', 'expected'],
+      distances: ['pairs per number of changed bits', 'ideal reference'],
+    },
     // the label over a chart, for the bar or the cell under the pointer
     tips: {
+      // an expectation hidden from the legend (null) is left out of the label
       hist: (coord, from, to, count, expected) =>
-        `${from === to ? `${coord} = ${from}` : `${coord} from ${from} to ${to}`}: ${count} ${count === 1 ? 'observation' : 'observations'} (expected ${EN.approx(expected)})`,
+        `${from === to ? `${coord} = ${from}` : `${coord} from ${from} to ${to}`}: ${count} ${count === 1 ? 'observation' : 'observations'}${expected === null ? '' : ` (expected ${EN.approx(expected)})`}`,
       freq: (coord, from, to, min, max, expected) => {
         const times = (n) => (n === 0 ? 'never' : n === 1 ? 'once' : n === 2 ? 'twice' : `${n} times`);
         const what = from === to ? `${coord} = ${from}: ${times(max)}` : `${coord} from ${from} to ${to}: ${min === max ? times(max) : `from ${min} to ${max} times`} each`;
-        return `${what} (expected ${EN.approx(expected)})`;
+        return expected === null ? what : `${what} (expected ${EN.approx(expected)})`;
       },
-      bit: (coord, b) =>
+      bit: (coord, b, withExpected = true) =>
         b.fraction === null
           ? `bit ${b.bit} of ${coord}: no value observed`
-          : `bit ${b.bit} of ${coord}: share of ones = ${EN.num(b.fraction, 3)} over ${b.distinct} distinct values (expected ${EN.num(b.expected, 3)})${b.z === null ? '' : `, z = ${EN.num(b.z, 2)}`}`,
-      distance: (d, count, expected) => `${d} ${d === 1 ? 'bit changed' : 'bits changed'}: ${count} ${count === 1 ? 'pair' : 'pairs'} (expected ${EN.approx(expected)})`,
+          : `bit ${b.bit} of ${coord}: share of ones = ${EN.num(b.fraction, 3)} over ${b.distinct} distinct values${withExpected ? ` (expected ${EN.num(b.expected, 3)})` : ''}${b.z === null ? '' : `, z = ${EN.num(b.z, 2)}`}`,
+      distance: (d, count, expected) => `${d} ${d === 1 ? 'bit changed' : 'bits changed'}: ${count} ${count === 1 ? 'pair' : 'pairs'}${expected === null ? '' : ` (expected ${EN.approx(expected)})`}`,
       correlation: (kBit, coord, bit, phi) => `bit ${kBit} of k, bit ${bit} of ${coord}: ${phi === null ? 'φ not defined (constant bit)' : `φ = ${EN.num(phi, 3)}`}`,
       sac: (kBit, coord, bit, z) => `bit ${kBit} of k flipped, bit ${bit} of ${coord}: ${z === null ? 'not defined' : `z = ${EN.num(z, 2)}`}`,
     },

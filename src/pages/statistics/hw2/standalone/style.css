@@ -1113,3 +1113,65 @@ dialog.index::backdrop {
     display: none;
   }
 }
+
+/* la legenda sotto un grafico: le barre e l'atteso tratteggiato. Le voci
+   sono pulsanti: premute (all'apertura) la loro parte del grafico si vede,
+   rilasciate si nasconde */
+.series-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 1rem;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  list-style: none;
+}
+
+.series-legend span {
+  display: inline-block;
+  width: 1.4em;
+  height: 0;
+  margin-right: 0.4em;
+  border-top: 3px solid;
+  vertical-align: middle;
+}
+
+.series-legend span.is-dashed {
+  border-top-style: dashed;
+}
+
+.series-legend span.is-box {
+  width: 0.85em;
+  height: 0.85em;
+  border-top: 0;
+  border-radius: 2px;
+}
+
+.series-legend button {
+  all: unset;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15em 0.35em;
+  border-radius: 3px;
+  color: inherit;
+  font: inherit;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.series-legend button:hover {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.series-legend button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.series-legend button.is-off {
+  opacity: 0.45;
+  text-decoration: line-through;
+}

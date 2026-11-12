@@ -128,7 +128,11 @@ const value = (label, content, extra = '') => h('div', { class: `value ${extra}`
 // layout: reading clientWidth right after another chart has been resized
 // would make the browser lay out the whole page again, once per chart. The
 // height is set at once, the drawing happens a few milliseconds per frame.
-const charts = new Map(); // canvas -> { draw, data, width, detach }
+const charts = new Map(); // canvas -> { draw, data, width, detach, tip, hidden }
+
+// what a chart draws: its data, without the parts hidden from the legend
+const shownData = (chart) => (chart.hidden.length ? { ...chart.data, hidden: chart.hidden } : chart.data);
+
 const resizer = new ResizeObserver((entries) => {
   for (const entry of entries) {
     const canvas = entry.target;
@@ -136,19 +140,92 @@ const resizer = new ResizeObserver((entries) => {
     const width = Math.round(entry.contentRect.width);
     if (!chart || width <= 0 || width === chart.width) continue;
     chart.width = width;
-    canvas.style.height = `${hw.chartHeight(chart.draw, chart.data, width)}px`;
+    canvas.style.height = `${hw.chartHeight(chart.draw, shownData(chart), width)}px`;
     view.scheduleFrameJob(() => {
-      if (charts.get(canvas) === chart && chart.width === width) chart.draw(canvas, { ...chart.data, width }, palette());
+      if (charts.get(canvas) === chart && chart.width === width) chart.draw(canvas, { ...shownData(chart), width }, palette());
     });
   }
 });
 
-function figure(caption, draw, data, wide = false, tip = null) {
+// the label with the values of the bar or the cell under the pointer: it describes what is on screen and leaves out the hidden parts
+function attachTip(canvas, chart) {
+  if (chart.detach) chart.detach();
+  const tip = chart.tip;
+  chart.detach = tip ? hw.attachChartTooltip(canvas, { draw: chart.draw, data: shownData(chart), describe: (hit) => tip(hit, chart.hidden) }) : null;
+}
+
+// what the reader hid in the legends, by chart: the statistics are built again with a new sample
+const kept = {};
+const keep = (name) => {
+  if (!kept[name]) kept[name] = new Set();
+  return kept[name];
+};
+
+/** The parts of the drawing covered by the hidden items of a legend. */
+const partsOf = (items, hidden) => items.flatMap((item, i) => (hidden.has(i) ? item.parts || [] : []));
+
+/**
+ * The legend of a chart: { label, paletteKey, dashed?, box?, parts }.
+ * Every item is a button: pressed (as the page opens) its parts are on
+ * screen, released they are hidden; onChange(parts) receives the hidden
+ * parts after every press. `hidden`, the set of the hidden items, outlives
+ * the legend when its chart is built again.
+ */
+function legend(items, onChange = null, hidden = new Set()) {
+  const pal = palette();
+  return h(
+    'ul',
+    { class: 'series-legend' },
+    items.map((item, i) => {
+      const color = pal[item.paletteKey];
+      let swatch = null;
+      if (item.box) swatch = 'is-box';
+      else if (item.dashed) swatch = 'is-dashed';
+      const button = h(
+        'button',
+        {
+          type: 'button',
+          'aria-pressed': String(!hidden.has(i)),
+          class: hidden.has(i) ? 'is-off' : null,
+          onclick: () => {
+            if (hidden.has(i)) hidden.delete(i);
+            else hidden.add(i);
+            button.setAttribute('aria-pressed', String(!hidden.has(i)));
+            button.classList.toggle('is-off', hidden.has(i));
+            if (onChange) onChange(partsOf(items, hidden));
+          },
+        },
+        h('span', { class: swatch, 'aria-hidden': 'true', style: { borderColor: color, backgroundColor: item.box ? color : 'transparent' } }),
+        item.label,
+      );
+      return h('li', null, button);
+    }),
+  );
+}
+
+/** A chart, with the label under the pointer and, with `items`, its legend; `keep` remembers the hidden items when the chart is built again. */
+function figure(caption, draw, data, wide = false, tip = null, { items = null, keep: hiddenItems = null } = {}) {
   const canvas = h('canvas', { class: 'chart', role: 'img', 'aria-label': caption });
-  const fig = h('figure', { class: wide ? 'figure wide' : 'figure' }, canvas, h('figcaption', { text: caption }));
-  // the label with the values of the bar or the cell under the pointer
-  const detach = tip ? hw.attachChartTooltip(canvas, { draw, data, describe: tip }) : null;
-  charts.set(canvas, { draw, data, width: -1, detach });
+  const hidden = hiddenItems || new Set();
+  const chart = { draw, data, width: -1, detach: null, tip, hidden: items ? partsOf(items, hidden) : [] };
+  const fig = h(
+    'figure',
+    { class: wide ? 'figure wide' : 'figure' },
+    canvas,
+    items &&
+      legend(
+        items,
+        (parts) => {
+          chart.hidden = parts;
+          attachTip(canvas, chart);
+          if (chart.width > 0) chart.draw(canvas, { ...shownData(chart), width: chart.width }, palette());
+        },
+        hidden,
+      ),
+    h('figcaption', { text: caption }),
+  );
+  attachTip(canvas, chart);
+  charts.set(canvas, chart);
   resizer.observe(canvas);
   return fig;
 }
@@ -770,14 +847,16 @@ function updateStats() {
   const F = text.fmt;
   const data = view.chartData(s, { decimal: F.decimal, axes: T.axes });
   const tips = view.chartTips(s, data, T.tips);
+  // the legends of the bar charts: the bars and the dashed expectation
+  const bars = (name, key) => ({ items: view.barLegend(T.legends[key]), keep: keep(name) });
   const summary = view.testSummary(s);
   const smallest = summary.smallest;
   fill(
     regions.stats,
     titles[0],
     h('p', { text: T.bip39.intro }),
-    figure(T.bip39.wordsChart(s.bip39.words.test.N, s.samples.mnemonics), hw.drawBarChart, data.words, true, tips.words),
-    h('div', { class: 'charts' }, figure(T.bip39.nibbleChart(s.samples.mnemonics), hw.drawBarChart, data.nibble, false, tips.nibble)),
+    figure(T.bip39.wordsChart(s.bip39.words.test.N, s.samples.mnemonics), hw.drawBarChart, data.words, true, tips.words, bars('words', 'words')),
+    h('div', { class: 'charts' }, figure(T.bip39.nibbleChart(s.samples.mnemonics), hw.drawBarChart, data.nibble, false, tips.nibble, bars('nibble', 'nibble'))),
     tests('bip39', s),
     paras(T.bip39.explain(s)),
 
@@ -786,8 +865,8 @@ function updateStats() {
     h(
       'div',
       { class: 'charts' },
-      figure(T.seed.bitsChart(s.seed.bits.N), hw.drawBarChart, data.seedBits, false, tips.seedBits),
-      figure(T.seed.distanceChart(s.seed.avalanche, data.seedDistances), hw.drawBarChart, data.seedDistances, false, tips.seedDistances),
+      figure(T.seed.bitsChart(s.seed.bits.N), hw.drawBarChart, data.seedBits, false, tips.seedBits, bars('seedBits', 'bits')),
+      figure(T.seed.distanceChart(s.seed.avalanche, data.seedDistances), hw.drawBarChart, data.seedDistances, false, tips.seedDistances, bars('seedDistances', 'distances')),
     ),
     tests('seed', s),
     paras(T.seed.explain(s)),
@@ -797,8 +876,8 @@ function updateStats() {
     h(
       'div',
       { class: 'charts' },
-      figure(T.bip32.bitsChart(s.bip32.bits.N), hw.drawBarChart, data.keyBits, false, tips.keyBits),
-      figure(T.bip32.distanceChart(s.bip32.siblings, data.siblings), hw.drawBarChart, data.siblings, false, tips.siblings),
+      figure(T.bip32.bitsChart(s.bip32.bits.N), hw.drawBarChart, data.keyBits, false, tips.keyBits, bars('keyBits', 'bits')),
+      figure(T.bip32.distanceChart(s.bip32.siblings, data.siblings), hw.drawBarChart, data.siblings, false, tips.siblings, bars('siblings', 'distances')),
     ),
     figure(T.bip32.heatmap(s.bip32.correlation), hw.drawHeatmap, data.correlation, true, tips.correlation),
     tests('bip32', s),
@@ -809,10 +888,10 @@ function updateStats() {
     h(
       'div',
       { class: 'charts' },
-      figure(T.secp.xChart(s.secp256k1.bitsX.N), hw.drawBarChart, data.xBits, false, tips.xBits),
-      figure(T.secp.yChart(s.secp256k1.bitsY.N), hw.drawBarChart, data.yBits, false, tips.yBits),
+      figure(T.secp.xChart(s.secp256k1.bitsX.N), hw.drawBarChart, data.xBits, false, tips.xBits, bars('xBits', 'bits')),
+      figure(T.secp.yChart(s.secp256k1.bitsY.N), hw.drawBarChart, data.yBits, false, tips.yBits, bars('yBits', 'bits')),
     ),
-    figure(T.secp.distanceChart(s.secp256k1.avalanche, data.pointDistances), hw.drawBarChart, data.pointDistances, false, tips.pointDistances),
+    figure(T.secp.distanceChart(s.secp256k1.avalanche, data.pointDistances), hw.drawBarChart, data.pointDistances, false, tips.pointDistances, bars('pointDistances', 'distances')),
     tests('secp256k1', s),
     h('p', { class: 'structure', text: T.secp.homomorphism(s.secp256k1.homomorphism) }),
     paras(T.secp.explain(s)),
@@ -822,17 +901,17 @@ function updateStats() {
     h(
       'div',
       { class: 'charts' },
-      figure(T.keccak.bitsChart(s.keccak.addressBits.N), hw.drawBarChart, data.addressBits, false, tips.addressBits),
-      figure(T.keccak.hexChart(s.keccak.firstHex.test.N), hw.drawBarChart, data.firstHex, false, tips.firstHex),
+      figure(T.keccak.bitsChart(s.keccak.addressBits.N), hw.drawBarChart, data.addressBits, false, tips.addressBits, bars('addressBits', 'bits')),
+      figure(T.keccak.hexChart(s.keccak.firstHex.test.N), hw.drawBarChart, data.firstHex, false, tips.firstHex, bars('firstHex', 'firstHex')),
     ),
-    figure(T.keccak.distanceChart(s.keccak.avalanche, data.keccakDistances), hw.drawBarChart, data.keccakDistances, false, tips.keccakDistances),
+    figure(T.keccak.distanceChart(s.keccak.avalanche, data.keccakDistances), hw.drawBarChart, data.keccakDistances, false, tips.keccakDistances, bars('keccakDistances', 'distances')),
     figure(T.keccak.heatmap, hw.drawHeatmap, data.sac, true, tips.sac),
     tests('keccak', s),
     paras(T.keccak.explain(s)),
 
     titles[5],
     h('p', { text: T.eip55.intro }),
-    figure(T.eip55.lettersChart(s.eip55.letters.test.N), hw.drawBarChart, data.letters, false, tips.letters),
+    figure(T.eip55.lettersChart(s.eip55.letters.test.N), hw.drawBarChart, data.letters, false, tips.letters, bars('letters', 'letters')),
     tests('eip55', s),
     paras(T.eip55.explain(s)),
 

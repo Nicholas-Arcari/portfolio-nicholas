@@ -14,6 +14,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLanguage } from '../../contexts/languageContext';
 import { useTheme } from '../../contexts/themeContext';
 import HomeworkShell from './HomeworkShell';
+import { ChartLegend } from './ChartLegend';
+import { hiddenParts, useHidden } from './legendState';
 import { goToSection } from './goToSection';
 import * as hw from './hw2/homework2';
 import * as view from './hw2/view';
@@ -81,9 +83,15 @@ const Value = ({ label, children, className = '' }) => (
 // la larghezza, con i valori del pezzo sotto il puntatore: il disegno vero
 // e' in homework2.js. La larghezza arriva dal
 // ResizeObserver, misurata dopo il layout; l'altezza e' fissata subito, il
-// disegno avviene qualche millisecondo per fotogramma.
-const Figure = ({ title, draw, data, palette, tip = null, wide = false }) => {
+// disegno avviene qualche millisecondo per fotogramma. Le voci della
+// legenda (le barre, l'atteso tratteggiato) nascondono e mostrano le loro
+// parti; gli assi restano quelli.
+const Figure = ({ title, draw, data, palette, tip = null, wide = false, legend = null }) => {
   const ref = useRef(null);
+  const [hidden, toggle] = useHidden();
+  const off = hiddenParts(legend, hidden).join(' ');
+  const shown = useMemo(() => (off ? { ...data, hidden: off.split(' ') } : data), [data, off]);
+  const describe = useMemo(() => (tip ? (hit) => tip(hit, off ? off.split(' ') : []) : null), [tip, off]);
   useEffect(() => {
     const canvas = ref.current;
     let drawn = -1;
@@ -91,23 +99,24 @@ const Figure = ({ title, draw, data, palette, tip = null, wide = false }) => {
       const width = Math.round(entries[entries.length - 1].contentRect.width);
       if (width <= 0 || width === drawn) return;
       drawn = width;
-      canvas.style.height = `${hw.chartHeight(draw, data, width)}px`;
+      canvas.style.height = `${hw.chartHeight(draw, shown, width)}px`;
       view.scheduleFrameJob(() => {
-        if (canvas.isConnected && drawn === width) draw(canvas, { ...data, width }, palette);
+        if (canvas.isConnected && drawn === width) draw(canvas, { ...shown, width }, palette);
       });
     });
     observer.observe(canvas);
     // il riquadro con i valori della barra o della cella sotto il puntatore
-    const detach = tip ? hw.attachChartTooltip(canvas, { draw, data, describe: tip }) : null;
+    const detach = describe ? hw.attachChartTooltip(canvas, { draw, data: shown, describe }) : null;
     return () => {
       drawn = -2;
       observer.disconnect();
       if (detach) detach();
     };
-  }, [draw, data, palette, tip]);
+  }, [draw, shown, palette, describe]);
   return (
     <figure className={wide ? 'hw1-figure hw1-figure-wide' : 'hw1-figure'}>
       <canvas ref={ref} className="hw1-canvas" role="img" aria-label={title} />
+      {legend && <ChartLegend items={legend} palette={palette} hidden={hidden} onToggle={toggle} />}
       <figcaption>{title}</figcaption>
     </figure>
   );
@@ -507,6 +516,8 @@ const Statistics = React.memo(function Statistics({ result, text, palette }) {
   const F = text.fmt;
   const charts = useMemo(() => (s ? view.chartData(s, { decimal: F.decimal, axes: T.axes }) : null), [s, F, T]);
   const tips = useMemo(() => (s ? view.chartTips(s, charts, T.tips) : null), [s, charts, T]);
+  // le legende dei grafici a barre: le barre e l'atteso tratteggiato
+  const legends = useMemo(() => Object.fromEntries(Object.entries(T.legends).map(([key, labels]) => [key, view.barLegend(labels)])), [T]);
   const summary = useMemo(() => (s ? view.testSummary(s) : null), [s]);
   const titles = view.STAT_SECTIONS.map(({ key, id, title }) => <Title key={key} id={id} level={1}>{text.sections[title]}</Title>);
   const summaryTitle = <Title id="hw2-stats-summary" level={1}>{text.sections.statsSummary}</Title>;
@@ -526,9 +537,9 @@ const Statistics = React.memo(function Statistics({ result, text, palette }) {
     <>
       {titles[0]}
       <p>{T.bip39.intro}</p>
-      <Figure wide title={T.bip39.wordsChart(s.bip39.words.test.N, s.samples.mnemonics)} draw={hw.drawBarChart} data={charts.words} palette={palette} tip={tips.words} />
+      <Figure wide title={T.bip39.wordsChart(s.bip39.words.test.N, s.samples.mnemonics)} draw={hw.drawBarChart} data={charts.words} palette={palette} tip={tips.words} legend={legends.words} />
       <div className="hw1-charts">
-        <Figure title={T.bip39.nibbleChart(s.samples.mnemonics)} draw={hw.drawBarChart} data={charts.nibble} palette={palette} tip={tips.nibble} />
+        <Figure title={T.bip39.nibbleChart(s.samples.mnemonics)} draw={hw.drawBarChart} data={charts.nibble} palette={palette} tip={tips.nibble} legend={legends.nibble} />
       </div>
       <Tests section="bip39" s={s} text={text} />
       <Paras list={T.bip39.explain(s)} />
@@ -536,8 +547,8 @@ const Statistics = React.memo(function Statistics({ result, text, palette }) {
       {titles[1]}
       <p>{T.seed.intro}</p>
       <div className="hw1-charts">
-        <Figure title={T.seed.bitsChart(s.seed.bits.N)} draw={hw.drawBarChart} data={charts.seedBits} palette={palette} tip={tips.seedBits} />
-        <Figure title={T.seed.distanceChart(s.seed.avalanche, charts.seedDistances)} draw={hw.drawBarChart} data={charts.seedDistances} palette={palette} tip={tips.seedDistances} />
+        <Figure title={T.seed.bitsChart(s.seed.bits.N)} draw={hw.drawBarChart} data={charts.seedBits} palette={palette} tip={tips.seedBits} legend={legends.bits} />
+        <Figure title={T.seed.distanceChart(s.seed.avalanche, charts.seedDistances)} draw={hw.drawBarChart} data={charts.seedDistances} palette={palette} tip={tips.seedDistances} legend={legends.distances} />
       </div>
       <Tests section="seed" s={s} text={text} />
       <Paras list={T.seed.explain(s)} />
@@ -545,8 +556,8 @@ const Statistics = React.memo(function Statistics({ result, text, palette }) {
       {titles[2]}
       <p>{T.bip32.intro}</p>
       <div className="hw1-charts">
-        <Figure title={T.bip32.bitsChart(s.bip32.bits.N)} draw={hw.drawBarChart} data={charts.keyBits} palette={palette} tip={tips.keyBits} />
-        <Figure title={T.bip32.distanceChart(s.bip32.siblings, charts.siblings)} draw={hw.drawBarChart} data={charts.siblings} palette={palette} tip={tips.siblings} />
+        <Figure title={T.bip32.bitsChart(s.bip32.bits.N)} draw={hw.drawBarChart} data={charts.keyBits} palette={palette} tip={tips.keyBits} legend={legends.bits} />
+        <Figure title={T.bip32.distanceChart(s.bip32.siblings, charts.siblings)} draw={hw.drawBarChart} data={charts.siblings} palette={palette} tip={tips.siblings} legend={legends.distances} />
       </div>
       <Figure wide title={T.bip32.heatmap(s.bip32.correlation)} draw={hw.drawHeatmap} data={charts.correlation} palette={palette} tip={tips.correlation} />
       <Tests section="bip32" s={s} text={text} />
@@ -555,10 +566,10 @@ const Statistics = React.memo(function Statistics({ result, text, palette }) {
       {titles[3]}
       <p>{T.secp.intro}</p>
       <div className="hw1-charts">
-        <Figure title={T.secp.xChart(s.secp256k1.bitsX.N)} draw={hw.drawBarChart} data={charts.xBits} palette={palette} tip={tips.xBits} />
-        <Figure title={T.secp.yChart(s.secp256k1.bitsY.N)} draw={hw.drawBarChart} data={charts.yBits} palette={palette} tip={tips.yBits} />
+        <Figure title={T.secp.xChart(s.secp256k1.bitsX.N)} draw={hw.drawBarChart} data={charts.xBits} palette={palette} tip={tips.xBits} legend={legends.bits} />
+        <Figure title={T.secp.yChart(s.secp256k1.bitsY.N)} draw={hw.drawBarChart} data={charts.yBits} palette={palette} tip={tips.yBits} legend={legends.bits} />
       </div>
-      <Figure title={T.secp.distanceChart(s.secp256k1.avalanche, charts.pointDistances)} draw={hw.drawBarChart} data={charts.pointDistances} palette={palette} tip={tips.pointDistances} />
+      <Figure title={T.secp.distanceChart(s.secp256k1.avalanche, charts.pointDistances)} draw={hw.drawBarChart} data={charts.pointDistances} palette={palette} tip={tips.pointDistances} legend={legends.distances} />
       <Tests section="secp256k1" s={s} text={text} />
       <p className="hw2-structure">{T.secp.homomorphism(s.secp256k1.homomorphism)}</p>
       <Paras list={T.secp.explain(s)} />
@@ -566,17 +577,17 @@ const Statistics = React.memo(function Statistics({ result, text, palette }) {
       {titles[4]}
       <p>{T.keccak.intro}</p>
       <div className="hw1-charts">
-        <Figure title={T.keccak.bitsChart(s.keccak.addressBits.N)} draw={hw.drawBarChart} data={charts.addressBits} palette={palette} tip={tips.addressBits} />
-        <Figure title={T.keccak.hexChart(s.keccak.firstHex.test.N)} draw={hw.drawBarChart} data={charts.firstHex} palette={palette} tip={tips.firstHex} />
+        <Figure title={T.keccak.bitsChart(s.keccak.addressBits.N)} draw={hw.drawBarChart} data={charts.addressBits} palette={palette} tip={tips.addressBits} legend={legends.bits} />
+        <Figure title={T.keccak.hexChart(s.keccak.firstHex.test.N)} draw={hw.drawBarChart} data={charts.firstHex} palette={palette} tip={tips.firstHex} legend={legends.firstHex} />
       </div>
-      <Figure title={T.keccak.distanceChart(s.keccak.avalanche, charts.keccakDistances)} draw={hw.drawBarChart} data={charts.keccakDistances} palette={palette} tip={tips.keccakDistances} />
+      <Figure title={T.keccak.distanceChart(s.keccak.avalanche, charts.keccakDistances)} draw={hw.drawBarChart} data={charts.keccakDistances} palette={palette} tip={tips.keccakDistances} legend={legends.distances} />
       <Figure wide title={T.keccak.heatmap} draw={hw.drawHeatmap} data={charts.sac} palette={palette} tip={tips.sac} />
       <Tests section="keccak" s={s} text={text} />
       <Paras list={T.keccak.explain(s)} />
 
       {titles[5]}
       <p>{T.eip55.intro}</p>
-      <Figure title={T.eip55.lettersChart(s.eip55.letters.test.N)} draw={hw.drawBarChart} data={charts.letters} palette={palette} tip={tips.letters} />
+      <Figure title={T.eip55.lettersChart(s.eip55.letters.test.N)} draw={hw.drawBarChart} data={charts.letters} palette={palette} tip={tips.letters} legend={legends.letters} />
       <Tests section="eip55" s={s} text={text} />
       <Paras list={T.eip55.explain(s)} />
 

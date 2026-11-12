@@ -547,22 +547,32 @@ const it = {
       },
     },
     // the label over a chart, for the bar or the cell under the pointer
+    // the legends of the bar charts: the bars and the dashed expectation, each a button that hides its part
+    legends: {
+      words: ['volte per parola', 'attese se uniformi'],
+      nibble: ['frasi per checksum', 'attese se uniformi'],
+      bits: ['quota di 1 per bit', 'attesa 1/2'],
+      distances: ['coppie per distanza', 'attese dalla binomiale'],
+      firstHex: ['indirizzi per prima cifra', 'attesi se uniformi'],
+      letters: ['indirizzi per numero di lettere', 'attesi dalla binomiale'],
+    },
+    // an expectation hidden from the legend (null, or false for the bits) is left out of the label
     tips: {
-      word: (index, word, count, expected) => `parola ${index}, "${word}": ${count === 1 ? 'una volta' : `${count} volte`} (attese ${IT.approx(expected)})`,
+      word: (index, word, count, expected) => `parola ${index}, "${word}": ${count === 1 ? 'una volta' : `${count} volte`}${expected === null ? '' : ` (attese ${IT.approx(expected)})`}`,
       words: (from, to, fromWord, toWord, min, max) => `parole da ${from} ("${fromWord}") a ${to} ("${toWord}"): ${min === max ? `${max} volte` : `da ${min} a ${max} volte`} ciascuna`,
-      nibble: (value, count, expected) => `checksum ${value.toString(2).padStart(4, '0')} (${value}): ${count} ${count === 1 ? 'frase' : 'frasi'} (attese ${IT.approx(expected)})`,
+      nibble: (value, count, expected) => `checksum ${value.toString(2).padStart(4, '0')} (${value}): ${count} ${count === 1 ? 'frase' : 'frasi'}${expected === null ? '' : ` (attese ${IT.approx(expected)})`}`,
       of: { seed: 'del seed', key: 'della chiave', x: 'di x', y: 'di y', address: 'dell’indirizzo' },
-      bit: (what, index, fraction, z) => `bit ${index} ${what}: quota di 1 = ${IT.num(fraction, 3)} (attesa 0,500), z = ${IT.num(z, 2)}`,
+      bit: (what, index, fraction, z, withExpected = true) => `bit ${index} ${what}: quota di 1 = ${IT.num(fraction, 3)}${withExpected ? ' (attesa 0,500)' : ''}, z = ${IT.num(z, 2)}`,
       distances: (from, to, count, expected) => {
         let what = from === to ? `distanza ${from}` : `distanze da ${from} a ${to}`;
         if (from === null) what = `distanze fino a ${to}`;
         else if (to === null) what = `distanze da ${from} in su`;
-        return `${what}: ${count} ${count === 1 ? 'coppia' : 'coppie'} (attese ${IT.approx(expected)})`;
+        return `${what}: ${count} ${count === 1 ? 'coppia' : 'coppie'}${expected === null ? '' : ` (attese ${IT.approx(expected)})`}`;
       },
       indexKey: (row, from, to, z) => `bit ${row} dell’indice, bit ${from}-${to} della chiave: ${z === null ? 'non definito' : `z = ${IT.num(z, 2)}`}`,
-      firstHex: (digit, count, expected) => `prima cifra ${digit}: ${count} ${count === 1 ? 'indirizzo' : 'indirizzi'} (attesi ${IT.approx(expected)})`,
+      firstHex: (digit, count, expected) => `prima cifra ${digit}: ${count} ${count === 1 ? 'indirizzo' : 'indirizzi'}${expected === null ? '' : ` (attesi ${IT.approx(expected)})`}`,
       sacBlock: (inFrom, inTo, outFrom, outTo, z) => `bit d’ingresso ${inFrom}-${inTo}, bit d’uscita ${outFrom}-${outTo}: z = ${IT.num(z, 2)}`,
-      letters: (n, count, expected) => `${n} ${n === 1 ? 'lettera' : 'lettere'}: ${count} ${count === 1 ? 'indirizzo' : 'indirizzi'} (attesi ${IT.approx(expected)})`,
+      letters: (n, count, expected) => `${n} ${n === 1 ? 'lettera' : 'lettere'}: ${count} ${count === 1 ? 'indirizzo' : 'indirizzi'}${expected === null ? '' : ` (attesi ${IT.approx(expected)})`}`,
     },
     axes: {
       indexBits: 'bit dell’indice',
@@ -1171,22 +1181,32 @@ const en = {
     steps: { bip39: 'BIP-39', seed: 'Seed', bip32: 'BIP-32', secp256k1: 'secp256k1', keccak: 'Keccak-256', eip55: 'EIP-55' },
     labels: TEST_LABELS, // the same English labels as the command line
     // the label over a chart, for the bar or the cell under the pointer
+    // the legends of the bar charts: the bars and the dashed expectation, each a button that hides its part
+    legends: {
+      words: ['times per word', 'expected if uniform'],
+      nibble: ['sentences per checksum', 'expected if uniform'],
+      bits: ['share of ones per bit', 'expected 1/2'],
+      distances: ['pairs per distance', 'expected from the binomial'],
+      firstHex: ['addresses per first digit', 'expected if uniform'],
+      letters: ['addresses per number of letters', 'expected from the binomial'],
+    },
+    // an expectation hidden from the legend (null, or false for the bits) is left out of the label
     tips: {
-      word: (index, word, count, expected) => `word ${index}, "${word}": ${count === 1 ? 'once' : `${count} times`} (expected ${EN.approx(expected)})`,
+      word: (index, word, count, expected) => `word ${index}, "${word}": ${count === 1 ? 'once' : `${count} times`}${expected === null ? '' : ` (expected ${EN.approx(expected)})`}`,
       words: (from, to, fromWord, toWord, min, max) => `words from ${from} ("${fromWord}") to ${to} ("${toWord}"): ${min === max ? `${max} times` : `from ${min} to ${max} times`} each`,
-      nibble: (value, count, expected) => `checksum ${value.toString(2).padStart(4, '0')} (${value}): ${count} ${count === 1 ? 'sentence' : 'sentences'} (expected ${EN.approx(expected)})`,
+      nibble: (value, count, expected) => `checksum ${value.toString(2).padStart(4, '0')} (${value}): ${count} ${count === 1 ? 'sentence' : 'sentences'}${expected === null ? '' : ` (expected ${EN.approx(expected)})`}`,
       of: { seed: 'of the seed', key: 'of the key', x: 'of x', y: 'of y', address: 'of the address' },
-      bit: (what, index, fraction, z) => `bit ${index} ${what}: share of ones = ${EN.num(fraction, 3)} (expected 0.500), z = ${EN.num(z, 2)}`,
+      bit: (what, index, fraction, z, withExpected = true) => `bit ${index} ${what}: share of ones = ${EN.num(fraction, 3)}${withExpected ? ' (expected 0.500)' : ''}, z = ${EN.num(z, 2)}`,
       distances: (from, to, count, expected) => {
         let what = from === to ? `distance ${from}` : `distances from ${from} to ${to}`;
         if (from === null) what = `distances up to ${to}`;
         else if (to === null) what = `distances from ${from} up`;
-        return `${what}: ${count} ${count === 1 ? 'pair' : 'pairs'} (expected ${EN.approx(expected)})`;
+        return `${what}: ${count} ${count === 1 ? 'pair' : 'pairs'}${expected === null ? '' : ` (expected ${EN.approx(expected)})`}`;
       },
       indexKey: (row, from, to, z) => `bit ${row} of the index, bits ${from}-${to} of the key: ${z === null ? 'not defined' : `z = ${EN.num(z, 2)}`}`,
-      firstHex: (digit, count, expected) => `first digit ${digit}: ${count} ${count === 1 ? 'address' : 'addresses'} (expected ${EN.approx(expected)})`,
+      firstHex: (digit, count, expected) => `first digit ${digit}: ${count} ${count === 1 ? 'address' : 'addresses'}${expected === null ? '' : ` (expected ${EN.approx(expected)})`}`,
       sacBlock: (inFrom, inTo, outFrom, outTo, z) => `input bits ${inFrom}-${inTo}, output bits ${outFrom}-${outTo}: z = ${EN.num(z, 2)}`,
-      letters: (n, count, expected) => `${n} ${n === 1 ? 'letter' : 'letters'}: ${count} ${count === 1 ? 'address' : 'addresses'} (expected ${EN.approx(expected)})`,
+      letters: (n, count, expected) => `${n} ${n === 1 ? 'letter' : 'letters'}: ${count} ${count === 1 ? 'address' : 'addresses'}${expected === null ? '' : ` (expected ${EN.approx(expected)})`}`,
     },
     axes: {
       indexBits: 'index bits',

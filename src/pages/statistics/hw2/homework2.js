@@ -2026,7 +2026,7 @@ function heatmapLayout(values, width) {
  * and the last bar. With more bars than pixels each pixel column shows the
  * largest of its bars, so that no value disappears.
  */
-export function drawBarChart(canvas, { values, expected = null, labels = null, max = null, decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
+export function drawBarChart(canvas, { values, expected = null, labels = null, max = null, hidden = [], decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
   const pal = { ...DEFAULT_PALETTE, ...palette };
   const { ctx, width, height } = setupCanvas(canvas, BAR_ASPECT, knownWidth);
   const { margin, w, h, columns, perColumn, colW } = barLayout(values.length, width);
@@ -2038,7 +2038,8 @@ export function drawBarChart(canvas, { values, expected = null, labels = null, m
   ctx.strokeRect(margin.left, margin.top, w, h);
   const gap = columns === values.length ? colW * 0.12 : 0;
   ctx.fillStyle = pal.bars;
-  for (let c = 0; c < columns; c++) {
+  // the bars and the expected line can be hidden from the legend; the axis stays the same
+  for (let c = 0; c < (hidden.includes('bars') ? 0 : columns); c++) {
     const from = Math.floor(c * perColumn);
     const to = Math.max(Math.floor((c + 1) * perColumn), from + 1);
     let v = 0;
@@ -2046,7 +2047,7 @@ export function drawBarChart(canvas, { values, expected = null, labels = null, m
     const bh = (v / top) * h;
     ctx.fillRect(margin.left + c * colW + gap, margin.top + h - bh, Math.max(0.6, colW - 2 * gap), bh);
   }
-  if (refs.length) {
+  if (refs.length && !hidden.includes('expected')) {
     ctx.strokeStyle = pal.reference;
     ctx.setLineDash([5, 4]);
     ctx.lineWidth = 1.5;
@@ -2149,6 +2150,8 @@ export function chartHitTest(draw, data, width, x, y) {
   }
   const { margin, w, h, columns, perColumn, colW } = barLayout(data.values.length, width);
   if (x < margin.left || x >= margin.left + w || y < margin.top || y > margin.top + h) return null;
+  // hidden bars are not under the pointer
+  if ((data.hidden || []).includes('bars')) return null;
   const column = Math.min(columns - 1, Math.floor((x - margin.left) / colW));
   const from = Math.floor(column * perColumn);
   const to = Math.max(Math.floor((column + 1) * perColumn), from + 1);

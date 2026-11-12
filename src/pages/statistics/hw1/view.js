@@ -253,6 +253,16 @@ export function chartData(s, { kBits = 'k', flipBits = 'k', decimal = '.' } = {}
 }
 
 /**
+ * The legend of a bar chart of chartData: the bars and the dashed
+ * expectation, each a button that hides its part of the drawing (`hidden`
+ * of the data: 'bars', 'expected'). `labels` are the two words of the texts.
+ */
+export const barLegend = (labels) => [
+  { label: labels[0], paletteKey: 'subgroup', box: true, parts: ['bars'] },
+  { label: labels[1], paletteKey: 'operandP', dashed: true, parts: ['expected'] },
+];
+
+/**
  * What the label over each chart of chartData says for the bar or the cell
  * under the pointer (hw.attachChartTooltip), from the same statistics. P is
  * the `tips` part of the texts. A bar may stand for several values when
@@ -261,12 +271,14 @@ export function chartData(s, { kBits = 'k', flipBits = 'k', decimal = '.' } = {}
 export function chartTips(s, P) {
   const sum = (list, from, to) => list.slice(from, to).reduce((a, b) => a + b, 0);
   const classStart = (j) => Math.ceil((j * s.p) / s.histogram.bins);
-  const hist = (coord, counts) => ({ from, to }) => P.hist(coord, classStart(from), classStart(to) - 1, sum(counts, from, to), sum(s.histogram.expected, from, to));
-  const freq = (coord, counts) => ({ from, to }) => {
+  // `hidden`: the parts hidden from the legend; a hidden expectation is left out of the label
+  const expect = (hidden, value) => (hidden.includes('expected') ? null : value);
+  const hist = (coord, counts) => ({ from, to }, hidden = []) => P.hist(coord, classStart(from), classStart(to) - 1, sum(counts, from, to), expect(hidden, sum(s.histogram.expected, from, to)));
+  const freq = (coord, counts) => ({ from, to }, hidden = []) => {
     const part = counts.slice(from, to);
-    return P.freq(coord, from, to - 1, Math.min(...part), Math.max(...part), s.N / s.p);
+    return P.freq(coord, from, to - 1, Math.min(...part), Math.max(...part), expect(hidden, s.N / s.p));
   };
-  const bit = (coord, list) => ({ from }) => P.bit(coord, list[from]);
+  const bit = (coord, list) => ({ from }, hidden = []) => P.bit(coord, list[from], !hidden.includes('expected'));
   const L = s.bitLength;
   // the heatmaps have the bits of x in the first L columns, those of y after
   const cell = (values, describe) => ({ row, col }) => (col < L ? describe(row, 'x', col, values[row][col]) : describe(row, 'y', col - L, values[row][col]));
@@ -278,7 +290,7 @@ export function chartTips(s, P) {
     freqY: freq('y', s.freqY),
     bitsX: bit('x', s.bits.x),
     bitsY: bit('y', s.bits.y),
-    distances: ({ from }) => P.distance(from, a.distances[from], a.expectedDistances[from]),
+    distances: ({ from }, hidden = []) => P.distance(from, a.distances[from], expect(hidden, a.expectedDistances[from])),
     correlation: cell(s.correlation.bits.values, P.correlation),
     sac: cell(a.exact.z, P.sac),
   };

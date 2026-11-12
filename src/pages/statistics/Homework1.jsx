@@ -13,6 +13,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLanguage } from '../../contexts/languageContext';
 import { useTheme } from '../../contexts/themeContext';
 import HomeworkShell from './HomeworkShell';
+import { ChartLegend } from './ChartLegend';
+import { hiddenParts, useHidden } from './legendState';
 import * as hw from './hw1/homework1';
 import * as view from './hw1/view';
 import { HW1_TEXTS, originalAssignment } from './hw1/texts';
@@ -65,8 +67,16 @@ const Pending = ({ text }) => <p className="hw1-note hw1-pending" role="status">
 // che un altro grafico si e' appena ridimensionato costringerebbe il browser
 // a ricalcolare l'intera pagina, una volta per grafico. L'altezza e' fissata
 // subito, il disegno avviene qualche millisecondo per fotogramma.
-const Figure = ({ title, draw, data, palette, tip = null, wide = false, link = null }) => {
+// Le voci della legenda (le barre, l'atteso tratteggiato) nascondono e
+// mostrano le loro parti; con `hidden` e `onToggle` lo stato sta nella
+// sezione, che ne fa sparire anche le colonne della tabella annessa.
+const Figure = ({ title, draw, data, palette, tip = null, wide = false, link = null, legend = null, hidden: shared = null, onToggle = null }) => {
   const ref = useRef(null);
+  const [own, toggleOwn] = useHidden();
+  const hidden = shared || own;
+  const off = hiddenParts(legend, hidden).join(' ');
+  const shown = useMemo(() => (off ? { ...data, hidden: off.split(' ') } : data), [data, off]);
+  const describe = useMemo(() => (tip ? (hit) => tip(hit, off ? off.split(' ') : []) : null), [tip, off]);
   useEffect(() => {
     const canvas = ref.current;
     let drawn = -1;
@@ -74,24 +84,25 @@ const Figure = ({ title, draw, data, palette, tip = null, wide = false, link = n
       const width = Math.round(entries[entries.length - 1].contentRect.width);
       if (width <= 0 || width === drawn) return;
       drawn = width;
-      canvas.style.height = `${hw.chartHeight(draw, data, width)}px`;
+      canvas.style.height = `${hw.chartHeight(draw, shown, width)}px`;
       view.scheduleFrameJob(() => {
-        if (canvas.isConnected && drawn === width) draw(canvas, { ...data, width }, palette);
+        if (canvas.isConnected && drawn === width) draw(canvas, { ...shown, width }, palette);
       });
     });
     observer.observe(canvas);
     // il riquadro con i valori della barra o della cella sotto il puntatore,
     // e con `link` (view.links) la riga della tabella legata
-    const detach = tip ? hw.attachChartTooltip(canvas, { draw, data, describe: tip, link }) : null;
+    const detach = describe ? hw.attachChartTooltip(canvas, { draw, data: shown, describe, link }) : null;
     return () => {
       drawn = -2;
       observer.disconnect();
       if (detach) detach();
     };
-  }, [draw, data, palette, tip, link]);
+  }, [draw, shown, palette, describe, link]);
   return (
     <figure className={wide ? 'hw1-figure hw1-figure-wide' : 'hw1-figure'}>
       <canvas ref={ref} className="hw1-canvas" role="img" aria-label={title} />
+      {legend && <ChartLegend items={legend} palette={palette} hidden={hidden} onToggle={onToggle || toggleOwn} />}
       <figcaption>{title}</figcaption>
     </figure>
   );
@@ -213,6 +224,12 @@ const Analyses = ({ prefix, result, text, palette }) => {
   );
   const tips = useMemo(() => (s ? view.chartTips(s, T.tips) : null), [s, T]);
   const link = useMemo(() => view.frequencyLink(prefix), [prefix]);
+  // le legende dei grafici a barre; le barre dei due grafici delle frequenze sono le colonne x e y della tabella
+  const legends = useMemo(() => Object.fromEntries(Object.entries(T.legends).map(([key, labels]) => [key, view.barLegend(labels)])), [T]);
+  const [freqXHidden, toggleFreqX] = useHidden();
+  const [freqYHidden, toggleFreqY] = useHidden();
+  const colX = !freqXHidden.has(0);
+  const colY = !freqYHidden.has(0);
   const titles = view.ANALYSES.map((key) => (
     <Title key={key} id={`${prefix}-${key}`} level={2}>{text.sections[key]}</Title>
   ));
@@ -233,16 +250,16 @@ const Analyses = ({ prefix, result, text, palette }) => {
       {titles[0]}
       <p>{T.distribution.intro}</p>
       <div className="hw1-charts">
-        <Figure title={T.distribution.chartX} draw={hw.drawBarChart} data={charts.histX} palette={palette} tip={tips.histX} />
-        <Figure title={T.distribution.chartY} draw={hw.drawBarChart} data={charts.histY} palette={palette} tip={tips.histY} />
+        <Figure title={T.distribution.chartX} draw={hw.drawBarChart} data={charts.histX} palette={palette} tip={tips.histX} legend={legends.hist} />
+        <Figure title={T.distribution.chartY} draw={hw.drawBarChart} data={charts.histY} palette={palette} tip={tips.histY} legend={legends.hist} />
       </div>
       <Paras list={T.distribution.explain(s)} />
 
       {titles[1]}
       <p>{T.frequency.intro}</p>
       <div className="hw1-charts">
-        <Figure title={T.frequency.chartX} draw={hw.drawBarChart} data={charts.freqX} palette={palette} tip={tips.freqX} link={link} />
-        <Figure title={T.frequency.chartY} draw={hw.drawBarChart} data={charts.freqY} palette={palette} tip={tips.freqY} link={link} />
+        <Figure title={T.frequency.chartX} draw={hw.drawBarChart} data={charts.freqX} palette={palette} tip={tips.freqX} link={link} legend={legends.freq} hidden={freqXHidden} onToggle={toggleFreqX} />
+        <Figure title={T.frequency.chartY} draw={hw.drawBarChart} data={charts.freqY} palette={palette} tip={tips.freqY} link={link} legend={legends.freq} hidden={freqYHidden} onToggle={toggleFreqY} />
       </div>
       {s.p <= view.FREQUENCY_TABLE_MAX_P ? (
         <>
@@ -250,12 +267,18 @@ const Analyses = ({ prefix, result, text, palette }) => {
           <div className="hw1-scroll">
             <table id={view.frequencyTable(prefix)} className="hw1-table hw1-compact">
               <thead>
-                <tr><th>{T.frequency.colValue}</th><th>{T.frequency.colX}</th><th>{T.frequency.colY}</th></tr>
+                <tr>
+                  <th>{T.frequency.colValue}</th>
+                  {colX && <th>{T.frequency.colX}</th>}
+                  {colY && <th>{T.frequency.colY}</th>}
+                </tr>
               </thead>
               <tbody>
                 {view.frequencyRows(s).map((r) => (
                   <tr key={r.v} className={r.x || r.y ? '' : 'is-empty'}>
-                    <td>{r.v}</td><td>{r.x}</td><td>{r.y}</td>
+                    <td>{r.v}</td>
+                    {colX && <td>{r.x}</td>}
+                    {colY && <td>{r.y}</td>}
                   </tr>
                 ))}
               </tbody>
@@ -270,8 +293,8 @@ const Analyses = ({ prefix, result, text, palette }) => {
       {titles[2]}
       <p>{T.bits.intro}</p>
       <div className="hw1-charts">
-        <Figure title={T.bits.chartX} draw={hw.drawBarChart} data={charts.bitsX} palette={palette} tip={tips.bitsX} />
-        <Figure title={T.bits.chartY} draw={hw.drawBarChart} data={charts.bitsY} palette={palette} tip={tips.bitsY} />
+        <Figure title={T.bits.chartX} draw={hw.drawBarChart} data={charts.bitsX} palette={palette} tip={tips.bitsX} legend={legends.bits} />
+        <Figure title={T.bits.chartY} draw={hw.drawBarChart} data={charts.bitsY} palette={palette} tip={tips.bitsY} legend={legends.bits} />
       </div>
       <Paras list={T.bits.explain(s)} />
 
@@ -314,7 +337,7 @@ const Analyses = ({ prefix, result, text, palette }) => {
       <p>{A.intro}</p>
       {s.avalanche.measurements > 0 && (
         <>
-          <Figure title={A.chartTitle} draw={hw.drawBarChart} data={charts.distances} palette={palette} tip={tips.distances} />
+          <Figure title={A.chartTitle} draw={hw.drawBarChart} data={charts.distances} palette={palette} tip={tips.distances} legend={legends.distances} />
           <Figure wide title={A.heatmapTitle()} draw={hw.drawHeatmap} data={charts.sac} palette={palette} tip={tips.sac} />
           <div className="hw1-uniformity">
             {view.avalancheBlocks(s, A, T.uniformity).map((block) => (

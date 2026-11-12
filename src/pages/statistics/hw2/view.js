@@ -485,6 +485,16 @@ export function chartData(s, { decimal = '.', axes = {} } = {}) {
 }
 
 /**
+ * The legend of a bar chart of chartData: the bars and the dashed
+ * expectation, each a button that hides its part of the drawing (`hidden`
+ * of the data: 'bars', 'expected'). `labels` are the two words of the texts.
+ */
+export const barLegend = (labels) => [
+  { label: labels[0], paletteKey: 'bars', box: true, parts: ['bars'] },
+  { label: labels[1], paletteKey: 'reference', dashed: true, parts: ['expected'] },
+];
+
+/**
  * What the label over each chart of chartData says for the bar or the cell
  * under the pointer (hw.attachChartTooltip), from the same statistics and
  * chart data. P is the `tips` part of the texts. A bar may stand for
@@ -494,20 +504,22 @@ export function chartData(s, { decimal = '.', axes = {} } = {}) {
 export function chartTips(s, data, P) {
   const sum = (list, from, to) => list.slice(from, to).reduce((a, b) => a + b, 0);
   const words = s.bip39.words.counts;
-  const bit = (b, what) => ({ from }) => P.bit(what, from, b.fractions[from], b.z[from]);
+  // `hidden`: the parts hidden from the legend; a hidden expectation is left out of the label
+  const expect = (hidden, value) => (hidden.includes('expected') ? null : value);
+  const bit = (b, what) => ({ from }, hidden = []) => P.bit(what, from, b.fractions[from], b.z[from], !hidden.includes('expected'));
   // classes of `width` distances from `lo`; the first and the last also hold anything beyond the range
-  const distances = (chart, d) => ({ from, to }) => {
+  const distances = (chart, d) => ({ from, to }, hidden = []) => {
     const first = chart.lo + from * chart.width;
     const last = Math.min(d.n, chart.lo + to * chart.width - 1);
-    return P.distances(from === 0 && chart.lo > 0 ? null : first, to === chart.values.length && chart.hi < d.n ? null : last, sum(chart.values, from, to), sum(chart.expected, from, to));
+    return P.distances(from === 0 && chart.lo > 0 ? null : first, to === chart.values.length && chart.hi < d.n ? null : last, sum(chart.values, from, to), expect(hidden, sum(chart.expected, from, to)));
   };
   return {
-    words: ({ from, to }) => {
-      if (to - from === 1) return P.word(from, hw.WORDLIST[from], words[from], data.words.expected);
+    words: ({ from, to }, hidden = []) => {
+      if (to - from === 1) return P.word(from, hw.WORDLIST[from], words[from], expect(hidden, data.words.expected));
       const part = words.slice(from, to);
       return P.words(from, to - 1, hw.WORDLIST[from], hw.WORDLIST[to - 1], Math.min(...part), Math.max(...part));
     },
-    nibble: ({ from }) => P.nibble(from, s.bip39.checksumNibble.counts[from], data.nibble.expected),
+    nibble: ({ from }, hidden = []) => P.nibble(from, s.bip39.checksumNibble.counts[from], expect(hidden, data.nibble.expected)),
     seedBits: bit(s.seed.bits, P.of.seed),
     seedDistances: distances(data.seedDistances, s.seed.avalanche),
     keyBits: bit(s.bip32.bits, P.of.key),
@@ -517,10 +529,10 @@ export function chartTips(s, data, P) {
     yBits: bit(s.secp256k1.bitsY, P.of.y),
     pointDistances: distances(data.pointDistances, s.secp256k1.avalanche),
     addressBits: bit(s.keccak.addressBits, P.of.address),
-    firstHex: ({ from }) => P.firstHex('0123456789abcdef'[from], s.keccak.firstHex.counts[from], data.firstHex.expected),
+    firstHex: ({ from }, hidden = []) => P.firstHex('0123456789abcdef'[from], s.keccak.firstHex.counts[from], expect(hidden, data.firstHex.expected)),
     keccakDistances: distances(data.keccakDistances, s.keccak.avalanche),
     sac: ({ row, col }) => P.sacBlock(16 * row, 16 * row + 15, 8 * col, 8 * col + 7, data.sac.values[row][col]),
-    letters: ({ from }) => P.letters(from, s.eip55.letters.counts[from], data.letters.expected[from]),
+    letters: ({ from }, hidden = []) => P.letters(from, s.eip55.letters.counts[from], expect(hidden, data.letters.expected[from])),
   };
 }
 
