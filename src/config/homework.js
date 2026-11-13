@@ -95,18 +95,15 @@ export const STATISTICS_HOMEWORK = [
     due: '2026-11-12T21:00:00+01:00',
   },
   {
-    // in preparazione: la consegna non e' ancora arrivata. La pagina ha gia'
-    // lo scheletro (pages/statistics/hw6); la teoria e il programma
-    // scaricabile si accendono con il contenuto
     slug: 'homework-6',
     name: 'Homework #6',
     type: 'homework',
-    theory: false,
+    theory: true,
     description: {
-      it: 'In preparazione.',
-      en: 'In preparation.',
+      it: 'L’indipendenza statistica su dati veri di sicurezza: le 22.544 connessioni di NSL-KDD. Tabella di contingenza, frequenze marginali, condizionate e attese, chi quadrato con p-value, test G, Fisher, Yates e permutazioni, residui e V di Cramér su una coppia di variabili a scelta. Poi la teoria, il paradosso di Simpson sulle ammissioni di Berkeley del 1973 e la differenza fra associazione statistica e causalità.',
+      en: 'Statistical independence on real security data: the 22,544 connections of NSL-KDD. Contingency table, marginal, conditional and expected frequencies, chi-square with p-value, G test, Fisher, Yates and permutations, residuals and Cramér’s V on a pair of variables of your choice. Then the theory, Simpson’s paradox on the Berkeley admissions of 1973 and the difference between statistical association and causation.',
     },
-    completed: null,
+    completed: '2026-11-13T02:27:00+01:00',
     due: '2026-11-19T21:00:00+01:00',
   },
   {

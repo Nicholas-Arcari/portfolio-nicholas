@@ -1,5 +1,5 @@
 /*
- * Homework #5 - Statistics: lo stile del programma scaricabile.
+ * Homework #6 - Statistics: lo stile del programma scaricabile.
  * Nessun font esterno e nessuna dipendenza: tema chiaro e scuro seguono le
  * impostazioni del sistema, e la pagina si legge da 320 px di larghezza in su.
  */
@@ -1173,193 +1173,114 @@ pre.core {
   margin-top: 0;
 }
 
-/* i punti si trascinano anche con il dito: lo scorrimento verticale resta alla pagina */
-canvas.drag {
-  display: block;
-  width: 100%;
-  border-radius: 6px;
-  touch-action: pan-y;
-}
+/* ===== Homework #6 =====
+   Le stesse classi degli altri homework, piu' gli elementi nuovi: le
+   tabelle a doppia entrata con i totali, i residui colorati, la tabella da
+   scrivere e i record da incollare. */
 
-/* le cifre della cancellazione dal vivo */
-.digits {
-  margin: 0.4rem 0 1rem;
-  font-family: var(--mono);
-}
-
-.digit-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.2rem 1rem;
-  padding: 0.35rem 0;
-  border-bottom: 1px solid var(--border);
-}
-
-.digit-name {
-  min-width: 11rem;
-  font-size: 0.85rem;
-  font-weight: 600;
-}
-
-.digit-value {
-  font-size: 1.1rem;
-  letter-spacing: 0.04em;
-  overflow-wrap: anywhere;
-}
-
-.digit-note {
-  color: var(--muted);
-  font-size: 0.8rem;
-}
-
-.digit-ok {
-  color: var(--ok);
-  font-weight: 700;
-}
-
-.digit-bad {
-  color: var(--error);
-  font-weight: 700;
-}
-
-.digit-common {
-  color: var(--na);
-}
-
-/* ===== Homework #5 =====
-   Le stesse classi dell'Homework #4, piu' gli elementi nuovi: le monete di
-   Lebesgue, la tavola della normale, il metodo che vince nel confronto, il
-   campo della formula. */
-
-/* tutte le intestazioni di questa pagina contengono formule (Φ(z), z_p, μ{f ≥ y}): niente maiuscolo */
+/* le intestazioni contengono simboli (χ², O - E): niente maiuscolo */
 .table thead th {
   text-transform: none;
   letter-spacing: 0.02em;
 }
 
-/* la formula scritta da chi legge: tutta la riga dei campi */
-.param.param-wide {
-  grid-column: 1 / -1;
+/* le tabelle di numeri: cifre incolonnate a destra, i totali in evidenza */
+.table.matrix td,
+.table.num td {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
-.param.param-wide input {
+.table.matrix thead th:not(:first-child),
+.table.num thead th:not(:first-child) {
+  text-align: right;
+}
+
+.table .total,
+.table tfoot th,
+.table tfoot td,
+.table tr.margin-row > * {
+  font-weight: 700;
+}
+
+.table tfoot th,
+.table tfoot td,
+.table tr.margin-row > * {
+  border-top: 2px solid var(--border);
+}
+
+.table td.is-zero {
+  color: var(--na);
+}
+
+/* le attese sotto 5 della tabella scritta da chi legge */
+.table td.is-small {
+  background: rgba(240, 165, 0, 0.18);
+}
+
+/* i residui standardizzati: rosso sopra l'atteso, blu sotto, piu' intensi oltre 1,96, 2,58 e 3,29 */
+.table.residuals td.hw6-res-p1 { background: rgba(213, 35, 73, 0.12); }
+.table.residuals td.hw6-res-p2 { background: rgba(213, 35, 73, 0.24); }
+.table.residuals td.hw6-res-p3 { background: rgba(213, 35, 73, 0.4); }
+.table.residuals td.hw6-res-n1 { background: rgba(92, 107, 192, 0.14); }
+.table.residuals td.hw6-res-n2 { background: rgba(92, 107, 192, 0.28); }
+.table.residuals td.hw6-res-n3 { background: rgba(92, 107, 192, 0.45); }
+
+@media (prefers-color-scheme: dark) {
+  .table.residuals td.hw6-res-p1 { background: rgba(255, 107, 129, 0.14); }
+  .table.residuals td.hw6-res-p2 { background: rgba(255, 107, 129, 0.27); }
+  .table.residuals td.hw6-res-p3 { background: rgba(255, 107, 129, 0.42); }
+  .table.residuals td.hw6-res-n1 { background: rgba(121, 134, 203, 0.18); }
+  .table.residuals td.hw6-res-n2 { background: rgba(121, 134, 203, 0.32); }
+  .table.residuals td.hw6-res-n3 { background: rgba(121, 134, 203, 0.5); }
+}
+
+/* le due marginali affiancate sugli schermi larghi */
+.pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0 1.5rem;
+}
+
+/* la tabella da scrivere e i record da incollare */
+.table.grid input {
+  width: 5.5rem;
+  max-width: 100%;
+  padding: 0.3rem 0.45rem;
+  text-align: right;
+}
+
+.pairs-input label {
+  display: block;
+  margin: 0.4rem 0 0.3rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.pairs-input textarea {
   width: 100%;
+  max-width: 32rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--text);
+  font: 0.95rem/1.5 var(--mono);
 }
 
-.custom {
-  margin: 0.6rem 0 1.2rem;
+.pairs-input textarea[aria-invalid="true"] {
+  border-color: var(--error);
 }
 
-/* i numeri in notazione scientifica: un corpo piu' piccolo, perche' stiano su una riga */
-.table.tails,
-.table.newton {
-  font-size: 0.85rem;
-}
-
-/* la tavola della normale: cifre incolonnate, le celle dei quantili evidenziate */
-.table.ztable {
-  font-variant-numeric: tabular-nums;
-}
-
-.table.ztable td.is-mark {
-  background: var(--accent-soft);
-  font-weight: 700;
-}
-
-/* le tabelle nuove dei due esercizi: numeri lunghi, un corpo piu' piccolo e cifre incolonnate */
-.table.results,
-.table.efficiency,
-.table.reference,
-.table.methods,
-.table.series {
-  font-size: 0.85rem;
-}
-
-.table.results td,
-.table.reference td,
-.table.methods td,
-.table.thomae td,
-.table.liouville td,
-.table.erf td {
-  font-variant-numeric: tabular-nums;
-}
-
-/* la cella sbagliata della tavola del NIST, e il metodo della pagina fra gli altri */
-.table tr.misprint > * {
-  background: var(--accent-soft);
-}
-
-.table tr.ours > * {
-  font-weight: 700;
-}
-
-/* nel confronto, il metodo che vince a ogni n */
-.table td.win {
-  color: var(--ok);
-  font-weight: 700;
-}
-
-/* le monete di Lebesgue: rame per 1, 2 e 5 centesimi, oro nordico per 10, 20 e 50, i due metalli per 1 e 2 euro */
-.coins {
+.pairs-input label.checkbox {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem 0.5rem;
-  margin: 0.4rem 0 0.6rem;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 400;
+}
+
+.pairs-input input[type="checkbox"] {
+  width: auto;
+  margin: 0;
   padding: 0;
-  list-style: none;
-}
-
-.coins li {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.15rem;
-}
-
-.coins small {
-  font-size: 0.7rem;
-  color: var(--muted);
-  white-space: nowrap;
-}
-
-.coin {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  width: 2.2rem;
-  height: 2.2rem;
-  border-radius: 50%;
-  font-size: 0.68rem;
-  font-weight: 700;
-  line-height: 1;
-  color: #3a2a12;
-  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.18);
-}
-
-.coin.is-copper {
-  background: #c47a4a;
-  color: #fff;
-}
-
-.coin.is-gold {
-  background: #e2c35b;
-}
-
-.coin.is-bimetal {
-  background: radial-gradient(circle, #e2c35b 0 55%, #bfc4c9 57% 100%);
-}
-
-.coin-groups {
-  margin: 0.4rem 0 0.6rem;
-  padding: 0;
-  list-style: none;
-}
-
-.coin-groups li {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  margin: 0.35rem 0;
 }

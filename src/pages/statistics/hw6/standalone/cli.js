@@ -1,5 +1,5 @@
 /* global process, module, require, Homework6 */
-// src/pages/statistics/hw5/standalone/cli.js
+// src/pages/statistics/hw6/standalone/cli.js
 // La coda del file homework6.js scaricabile: la riga di comando
 // node homework6.js [opzioni] e l'uso da altri script. La build la aggiunge
 // dopo la libreria cosi' com'e', quindi qui non ci sono import ne' export.
@@ -15,7 +15,7 @@
 //     ricava dalla traccia dello stack, l'unico modo che non richiede
 //     import.meta (che in uno script classico sarebbe un errore di sintassi).
 
-// Command line: node homework6.js [--seed 2026 | --random-seed] [--sample 100000]
+// Command line: node homework6.js [--x protocol] [--f class] [--merge] [--seed 2026] [--sample 100] [--perms 2000]
 (function () {
   if (typeof window !== 'undefined' || typeof process !== 'object' || !process || !process.versions || !process.versions.node) return;
   const run = () => {
@@ -31,9 +31,8 @@
   globalThis.Homework6 = Homework6;
   // In un modulo ES require non esiste, e fino a Node 18 manca anche il
   // generatore crittografico globale (crypto): lo si carica qui, in modo
-  // asincrono, e la riga di comando parte solo dopo, cosi' anche
-  // --random-seed usa il generatore crittografico su ogni versione di Node
-  // da 14 in su.
+  // asincrono, e la riga di comando parte solo dopo, cosi' randomSeed()
+  // usa il generatore crittografico su ogni versione di Node da 14 in su.
   const ready = globalThis.crypto
     ? Promise.resolve()
     : import('crypto').then((nodeCrypto) => {

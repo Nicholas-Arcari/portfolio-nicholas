@@ -1,0 +1,423 @@
+// src/pages/statistics/theory/homework6.js
+// La teoria dietro all'Homework #6: l'indipendenza di eventi e di variabili
+// aleatorie, le distribuzioni congiunte, marginali e condizionate, la
+// tabella di contingenza e le frequenze attese, il test del chi quadrato e i
+// suoi gradi di liberta', il test G e l'informazione mutua, le tabelle
+// piccole (Cochran, Fisher, Yates), il test di permutazione, i residui, la V
+// di Cramer, e la differenza fra associazione e causalita' (confondenti,
+// Simpson, Cochran-Mantel-Haenszel, i criteri di Hill), con i dati di
+// NSL-KDD. Poi la scaletta per presentarlo e le domande probabili, in
+// inglese e in italiano. I numeri citati sono quelli della pagina
+// dell'homework con i valori iniziali (X = protocollo, F = classe, seme
+// 2026, permutazione su 100 connessioni con 2.000 rimescolamenti).
+
+const en = {
+  intro: [
+    'This page collects the theory behind Homework #6, so that it can be studied and explained at the desk: independence of events and of random variables, joint, marginal and conditional distributions, the contingency table and its expected frequencies, Pearson’s chi-square test and its degrees of freedom, the G test and mutual information, the remedies for small tables (Cochran’s rule, Fisher’s exact test, Yates’s correction), the permutation test, the residuals, Cramér’s V, and the difference between association and causation: confounders, Simpson’s paradox, the Cochran-Mantel-Haenszel test and Hill’s criteria. Some of it repeats the homework page on purpose.',
+    'Section 1 is the theory, section 2 an outline for presenting the homework in about five minutes, section 3 the questions the professor is likely to ask, with short answers to say aloud. The answers stay closed: try to answer first, then open them. The numbers quoted are those of the homework page with its initial values: X = protocol, F = class on the 22,544 connections of the NSL-KDD test set, seed 2026, the permutation test on 100 connections with 2,000 shuffles.',
+  ],
+  sections: [
+    { id: 'th-theory', level: 0, title: '1. Theory' },
+    {
+      id: 'th-events',
+      level: 1,
+      title: '1.1 Independent events',
+      blocks: [
+        'Two events A and B are independent when the probability of both is the product of the probabilities. When P(B) > 0 this is the same as saying that learning B does not change the probability of A:',
+        { formula: 'P(A ∩ B) = P(A) P(B)      ⇔      P(A | B) = P(A),   where P(A | B) = P(A ∩ B) / P(B)' },
+        'The definition is symmetric, and independence passes to the complements: if A and B are independent, so are A and not B, not A and B, not A and not B. For more than two events, pairwise independence is not enough: A₁, ..., A_n are mutually independent when the product rule holds for every subfamily. Bernstein’s classic example: two fair coins, A = first head, B = second head, C = the two coins agree; every pair is independent, but P(A ∩ B ∩ C) = 1/4 ≠ 1/8.',
+        'Independence is not incompatibility. Two incompatible events with positive probabilities are as dependent as possible: if one happens the other cannot. A connection of NSL-KDD cannot be both normal and DoS, and precisely for this reason the two events are dependent.',
+      ],
+    },
+    {
+      id: 'th-variables',
+      level: 1,
+      title: '1.2 Independent variables: joint, marginal and conditional distributions',
+      blocks: [
+        'For two discrete random variables X (values x_i) and F (values f_j) the joint distribution p_ij = P(X = x_i, F = f_j) contains everything. Summing it over one variable gives the marginal of the other; dividing it by a marginal gives a conditional distribution:',
+        {
+          formula: [
+            'p_i. = Σ_j p_ij = P(X = x_i)          p_.j = Σ_i p_ij = P(F = f_j)',
+            'P(F = f_j | X = x_i) = p_ij / p_i.     P(X = x_i | F = f_j) = p_ij / p_.j',
+            'X, F independent   ⇔   p_ij = p_i. p_.j for every i, j   ⇔   P(F = f_j | X = x_i) = p_.j for every i with p_i. > 0',
+          ].join('\n'),
+        },
+        'In words: X and F are independent when every conditional distribution of F, one per value of X, equals the marginal of F. The stacked bars of section 1.3 of the page are the empirical version: under independence all the bars would look like the last one. For numerical variables independence implies zero covariance, but zero covariance does not imply independence (Y = X² with X symmetric has covariance 0 and is a function of X). For categorical variables a correlation is not even defined, and the chi-square test catches any form of dependence.',
+      ],
+    },
+    {
+      id: 'th-table',
+      level: 1,
+      title: '1.3 The contingency table and the expected frequencies',
+      blocks: [
+        'The contingency table is the joint distribution estimated from data: n_ij counts the records with X = x_i and F = f_j, the margins n_i. and n_.j count every level, N is the total. The relative frequencies n_ij/N, n_i./N and n_.j/N estimate p_ij, p_i. and p_.j; the row profiles n_ij/n_i. estimate the conditional distributions of F given X, the column profiles n_ij/n_.j those of X given F.',
+        'Under independence the best estimate of p_ij is the product of the estimated marginals (it is the maximum likelihood estimate under that model), and the expected count is N times it:',
+        { formula: 'E_ij = N (n_i./N)(n_.j/N) = n_i. n_.j / N' },
+        'The expected table has the same margins as the observed one: only the way the totals spread over the cells changes. On NSL-KDD with X = protocol and F = class, 2,621 UDP connections and 7,458 DoS attacks out of 22,544 give E = 2,621 × 7,458 / 22,544 = 867.1 UDP DoS connections expected; the data have 14. The ICMP connections are 67.7% DoS against 33.1% of all the connections: the dependence is visible before any test.',
+        'The same test holds under the three ways the data can arise (only N fixed, multinomial; one margin fixed, product multinomial; nothing fixed, Poisson counts): the expected frequencies and the asymptotic law of the statistic are the same.',
+      ],
+    },
+    {
+      id: 'th-chi2',
+      level: 1,
+      title: '1.4 Pearson’s chi-square test',
+      blocks: [
+        'Pearson (1900) measures the distance between observed and expected counts cell by cell, in units of the expected count, and adds it up:',
+        {
+          formula: [
+            'χ² = Σ_i Σ_j (n_ij - E_ij)² / E_ij,      degrees of freedom = (r - 1)(c - 1)',
+            'H0: X and F independent;  p-value = P(χ²_df ≥ observed χ²);  reject H0 when p < α (or χ² > the critical value)',
+          ].join('\n'),
+        },
+        'Under H0, as N grows, the statistic tends in law to a chi-square with (r - 1)(c - 1) degrees of freedom: each standardized difference (n_ij - E_ij)/√E_ij is approximately normal, and the statistic is a sum of their squares with as many linear constraints as there are estimated margins. The degrees of freedom count the free cells once the margins are fixed: choose the cells of the first r - 1 rows and c - 1 columns, and the rest is forced. Pearson counted r c - 1; Fisher (1922) showed that estimating the margins costs (r - 1) + (c - 1) more, a correction Pearson never accepted.',
+        'On protocol × class: χ² = 2,317.73 with 8 degrees of freedom. The 5% critical value is 15.51, so the statistic is 149 times as large, and the p-value is about 1.34 × 10^-495. A double underflows below about 10^-308 (SciPy returns 0 here), so the page keeps the logarithm of the p-value: the regularized upper incomplete gamma Q(df/2, χ²/2) is computed by its series below a + 1 and by Lentz’s continued fraction above, with the prefactor e^(-y) y^a / Γ(a) kept as a logarithm. The checks compare log10 p with mpmath at 50 digits.',
+        'A p-value is the probability, computed under H0, of a statistic at least as extreme as the observed one. It is not the probability that H0 is true, and it does not measure the size of the dependence: with N = 22,544 even a small dependence gives a tiny p-value.',
+      ],
+    },
+    {
+      id: 'th-g',
+      level: 1,
+      title: '1.5 The G test and mutual information',
+      blocks: [
+        'The likelihood ratio between the model with free cells and the model of independence gives the G statistic. By Wilks’s theorem (1938) it has the same asymptotic law as Pearson’s chi-square:',
+        {
+          formula: [
+            'G = 2 Σ_i Σ_j n_ij ln(n_ij / E_ij)        (empty cells add 0)',
+            'G = 2N Î(X; F),   Î(X; F) = Σ p̂_ij ln(p̂_ij / (p̂_i. p̂_.j))   (the empirical mutual information, in nats)',
+          ].join('\n'),
+        },
+        'A Taylor expansion of n ln(n/E) around n = E shows that G ≈ χ² when the observed counts are close to the expected ones; they part when some cells are empty or far from their expectation. On protocol × class G = 3,127.58 (p ≈ 4.6 × 10^-671), 1.35 times the chi-square, mostly because of the UDP DoS cell (14 against 867). The second formula links the test to information theory: the protocol carries Î = 3,127.58 / (2 × 22,544) ≈ 0.069 nats, about 0.10 bits, of information about the class. Feature selection for intrusion detection uses exactly these quantities, the chi-square or the mutual information between each feature and the class.',
+      ],
+    },
+    {
+      id: 'th-small',
+      level: 1,
+      title: '1.6 Small tables: Cochran’s rule, Fisher and Yates',
+      blocks: [
+        'The chi-square law is an approximation for large expected counts. Cochran’s practical rule (1954): no expected count below 1, and at most 20% of them below 5. On protocol × class only one cell of 15 is below 5 (ICMP × U2R, 3.10), so the rule holds. When it fails there are three remedies: merge rare levels (the button of section 1.1 merges the levels with less than 1% of the records), use an exact test, or let a simulation give the p-value.',
+        'Fisher’s exact test for a 2 × 2 table conditions on both margins: then the top left cell follows a hypergeometric law, and the two-sided p-value adds the probabilities of all the tables with the same margins that are no more probable than the observed one (Fisher, 1935, the lady tasting tea).',
+        {
+          formula: [
+            'P(n_11 = a) = C(n_1., a) C(n_2., n_.1 - a) / C(N, n_.1)',
+            'Yates:  χ²_Y = Σ (max(0, |n_ij - E_ij| - 1/2))² / E_ij,  1 degree of freedom',
+          ].join('\n'),
+        },
+        'Yates (1934) corrects the chi-square of a 2 × 2 table for continuity, because a discrete statistic approximated by a continuous law tends to exaggerate. The phishing example of the page shows why it matters: 3 of 20 trained employees clicked the link against 9 of 20 untrained ones. χ² = 4.29 gives p = 0.038, below 5%; with Yates p = 0.085 and with Fisher p = 0.082, above 5%. With 40 people the evidence is borderline, and the uncorrected test overstates it. Fisher’s test is exact but, being discrete, slightly conservative: its real level is at most α, often below.',
+      ],
+    },
+    {
+      id: 'th-permutation',
+      level: 1,
+      title: '1.7 The permutation test',
+      blocks: [
+        'Under H0 the values of F are exchangeable with respect to X: any permutation of F among the records is as likely as the observed one. So shuffling F, keeping X in place, produces tables from the null distribution with both margins fixed, without any asymptotic law:',
+        { formula: 'p = (1 + #{b : χ²_b ≥ χ²_obs}) / (B + 1),      standard error ≈ √(p(1 - p)/B)' },
+        'The +1 counts the observed table among the permutations: the p-value is never 0 and the test keeps its level exactly. On a sample of 100 connections (seed 2026) the observed chi-square is 17.06 with 6 degrees of freedom; 24 of 2,000 shuffles reach it, p = 0.0125 ± 0.0025, while the chi-square formula gives 0.0091, although 7 of the 12 cells have an expected count below 5. On the whole dataset no shuffle comes anywhere near 2,317.7, and the permutation p-value would only say p ≤ 1/(B + 1): this is why the page works on samples. The histogram of the shuffles settles on the density of the chi-square law with the same degrees of freedom, which is the asymptotic theory seen from the other side.',
+      ],
+    },
+    {
+      id: 'th-residuals',
+      level: 1,
+      title: '1.8 Where the dependence is: the residuals',
+      blocks: [
+        'The chi-square says whether there is a dependence, not where. The Pearson residual (n_ij - E_ij)/√E_ij is the signed square root of the contribution of a cell; its variance under H0 is less than 1, because the margins are estimated. Haberman’s adjusted residual (1973) divides by the right standard deviation and is approximately standard normal under H0:',
+        { formula: 'r_ij = (n_ij - E_ij) / √(E_ij (1 - n_i./N)(1 - n_.j/N))' },
+        'Beyond ±1.96 a cell departs from independence at 5%, beyond ±2.58 at 1%, beyond ±3.29 at 0.1%. On protocol × class the largest are UDP × normal (+27.15), ICMP × DoS (+24.32) and UDP × DoS (-37.67). Two cautions: with many cells some exceed 1.96 by chance (about 1 in 20 under H0), so a Bonferroni threshold, z ≥ 2.94 for 15 cells, is safer when looking for surprises; and the residuals are correlated, because they share the margins.',
+        'The reason behind these cells lies in how the attacks work: the DoS attacks over ICMP are smurf and pod (706 connections), the Probes over ICMP mostly ipsweep and saint (239), the R2L attacks over UDP are SNMP requests (snmpguess and snmpgetattack, 506), and neptune, the SYN flood, is all TCP (4,657 connections).',
+      ],
+    },
+    {
+      id: 'th-strength',
+      level: 1,
+      title: '1.9 How strong: Cramér’s V',
+      blocks: [
+        'The chi-square grows with N: with the same proportions and twice the data it doubles, and the p-value falls. To measure the strength of the association whatever N, Cramér (1946) divides the chi-square by its maximum:',
+        { formula: 'V = √(χ² / (N (min(r, c) - 1))) ∈ [0, 1],      φ = √(χ²/N) for a 2 × 2 table,      w = V √(min(r, c) - 1)' },
+        'V = 0 is independence, V = 1 means that one variable determines the other (class × outcome has V = 1: the outcome is a function of the class). Cohen’s w has the conventional thresholds 0.1, 0.3 and 0.5 for small, medium and large effects. On protocol × class V = 0.227 and w = 0.321: a medium association with a p-value of 10^-495. The two numbers answer different questions: the p-value how sure we are that a dependence exists, V how large it is. The adjustable dependence of the page makes it concrete: with θ = 0.1, V stays near 0.12 while n goes from 50 to 20,000 and the p-value drops from not significant to astronomically small.',
+      ],
+    },
+    {
+      id: 'th-causation',
+      level: 1,
+      title: '1.10 Association is not causation',
+      blocks: [
+        'A dependence between X and F can come from a direct cause (X → F), from a reverse cause (F → X), from a common cause Z that moves both (a confounder: X ← Z → F), from the way the data were selected, or from chance. The contingency table cannot tell these cases apart. Randomization can: if X is assigned at random, no confounder can be tied to it, and the dependence measures the effect of X. Without an experiment one needs explicit assumptions about how the data arose; Pearl’s do-operator (2000) writes the difference as P(F | do(X = x)) against P(F | X = x).',
+        'Simpson’s paradox is the extreme case: an association in the whole population can vanish or reverse inside every stratum. At Berkeley in 1973, 44.5% of the men and 30.4% of the women were admitted to the six largest departments (χ² = 92.2, p ≈ 7.8 × 10^-22), but in 4 departments of 6 women were admitted more often. The department was the confounder: women applied mostly where the admission rate was low. The Cochran-Mantel-Haenszel test measures the association within the strata:',
+        {
+          formula: [
+            'CMH = (|Σ_k (a_k - E[a_k])| - 1/2)² / Σ_k Var(a_k),   E[a_k] = n_1.k n_.1k / n_k,   1 degree of freedom',
+            'OR_MH = Σ_k (a_k d_k / n_k) / Σ_k (b_k c_k / n_k)',
+          ].join('\n'),
+        },
+        'On Berkeley CMH = 1.427, p = 0.232, and the common odds ratio of men against women is 0.905: given the department, no evidence of a bias against women. Hill’s criteria (1965) list what makes a causal reading plausible: strength, consistency, specificity, temporality, a dose-response gradient, plausibility, coherence, experiment and analogy. None is sufficient on its own.',
+        'In security data the same traps are an everyday matter. The protocol does not cause the attack: it is the attack that picks the protocol (smurf exploits ICMP echo replies). The proportions of NSL-KDD are not those of a real network: the authors selected the records by difficulty, and attacks are more than half of the test set, so the associations hold for this sample and not necessarily for another base rate. And the DARPA data behind it have known artefacts (McHugh, 2000), which a classifier can learn instead of the attacks.',
+      ],
+    },
+    {
+      id: 'th-data',
+      level: 1,
+      title: '1.11 The data: NSL-KDD',
+      blocks: [
+        'The DARPA 1998 intrusion detection evaluation of the MIT Lincoln Laboratory simulated the traffic of an air force base with attacks; the KDD Cup 1999 turned it into 41 features per connection with a label. Tavallaee, Bagheri, Lu and Ghorbani (2009) found that about three quarters of its records were duplicates and built NSL-KDD without them: KDDTrain+ with 125,973 records and KDDTest+ with 22,544, the file used here. The attacks are grouped into four classes: DoS (denial of service), Probe (scanning), R2L (remote to local, unauthorized access from outside) and U2R (user to root, privilege escalation). The test set has 17 attack types that the training set lacks; their class comes from the Lincoln Laboratory attack database. The licence allows redistribution with a citation of the dataset and of the paper, which the page and the program give.',
+      ],
+    },
+    {
+      id: 'th-outline',
+      level: 0,
+      title: '2. Presentation outline (about 5 minutes)',
+      blocks: [
+        {
+          outline: [
+            { time: '0:00', title: 'The assignment', text: 'A bivariate dataset (X, F): contingency table, marginal and conditional frequencies, expected frequencies under independence, chi-square and p-value; then the theory, the interpretation and association against causation.' },
+            { time: '0:30', title: 'Real security data', text: 'The 22,544 connections of the NSL-KDD test set, five categorical variables; the default pair is protocol × class. The practical question of an IDS: does the protocol tell anything about the kind of attack?' },
+            { time: '1:00', title: 'Table and frequencies', text: 'The table from the records, the margins, the row profiles: ICMP connections are 67.7% DoS against 33.1% overall. Under independence every bar would equal the marginal one.' },
+            { time: '1:40', title: 'Expected values and chi-square', text: 'E_ij = n_i. n_.j / N: 867 UDP DoS connections expected, 14 observed. χ² = 2,317.7 with 8 degrees of freedom, p ≈ 10^-495 (computed in logarithms), G says the same.' },
+            { time: '2:20', title: 'Small tables and permutations', text: 'Cochran’s rule, Fisher and Yates: the phishing example is significant with χ² (p = 0.038) and not with Fisher (0.082). The permutation test without formulas: p = 0.0125 on 100 connections.' },
+            { time: '3:00', title: 'Theory and interpretation', text: 'P(A ∩ B) = P(A)P(B); p_ij = p_i. p_.j. Dependent, and where: adjusted residuals (UDP × DoS -37.7). How much: V = 0.227, medium; significance grows with n, strength does not.' },
+            { time: '3:50', title: 'Association is not causation', text: 'Berkeley 1973: 44.5% against 30.4%, p ≈ 10^-21, yet within departments CMH p = 0.23. Confounders, direction, selection; in NSL-KDD the attack picks the protocol, and the proportions are chosen by the authors.' },
+            { time: '4:40', title: 'Conclusion', text: 'Protocol and class are statistically dependent, with medium strength, for mechanistic reasons of the attacks; the test says that, not why. Checks: 28 of 28 against SciPy, mpmath and R.' },
+          ],
+        },
+        { note: 'Numbers to remember: χ² = 2,317.73, 8 df, critical value 15.51, p ≈ 1.34 × 10^-495; G = 3,127.58; V = 0.227, w = 0.321; E(UDP, DoS) = 867.1 against 14; residuals +27.15 (UDP × normal), -37.67 (UDP × DoS); 1 cell of 15 below 5; permutation 24 of 2,000, p = 0.0125; phishing χ² p = 0.038, Fisher 0.082; Berkeley 44.5% against 30.4%, CMH 1.427, p = 0.232, OR 0.905.' },
+      ],
+    },
+    {
+      id: 'th-questions',
+      level: 0,
+      title: '3. Likely questions',
+      blocks: [
+        {
+          qa: [
+            { q: 'When are two events independent?', a: 'When P(A ∩ B) = P(A) P(B); if P(B) > 0, equivalently P(A | B) = P(A): learning B does not change the probability of A. The definition is symmetric and passes to the complements. For more than two events mutual independence requires the product rule for every subfamily, which is stronger than pairwise independence.' },
+            { q: 'Are incompatible events independent?', a: 'No, the opposite: if both have positive probability, P(A ∩ B) = 0 ≠ P(A)P(B). Knowing that one happened tells that the other did not. A connection cannot be both normal and DoS, so those two events are dependent.' },
+            { q: 'When are two random variables independent?', a: 'When the joint distribution is the product of the marginals, p_ij = p_i. p_.j for every pair of values; equivalently every conditional distribution of F given X = x_i equals the marginal of F. Independence implies zero covariance, not the converse.' },
+            { q: 'Where do the expected frequencies come from?', a: 'Under independence the probability of a cell is the product of the marginals, estimated by n_i./N and n_.j/N; times N it gives E_ij = n_i. n_.j / N. It is the maximum likelihood estimate under independence, and it keeps the margins of the data.' },
+            { q: 'Why (r - 1)(c - 1) degrees of freedom?', a: 'There are r c cells, but the margins are fixed by the data: once the cells of the first r - 1 rows and c - 1 columns are chosen, the others are forced. Equivalently, the full model has r c - 1 free parameters and independence (r - 1) + (c - 1); the difference is (r - 1)(c - 1). Fisher showed it in 1922.' },
+            { q: 'What does a p-value of 10^-495 mean?', a: 'That under independence a chi-square this large would essentially never happen: the dependence is certain. It does not say how strong it is: with 22,544 records even small dependences give tiny p-values. For the strength there is Cramér’s V, 0.227 here, a medium association.' },
+            { q: 'How do you compute a p-value smaller than the smallest double?', a: 'In logarithms. The tail of the chi-square law is the regularized incomplete gamma Q(df/2, x/2) = e^(-y) y^a / Γ(a) times a continued fraction; the page keeps the logarithm of the prefactor and of the fraction (Lentz’s method), so log10 p = -494.87 is computed even though p underflows. It is checked against mpmath at 50 digits.' },
+            { q: 'What is the difference between the chi-square and the G test?', a: 'Both compare observed and expected counts: the chi-square with squared differences scaled by E, G with 2 Σ n ln(n/E), the likelihood ratio. Asymptotically they have the same chi-square law (Wilks) and they agree when the counts are close to the expectations. G equals 2N times the empirical mutual information.' },
+            { q: 'When is the chi-square approximation not reliable?', a: 'When expected counts are small. Cochran’s rule: no expected count below 1 and at most 20% below 5. Remedies: merge rare levels, Fisher’s exact test (2 × 2) or a permutation test. On the default table only 1 cell of 15 is below 5, so it holds.' },
+            { q: 'How does Fisher’s exact test work?', a: 'Conditioning on both margins, the top left cell of a 2 × 2 table follows a hypergeometric law under independence. The two-sided p-value adds the probabilities of all the tables with those margins that are no more probable than the observed one. It is exact for any sample size, and somewhat conservative because the law is discrete.' },
+            { q: 'What does Yates’s correction do, and when does it matter?', a: 'It subtracts 1/2 from each |O - E| in a 2 × 2 table before squaring, a continuity correction for approximating a discrete statistic with a continuous law. With small counts it matters: the phishing example has p = 0.038 without and 0.085 with the correction, and Fisher gives 0.082. With large counts it barely changes anything.' },
+            { q: 'How does the permutation test work, and why the +1?', a: 'Under H0 the values of F can be shuffled among the records without changing the law of the table. Shuffle B times, count the shuffles with a chi-square at least as large as the observed one, p = (1 + count)/(B + 1). The +1 counts the observed table: the test keeps its level exactly and never gives p = 0. It needs no asymptotic law, so it works with small expected counts.' },
+            { q: 'Why does the page run the permutation test on a sample?', a: 'Because on the whole dataset the observed chi-square (2,317.7) is so far beyond any shuffle that the answer would only be p ≤ 1/(B + 1), and each shuffle of 22,544 records would cost more. On 100 connections the answer is not obvious: 24 of 2,000 shuffles, p = 0.0125, close to the formula (0.0091).' },
+            { q: 'How do you find which cells drive the dependence?', a: 'With the adjusted residuals (n_ij - E_ij)/√(E_ij (1 - n_i./N)(1 - n_.j/N)), approximately standard normal under independence. Beyond ±1.96 the cell departs at 5%. Here UDP × DoS (-37.7), UDP × normal (+27.2) and ICMP × DoS (+24.3). With many cells some cross 1.96 by chance, so a Bonferroni threshold is safer.' },
+            { q: 'What is Cramér’s V, and why is it needed besides the p-value?', a: 'V = √(χ²/(N (min(r, c) - 1))), from 0 (independence) to 1 (one variable determines the other). It measures the strength regardless of N, while the chi-square grows with N. The slider of the page shows it: same θ, V about 0.12 at every n, the p-value going from not significant to 10^-23.' },
+            { q: 'If X and F are statistically dependent, does X cause F?', a: 'No. The dependence can come from X causing F, F causing X, a confounder causing both, selection, or chance. Only an experiment where X is assigned at random, or explicit causal assumptions, allow a causal reading. In NSL-KDD the arrow, if any, goes from the attack to the protocol.' },
+            { q: 'What is Simpson’s paradox?', a: 'An association in the aggregated data that disappears or reverses within every stratum, because a confounder is tied to both variables. At Berkeley men were admitted more often overall (44.5% against 30.4%), but women more often in 4 of 6 departments: women applied mostly to the departments with low admission rates.' },
+            { q: 'What does the Cochran-Mantel-Haenszel test add?', a: 'It tests the association between two binary variables holding a third fixed, adding the deviations of the 2 × 2 tables of the strata. On Berkeley CMH = 1.43, p = 0.23, common odds ratio 0.905: within departments there is no evidence of a bias, so the aggregate dependence is due to the department.' },
+            { q: 'Can the results on NSL-KDD be applied to a real network?', a: 'With caution. NSL-KDD is a selection: the authors removed duplicates and chose records by difficulty, and attacks are more than half of the test set. The associations hold for this sample; with another base rate of attacks the expected counts, the residuals and even the strength can change. The underlying DARPA data are also known to contain simulation artefacts.' },
+            { q: 'How did you check the numbers?', a: '28 checks: the counts against an independent Python reading of the file, the tables and tests against SciPy 1.17.1 and NumPy, the tiny p-values against mpmath with 50 digits, Berkeley’s CMH test against R and exact fractions, the generators against their reference code.' },
+          ],
+        },
+      ],
+    },
+  ],
+};
+
+const it = {
+  intro: [
+    'Questa pagina raccoglie la teoria dietro all’Homework #6, per studiarla e spiegarla all’esame: l’indipendenza di eventi e di variabili aleatorie, le distribuzioni congiunte, marginali e condizionate, la tabella di contingenza e le sue frequenze attese, il test del chi quadrato di Pearson e i suoi gradi di libertà, il test G e l’informazione mutua, i rimedi per le tabelle piccole (la regola di Cochran, il test esatto di Fisher, la correzione di Yates), il test di permutazione, i residui, la V di Cramér, e la differenza fra associazione e causalità: i confondenti, il paradosso di Simpson, il test di Cochran-Mantel-Haenszel e i criteri di Hill. Qualcosa ripete di proposito la pagina dell’homework.',
+    'La sezione 1 è la teoria, la sezione 2 una scaletta per presentare l’homework in circa cinque minuti, la sezione 3 le domande che il professore farà probabilmente, con risposte brevi da dire a voce. Le risposte restano chiuse: provate prima a rispondere, poi apritele. I numeri citati sono quelli della pagina dell’homework con i valori iniziali: X = protocollo, F = classe sulle 22.544 connessioni del test set di NSL-KDD, seme 2026, il test di permutazione su 100 connessioni con 2.000 rimescolamenti.',
+  ],
+  sections: [
+    { id: 'th-theory', level: 0, title: '1. Teoria' },
+    {
+      id: 'th-events',
+      level: 1,
+      title: '1.1 Eventi indipendenti',
+      blocks: [
+        'Due eventi A e B sono indipendenti quando la probabilità che accadano entrambi è il prodotto delle probabilità. Se P(B) > 0 è lo stesso che dire che sapere B non cambia la probabilità di A:',
+        { formula: 'P(A ∩ B) = P(A) P(B)      ⇔      P(A | B) = P(A),   dove P(A | B) = P(A ∩ B) / P(B)' },
+        'La definizione è simmetrica, e l’indipendenza passa ai complementari: se A e B sono indipendenti, lo sono anche A e non B, non A e B, non A e non B. Con più di due eventi l’indipendenza a coppie non basta: A₁, ..., A_n sono mutuamente indipendenti quando la regola del prodotto vale per ogni sottofamiglia. L’esempio classico di Bernstein: due monete eque, A = testa la prima, B = testa la seconda, C = le due monete uguali; ogni coppia è indipendente, ma P(A ∩ B ∩ C) = 1/4 ≠ 1/8.',
+        'Indipendenza non è incompatibilità. Due eventi incompatibili con probabilità positive sono dipendenti quanto più non si può: se accade uno, l’altro è escluso. Una connessione di NSL-KDD non può essere insieme normale e DoS, e proprio per questo i due eventi sono dipendenti.',
+      ],
+    },
+    {
+      id: 'th-variables',
+      level: 1,
+      title: '1.2 Variabili indipendenti: distribuzioni congiunta, marginali e condizionate',
+      blocks: [
+        'Per due variabili aleatorie discrete X (valori x_i) e F (valori f_j) la distribuzione congiunta p_ij = P(X = x_i, F = f_j) contiene tutto. Sommandola su una variabile si ottiene la marginale dell’altra; dividendola per una marginale, una distribuzione condizionata:',
+        {
+          formula: [
+            'p_i. = Σ_j p_ij = P(X = x_i)          p_.j = Σ_i p_ij = P(F = f_j)',
+            'P(F = f_j | X = x_i) = p_ij / p_i.     P(X = x_i | F = f_j) = p_ij / p_.j',
+            'X, F indipendenti   ⇔   p_ij = p_i. p_.j per ogni i, j   ⇔   P(F = f_j | X = x_i) = p_.j per ogni i con p_i. > 0',
+          ].join('\n'),
+        },
+        'In parole: X e F sono indipendenti quando ogni distribuzione condizionata di F, una per valore di X, è uguale alla marginale di F. Le barre impilate della sezione 1.3 della pagina ne sono la versione empirica: sotto indipendenza sarebbero tutte come l’ultima. Per variabili numeriche l’indipendenza implica covarianza nulla, ma la covarianza nulla non implica l’indipendenza (Y = X² con X simmetrica ha covarianza 0 ed è una funzione di X). Per variabili categoriali una correlazione non è nemmeno definita, e il test del chi quadrato coglie qualunque forma di dipendenza.',
+      ],
+    },
+    {
+      id: 'th-table',
+      level: 1,
+      title: '1.3 La tabella di contingenza e le frequenze attese',
+      blocks: [
+        'La tabella di contingenza è la distribuzione congiunta stimata dai dati: n_ij conta i record con X = x_i e F = f_j, i margini n_i. e n_.j contano ogni modalità, N è il totale. Le frequenze relative n_ij/N, n_i./N e n_.j/N stimano p_ij, p_i. e p_.j; i profili di riga n_ij/n_i. stimano le distribuzioni condizionate di F dato X, i profili di colonna n_ij/n_.j quelle di X dato F.',
+        'Sotto indipendenza la stima migliore di p_ij è il prodotto delle marginali stimate (è la stima di massima verosimiglianza in quel modello), e la frequenza attesa è N volte tanto:',
+        { formula: 'E_ij = N (n_i./N)(n_.j/N) = n_i. n_.j / N' },
+        'La tabella attesa ha gli stessi margini di quella osservata: cambia solo il modo in cui i totali si distribuiscono nelle celle. Su NSL-KDD con X = protocollo e F = classe, 2.621 connessioni UDP e 7.458 attacchi DoS su 22.544 danno E = 2.621 × 7.458 / 22.544 = 867,1 connessioni UDP DoS attese; i dati ne hanno 14. Le connessioni ICMP sono DoS al 67,7%, contro il 33,1% di tutte: la dipendenza si vede prima di qualunque test.',
+        'Lo stesso test vale nei tre modi in cui i dati possono nascere (solo N fissato, multinomiale; un margine fissato, multinomiale prodotto; nulla fissato, conteggi di Poisson): le frequenze attese e la legge asintotica della statistica sono le stesse.',
+      ],
+    },
+    {
+      id: 'th-chi2',
+      level: 1,
+      title: '1.4 Il test del chi quadrato di Pearson',
+      blocks: [
+        'Pearson (1900) misura la distanza fra conteggi osservati e attesi cella per cella, in unità del conteggio atteso, e la somma:',
+        {
+          formula: [
+            'χ² = Σ_i Σ_j (n_ij - E_ij)² / E_ij,      gradi di libertà = (r - 1)(c - 1)',
+            'H0: X e F indipendenti;  p-value = P(χ²_gl ≥ χ² osservato);  si rifiuta H0 quando p < α (o χ² > il valore critico)',
+          ].join('\n'),
+        },
+        'Sotto H0, al crescere di N, la statistica tende in legge a un chi quadrato con (r - 1)(c - 1) gradi di libertà: ogni differenza standardizzata (n_ij - E_ij)/√E_ij è circa normale, e la statistica è una somma dei loro quadrati con tanti vincoli lineari quanti sono i margini stimati. I gradi di libertà contano le celle libere una volta fissati i margini: scelte le celle delle prime r - 1 righe e c - 1 colonne, il resto è obbligato. Pearson ne contava r c - 1; Fisher (1922) mostrò che stimare i margini ne costa altri (r - 1) + (c - 1), una correzione che Pearson non accettò mai.',
+        'Su protocollo × classe: χ² = 2.317,73 con 8 gradi di libertà. Il valore critico al 5% è 15,51, quindi la statistica è 149 volte tanto, e il p-value è circa 1,34 × 10^-495. Un double va in underflow sotto circa 10^-308 (SciPy qui restituisce 0), quindi la pagina tiene il logaritmo del p-value: la gamma incompleta superiore regolarizzata Q(gl/2, χ²/2) si calcola con la serie sotto a + 1 e con la frazione continua di Lentz sopra, con il prefattore e^(-y) y^a / Γ(a) tenuto come logaritmo. Le verifiche confrontano log10 p con mpmath a 50 cifre.',
+        'Il p-value è la probabilità, calcolata sotto H0, di una statistica almeno estrema quanto quella osservata. Non è la probabilità che H0 sia vera, e non misura quanto è grande la dipendenza: con N = 22.544 anche una dipendenza piccola dà un p-value minuscolo.',
+      ],
+    },
+    {
+      id: 'th-g',
+      level: 1,
+      title: '1.5 Il test G e l’informazione mutua',
+      blocks: [
+        'Il rapporto di verosimiglianza fra il modello con le celle libere e quello dell’indipendenza dà la statistica G. Per il teorema di Wilks (1938) ha la stessa legge asintotica del chi quadrato di Pearson:',
+        {
+          formula: [
+            'G = 2 Σ_i Σ_j n_ij ln(n_ij / E_ij)        (le celle vuote contano 0)',
+            'G = 2N Î(X; F),   Î(X; F) = Σ p̂_ij ln(p̂_ij / (p̂_i. p̂_.j))   (l’informazione mutua empirica, in nat)',
+          ].join('\n'),
+        },
+        'Uno sviluppo di Taylor di n ln(n/E) attorno a n = E mostra che G ≈ χ² quando i conteggi osservati sono vicini agli attesi; si separano quando ci sono celle vuote o molto lontane dall’attesa. Su protocollo × classe G = 3.127,58 (p ≈ 4,6 × 10^-671), 1,35 volte il chi quadrato, soprattutto per la cella UDP DoS (14 contro 867). La seconda formula lega il test alla teoria dell’informazione: il protocollo porta Î = 3.127,58 / (2 × 22.544) ≈ 0,069 nat, circa 0,10 bit, di informazione sulla classe. La selezione delle caratteristiche per il rilevamento delle intrusioni usa proprio queste quantità, il chi quadrato o l’informazione mutua fra ogni caratteristica e la classe.',
+      ],
+    },
+    {
+      id: 'th-small',
+      level: 1,
+      title: '1.6 Tabelle piccole: la regola di Cochran, Fisher e Yates',
+      blocks: [
+        'La legge del chi quadrato è un’approssimazione per conteggi attesi grandi. La regola pratica di Cochran (1954): nessun conteggio atteso sotto 1, e al più il 20% sotto 5. Su protocollo × classe solo una cella su 15 è sotto 5 (ICMP × U2R, 3,10), quindi la regola vale. Quando non vale ci sono tre rimedi: accorpare i livelli rari (il pulsante della sezione 1.1 unisce i livelli con meno dell’1% dei record), usare un test esatto, o far dare il p-value a una simulazione.',
+        'Il test esatto di Fisher per una tabella 2 × 2 condiziona a entrambi i margini: allora la cella in alto a sinistra segue una legge ipergeometrica, e il p-value bilaterale somma le probabilità di tutte le tabelle con gli stessi margini non più probabili di quella osservata (Fisher, 1935, la signora che assaggia il tè).',
+        {
+          formula: [
+            'P(n_11 = a) = C(n_1., a) C(n_2., n_.1 - a) / C(N, n_.1)',
+            'Yates:  χ²_Y = Σ (max(0, |n_ij - E_ij| - 1/2))² / E_ij,  1 grado di libertà',
+          ].join('\n'),
+        },
+        'Yates (1934) corregge il chi quadrato di una tabella 2 × 2 per la continuità, perché una statistica discreta approssimata con una legge continua tende a esagerare. L’esempio di phishing della pagina mostra perché conta: hanno cliccato il link 3 dipendenti formati su 20 contro 9 non formati su 20. χ² = 4,29 dà p = 0,038, sotto il 5%; con Yates p = 0,085 e con Fisher p = 0,082, sopra il 5%. Con 40 persone l’evidenza è al limite, e il test senza correzione la esagera. Il test di Fisher è esatto ma, essendo discreto, un po’ conservativo: il suo livello vero è al più α, spesso meno.',
+      ],
+    },
+    {
+      id: 'th-permutation',
+      level: 1,
+      title: '1.7 Il test di permutazione',
+      blocks: [
+        'Sotto H0 i valori di F sono scambiabili rispetto a X: ogni permutazione di F fra i record è probabile quanto quella osservata. Rimescolare F, lasciando X al suo posto, produce quindi tabelle dalla distribuzione nulla con entrambi i margini fissati, senza nessuna legge asintotica:',
+        { formula: 'p = (1 + #{b : χ²_b ≥ χ²_oss}) / (B + 1),      errore standard ≈ √(p(1 - p)/B)' },
+        'Il +1 conta la tabella osservata fra le permutazioni: il p-value non è mai 0 e il test mantiene esattamente il suo livello. Su un campione di 100 connessioni (seme 2026) il chi quadrato osservato è 17,06 con 6 gradi di libertà; 24 rimescolamenti su 2.000 lo raggiungono, p = 0,0125 ± 0,0025, mentre la formula del chi quadrato dà 0,0091, anche se 7 celle su 12 hanno attesa sotto 5. Sul dataset intero nessun rimescolamento si avvicina a 2.317,7, e il p-value di permutazione direbbe solo p ≤ 1/(B + 1): per questo la pagina lavora su campioni. L’istogramma dei rimescolamenti si posa sulla densità del chi quadrato con gli stessi gradi di libertà, cioè la teoria asintotica vista dall’altra parte.',
+      ],
+    },
+    {
+      id: 'th-residuals',
+      level: 1,
+      title: '1.8 Dove sta la dipendenza: i residui',
+      blocks: [
+        'Il chi quadrato dice se c’è una dipendenza, non dove. Il residuo di Pearson (n_ij - E_ij)/√E_ij è la radice con segno del contributo di una cella; la sua varianza sotto H0 è minore di 1, perché i margini sono stimati. Il residuo aggiustato di Haberman (1973) divide per la deviazione standard giusta ed è circa normale standard sotto H0:',
+        { formula: 'r_ij = (n_ij - E_ij) / √(E_ij (1 - n_i./N)(1 - n_.j/N))' },
+        'Oltre ±1,96 una cella si discosta dall’indipendenza al 5%, oltre ±2,58 all’1%, oltre ±3,29 allo 0,1%. Su protocollo × classe i più grandi sono UDP × normale (+27,15), ICMP × DoS (+24,32) e UDP × DoS (-37,67). Due cautele: con molte celle qualcuna supera 1,96 per caso (circa 1 su 20 sotto H0), quindi una soglia di Bonferroni, z ≥ 2,94 per 15 celle, è più sicura quando si cercano sorprese; e i residui sono correlati, perché condividono i margini.',
+        'Il perché di queste celle sta nei meccanismi degli attacchi: le DoS su ICMP sono smurf e pod (706 connessioni), le Probe su ICMP soprattutto ipsweep e saint (239), le R2L su UDP sono richieste SNMP (snmpguess e snmpgetattack, 506), e neptune, il SYN flood, è tutto TCP (4.657 connessioni).',
+      ],
+    },
+    {
+      id: 'th-strength',
+      level: 1,
+      title: '1.9 Quanto è forte: la V di Cramér',
+      blocks: [
+        'Il chi quadrato cresce con N: con le stesse proporzioni e il doppio dei dati raddoppia, e il p-value crolla. Per misurare l’intensità dell’associazione qualunque sia N, Cramér (1946) divide il chi quadrato per il suo massimo:',
+        { formula: 'V = √(χ² / (N (min(r, c) - 1))) ∈ [0, 1],      φ = √(χ²/N) per una tabella 2 × 2,      w = V √(min(r, c) - 1)' },
+        'V = 0 è l’indipendenza, V = 1 vuol dire che una variabile determina l’altra (classe × esito ha V = 1: l’esito è una funzione della classe). La w di Cohen ha le soglie convenzionali 0,1, 0,3 e 0,5 per effetti piccoli, medi e grandi. Su protocollo × classe V = 0,227 e w = 0,321: un’associazione media con un p-value di 10^-495. I due numeri rispondono a domande diverse: il p-value quanto siamo sicuri che una dipendenza ci sia, la V quanto è grande. La dipendenza regolabile della pagina lo rende concreto: con θ = 0,1 la V resta vicina a 0,12 mentre n va da 50 a 20.000 e il p-value passa da non significativo a astronomicamente piccolo.',
+      ],
+    },
+    {
+      id: 'th-causation',
+      level: 1,
+      title: '1.10 Associazione non è causalità',
+      blocks: [
+        'Una dipendenza fra X e F può venire da una causa diretta (X → F), da una causa inversa (F → X), da una causa comune Z che le muove entrambe (un confondente: X ← Z → F), dal modo in cui i dati sono stati selezionati, o dal caso. La tabella di contingenza non distingue questi casi. La randomizzazione sì: se X è assegnata a caso, nessun confondente può esserle legato, e la dipendenza misura l’effetto di X. Senza un esperimento servono ipotesi esplicite su come i dati sono nati; l’operatore do di Pearl (2000) scrive la differenza come P(F | do(X = x)) contro P(F | X = x).',
+        'Il paradosso di Simpson è il caso estremo: un’associazione nell’intera popolazione può sparire o invertirsi dentro ogni strato. A Berkeley nel 1973 fu ammesso il 44,5% degli uomini e il 30,4% delle donne nei sei dipartimenti più grandi (χ² = 92,2, p ≈ 7,8 × 10^-22), ma in 4 dipartimenti su 6 le donne erano ammesse più spesso. Il confondente era il dipartimento: le donne avevano fatto domanda soprattutto dove l’ammissione era difficile. Il test di Cochran-Mantel-Haenszel misura l’associazione dentro gli strati:',
+        {
+          formula: [
+            'CMH = (|Σ_k (a_k - E[a_k])| - 1/2)² / Σ_k Var(a_k),   E[a_k] = n_1.k n_.1k / n_k,   1 grado di libertà',
+            'OR_MH = Σ_k (a_k d_k / n_k) / Σ_k (b_k c_k / n_k)',
+          ].join('\n'),
+        },
+        'Su Berkeley CMH = 1,427, p = 0,232, e l’odds ratio comune uomini contro donne è 0,905: a parità di dipartimento, nessuna evidenza di una discriminazione delle donne. I criteri di Hill (1965) elencano ciò che rende plausibile una lettura causale: forza, coerenza fra studi, specificità, precedenza temporale, un gradiente dose-risposta, plausibilità, coerenza con le conoscenze, esperimento e analogia. Nessuno basta da solo.',
+        'Nei dati di sicurezza le stesse trappole sono quotidiane. Il protocollo non causa l’attacco: è l’attacco che sceglie il protocollo (smurf sfrutta le risposte ICMP echo). Le proporzioni di NSL-KDD non sono quelle di una rete vera: gli autori hanno scelto i record per difficoltà, e gli attacchi sono più della metà del test set, quindi le associazioni valgono per questo campione e non per forza con un’altra frequenza di base. E i dati DARPA da cui viene hanno artefatti noti (McHugh, 2000), che un classificatore può imparare al posto degli attacchi.',
+      ],
+    },
+    {
+      id: 'th-data',
+      level: 1,
+      title: '1.11 I dati: NSL-KDD',
+      blocks: [
+        'La valutazione DARPA 1998 dei sistemi di rilevamento delle intrusioni, del MIT Lincoln Laboratory, simulò il traffico di una base dell’aeronautica con attacchi; la KDD Cup 1999 ne ricavò 41 caratteristiche per connessione con un’etichetta. Tavallaee, Bagheri, Lu e Ghorbani (2009) trovarono che circa tre quarti dei record erano duplicati e costruirono NSL-KDD senza: KDDTrain+ con 125.973 record e KDDTest+ con 22.544, il file usato qui. Gli attacchi si raggruppano in quattro classi: DoS (negazione del servizio), Probe (scansione), R2L (remote to local, accesso non autorizzato dall’esterno) e U2R (user to root, scalata dei privilegi). Il test set ha 17 tipi di attacco che il training non ha; la loro classe viene dal database degli attacchi del Lincoln Laboratory. La licenza permette di ridistribuire i dati citando il dataset e l’articolo, come fanno la pagina e il programma.',
+      ],
+    },
+    {
+      id: 'th-outline',
+      level: 0,
+      title: '2. Scaletta della presentazione (circa 5 minuti)',
+      blocks: [
+        {
+          outline: [
+            { time: '0:00', title: 'La consegna', text: 'Un dataset bivariato (X, F): tabella di contingenza, frequenze marginali e condizionate, frequenze attese sotto indipendenza, chi quadrato e p-value; poi la teoria, l’interpretazione e l’associazione contro la causalità.' },
+            { time: '0:30', title: 'Dati veri di sicurezza', text: 'Le 22.544 connessioni del test set di NSL-KDD, cinque variabili categoriali; la coppia iniziale è protocollo × classe. La domanda pratica di un IDS: il protocollo dice qualcosa sul tipo di attacco?' },
+            { time: '1:00', title: 'Tabella e frequenze', text: 'La tabella dai record, i margini, i profili di riga: le connessioni ICMP sono DoS al 67,7% contro il 33,1% complessivo. Sotto indipendenza ogni barra sarebbe uguale a quella marginale.' },
+            { time: '1:40', title: 'Attese e chi quadrato', text: 'E_ij = n_i. n_.j / N: 867 connessioni UDP DoS attese, 14 osservate. χ² = 2.317,7 con 8 gradi di libertà, p ≈ 10^-495 (calcolato in logaritmi), G dice lo stesso.' },
+            { time: '2:20', title: 'Tabelle piccole e permutazioni', text: 'La regola di Cochran, Fisher e Yates: l’esempio di phishing è significativo con il χ² (p = 0,038) e non con Fisher (0,082). Il test di permutazione senza formule: p = 0,0125 su 100 connessioni.' },
+            { time: '3:00', title: 'Teoria e interpretazione', text: 'P(A ∩ B) = P(A)P(B); p_ij = p_i. p_.j. Dipendenti, e dove: i residui aggiustati (UDP × DoS -37,7). Quanto: V = 0,227, media; la significatività cresce con n, l’intensità no.' },
+            { time: '3:50', title: 'Associazione non è causalità', text: 'Berkeley 1973: 44,5% contro 30,4%, p ≈ 10^-21, ma dentro i dipartimenti CMH p = 0,23. Confondenti, direzione, selezione; in NSL-KDD è l’attacco che sceglie il protocollo, e le proporzioni le hanno scelte gli autori.' },
+            { time: '4:40', title: 'Conclusione', text: 'Protocollo e classe sono statisticamente dipendenti, con intensità media, per ragioni legate ai meccanismi degli attacchi; il test dice questo, non il perché. Verifiche: 28 su 28 contro SciPy, mpmath e R.' },
+          ],
+        },
+        { note: 'Numeri da ricordare: χ² = 2.317,73, 8 gl, valore critico 15,51, p ≈ 1,34 × 10^-495; G = 3.127,58; V = 0,227, w = 0,321; E(UDP, DoS) = 867,1 contro 14; residui +27,15 (UDP × normale), -37,67 (UDP × DoS); 1 cella su 15 sotto 5; permutazione 24 su 2.000, p = 0,0125; phishing χ² p = 0,038, Fisher 0,082; Berkeley 44,5% contro 30,4%, CMH 1,427, p = 0,232, OR 0,905.' },
+      ],
+    },
+    {
+      id: 'th-questions',
+      level: 0,
+      title: '3. Domande probabili',
+      blocks: [
+        {
+          qa: [
+            { q: 'Quando due eventi sono indipendenti?', a: 'Quando P(A ∩ B) = P(A) P(B); se P(B) > 0, equivalentemente P(A | B) = P(A): sapere B non cambia la probabilità di A. La definizione è simmetrica e passa ai complementari. Con più di due eventi l’indipendenza mutua chiede la regola del prodotto per ogni sottofamiglia, più forte dell’indipendenza a coppie.' },
+            { q: 'Due eventi incompatibili sono indipendenti?', a: 'No, il contrario: se hanno entrambi probabilità positiva, P(A ∩ B) = 0 ≠ P(A)P(B). Sapere che uno è accaduto dice che l’altro no. Una connessione non può essere insieme normale e DoS, quindi quei due eventi sono dipendenti.' },
+            { q: 'Quando due variabili aleatorie sono indipendenti?', a: 'Quando la distribuzione congiunta è il prodotto delle marginali, p_ij = p_i. p_.j per ogni coppia di valori; equivalentemente ogni distribuzione condizionata di F dato X = x_i è uguale alla marginale di F. L’indipendenza implica covarianza nulla, non il contrario.' },
+            { q: 'Da dove vengono le frequenze attese?', a: 'Sotto indipendenza la probabilità di una cella è il prodotto delle marginali, stimate con n_i./N e n_.j/N; per N dà E_ij = n_i. n_.j / N. È la stima di massima verosimiglianza sotto indipendenza, e conserva i margini dei dati.' },
+            { q: 'Perché (r - 1)(c - 1) gradi di libertà?', a: 'Le celle sono r c, ma i margini sono fissati dai dati: scelte le celle delle prime r - 1 righe e c - 1 colonne, le altre sono obbligate. Equivalentemente il modello completo ha r c - 1 parametri liberi e quello d’indipendenza (r - 1) + (c - 1); la differenza è (r - 1)(c - 1). Lo mostrò Fisher nel 1922.' },
+            { q: 'Che cosa vuol dire un p-value di 10^-495?', a: 'Che sotto indipendenza un chi quadrato così grande non capiterebbe praticamente mai: la dipendenza è certa. Non dice quanto è forte: con 22.544 record anche dipendenze piccole danno p-value minuscoli. Per l’intensità c’è la V di Cramér, qui 0,227, un’associazione media.' },
+            { q: 'Come si calcola un p-value più piccolo del più piccolo double?', a: 'In logaritmi. La coda della legge chi quadrato è la gamma incompleta regolarizzata Q(gl/2, x/2) = e^(-y) y^a / Γ(a) per una frazione continua; la pagina tiene il logaritmo del prefattore e della frazione (metodo di Lentz), così log10 p = -494,87 si calcola anche se p va in underflow. È verificato con mpmath a 50 cifre.' },
+            { q: 'Che differenza c’è fra il chi quadrato e il test G?', a: 'Entrambi confrontano conteggi osservati e attesi: il chi quadrato con le differenze al quadrato scalate per E, il G con 2 Σ n ln(n/E), il rapporto di verosimiglianza. Asintoticamente hanno la stessa legge chi quadrato (Wilks) e coincidono quando i conteggi sono vicini alle attese. G è 2N volte l’informazione mutua empirica.' },
+            { q: 'Quando l’approssimazione chi quadrato non è affidabile?', a: 'Quando i conteggi attesi sono piccoli. Regola di Cochran: nessuna attesa sotto 1 e al più il 20% sotto 5. Rimedi: accorpare i livelli rari, il test esatto di Fisher (2 × 2) o un test di permutazione. Sulla tabella iniziale solo 1 cella su 15 è sotto 5, quindi la regola vale.' },
+            { q: 'Come funziona il test esatto di Fisher?', a: 'Condizionando a entrambi i margini, la cella in alto a sinistra di una tabella 2 × 2 segue sotto indipendenza una legge ipergeometrica. Il p-value bilaterale somma le probabilità di tutte le tabelle con quei margini non più probabili di quella osservata. È esatto per qualunque numerosità, e un po’ conservativo perché la legge è discreta.' },
+            { q: 'Che cosa fa la correzione di Yates, e quando conta?', a: 'Toglie 1/2 a ogni |O - E| di una tabella 2 × 2 prima di elevare al quadrato, una correzione di continuità per approssimare una statistica discreta con una legge continua. Con conteggi piccoli conta: l’esempio di phishing ha p = 0,038 senza e 0,085 con la correzione, e Fisher dà 0,082. Con conteggi grandi non cambia quasi nulla.' },
+            { q: 'Come funziona il test di permutazione, e perché il +1?', a: 'Sotto H0 i valori di F si possono rimescolare fra i record senza cambiare la legge della tabella. Si rimescola B volte, si contano i rimescolamenti con un chi quadrato almeno grande quanto quello osservato, p = (1 + conteggio)/(B + 1). Il +1 conta la tabella osservata: il test mantiene esattamente il suo livello e non dà mai p = 0. Non serve nessuna legge asintotica, quindi funziona con attese piccole.' },
+            { q: 'Perché la pagina fa il test di permutazione su un campione?', a: 'Perché sul dataset intero il chi quadrato osservato (2.317,7) è così lontano da qualunque rimescolamento che la risposta sarebbe solo p ≤ 1/(B + 1), e ogni rimescolamento di 22.544 record costerebbe di più. Su 100 connessioni la risposta non è scontata: 24 rimescolamenti su 2.000, p = 0,0125, vicino alla formula (0,0091).' },
+            { q: 'Come si trovano le celle che fanno la dipendenza?', a: 'Con i residui aggiustati (n_ij - E_ij)/√(E_ij (1 - n_i./N)(1 - n_.j/N)), circa normali standard sotto indipendenza. Oltre ±1,96 la cella si discosta al 5%. Qui UDP × DoS (-37,7), UDP × normale (+27,2) e ICMP × DoS (+24,3). Con molte celle qualcuna supera 1,96 per caso, quindi una soglia di Bonferroni è più sicura.' },
+            { q: 'Che cos’è la V di Cramér, e perché serve oltre al p-value?', a: 'V = √(χ²/(N (min(r, c) - 1))), da 0 (indipendenza) a 1 (una variabile determina l’altra). Misura l’intensità qualunque sia N, mentre il chi quadrato cresce con N. Il cursore della pagina lo mostra: stesso θ, V circa 0,12 a ogni n, il p-value che va da non significativo a 10^-23.' },
+            { q: 'Se X e F sono statisticamente dipendenti, X causa F?', a: 'No. La dipendenza può venire da X che causa F, da F che causa X, da un confondente che le causa entrambe, dalla selezione o dal caso. Solo un esperimento in cui X è assegnata a caso, o ipotesi causali esplicite, permettono una lettura causale. In NSL-KDD la freccia, se c’è, va dall’attacco al protocollo.' },
+            { q: 'Che cos’è il paradosso di Simpson?', a: 'Un’associazione nei dati aggregati che sparisce o si inverte dentro ogni strato, perché un confondente è legato a entrambe le variabili. A Berkeley gli uomini erano ammessi più spesso nel complesso (44,5% contro 30,4%), ma le donne più spesso in 4 dipartimenti su 6: le donne avevano fatto domanda soprattutto nei dipartimenti con poche ammissioni.' },
+            { q: 'Che cosa aggiunge il test di Cochran-Mantel-Haenszel?', a: 'Verifica l’associazione fra due variabili binarie tenendo fissa una terza, sommando gli scarti delle tabelle 2 × 2 degli strati. Su Berkeley CMH = 1,43, p = 0,23, odds ratio comune 0,905: dentro i dipartimenti non c’è evidenza di discriminazione, quindi la dipendenza aggregata è dovuta al dipartimento.' },
+            { q: 'I risultati su NSL-KDD valgono per una rete vera?', a: 'Con cautela. NSL-KDD è una selezione: gli autori hanno tolto i duplicati e scelto i record per difficoltà, e gli attacchi sono più della metà del test set. Le associazioni valgono per questo campione; con un’altra frequenza di base degli attacchi le attese, i residui e perfino l’intensità possono cambiare. I dati DARPA di partenza hanno anche artefatti noti della simulazione.' },
+            { q: 'Come avete verificato i numeri?', a: '28 verifiche: i conteggi con una lettura indipendente del file in Python, le tabelle e i test con SciPy 1.17.1 e NumPy, i p-value minuscoli con mpmath a 50 cifre, il test CMH di Berkeley con R e con le frazioni esatte, i generatori con il loro codice di riferimento.' },
+          ],
+        },
+      ],
+    },
+  ],
+};
+
+const THEORY = { en, it };
+export default THEORY;

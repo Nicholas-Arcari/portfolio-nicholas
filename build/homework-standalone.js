@@ -104,11 +104,9 @@ export const HOMEWORKS = [
     source: 'hw6',
     library: 'homework6.js',
     global: 'Homework6',
-    inner: [],
-    contents: 'Computations: xoshiro128** and SplitMix64 with their checks, the computations of the page in slices,\n * line charts and histograms with labels and toggling legends, and command line (node homework6.js [options]).',
-    description: 'Homework #6 - Statistics: in preparation, the skeleton of the program before the assignment.',
-    // lo scheletro: si pubblica quando arriva la consegna
-    published: false,
+    inner: ['nslkdd.js'],
+    contents: 'Data and computations: the 22,544 connections of NSL-KDD (KDDTest+), contingency tables, marginal, conditional and expected frequencies,\n * chi-square, G, Fisher, Yates, residuals, Cramer\'s V, permutation and Cochran-Mantel-Haenszel tests, xoshiro128** and SplitMix64,\n * charts with labels and toggling legends, and command line (node homework6.js [options]).',
+    description: 'Homework #6 - Statistics: statistical independence, the contingency table and the chi-square test on real security data (NSL-KDD), and association against causation.',
   },
 ];
 

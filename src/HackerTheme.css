@@ -2346,6 +2346,128 @@ body.dark-mode .hw5-compare td.hw5-win {
     .hw5-dirichlet th:nth-child(2) { width: 60%; }
 }
 
+/* ===== HOMEWORK #6 (Statistics) =====
+   Le sezioni hanno anche le classi hw1-section, hw2, hw3, hw4 e hw5: qui
+   solo gli elementi nuovi della pagina dell'Homework #6. */
+.hw6 thead th {
+    text-transform: none;
+    letter-spacing: 0.02em;
+}
+/* le tabelle a doppia entrata: cifre incolonnate a destra, i totali in evidenza */
+.hw6-matrix td,
+.hw6-marginal td,
+.hw6-series td,
+.hw6-departments td,
+.hw6-pairs-table td,
+.hw6-compare td {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+.hw6-matrix thead th:not(:first-child),
+.hw6-marginal thead th:not(:first-child),
+.hw6-series thead th:not(:first-child),
+.hw6-departments thead th:not(:first-child),
+.hw6-pairs-table thead th:not(:first-child),
+.hw6-compare thead th:not(:first-child) {
+    text-align: right;
+}
+.hw6-matrix .hw6-total,
+.hw6-matrix tfoot th,
+.hw6-matrix tfoot td,
+.hw6-matrix tr.hw6-margin-row > *,
+.hw6-departments tr.hw6-margin-row > * {
+    font-weight: 700;
+}
+.hw6-matrix tfoot th,
+.hw6-matrix tfoot td,
+.hw6-matrix tr.hw6-margin-row > *,
+.hw6-departments tr.hw6-margin-row > * {
+    border-top: 2px solid #ccc;
+}
+body.dark-mode .hw6-matrix tfoot th,
+body.dark-mode .hw6-matrix tfoot td,
+body.dark-mode .hw6-matrix tr.hw6-margin-row > *,
+body.dark-mode .hw6-departments tr.hw6-margin-row > * {
+    border-top-color: #3a3a3a;
+}
+.hw6-matrix td.is-zero {
+    color: #aaa;
+}
+/* le attese sotto 5 della tabella scritta da chi legge */
+.hw6-matrix td.is-small {
+    background: rgba(240, 165, 0, 0.18);
+}
+/* i residui standardizzati: rosso sopra l'atteso, blu sotto, piu' intensi oltre 1,96, 2,58 e 3,29 */
+.hw6-residuals td.hw6-res-p1 { background: rgba(213, 35, 73, 0.12); }
+.hw6-residuals td.hw6-res-p2 { background: rgba(213, 35, 73, 0.24); }
+.hw6-residuals td.hw6-res-p3 { background: rgba(213, 35, 73, 0.4); }
+.hw6-residuals td.hw6-res-n1 { background: rgba(92, 107, 192, 0.14); }
+.hw6-residuals td.hw6-res-n2 { background: rgba(92, 107, 192, 0.28); }
+.hw6-residuals td.hw6-res-n3 { background: rgba(92, 107, 192, 0.45); }
+body.dark-mode .hw6-residuals td.hw6-res-p1 { background: rgba(255, 107, 129, 0.14); }
+body.dark-mode .hw6-residuals td.hw6-res-p2 { background: rgba(255, 107, 129, 0.27); }
+body.dark-mode .hw6-residuals td.hw6-res-p3 { background: rgba(255, 107, 129, 0.42); }
+body.dark-mode .hw6-residuals td.hw6-res-n1 { background: rgba(121, 134, 203, 0.18); }
+body.dark-mode .hw6-residuals td.hw6-res-n2 { background: rgba(121, 134, 203, 0.32); }
+body.dark-mode .hw6-residuals td.hw6-res-n3 { background: rgba(121, 134, 203, 0.5); }
+/* le due marginali affiancate sugli schermi larghi */
+.hw6-pair {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(14em, 1fr));
+    gap: 0 1.5em;
+}
+/* la riga del campione scelto, nella tabella della dipendenza regolabile */
+.hw6-series tr.is-current > * {
+    background: rgba(213, 35, 73, 0.1);
+}
+body.dark-mode .hw6-series tr.is-current > * {
+    background: rgba(233, 69, 96, 0.2);
+}
+/* la tabella da scrivere e i record da incollare */
+.hw6-grid input {
+    width: 5.5em;
+    max-width: 100%;
+    padding: 0.3em 0.45em;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: #f9f9f9;
+    font-family: monospace;
+    font-size: 1em;
+    text-align: right;
+}
+.hw6-grid input[aria-invalid="true"],
+.hw6-pairs textarea[aria-invalid="true"] {
+    border-color: #c62828;
+}
+.hw6-pairs label {
+    display: block;
+    margin: 0.4em 0 0.3em;
+    font-size: 0.85em;
+    font-weight: 600;
+}
+.hw6-pairs textarea {
+    width: 100%;
+    max-width: 32em;
+    padding: 0.45em 0.6em;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background: #f9f9f9;
+    font-family: monospace;
+    font-size: 0.95em;
+}
+.hw6-pairs label.hw6-check {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    font-weight: 400;
+}
+body.dark-mode .hw6-grid input,
+body.dark-mode .hw6-pairs textarea {
+    background: #222222;
+    color: #efefef;
+    border-color: #2a2a2a;
+}
+
 /* ===== Grafici degli homework: i valori del pezzo sotto il puntatore =====
    Il riquadro e il contorno li crea attachChartTooltip (homework1.js,
    homework2.js) dentro la figura, che per questo e' posizionata. */
