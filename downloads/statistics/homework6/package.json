@@ -1,0 +1,15 @@
+{
+  "name": "homework6-statistics",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Homework #6 - Statistics: statistical independence, the contingency table and the chi-square test on real security data (NSL-KDD), and association against causation.",
+  "author": "Nicholas Arcari",
+  "type": "commonjs",
+  "main": "homework6.js",
+  "scripts": {
+    "start": "node homework6.js"
+  },
+  "engines": {
+    "node": ">=14"
+  }
+}
