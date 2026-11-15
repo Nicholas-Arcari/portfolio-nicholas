@@ -10,8 +10,8 @@
 // L'iframe e' isolato (sandbox senza allow-same-origin): la demo gira come
 // un'origine a se', senza accesso a questa pagina, ai cookie o allo storage del
 // portfolio (e sta comunque su un altro dominio, the-anomaly-guard.github.io). Le
-// basta allow-scripts (impostazioni e pagine passano dall'indirizzo, non dallo
-// storage); allow-popups e allow-popups-to-escape-sandbox servono ai suoi link
+// basta allow-scripts (impostazioni, pagine e posizione del replay passano
+// dall'indirizzo, non dallo storage); allow-popups e allow-popups-to-escape-sandbox servono ai suoi link
 // "Source code", che aprono GitHub in una nuova scheda. La CSP del sito
 // (vite.config.js) permette di incorporare solo questo indirizzo.
 import React from 'react';
@@ -42,6 +42,7 @@ const Project1 = () => {
   return (
     <HomeworkShell slug="project-1" sidebar={sidebar}>
       <p>{t('statistics.project1Intro')}</p>
+      <p>{t('statistics.project1Howto')}</p>
       <iframe
         className="project-demo"
         src={DEMO}
