@@ -37,6 +37,7 @@ const Homework3 = lazy(() => import('./pages/statistics/Homework3'));
 const Homework4 = lazy(() => import('./pages/statistics/Homework4'));
 const Homework5 = lazy(() => import('./pages/statistics/Homework5'));
 const Homework6 = lazy(() => import('./pages/statistics/Homework6'));
+const Homework7 = lazy(() => import('./pages/statistics/Homework7'));
 const Project1 = lazy(() => import('./pages/statistics/Project1'));
 const RetiList = lazy(() => import('./pages/reti/RetiList'));
 const RetiExercise = lazy(() => import('./pages/reti/RetiExercise'));
@@ -83,6 +84,7 @@ function App() {
                 <Route path="/statistics/homework-4" element={<Homework4 />} />
                 <Route path="/statistics/homework-5" element={<Homework5 />} />
                 <Route path="/statistics/homework-6" element={<Homework6 />} />
+                <Route path="/statistics/homework-7" element={<Homework7 />} />
                 <Route path="/statistics/project-1" element={<Project1 />} />
                 <Route path="/reti-di-calcolatori" element={<RetiList />} />
                 <Route path="/reti-di-calcolatori/:slug" element={<RetiExercise />} />

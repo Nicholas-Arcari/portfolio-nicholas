@@ -31,11 +31,12 @@ const STATIC_FILES = ['index.html', 'style.css', 'README.txt'];
  * calcoli, che diventa lo script globale `global`; `inner` sono i moduli che
  * la libreria importa e che finiscono dentro di lei (i parametri della
  * consegna dell'Exercise 1, la lista di parole di BIP-39 dell'Exercise 2, il
- * corpus dell'Homework #2; gli Homework #3, #4, #5 e #6 non ne hanno).
+ * corpus dell'Homework #2, i record di NSL-KDD dell'Homework #6; gli
+ * Homework #3, #4, #5 e #7 non ne hanno).
  * `published: false` tiene un programma fuori dal sito pubblicato: la build
  * lo genera comunque (cosi' una conversione rotta la ferma subito) ma non
  * lo scrive in dist, e in sviluppo resta raggiungibile per provarlo. E' lo
- * stato dell'Homework #6 finche' non arriva la consegna.
+ * stato dell'Homework #7 finche' non arriva la consegna.
  */
 export const HOMEWORKS = [
   {
@@ -107,6 +108,18 @@ export const HOMEWORKS = [
     inner: ['nslkdd.js'],
     contents: 'Data and computations: the 22,544 connections of NSL-KDD (KDDTest+), contingency tables, marginal, conditional and expected frequencies,\n * chi-square, G, Fisher, Yates, residuals, Cramer\'s V, permutation and Cochran-Mantel-Haenszel tests, xoshiro128** and SplitMix64,\n * charts with labels and toggling legends, and command line (node homework6.js [options]).',
     description: 'Homework #6 - Statistics: statistical independence, the contingency table and the chi-square test on real security data (NSL-KDD), and association against causation.',
+  },
+  {
+    number: '7',
+    name: 'Homework #7',
+    source: 'hw7',
+    library: 'homework7.js',
+    global: 'Homework7',
+    inner: [],
+    contents: 'Computations: xoshiro128** and SplitMix64 with their checks, the computations of the page in slices,\n * line charts, histograms, stacked and grouped bars with labels and toggling legends, and command line (node homework7.js [options]).',
+    description: 'Homework #7 - Statistics: in preparation, the skeleton of the program before the assignment.',
+    // lo scheletro: si pubblica quando arriva la consegna
+    published: false,
   },
 ];
 

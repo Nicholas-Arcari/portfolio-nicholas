@@ -107,6 +107,21 @@ export const STATISTICS_HOMEWORK = [
     due: '2026-11-19T21:00:00+01:00',
   },
   {
+    // in preparazione: la consegna non e' ancora arrivata. La pagina ha gia'
+    // lo scheletro (pages/statistics/hw7); la teoria e il programma
+    // scaricabile si accendono con il contenuto
+    slug: 'homework-7',
+    name: 'Homework #7',
+    type: 'homework',
+    theory: false,
+    description: {
+      it: 'In preparazione.',
+      en: 'In preparation.',
+    },
+    completed: null,
+    due: '2026-11-26T21:00:00+01:00',
+  },
+  {
     // progetto di gruppo: The Anomaly Guard. Il codice sta nel suo repository;
     // la pagina ne mostra la demo pubblicata (Project1.jsx)
     slug: 'project-1',
