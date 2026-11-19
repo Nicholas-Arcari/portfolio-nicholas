@@ -1184,6 +1184,12 @@ pre.core {
   letter-spacing: 0.02em;
 }
 
+/* il riepilogo dei test ha sei colonne: il 45% di .summary, pensato per due,
+   restringeva la prima fino a spezzare le parole a meta' */
+.table.summary-tests th {
+  width: auto;
+}
+
 /* le tabelle di numeri: cifre incolonnate a destra, i totali in evidenza */
 .table.matrix td,
 .table.num td {
