@@ -43,6 +43,7 @@ const Project1 = () => {
     <HomeworkShell slug="project-1" sidebar={sidebar}>
       <p>{t('statistics.project1Intro')}</p>
       <p>{t('statistics.project1Howto')}</p>
+      <p>{t('statistics.project1Logs')}</p>
       <iframe
         className="project-demo"
         src={DEMO}
