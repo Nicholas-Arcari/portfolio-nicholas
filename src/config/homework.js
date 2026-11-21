@@ -107,18 +107,15 @@ export const STATISTICS_HOMEWORK = [
     due: '2026-11-19T21:00:00+01:00',
   },
   {
-    // in preparazione: la consegna non e' ancora arrivata. La pagina ha gia'
-    // lo scheletro (pages/statistics/hw7); la teoria e il programma
-    // scaricabile si accendono con il contenuto
     slug: 'homework-7',
     name: 'Homework #7',
     type: 'homework',
-    theory: false,
+    theory: true,
     description: {
-      it: 'In preparazione.',
-      en: 'In preparation.',
+      it: 'Le forme di convergenza della probabilità, in probabilità, quasi certa, in media quadratica e in distribuzione, con i controesempi, il loro ruolo nella legge dei grandi numeri, nel limite centrale e in altri risultati, e perché compare √n. Poi la probabilità condizionata e il teorema di Bayes con prior, verosimiglianza e posterior, su allarmi, phishing, SMS di spam e connessioni di NSL-KDD.',
+      en: 'The modes of convergence of probability, in probability, almost sure, in mean square and in distribution, with their counterexamples, their role in the law of large numbers, in the central limit theorem and in other results, and why √n appears. Then conditional probability and Bayes’ theorem with prior, likelihood and posterior, on alarms, phishing, spam SMS and NSL-KDD connections.',
     },
-    completed: null,
+    completed: '2026-11-21T05:08:00+01:00',
     due: '2026-11-26T21:00:00+01:00',
   },
   {

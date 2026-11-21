@@ -1174,8 +1174,144 @@ pre.core {
 }
 
 /* ===== Homework #7 =====
-   Le stesse classi degli altri homework. Gli elementi nuovi della pagina
-   arriveranno con la consegna. */
+   Le stesse classi degli altri homework, piu' gli elementi nuovi: le cifre
+   incolonnate, le file di pulsanti dei riquadri, il messaggio dell'antispam
+   e le scelte di NSL-KDD, i disegni (la rete del triage, la mappa delle
+   implicazioni, le strisce delle connessioni) e il prior da trascinare. */
+
+/* le cifre incolonnate a destra */
+.table th.num,
+.table td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* il testo originale della consegna: la lista ha gia' i suoi trattini */
+.plain-list {
+  margin: 0 0 1rem;
+  padding-left: 0.5rem;
+  list-style: none;
+}
+
+/* le file di pulsanti dei riquadri */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.6rem 0 1rem;
+}
+
+.btn.small {
+  padding: 0.35rem 0.8rem;
+  font-size: 0.9rem;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: none;
+}
+
+/* il secondo rilevatore dell'allarme */
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.4rem 0 0.8rem;
+  font-size: 0.9rem;
+}
+
+.toggle input {
+  width: auto;
+  accent-color: var(--accent);
+}
+
+/* il messaggio da valutare e le tre scelte di NSL-KDD */
+.field label,
+.selects label {
+  display: block;
+  margin: 0.4rem 0 0.3rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.field textarea {
+  display: block;
+  width: 100%;
+  max-width: 40rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.95rem;
+  resize: vertical;
+}
+
+.selects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.2rem;
+  margin-bottom: 0.8rem;
+}
+
+.selects select {
+  display: block;
+  min-width: 9rem;
+  margin-top: 0.3rem;
+}
+
+/* i disegni: la rete del triage e la mappa delle implicazioni */
+svg.diagram {
+  display: block;
+  width: 100%;
+  max-width: 40rem;
+  height: auto;
+  margin: 0.6rem auto 0.8rem;
+}
+
+/* i tre istogrammi della scala giusta, affiancati sugli schermi larghi */
+.charts.three {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+/* le strisce delle connessioni: una cella per connessione, 50 per riga */
+svg.strip {
+  display: block;
+  width: 100%;
+  max-width: 40rem;
+  height: auto;
+  margin: 0.2rem 0 0.8rem;
+}
+
+/* il prior da trascinare: il dito sposta i punti, non la pagina */
+canvas.editor {
+  display: block;
+  width: 100%;
+  border-radius: 4px;
+  touch-action: none;
+}
+
+canvas.editor:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* le righe che dicono si' o no, e il peso delle parole verso lo spam o il legittimo */
+.table tr.holds > td,
+.table tr.towards-ham > td {
+  color: var(--ok);
+}
+
+.table tr.fails > td,
+.table tr.towards-spam > td {
+  color: var(--error);
+}
+
+.table tr.unknown > * {
+  color: var(--muted);
+}
 
 /* le intestazioni possono contenere simboli e formule (H0, p-value): niente maiuscolo, come nelle pagine degli altri homework */
 .table thead th {

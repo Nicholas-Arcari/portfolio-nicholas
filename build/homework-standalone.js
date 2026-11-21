@@ -31,12 +31,12 @@ const STATIC_FILES = ['index.html', 'style.css', 'README.txt'];
  * calcoli, che diventa lo script globale `global`; `inner` sono i moduli che
  * la libreria importa e che finiscono dentro di lei (i parametri della
  * consegna dell'Exercise 1, la lista di parole di BIP-39 dell'Exercise 2, il
- * corpus dell'Homework #2, i record di NSL-KDD dell'Homework #6; gli
- * Homework #3, #4, #5 e #7 non ne hanno).
+ * corpus dell'Homework #2, i record di NSL-KDD dell'Homework #6, gli SMS e
+ * NSL-KDD dell'Homework #7; gli Homework #3, #4 e #5 non ne hanno).
  * `published: false` tiene un programma fuori dal sito pubblicato: la build
  * lo genera comunque (cosi' una conversione rotta la ferma subito) ma non
- * lo scrive in dist, e in sviluppo resta raggiungibile per provarlo. E' lo
- * stato dell'Homework #7 finche' non arriva la consegna.
+ * lo scrive in dist, e in sviluppo resta raggiungibile per provarlo: serve
+ * a preparare lo scheletro di un homework prima della consegna.
  */
 export const HOMEWORKS = [
   {
@@ -115,11 +115,9 @@ export const HOMEWORKS = [
     source: 'hw7',
     library: 'homework7.js',
     global: 'Homework7',
-    inner: [],
-    contents: 'Computations: xoshiro128** and SplitMix64 with their checks, the computations of the page in slices,\n * line charts, histograms, stacked and grouped bars with labels and toggling legends, and command line (node homework7.js [options]).',
-    description: 'Homework #7 - Statistics: in preparation, the skeleton of the program before the assignment.',
-    // lo scheletro: si pubblica quando arriva la consegna
-    published: false,
+    inner: ['smsspam.js', 'nslkdd.js'],
+    contents: 'Data and computations: the SMS Spam Collection (5,574 SMS) and four columns plus the source bytes of NSL-KDD (KDDTest+), the four kinds of convergence\n * with their counterexamples, exact Kolmogorov distances, Berry-Esseen, Slutsky, the delta method, Glivenko-Cantelli and the MLE, sqrt(n) and alarms in bursts,\n * heavy tails, conditional probability, Bayes on alarms, a Bayesian network, Wald\'s sequential test, Beta posteriors on a grid, coverage of intervals,\n * naive Bayes filters, Bernstein-von Mises, birthday collisions, xoshiro128** and SplitMix64, charts with labels and toggling legends,\n * and command line (node homework7.js [options]).',
+    description: 'Homework #7 - Statistics: the modes of convergence and the role of sqrt(n); conditional probability, Bayes\' theorem and statistical inference.',
   },
 ];
 

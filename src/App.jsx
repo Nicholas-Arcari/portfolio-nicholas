@@ -48,6 +48,7 @@ const Theory3 = lazy(() => import('./pages/statistics/theory/Theory3'));
 const Theory4 = lazy(() => import('./pages/statistics/theory/Theory4'));
 const Theory5 = lazy(() => import('./pages/statistics/theory/Theory5'));
 const Theory6 = lazy(() => import('./pages/statistics/theory/Theory6'));
+const Theory7 = lazy(() => import('./pages/statistics/theory/Theory7'));
 
 function App() {
   return (
@@ -95,6 +96,7 @@ function App() {
                 <Route path="/statistics/homework-4/theory" element={<Theory4 />} />
                 <Route path="/statistics/homework-5/theory" element={<Theory5 />} />
                 <Route path="/statistics/homework-6/theory" element={<Theory6 />} />
+                <Route path="/statistics/homework-7/theory" element={<Theory7 />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>

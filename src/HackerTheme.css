@@ -2468,6 +2468,132 @@ body.dark-mode .hw6-pairs textarea {
     border-color: #2a2a2a;
 }
 
+/* ===== HOMEWORK #7 (Statistics) =====
+   Le sezioni hanno anche le classi hw1-section e da hw2 a hw6: qui solo gli
+   elementi nuovi della pagina dell'Homework #7. */
+.hw7 thead th {
+    text-transform: none;
+    letter-spacing: 0.02em;
+}
+/* le cifre incolonnate a destra */
+.hw7-table th.hw7-num,
+.hw7-table td.hw7-num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+/* il testo originale della consegna: la lista ha gia' i suoi numeri */
+.hw7-plain-list {
+    list-style: none;
+    margin-left: 0;
+    padding-left: 0.5em;
+}
+/* le file di pulsanti dei riquadri */
+.hw7-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5em;
+    margin: 0.6em 0 1em;
+}
+.hw7-actions .button {
+    margin: 0;
+}
+.hw7-check {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    margin: 0.4em 0 0.8em;
+}
+.hw7-check input {
+    width: auto;
+}
+/* il messaggio da scrivere e le tre scelte di NSL-KDD */
+.hw7-field label,
+.hw7-selects label {
+    display: block;
+    margin: 0.4em 0 0.3em;
+    font-size: 0.85em;
+    font-weight: 600;
+}
+.hw7-field textarea {
+    width: 100%;
+    max-width: 40em;
+    padding: 0.45em 0.6em;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background: #f9f9f9;
+    font-family: monospace;
+    font-size: 0.95em;
+}
+.hw7-selects {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5em 1.2em;
+    margin-bottom: 0.8em;
+}
+.hw7-selects select {
+    display: block;
+    min-width: 9em;
+    margin-top: 0.3em;
+    font-weight: 400;
+}
+body.dark-mode .hw7-field textarea {
+    background: #222222;
+    color: #efefef;
+    border-color: #2a2a2a;
+}
+/* i due disegni: la rete del triage e la mappa delle implicazioni */
+.hw7-network,
+.hw7-map {
+    display: block;
+    width: 100%;
+    max-width: 40em;
+    height: auto;
+    margin: 0.6em auto 0.8em;
+}
+/* i tre istogrammi della scala giusta, affiancati sugli schermi larghi */
+.hw7-three {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+/* le strisce delle connessioni: una cella per connessione, 50 per riga */
+.hw7-strip {
+    display: block;
+    width: 100%;
+    max-width: 40em;
+    height: auto;
+    margin: 0.2em 0 0.8em;
+}
+/* il prior da trascinare: il dito sposta i punti, non la pagina */
+.hw7-editor {
+    display: block;
+    width: 100%;
+    touch-action: none;
+    border-radius: 4px;
+}
+.hw7-editor:focus-visible {
+    outline: 2px solid #d52349;
+    outline-offset: 2px;
+}
+/* le righe che dicono si' o no, e il peso delle parole verso lo spam o il legittimo */
+.hw7-table tr.hw7-holds > td,
+.hw7-table tr.hw7-towards-ham > td {
+    color: #2e7d6b;
+}
+.hw7-table tr.hw7-fails > td,
+.hw7-table tr.hw7-towards-spam > td {
+    color: #c62828;
+}
+.hw7-table tr.hw7-unknown > * {
+    color: #888888;
+}
+body.dark-mode .hw7-table tr.hw7-holds > td,
+body.dark-mode .hw7-table tr.hw7-towards-ham > td {
+    color: #4fb39c;
+}
+body.dark-mode .hw7-table tr.hw7-fails > td,
+body.dark-mode .hw7-table tr.hw7-towards-spam > td {
+    color: #ff6b81;
+}
+
 /* ===== Grafici degli homework: i valori del pezzo sotto il puntatore =====
    Il riquadro e il contorno li crea attachChartTooltip (homework1.js,
    homework2.js) dentro la figura, che per questo e' posizionata. */
