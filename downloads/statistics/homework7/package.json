@@ -1,0 +1,15 @@
+{
+  "name": "homework7-statistics",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Homework #7 - Statistics: the modes of convergence and the role of sqrt(n); conditional probability, Bayes' theorem and statistical inference.",
+  "author": "Nicholas Arcari",
+  "type": "commonjs",
+  "main": "homework7.js",
+  "scripts": {
+    "start": "node homework7.js"
+  },
+  "engines": {
+    "node": ">=14"
+  }
+}
