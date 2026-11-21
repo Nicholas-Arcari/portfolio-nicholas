@@ -280,6 +280,11 @@ function fill(region, ...nodes) {
     if (chart && chart.detach) chart.detach();
     charts.delete(canvas);
   }
+  for (const drawing of region.querySelectorAll('svg.diagram')) {
+    const detach = drawingLabels.get(drawing);
+    if (detach) detach();
+    drawingLabels.delete(drawing);
+  }
   region.replaceChildren(...nodes.flat(Infinity).filter((n) => n !== null && n !== undefined && n !== false));
 }
 
@@ -332,6 +337,20 @@ function slider(id, label, max, value, onChange) {
       input.setAttribute('aria-valuetext', textLabel);
     },
   };
+}
+
+// the labels of the SVG drawings: released when their drawing is replaced
+const drawingLabels = new Map(); // svg -> detach
+
+/**
+ * An SVG drawing with the label under the pointer, the same as the charts:
+ * locate(x, y, width) says what lies under the point. The drawing sits in
+ * a positioned box, where the label goes.
+ */
+function labelled(drawing, locate) {
+  const box = h('div', { class: 'drawing' }, drawing);
+  drawingLabels.set(drawing, hw.attachPointerLabel(drawing, locate));
+  return box;
 }
 
 /** A box whose output region is built again at every change: `build()` returns the nodes. */
@@ -635,12 +654,14 @@ function tryHashBox() {
   const run = state.hash;
   const count = () => view.hashCount(run.bits, run.factor);
   const exactOf = () => hw.collisionExact(run.bits, count());
-  const fig = figure(T.chartTitle, hw.drawLineChart, view.hashChart({ history: run.history }, exactOf(), F.decimal), { tip: view.tips.hash({ history: run.history }, exactOf(), text.tips), items: view.legends.hash(text.legends), keep: keep('hash') });
+  const first = view.hashChart({ history: run.history }, exactOf(), F.decimal);
+  const fig = figure(T.chartTitle, hw.drawLineChart, first, { tip: view.tips.hash(first, exactOf(), text.tips), items: view.legends.hash(text.legends), keep: keep('hash') });
   const line = resultLine('');
   const factorGroup = h('div');
   const update = () => {
     const exact = exactOf();
-    refresh(fig, view.hashChart({ history: run.history }, exact, F.decimal), view.tips.hash({ history: run.history }, exact, text.tips));
+    const chart = view.hashChart({ history: run.history }, exact, F.decimal);
+    refresh(fig, chart, view.tips.hash(chart, exact, text.tips));
     line.textContent = T.result(run, exact, count(), run.bits);
   };
   const clear = () => {
@@ -659,9 +680,7 @@ function tryHashBox() {
   );
   // more trials, from the stream 'hash' after the ones of the test (repetitions from 10^6)
   const add = (n) => {
-    run.hits += hw.collisionRun(run.bits, count(), n, hw.DEFAULT_SEED, 1000000 + run.trials);
-    run.trials += n;
-    run.history = [...run.history, { trials: run.trials, hits: run.hits }].slice(-60);
+    Object.assign(run, view.hashMore(run, run.bits, count(), n));
     update();
   };
   buildFactors();
@@ -708,15 +727,15 @@ function mapBlock() {
 // La mappa delle implicazioni: i quattro modi, con le frecce che valgono sempre
 function mapDiagram(mode) {
   const pal = palette();
-  const P = { as: { x: 18, y: 12 }, l2: { x: 18, y: 48 }, probability: { x: 52, y: 30 }, distribution: { x: 86, y: 30 } };
-  const box = { w: 28, h: 12 };
+  const P = view.MAP_LAYOUT;
+  const { box } = view.MAP_VIEW;
   const stateOf = (m) => {
     if (!mode) return 'idle';
     if (m === mode) return 'self';
     return hw.implication(mode, m).holds ? 'holds' : 'fails';
   };
   const fills = { idle: pal.background, self: pal.series[0], holds: pal.series[2], fails: pal.series[1] };
-  return svg(
+  const drawing = svg(
     'svg',
     { class: 'diagram', viewBox: '0 0 104 60', role: 'img', 'aria-label': text.tryMap.diagramLabel },
     svg('defs', null, svg('marker', { id: 'map-arrow', viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 5, markerHeight: 5, orient: 'auto-start-reverse' }, svg('path', { d: 'M 0 0 L 10 5 L 0 10 z', fill: pal.text }))),
@@ -739,6 +758,13 @@ function mapDiagram(mode) {
       );
     }),
   );
+  const names = (list) => list.map((m) => text.tryMap.modes[m]);
+  return labelled(drawing, (x, y, width) => {
+    const hit = view.diagramHit(P, view.MAP_VIEW, width, x, y);
+    if (!hit) return null;
+    const others = hw.MODES.filter((m) => m !== hit.key);
+    return { rect: hit.rect, text: text.tips.mode(text.tryMap.modes[hit.key], names(others.filter((m) => hw.implication(hit.key, m).holds)), names(others.filter((m) => hw.implication(m, hit.key).holds))) };
+  });
 }
 
 function tryMapBox() {
@@ -909,18 +935,6 @@ function burstsBlock() {
   ];
 }
 
-// Una striscia di connessioni, una cella per connessione: rossa se c'e' un allarme
-function burstStrip(cells, label) {
-  const pal = palette();
-  const perRow = 50;
-  const rows = Math.ceil(cells.length / perRow);
-  return svg(
-    'svg',
-    { class: 'strip', viewBox: `0 0 ${perRow * 2} ${rows * 2}`, style: `aspect-ratio: ${perRow * 2} / ${rows * 2}`, role: 'img', 'aria-label': label, preserveAspectRatio: 'none' },
-    Array.from(cells, (v, i) => svg('rect', { x: (i % perRow) * 2 + 0.15, y: Math.floor(i / perRow) * 2 + 0.15, width: 1.7, height: 1.7, fill: v ? pal.series[1] : pal.grid })),
-  );
-}
-
 function tryBurstsBox() {
   const T = text.tryBursts;
   const F = text.fmt;
@@ -935,7 +949,15 @@ function tryBurstsBox() {
     const bursty = hw.burstPath(view.BURST_STRIP, hw.FALSE_ALARMS.rate, rho);
     const label1 = T.stripLabel(T.strips.independent, count(independent), view.BURST_STRIP);
     const label2 = T.stripLabel(T.strips.bursts, count(bursty), view.BURST_STRIP);
-    fill(strips, h('p', { class: 'note', text: label1 }), burstStrip(independent, label1), h('p', { class: 'note', text: label2 }), burstStrip(bursty, label2));
+    fill(
+      strips,
+      h(
+        'div',
+        { class: 'charts' },
+        figure(label1, hw.drawStrip, view.stripChart(independent), { wide: false, tip: view.tips.strip(independent, text.tips) }),
+        figure(label2, hw.drawStrip, view.stripChart(bursty), { wide: false, tip: view.tips.strip(bursty, text.tips) }),
+      ),
+    );
     refresh(fig, view.burstChart(rho, F.decimal), view.tips.burst(rho, text.tips));
     line.textContent = T.result(hw.burstFacts(1000, hw.FALSE_ALARMS.rate, rho));
   };
@@ -1250,9 +1272,10 @@ function networkBlock() {
 function networkDiagram(q, evidence) {
   const pal = palette();
   const N = text.network.nodes;
-  const box = { w: 22, h: 12 };
+  const { box } = view.NETWORK_VIEW;
   const L = view.NETWORK_LAYOUT;
-  return svg(
+  const prior = hw.networkPosterior({});
+  const drawing = svg(
     'svg',
     { class: 'diagram', viewBox: '0 0 100 64', role: 'img', 'aria-label': text.tryNetwork.diagramLabel },
     svg('defs', null, svg('marker', { id: 'network-arrow', viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 5, markerHeight: 5, orient: 'auto-start-reverse' }, svg('path', { d: 'M 0 0 L 10 5 L 0 10 z', fill: pal.text }))),
@@ -1274,6 +1297,10 @@ function networkDiagram(q, evidence) {
       );
     }),
   );
+  return labelled(drawing, (x, y, width) => {
+    const hit = view.diagramHit(L, view.NETWORK_VIEW, width, x, y);
+    return hit && { rect: hit.rect, text: text.tips.node(N[hit.key], q[hit.key], prior[hit.key], evidence[hit.key]) };
+  });
 }
 
 function tryNetworkBox() {

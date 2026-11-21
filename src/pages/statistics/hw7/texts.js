@@ -835,6 +835,16 @@ const it = {
     clt: (n, values) => [`n = ${IT.int(n)}`, ...['bernoulli', 'bernoulliBound', 'exponential', 'exponentialBound'].map((k, i) => (values[i] === null ? null : `${it.legends[k]} ${IT.num(values[i], 4)}`))].filter(Boolean).join(' · '),
     histogram: (from, to, count, share) => `Da ${IT.num(from, 2)} a ${IT.num(to, 2)}: ${IT.int(count)} (${IT.pct(share)})`,
     hash: (trials, estimate, exact) => [`${IT.int(trials)} prove`, estimate === null ? null : `stima ${IT.pct(estimate, 2)}`, exact === null ? null : `esatta ${IT.pct(exact, 2)}`].filter(Boolean).join(' · '),
+    strip: (n, alarm, run) => (alarm ? `Connessione ${IT.int(n)}: allarme, ${run > 1 ? `in una raffica di ${IT.int(run)}` : 'isolato'}` : `Connessione ${IT.int(n)}: nessun allarme`),
+    node: (name, p, prior, observed) => (observed === null || observed === undefined ? `${name}: ${IT.pct(p, 1)} (${IT.pct(prior, 1)} prima degli indizi)` : `${name}: osservato, ${observed ? 'sì' : 'no'}`),
+    mode: (name, implies, impliedBy) => {
+      const low = (x) => x.charAt(0).toLowerCase() + x.slice(1);
+      const list = (xs) => (xs.length > 1 ? `${xs.slice(0, -1).map(low).join(', ')} e ${low(xs[xs.length - 1])}` : low(xs[0]));
+      const a = implies.length ? `implica ${list(implies)}` : 'non implica nessun’altra';
+      let b = 'nessun’altra la implica';
+      if (impliedBy.length) b = `${impliedBy.length > 1 ? 'la implicano' : 'la implica'} ${list(impliedBy)}`;
+      return `${name}: ${a}; ${b}.`;
+    },
     cauchy: (n, min, max) => `n = ${IT.int(n)}: le medie vanno da ${IT.num(min, 2)} a ${IT.num(max, 2)}`,
     speed: (n, values) => [`n = ${IT.int(n)}`, ...['exact', 'chebyshev', 'hoeffding', 'normal'].map((k, i) => (values[i] === null ? null : `${it.legends[k]} ${IT.prob(values[i])}`))].filter(Boolean).join(' · '),
     bvm: (n, clicks, u, w, truth) => [`n = ${IT.int(n)}, ${IT.int(clicks)} click`, u ? `uniforme ${it.bvm.pair(u)}` : null, w ? `sbagliato ${it.bvm.pair(w)}` : null, truth ? `vera ${IT.pct(CAMPAIGN.rate, 0)}` : null].filter(Boolean).join(' · '),
@@ -1605,6 +1615,15 @@ const en = {
     clt: (n, values) => [`n = ${EN.int(n)}`, ...['bernoulli', 'bernoulliBound', 'exponential', 'exponentialBound'].map((k, i) => (values[i] === null ? null : `${en.legends[k]} ${EN.num(values[i], 4)}`))].filter(Boolean).join(' · '),
     histogram: (from, to, count, share) => `From ${EN.num(from, 2)} to ${EN.num(to, 2)}: ${EN.int(count)} (${EN.pct(share)})`,
     hash: (trials, estimate, exact) => [`${EN.int(trials)} trials`, estimate === null ? null : `estimate ${EN.pct(estimate, 2)}`, exact === null ? null : `exact ${EN.pct(exact, 2)}`].filter(Boolean).join(' · '),
+    strip: (n, alarm, run) => (alarm ? `Connection ${EN.int(n)}: alarm, ${run > 1 ? `in a burst of ${EN.int(run)}` : 'on its own'}` : `Connection ${EN.int(n)}: no alarm`),
+    node: (name, p, prior, observed) => (observed === null || observed === undefined ? `${name}: ${EN.pct(p, 1)} (${EN.pct(prior, 1)} before the clues)` : `${name}: observed, ${observed ? 'yes' : 'no'}`),
+    mode: (name, implies, impliedBy) => {
+      const low = (x) => x.charAt(0).toLowerCase() + x.slice(1);
+      const list = (xs) => (xs.length > 1 ? `${xs.slice(0, -1).map(low).join(', ')} and ${low(xs[xs.length - 1])}` : low(xs[0]));
+      const a = implies.length ? `implies ${list(implies)}` : 'implies no other mode';
+      const b = impliedBy.length ? `implied by ${list(impliedBy)}` : 'implied by no other mode';
+      return `${name}: ${a}; ${b}.`;
+    },
     cauchy: (n, min, max) => `n = ${EN.int(n)}: the means go from ${EN.num(min, 2)} to ${EN.num(max, 2)}`,
     speed: (n, values) => [`n = ${EN.int(n)}`, ...['exact', 'chebyshev', 'hoeffding', 'normal'].map((k, i) => (values[i] === null ? null : `${en.legends[k]} ${EN.prob(values[i])}`))].filter(Boolean).join(' · '),
     bvm: (n, clicks, u, w, truth) => [`n = ${EN.int(n)}, ${EN.int(clicks)} clicks`, u ? `uniform ${en.bvm.pair(u)}` : null, w ? `wrong ${en.bvm.pair(w)}` : null, truth ? `true ${EN.pct(CAMPAIGN.rate, 0)}` : null].filter(Boolean).join(' · '),

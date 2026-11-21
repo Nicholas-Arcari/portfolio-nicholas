@@ -219,48 +219,73 @@ const PriorEditor = ({ heights, onChange, palette, decimal, label, handleLabel }
   return <canvas ref={ref} className="hw1-canvas hw7-editor" tabIndex={0} role="slider" aria-label={label} aria-valuemin={0} aria-valuemax={1} />;
 };
 
+// L'etichetta sotto il puntatore di un disegno SVG (la rete, la mappa), la
+// stessa dei grafici: locate(x, y, width) dice che cosa c'e' sotto il punto.
+// Il disegno sta in un riquadro posizionato, dove l'etichetta si appoggia.
+const useDrawingLabel = (locate) => {
+  const ref = useRef(null);
+  useEffect(() => (ref.current ? hw.attachPointerLabel(ref.current, locate) : undefined), [locate]);
+  return ref;
+};
+
 // La rete bayesiana del triage, disegnata: ogni nodo con la sua probabilita',
 // scritta e come barra; gli indizi osservati con il bordo evidenziato
 const NetworkDiagram = ({ q, evidence, text, palette, label }) => {
   const N = text.network.nodes;
-  const box = { w: 22, h: 12 };
+  const { box } = view.NETWORK_VIEW;
   const L = view.NETWORK_LAYOUT;
+  const prior = useMemo(() => hw.networkPosterior({}), []);
+  const locate = useMemo(() => (x, y, width) => {
+    const hit = view.diagramHit(L, view.NETWORK_VIEW, width, x, y);
+    return hit && { rect: hit.rect, text: text.tips.node(N[hit.key], q[hit.key], prior[hit.key], evidence[hit.key]) };
+  }, [L, N, q, prior, evidence, text]);
+  const ref = useDrawingLabel(locate);
   return (
-    <svg className="hw7-network" viewBox="0 0 100 64" role="img" aria-label={label}>
-      <defs>
-        <marker id="hw7-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
-          <path d="M 0 0 L 10 5 L 0 10 z" fill={palette.text} />
-        </marker>
-      </defs>
-      {view.NETWORK_EDGES.map(([a, b]) => {
-        const from = L[a];
-        const to = L[b];
-        return <line key={`${a}-${b}`} x1={from.x} y1={from.y + box.h / 2} x2={to.x} y2={to.y - box.h / 2 - 0.6} stroke={palette.text} strokeWidth="0.35" markerEnd="url(#hw7-arrow)" />;
-      })}
-      {hw.NETWORK.nodes.map((node) => {
-        const { x, y } = L[node];
-        const p = q[node];
-        const known = evidence[node] !== null && evidence[node] !== undefined;
-        const left = x - box.w / 2;
-        const top = y - box.h / 2;
-        return (
-          <g key={node}>
-            <rect x={left} y={top} width={box.w} height={box.h} rx="1.6" fill={palette.background} stroke={known ? palette.highlight : palette.text} strokeWidth={known ? 0.8 : 0.3} />
-            <rect x={left + 1.5} y={top + box.h - 3} width={box.w - 3} height="1.6" rx="0.5" fill={palette.grid} />
-            <rect x={left + 1.5} y={top + box.h - 3} width={(box.w - 3) * Math.min(1, Math.max(0, p))} height="1.6" rx="0.5" fill={palette.highlight} />
-            <text x={x} y={top + 3.6} textAnchor="middle" fontSize="2.7" fill={palette.text}>{N[node]}</text>
-            <text x={x} y={top + 7.6} textAnchor="middle" fontSize="3.2" fontWeight="bold" fill={palette.text}>{text.fmt.pct(p)}</text>
-          </g>
-        );
-      })}
-    </svg>
+    <div className="hw7-drawing">
+      <svg ref={ref} className="hw7-network" viewBox="0 0 100 64" role="img" aria-label={label}>
+        <defs>
+          <marker id="hw7-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill={palette.text} />
+          </marker>
+        </defs>
+        {view.NETWORK_EDGES.map(([a, b]) => {
+          const from = L[a];
+          const to = L[b];
+          return <line key={`${a}-${b}`} x1={from.x} y1={from.y + box.h / 2} x2={to.x} y2={to.y - box.h / 2 - 0.6} stroke={palette.text} strokeWidth="0.35" markerEnd="url(#hw7-arrow)" />;
+        })}
+        {hw.NETWORK.nodes.map((node) => {
+          const { x, y } = L[node];
+          const p = q[node];
+          const known = evidence[node] !== null && evidence[node] !== undefined;
+          const left = x - box.w / 2;
+          const top = y - box.h / 2;
+          return (
+            <g key={node}>
+              <rect x={left} y={top} width={box.w} height={box.h} rx="1.6" fill={palette.background} stroke={known ? palette.highlight : palette.text} strokeWidth={known ? 0.8 : 0.3} />
+              <rect x={left + 1.5} y={top + box.h - 3} width={box.w - 3} height="1.6" rx="0.5" fill={palette.grid} />
+              <rect x={left + 1.5} y={top + box.h - 3} width={(box.w - 3) * Math.min(1, Math.max(0, p))} height="1.6" rx="0.5" fill={palette.highlight} />
+              <text x={x} y={top + 3.6} textAnchor="middle" fontSize="2.7" fill={palette.text}>{N[node]}</text>
+              <text x={x} y={top + 7.6} textAnchor="middle" fontSize="3.2" fontWeight="bold" fill={palette.text}>{text.fmt.pct(p)}</text>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
   );
 };
 
 // La mappa delle implicazioni: i quattro modi, con le frecce che valgono sempre
 const MapDiagram = ({ mode, text, palette, label }) => {
-  const P = { as: { x: 18, y: 12 }, l2: { x: 18, y: 48 }, probability: { x: 52, y: 30 }, distribution: { x: 86, y: 30 } };
-  const box = { w: 28, h: 12 };
+  const P = view.MAP_LAYOUT;
+  const { box } = view.MAP_VIEW;
+  const locate = useMemo(() => (x, y, width) => {
+    const hit = view.diagramHit(P, view.MAP_VIEW, width, x, y);
+    if (!hit) return null;
+    const names = (list) => list.map((m) => text.tryMap.modes[m]);
+    const others = hw.MODES.filter((m) => m !== hit.key);
+    return { rect: hit.rect, text: text.tips.mode(text.tryMap.modes[hit.key], names(others.filter((m) => hw.implication(hit.key, m).holds)), names(others.filter((m) => hw.implication(m, hit.key).holds))) };
+  }, [P, text]);
+  const ref = useDrawingLabel(locate);
   const state = (m) => {
     if (!mode) return 'idle';
     if (m === mode) return 'self';
@@ -268,34 +293,36 @@ const MapDiagram = ({ mode, text, palette, label }) => {
   };
   const fill = { idle: palette.background, self: palette.series[0], holds: palette.series[2], fails: palette.series[1] };
   return (
-    <svg className="hw7-map" viewBox="0 0 104 60" role="img" aria-label={label}>
-      <defs>
-        <marker id="hw7-map-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
-          <path d="M 0 0 L 10 5 L 0 10 z" fill={palette.text} />
-        </marker>
-      </defs>
-      {hw.IMPLICATIONS.map(([a, b]) => {
-        const from = P[a];
-        const to = P[b];
-        const dx = to.x - from.x;
-        const dy = to.y - from.y;
-        const len = Math.hypot(dx, dy);
-        const ux = dx / len;
-        const uy = dy / len;
-        const cut = (u) => Math.min(box.w / 2 / Math.max(1e-9, Math.abs(u.x)), box.h / 2 / Math.max(1e-9, Math.abs(u.y)));
-        const start = cut({ x: ux, y: uy });
-        return <line key={`${a}-${b}`} x1={from.x + ux * start} y1={from.y + uy * start} x2={to.x - ux * (start + 0.8)} y2={to.y - uy * (start + 0.8)} stroke={palette.text} strokeWidth="0.5" markerEnd="url(#hw7-map-arrow)" />;
-      })}
-      {hw.MODES.map((m) => {
-        const s = state(m);
-        return (
-          <g key={m}>
-            <rect x={P[m].x - box.w / 2} y={P[m].y - box.h / 2} width={box.w} height={box.h} rx="2" fill={fill[s]} fillOpacity={s === 'idle' ? 1 : 0.35} stroke={s === 'idle' ? palette.text : fill[s]} strokeWidth={s === 'self' ? 1 : 0.5} />
-            <text x={P[m].x} y={P[m].y + 1.2} textAnchor="middle" fontSize="3.4" fill={palette.text}>{text.tryMap.modes[m]}</text>
-          </g>
-        );
-      })}
-    </svg>
+    <div className="hw7-drawing">
+      <svg ref={ref} className="hw7-map" viewBox="0 0 104 60" role="img" aria-label={label}>
+        <defs>
+          <marker id="hw7-map-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill={palette.text} />
+          </marker>
+        </defs>
+        {hw.IMPLICATIONS.map(([a, b]) => {
+          const from = P[a];
+          const to = P[b];
+          const dx = to.x - from.x;
+          const dy = to.y - from.y;
+          const len = Math.hypot(dx, dy);
+          const ux = dx / len;
+          const uy = dy / len;
+          const cut = (u) => Math.min(box.w / 2 / Math.max(1e-9, Math.abs(u.x)), box.h / 2 / Math.max(1e-9, Math.abs(u.y)));
+          const start = cut({ x: ux, y: uy });
+          return <line key={`${a}-${b}`} x1={from.x + ux * start} y1={from.y + uy * start} x2={to.x - ux * (start + 0.8)} y2={to.y - uy * (start + 0.8)} stroke={palette.text} strokeWidth="0.5" markerEnd="url(#hw7-map-arrow)" />;
+        })}
+        {hw.MODES.map((m) => {
+          const s = state(m);
+          return (
+            <g key={m}>
+              <rect x={P[m].x - box.w / 2} y={P[m].y - box.h / 2} width={box.w} height={box.h} rx="2" fill={fill[s]} fillOpacity={s === 'idle' ? 1 : 0.35} stroke={s === 'idle' ? palette.text : fill[s]} strokeWidth={s === 'self' ? 1 : 0.5} />
+              <text x={P[m].x} y={P[m].y + 1.2} textAnchor="middle" fontSize="3.4" fill={palette.text}>{text.tryMap.modes[m]}</text>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
   );
 };
 
@@ -1123,18 +1150,14 @@ const TryHash = ({ text, palette }) => {
   const state = { ...config, ...run };
   const data = useMemo(() => view.hashChart({ history: run.history }, exact, F.decimal), [run.history, exact, F]);
   const legend = useMemo(() => view.legends.hash(text.legends), [text]);
-  const tip = useMemo(() => view.tips.hash({ history: run.history }, exact, text.tips), [run.history, exact, text]);
+  const tip = useMemo(() => view.tips.hash(data, exact, text.tips), [data, exact, text]);
   const median32 = useMemo(() => hw.collisionMedian(32), []);
   const change = (key) => (v) => {
     setConfig((o) => ({ ...o, [key]: v }));
     setRun({ trials: 0, hits: 0, history: [] });
   };
   // more trials, from the stream 'hash' after the ones of the test (repetitions from 10^6)
-  const add = (count) => setRun((o) => {
-    const hits = o.hits + hw.collisionRun(config.bits, m, count, hw.DEFAULT_SEED, 1000000 + o.trials);
-    const trials = o.trials + count;
-    return { trials, hits, history: [...o.history, { trials, hits }].slice(-60) };
-  });
+  const add = (count) => setRun((o) => view.hashMore(o, config.bits, m, count));
   return (
     <Try id="hw7-try-hash" title={text.sections.tryHash}>
       <p>{T.intro}</p>
@@ -1566,19 +1589,6 @@ const TryScale = ({ text, palette }) => {
 
 // --- 1.9 Allarmi a raffica ----------------------------------------------------------------------------
 
-// Due strisce di connessioni, una cella per connessione: rossa se c'e' un allarme
-const BurstStrip = ({ cells, label, palette }) => {
-  const perRow = 50;
-  const rows = Math.ceil(cells.length / perRow);
-  return (
-    <svg className="hw7-strip" viewBox={`0 0 ${perRow * 2} ${rows * 2}`} style={{ aspectRatio: `${perRow * 2} / ${rows * 2}` }} role="img" aria-label={label} preserveAspectRatio="none">
-      {Array.from(cells, (v, i) => (
-        <rect key={i} x={(i % perRow) * 2 + 0.15} y={Math.floor(i / perRow) * 2 + 0.15} width="1.7" height="1.7" fill={v ? palette.series[1] : palette.grid} />
-      ))}
-    </svg>
-  );
-};
-
 const Bursts = ({ s, job, text }) => {
   const B = text.bursts;
   const F = text.fmt;
@@ -1621,6 +1631,10 @@ const TryBursts = ({ text, palette }) => {
   const facts = useMemo(() => hw.burstFacts(1000, hw.FALSE_ALARMS.rate, rho), [rho]);
   const independent = useMemo(() => hw.burstPath(view.BURST_STRIP, hw.FALSE_ALARMS.rate, 0), []);
   const bursty = useMemo(() => hw.burstPath(view.BURST_STRIP, hw.FALSE_ALARMS.rate, rho), [rho]);
+  const stripIndependent = useMemo(() => view.stripChart(independent), [independent]);
+  const stripBursty = useMemo(() => view.stripChart(bursty), [bursty]);
+  const tipIndependent = useMemo(() => view.tips.strip(independent, text.tips), [independent, text]);
+  const tipBursty = useMemo(() => view.tips.strip(bursty, text.tips), [bursty, text]);
   const data = useMemo(() => view.burstChart(rho, F.decimal), [rho, F]);
   const legend = useMemo(() => view.legends.burst(text.legends), [text]);
   const tip = useMemo(() => view.tips.burst(rho, text.tips), [rho, text]);
@@ -1629,10 +1643,10 @@ const TryBursts = ({ text, palette }) => {
     <Try id="hw7-try-bursts" title={text.sections.tryBursts}>
       <p>{T.intro}</p>
       <Slider id="hw7-rho" label={T.rhoLabel(rho)} valueText={T.rhoLabel(rho)} max={hw.BURST_RHOS.length - 1} value={state.rho} onChange={(v) => setState({ rho: v })} />
-      <p className="hw1-note">{T.stripLabel(T.strips.independent, count(independent), view.BURST_STRIP)}</p>
-      <BurstStrip cells={independent} label={T.stripLabel(T.strips.independent, count(independent), view.BURST_STRIP)} palette={palette} />
-      <p className="hw1-note">{T.stripLabel(T.strips.bursts, count(bursty), view.BURST_STRIP)}</p>
-      <BurstStrip cells={bursty} label={T.stripLabel(T.strips.bursts, count(bursty), view.BURST_STRIP)} palette={palette} />
+      <div className="hw1-charts">
+        <Figure title={T.stripLabel(T.strips.independent, count(independent), view.BURST_STRIP)} draw={hw.drawStrip} data={stripIndependent} palette={palette} tip={tipIndependent} />
+        <Figure title={T.stripLabel(T.strips.bursts, count(bursty), view.BURST_STRIP)} draw={hw.drawStrip} data={stripBursty} palette={palette} tip={tipBursty} />
+      </div>
       <div className="hw1-charts">
         <Figure title={T.chartTitle} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} wide legend={legend} />
       </div>

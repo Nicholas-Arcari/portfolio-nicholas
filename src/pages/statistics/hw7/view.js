@@ -149,6 +149,31 @@ export const NETWORK_LAYOUT = Object.freeze({
 });
 /** The arrows of the network: parent -> child. */
 export const NETWORK_EDGES = Object.freeze([['phishing', 'compromise'], ['exploit', 'compromise'], ['phishing', 'login'], ['compromise', 'edr'], ['exploit', 'signature']]);
+/** The drawing of the network: its width in its own units (viewBox 0 0 100 64) and the size of a node. */
+export const NETWORK_VIEW = Object.freeze({ width: 100, box: Object.freeze({ w: 22, h: 12 }) });
+
+/** The map of implications of "Try it: the map": the centre of every mode in the drawing (viewBox 0 0 104 60) and the size of its box. */
+export const MAP_LAYOUT = Object.freeze({
+  as: Object.freeze({ x: 18, y: 12 }),
+  l2: Object.freeze({ x: 18, y: 48 }),
+  probability: Object.freeze({ x: 52, y: 30 }),
+  distribution: Object.freeze({ x: 86, y: 30 }),
+});
+export const MAP_VIEW = Object.freeze({ width: 104, box: Object.freeze({ w: 28, h: 12 }) });
+
+/**
+ * The box of a drawing (the network, the map) under the point (x, y), in
+ * CSS pixels of a drawing `width` pixels wide: { key, rect } with the
+ * rectangle to outline, or null. The drawings keep their proportions, so
+ * one scale serves both axes.
+ */
+export function diagramHit(layout, viewBox, width, x, y) {
+  const k = width / viewBox.width;
+  const { w, h } = viewBox.box;
+  const key = Object.keys(layout).find((name) => Math.abs(x / k - layout[name].x) <= w / 2 && Math.abs(y / k - layout[name].y) <= h / 2);
+  if (!key) return null;
+  return { key, rect: { x: (layout[key].x - w / 2) * k, y: (layout[key].y - h / 2) * k, width: w * k, height: h * k } };
+}
 
 // ---------------------------------------------------------------------------
 // 1.4 Il test di Wald
@@ -466,21 +491,58 @@ export const HASH_FACTORS = Object.freeze([0.5, 1, 2]);
 /** The number of identifiers of "Try it": a multiple of the median, rounded. */
 export const hashCount = (bits, factor) => Math.max(2, Math.round(hw.collisionMedian(bits) * factor));
 
-/** The chart of "Try it: hash": the estimate after every batch of trials against the exact probability, with the band of the CLT around it. */
+/** The trial counts where "Try it: hash" records its estimate: ten per decade from 10 on, so the path shows from the first batch. */
+const hashGrid = (to) => {
+  const out = [];
+  for (let j = 0; ; j++) {
+    const t = Math.round(10 ** (1 + j / 10));
+    if (t > to) return out;
+    if (out[out.length - 1] !== t) out.push(t);
+  }
+};
+
+/**
+ * `count` more trials for "Try it: hash", from the stream 'hash' after the
+ * ones of the test (repetitions from 10^6): the run { trials, hits,
+ * history } with the estimate recorded at every point of the grid passed,
+ * and at the end.
+ */
+export function hashMore(run, bits, m, count, seed = hw.DEFAULT_SEED) {
+  let { trials, hits } = run;
+  const history = [...run.history];
+  const stops = hashGrid(trials + count).filter((t) => t > trials);
+  if (stops[stops.length - 1] !== trials + count) stops.push(trials + count);
+  for (const t of stops) {
+    hits += hw.collisionRun(bits, m, t - trials, seed, 1000000 + trials);
+    trials = t;
+    history.push({ trials, hits });
+  }
+  return { trials, hits, history };
+}
+
+/**
+ * The chart of "Try it: hash": the exact probability with the band of the
+ * central limit around it, on the whole axis from the start (up to 10^4
+ * trials, then to the next power of ten), and the estimate where it was
+ * recorded.
+ */
 export function hashChart(state, exact, decimal = '.') {
-  const points = state.history.length ? state.history : [{ trials: 1, hits: 0 }];
-  const x = points.map((h) => h.trials);
+  const last = state.history.length ? state.history[state.history.length - 1].trials : 0;
+  const decades = Math.max(4, Math.ceil(Math.log10(Math.max(10, last))));
+  const at = new Map(state.history.map((h) => [h.trials, h.hits / h.trials]));
+  const x = [...new Set([...hashGrid(10 ** decades), ...at.keys()])].sort((a, b) => a - b);
+  const half = (r) => 1.96 * Math.sqrt((exact * (1 - exact)) / r);
   return {
     x,
     logX: true,
     series: [
-      { values: points.map((h) => (state.history.length ? h.hits / h.trials : null)), colorIndex: 0 },
-      { values: x.map(() => exact), band: x.map((r) => [Math.max(0, exact - 1.96 * Math.sqrt((exact * (1 - exact)) / r)), Math.min(1, exact + 1.96 * Math.sqrt((exact * (1 - exact)) / r))]), colorIndex: 1, dashed: true },
+      { values: x.map((t) => (at.has(t) ? at.get(t) : null)), colorIndex: 0, dots: false },
+      { values: x.map(() => exact), band: x.map((r) => [Math.max(0, exact - half(r)), Math.min(1, exact + half(r))]), colorIndex: 1, dashed: true },
     ],
     yMin: 0,
     yMax: 1,
     yTicks: percentTicks(0, 1, 0.25),
-    xTicks: powers(0, Math.max(1, Math.ceil(Math.log10(Math.max(10, x[x.length - 1]))))),
+    xTicks: powers(1, decades),
     yFormat: pctLabel(decimal),
     decimal,
   };
@@ -635,6 +697,8 @@ export const BURST_TRY_DEFAULT = Object.freeze({ rho: hw.BURST_RHOS.indexOf(0.5)
 export const BURST_N = Object.freeze([10, 30, 100, 300, 1000, 3000, 10000]);
 /** The connections drawn in the two strips of "Try it": 400, 12 alarms on average. */
 export const BURST_STRIP = 400;
+/** A strip of "Try it: alarms in bursts" as a chart (drawStrip): 50 connections per row, red where there is an alarm. */
+export const stripChart = (cells) => ({ cells, perRow: 50, colorIndex: 1 });
 
 /** The chart of the bursts: the exact standard error of the share of alarms, independent and with correlation rho. */
 export function burstChart(rho, decimal = '.') {
@@ -831,10 +895,14 @@ export const tips = {
     const b = chart.bars[hit.index];
     return b ? T.histogram(b.from, b.to, b.count, b.count / reps) : null;
   },
-  hash: (state, exact, T) => (hit, hidden = []) => {
-    const h = state.history[hit.index];
-    if (!h) return null;
-    return T.hash(h.trials, shown(hidden, 0, h.hits / h.trials), shown(hidden, 1, exact));
+  hash: (chart, exact, T) => (hit, hidden = []) => T.hash(chart.x[hit.index], shown(hidden, 0, chart.series[0].values[hit.index]), shown(hidden, 1, exact)),
+  strip: (cells, T) => (hit) => {
+    if (!cells[hit.index]) return T.strip(hit.index + 1, false, 0);
+    let from = hit.index;
+    let to = hit.index;
+    while (from > 0 && cells[from - 1]) from--;
+    while (to < cells.length - 1 && cells[to + 1]) to++;
+    return T.strip(hit.index + 1, true, to - from + 1);
   },
   cauchy: (paths, T) => (hit) => {
     const values = paths.map((line) => line[hit.index]);

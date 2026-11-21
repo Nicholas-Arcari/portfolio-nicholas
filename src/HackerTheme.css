@@ -2574,17 +2574,13 @@ body.dark-mode .hw7-field textarea {
     height: auto;
     margin: 0.6em auto 0.8em;
 }
+/* i disegni SVG con l'etichetta sotto il puntatore: il riquadro dove si appoggia */
+.hw7-drawing {
+    position: relative;
+}
 /* i tre istogrammi della scala giusta, affiancati sugli schermi larghi */
 .hw7-three {
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-}
-/* le strisce delle connessioni: una cella per connessione, 50 per riga */
-.hw7-strip {
-    display: block;
-    width: 100%;
-    max-width: 40em;
-    height: auto;
-    margin: 0.2em 0 0.8em;
 }
 /* il prior da trascinare: il dito sposta i punti, non la pagina */
 .hw7-editor {

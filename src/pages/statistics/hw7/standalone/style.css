@@ -1276,13 +1276,9 @@ svg.diagram {
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
 }
 
-/* le strisce delle connessioni: una cella per connessione, 50 per riga */
-svg.strip {
-  display: block;
-  width: 100%;
-  max-width: 40rem;
-  height: auto;
-  margin: 0.2rem 0 0.8rem;
+/* i disegni con l'etichetta sotto il puntatore: il riquadro dove si appoggia */
+.drawing {
+  position: relative;
 }
 
 /* il prior da trascinare: il dito sposta i punti, non la pagina */
