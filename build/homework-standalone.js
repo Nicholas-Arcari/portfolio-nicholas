@@ -32,12 +32,18 @@ const STATIC_FILES = ['index.html', 'style.css', 'README.txt'];
  * la libreria importa e che finiscono dentro di lei (i parametri della
  * consegna dell'Exercise 1, la lista di parole di BIP-39 dell'Exercise 2, il
  * corpus dell'Homework #2, i record di NSL-KDD dell'Homework #6, gli SMS e
- * NSL-KDD dell'Homework #7; gli Homework #3, #4 e #5 non ne hanno).
+ * NSL-KDD dell'Homework #7; gli Homework #3, #4 e #5 non ne hanno). `ui`
+ * sono i moduli dell'interfaccia comuni a piu' homework, uniti ad app.js
+ * prima di view.js: il kit dei grafici interattivi (chartkit), nell'ordine
+ * in cui dipendono l'uno dall'altro.
  * `published: false` tiene un programma fuori dal sito pubblicato: la build
  * lo genera comunque (cosi' una conversione rotta la ferma subito) ma non
  * lo scrive in dist, e in sviluppo resta raggiungibile per provarlo: serve
  * a preparare lo scheletro di un homework prima della consegna.
  */
+// il kit dei grafici interattivi, nell'ordine in cui i moduli dipendono l'uno dall'altro
+const CHARTKIT = ['kitView.js', 'kitGestures.js', 'kitChart.js', 'kitPlugins.js', 'kitPlayer.js', 'kitSpec.js', 'kitLabels.js', 'kitDom.js'].map((file) => `../chartkit/${file}`);
+
 export const HOMEWORKS = [
   {
     number: '1',
@@ -116,6 +122,7 @@ export const HOMEWORKS = [
     library: 'homework7.js',
     global: 'Homework7',
     inner: ['smsspam.js', 'nslkdd.js'],
+    ui: CHARTKIT,
     contents: 'Data and computations: the SMS Spam Collection (5,574 SMS) and four columns plus the source bytes of NSL-KDD (KDDTest+), the four kinds of convergence\n * with their counterexamples, exact Kolmogorov distances, Berry-Esseen, Slutsky, the delta method, Glivenko-Cantelli and the MLE, sqrt(n) and alarms in bursts,\n * heavy tails, conditional probability, Bayes on alarms, a Bayesian network, Wald\'s sequential test, Beta posteriors on a grid, coverage of intervals,\n * naive Bayes filters, Bernstein-von Mises, birthday collisions, xoshiro128** and SplitMix64, charts with labels and toggling legends,\n * and command line (node homework7.js [options]).',
     description: 'Homework #7 - Statistics: the modes of convergence and the role of sqrt(n); conditional probability, Bayes\' theorem and statistical inference.',
   },
@@ -134,10 +141,10 @@ const CONTENT_TYPES = {
 
 const read = (hw, file) => readFileSync(path.join(STATISTICS, hw.source, file), 'utf8');
 
-/** Il nome con cui ogni modulo e' visibile agli altri nel programma generato. */
+/** Il nome con cui ogni modulo e' visibile agli altri nel programma generato (per nome del file: gli import si risolvono cosi'). */
 function modules(hw) {
   const names = { [hw.library]: hw.global, 'view.js': 'view$', 'texts.js': 'texts$' };
-  for (const file of hw.inner) names[file] = `${path.basename(file, '.js')}$`;
+  for (const file of [...hw.inner, ...(hw.ui || [])]) names[path.basename(file)] = `${path.basename(file, '.js')}$`;
   return names;
 }
 
@@ -173,7 +180,7 @@ function convert(hw, file) {
 /** A module as a variable holding what it exports: var view$ = (function () { ... })(); */
 function moduleScript(hw, file) {
   const { body, exported } = convert(hw, file);
-  return [`var ${modules(hw)[file]} = (function () {`, "'use strict';", '', body, '', `return { ${exported.join(', ')} };`, '})();'].join('\n');
+  return [`var ${modules(hw)[path.basename(file)]} = (function () {`, "'use strict';", '', body, '', `return { ${exported.join(', ')} };`, '})();'].join('\n');
 }
 
 const banner = (hw, what) => `/*
@@ -220,9 +227,9 @@ function libraryScript(hw) {
   ].join('\n');
 }
 
-/** app.js: view.js, texts.js and the interface, in one classic script. */
+/** app.js: the modules of the interface shared by every homework (`ui`, the kit of the interactive charts), view.js, texts.js and the interface, in one classic script. */
 function appScript(hw) {
-  const parts = ['view.js', 'texts.js'].map((file) => moduleScript(hw, file));
+  const parts = [...(hw.ui || []), 'view.js', 'texts.js'].map((file) => moduleScript(hw, file));
   const app = convert(hw, 'standalone/app.js');
   return [
     banner(hw, `Interface and texts (Italian and English). Needs ${hw.library}, loaded first.`),

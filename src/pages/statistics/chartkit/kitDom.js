@@ -1,0 +1,337 @@
+// src/pages/statistics/chartkit/kitDom.js
+// L'adattatore del kit dei grafici interattivi per i programmi scaricabili:
+// lo stesso grafico della pagina (ChartFigure.jsx), costruito con il DOM, senza
+// React. Un grafico e' una <figure> con, dall'alto: i comandi del suo spec,
+// il riquadro del canvas con i pulsanti dello zoom, il lettore
+// dell'animazione, la legenda a pulsanti, la nota e la didascalia. Le classi
+// sono quelle di style.css dei programmi.
+//
+// Ogni testo entra con textContent, mai come HTML.
+import { createChart } from './kitChart.js';
+import { kitLabels } from './kitLabels.js';
+import { createPlayer } from './kitPlayer.js';
+import { handles as handlesPlugin, zoomPan } from './kitPlugins.js';
+import { applyControl, framesOf, handlesOf, initialParams, sliderIndex } from './kitSpec.js';
+
+const HINT_MS = 2200;
+let uid = 0;
+
+/** el('p', { class: 'note', text: '...' }, child, ...): the text always through textContent. */
+function el(tag, attrs, ...children) {
+  const node = document.createElement(tag);
+  for (const [key, value] of Object.entries(attrs || {})) {
+    if (value === null || value === undefined || value === false) continue;
+    if (key === 'class') node.className = value;
+    else if (key === 'text') node.textContent = value;
+    else if (key === 'style') Object.assign(node.style, value);
+    else if (key.startsWith('on')) node.addEventListener(key.slice(2), value);
+    else node.setAttribute(key, value === true ? '' : String(value));
+  }
+  for (const child of children.flat(Infinity)) {
+    if (child === null || child === undefined || child === false) continue;
+    node.append(child instanceof Node ? child : document.createTextNode(String(child)));
+  }
+  return node;
+}
+
+/** The parts of the drawing covered by the hidden items of a legend. */
+export const partsOf = (items, hidden) => items.flatMap((item, i) => (hidden.has(i) ? item.parts || [] : []));
+
+/** Hides the cells, columns and rows of a table that belong to hidden parts (data-part), and shows the others. */
+export function hideParts(table, parts) {
+  if (!table) return;
+  for (const node of table.querySelectorAll('[data-part]')) node.hidden = parts.includes(node.dataset.part);
+}
+
+/**
+ * The legend of a chart: { label, color? | paletteKey?, dashed?, box?,
+ * parts }. Every item is a button: pressed its parts are on screen,
+ * released they are hidden; onChange(parts) receives the hidden parts.
+ * `hidden`, the set of the hidden items, outlives the legend.
+ */
+export function legend(items, onChange, hidden, palette) {
+  return el(
+    'ul',
+    { class: 'series-legend' },
+    items.map((item, i) => {
+      const color = item.paletteKey ? palette[item.paletteKey] : palette.series[(item.color ?? i) % palette.series.length];
+      let swatch = null;
+      if (item.box) swatch = 'is-box';
+      else if (item.dashed) swatch = 'is-dashed';
+      const button = el(
+        'button',
+        {
+          type: 'button',
+          'aria-pressed': String(!hidden.has(i)),
+          class: hidden.has(i) ? 'is-off' : null,
+          onclick: () => {
+            if (hidden.has(i)) hidden.delete(i);
+            else hidden.add(i);
+            button.setAttribute('aria-pressed', String(!hidden.has(i)));
+            button.classList.toggle('is-off', hidden.has(i));
+            onChange(partsOf(items, hidden));
+          },
+        },
+        el('span', { class: swatch, 'aria-hidden': 'true', style: { borderColor: color, backgroundColor: item.box ? color : 'transparent' } }),
+        item.label,
+      );
+      return el('li', null, button);
+    }),
+  );
+}
+
+/** The controls of a spec, with the classes of the programs; onChange(params) after every use. */
+function controlsOf(id, controls, getParams, onChange) {
+  const box = el('div', { class: 'kit-controls' });
+  const draw = () => {
+    const params = getParams();
+    const actions = controls.filter((c) => c.kind === 'action');
+    box.replaceChildren(
+      ...controls
+        .map((c, i) => {
+          if (c.kind === 'slider') {
+            const index = sliderIndex(c, params);
+            const text = c.label(c.values[index]);
+            return el(
+              'div',
+              { class: 'slider' },
+              el('label', { for: `${id}-${c.key}`, text }),
+              el('input', { id: `${id}-${c.key}`, type: 'range', min: 0, max: c.values.length - 1, step: 1, value: index, 'aria-valuetext': text, oninput: (e) => onChange(applyControl(c, getParams(), Number(e.target.value))) }),
+            );
+          }
+          if (c.kind === 'choice') {
+            return el(
+              'div',
+              { class: 'choices', role: 'group', 'aria-label': c.label },
+              el('span', { class: 'choices-label', text: c.label }),
+              c.options.map(([value, name]) => el('button', { type: 'button', class: 'btn alt', 'aria-pressed': String(params[c.key] === value), text: name, onclick: () => onChange(applyControl(c, getParams(), value)) })),
+            );
+          }
+          if (c.kind === 'toggle') {
+            return el('label', { class: 'kit-toggle' }, el('input', { type: 'checkbox', checked: !!params[c.key], onchange: (e) => onChange(applyControl(c, getParams(), e.target.checked)) }), ` ${c.label}`);
+          }
+          if (i !== controls.indexOf(actions[0])) return null;
+          return el('p', { class: 'kit-actions' }, actions.map((a) => el('button', { type: 'button', class: 'btn alt small', text: a.label, onclick: () => onChange(applyControl(a, getParams())) })));
+        })
+        .filter(Boolean),
+    );
+  };
+  draw();
+  // the sliders keep the focus while they are moved: their label and value change in place
+  box.update = () => {
+    const params = getParams();
+    let k = 0;
+    for (const c of controls) {
+      if (c.kind === 'slider') {
+        const block = box.children[k];
+        const index = sliderIndex(c, params);
+        const text = c.label(c.values[index]);
+        block.querySelector('label').textContent = text;
+        const input = block.querySelector('input');
+        if (Number(input.value) !== index) input.value = index;
+        input.setAttribute('aria-valuetext', text);
+      } else if (c.kind === 'choice') {
+        box.children[k].querySelectorAll('button').forEach((b, j) => b.setAttribute('aria-pressed', String(params[c.key] === c.options[j][0])));
+      } else if (c.kind === 'toggle') {
+        box.children[k].querySelector('input').checked = !!params[c.key];
+      } else if (c !== controls.find((x) => x.kind === 'action')) {
+        continue;
+      }
+      k += 1;
+    }
+  };
+  return box;
+}
+
+/** The player of an animation: back, play or pause, forward, the position and the speed. */
+function playerBar(id, player, labels) {
+  const back = el('button', { type: 'button', class: 'btn alt small', 'aria-label': labels.back, title: labels.back, text: '‹', onclick: () => player.step(-1) });
+  const play = el('button', { type: 'button', class: 'btn small kit-play', onclick: () => player.toggle() });
+  const forward = el('button', { type: 'button', class: 'btn alt small', 'aria-label': labels.forward, title: labels.forward, text: '›', onclick: () => player.step(1) });
+  const position = el('input', { id: `${id}-t`, class: 'kit-position', type: 'range', min: 0, step: 1, oninput: (e) => player.seek(Number(e.target.value)) });
+  const where = el('span', { class: 'kit-step', 'aria-hidden': 'true' });
+  const speeds = [1, 2, 4].map((s) => el('button', { type: 'button', class: 'btn alt small', text: `×${s}`, onclick: () => player.setSpeed(s) }));
+  const bar = el('div', { class: 'kit-player', role: 'group', 'aria-label': labels.player }, back, play, forward, position, where, el('span', { class: 'kit-speed', role: 'group', 'aria-label': labels.speed }, speeds));
+  bar.update = (state) => {
+    play.textContent = state.playing ? labels.pause : labels.play;
+    play.setAttribute('aria-pressed', String(state.playing));
+    back.disabled = state.t <= 0;
+    forward.disabled = state.t >= state.frames - 1;
+    position.max = String(state.frames - 1);
+    position.value = String(state.t);
+    const text = labels.position(state.t + 1, state.frames);
+    position.setAttribute('aria-label', text);
+    position.setAttribute('aria-valuetext', text);
+    where.textContent = text;
+    speeds.forEach((b, i) => b.setAttribute('aria-pressed', String(state.speed === [1, 2, 4][i])));
+  };
+  return bar;
+}
+
+// one observer for every chart of the page: the width of each canvas, measured after layout
+const sizes = typeof ResizeObserver === 'function'
+  ? new ResizeObserver((entries) => {
+    for (const entry of entries) {
+      const width = Math.round(entry.contentRect.width);
+      const figure = entry.target.closest('figure');
+      if (figure && figure.kit && width > 0) figure.kit.chart.resize(width);
+    }
+  })
+  : null;
+
+/**
+ * An interactive chart for the programs. `options`:
+ *   label, draw, data (or spec: then the data come from spec.model), palette, lang
+ *   lib (the library of the homework), schedule (the queue of the first drawings)
+ *   tip (describe(hit, hidden)), link, items (the legend), keep (the set of hidden items that outlives the chart),
+ *   table (the id of the linked table: the legend hides its parts too), note, wide
+ * Returns the <figure>, with figure.kit = { chart, setData, setTip, setLabel, setHidden, destroy }.
+ */
+export function createFigure(options) {
+  const { label, draw, palette, lib, schedule = null, lang = 'en', items = null, note = null, link = null, table = null, wide = true, spec = null } = options;
+  const labels = kitLabels(lang);
+  const id = `kit${(uid += 1)}`;
+  const hidden = options.keep || new Set();
+  let params = spec ? initialParams(spec) : null;
+  let t = spec ? framesOf(spec, params) - 1 : 0;
+  let describe = spec && spec.tip ? null : options.tip || null;
+  const dataNow = () => (spec ? spec.model(params, t) : options.data);
+
+  const canvas = el('canvas', { class: 'chart', role: 'img', 'aria-label': label });
+  const plot = el('div', { class: 'kit-plot' }, canvas);
+  const zoomIn = el('button', { type: 'button', 'aria-label': labels.zoomIn, title: labels.zoomIn, text: '+' });
+  const zoomOut = el('button', { type: 'button', 'aria-label': labels.zoomOut, title: labels.zoomOut, text: '-', disabled: true });
+  const reset = el('button', { type: 'button', 'aria-label': labels.reset, title: labels.reset, text: '⤢', disabled: true });
+  const tools = el('div', { class: 'kit-tools', role: 'group', 'aria-label': labels.tools, hidden: true }, zoomIn, zoomOut, reset);
+  const hint = el('p', { class: 'kit-hint', 'aria-live': 'polite', text: labels.hint, hidden: true });
+  const caption = el('figcaption', { text: label });
+
+  const handles = spec && spec.handles ? handlesPlugin({ onChange: (key, value) => setParams(spec.onHandle(params, key, value)) }) : null;
+  let data = dataNow();
+  const chart = createChart(canvas, {
+    draw,
+    data,
+    palette,
+    frame: lib.chartFrame,
+    withView: lib.withView,
+    height: lib.chartHeight,
+    hitTest: lib.chartHitTest,
+    hitAt: lib.chartHitAt,
+    pointerLabel: lib.attachPointerLabel,
+    describe: spec && spec.tip ? spec.tip(data) : describe,
+    link,
+    hidden: items ? partsOf(items, hidden) : [],
+    plugins: handles ? [handles, zoomPan()] : [zoomPan()],
+    schedule,
+  });
+  zoomIn.addEventListener('click', () => chart.zoomBy(1.5));
+  zoomOut.addEventListener('click', () => chart.zoomBy(1 / 1.5));
+  reset.addEventListener('click', () => chart.resetView());
+  chart.on('render', ({ frame }) => {
+    tools.hidden = !frame;
+  });
+  chart.on('view', () => {
+    const zoomed = chart.isZoomed();
+    tools.classList.toggle('is-zoomed', zoomed);
+    zoomOut.disabled = !zoomed;
+    reset.disabled = !zoomed;
+  });
+  let hintTimer = 0;
+  chart.on('hint', () => {
+    hint.hidden = false;
+    clearTimeout(hintTimer);
+    hintTimer = setTimeout(() => {
+      hint.hidden = true;
+    }, HINT_MS);
+  });
+
+  // the data after a change of the parameters or of the step of the animation
+  let controls = null;
+  let player = null;
+  let bar = null;
+  const show = () => {
+    data = dataNow();
+    chart.setData(data);
+    if (spec && spec.tip) chart.setDescribe(spec.tip(data));
+    if (handles) handles.setSpecs(handlesOf(spec, params));
+  };
+  function setParams(next) {
+    params = next;
+    if (player) player.setFrames(framesOf(spec, params));
+    t = player ? player.state().t : 0;
+    if (controls) controls.update();
+    show();
+  }
+  if (spec && spec.controls && spec.controls.length) controls = controlsOf(id, spec.controls, () => params, setParams);
+  if (spec && spec.animation) {
+    bar = null;
+    player = createPlayer({
+      frames: framesOf(spec, params),
+      ms: spec.animation.ms || 60,
+      onFrame: (step) => {
+        t = step;
+        show();
+      },
+      onChange: (state) => bar && bar.update(state),
+    });
+    bar = playerBar(id, player, labels);
+    bar.update(player.state());
+  }
+  if (handles) handles.setSpecs(handlesOf(spec, params));
+
+  const legendEl = items
+    ? legend(
+      items,
+      (parts) => {
+        chart.setHidden(parts);
+        if (table) hideParts(document.getElementById(table), parts);
+      },
+      hidden,
+      palette,
+    )
+    : null;
+  const figure = el(
+    'figure',
+    { class: wide ? 'figure wide kit-figure' : 'figure kit-figure' },
+    controls,
+    el('div', { class: 'kit-stage' }, plot, tools, hint),
+    bar,
+    legendEl,
+    note && el('p', { class: 'figure-note', text: note }),
+    caption,
+  );
+  figure.kit = {
+    chart,
+    setData(next) {
+      options.data = next;
+      if (!spec) {
+        data = next;
+        chart.setData(next);
+      }
+    },
+    setTip(next) {
+      describe = next;
+      chart.setDescribe(next);
+    },
+    setLabel(next) {
+      canvas.setAttribute('aria-label', next);
+      caption.textContent = next;
+    },
+    setHidden: (parts) => chart.setHidden(parts),
+    destroy() {
+      clearTimeout(hintTimer);
+      if (sizes) sizes.unobserve(canvas);
+      if (player) player.destroy();
+      chart.destroy();
+    },
+  };
+  if (sizes) sizes.observe(canvas);
+  // the table may come after the chart: its parts are hidden once both are on the page
+  if (table && hidden.size && typeof requestAnimationFrame === 'function') requestAnimationFrame(() => hideParts(document.getElementById(table), partsOf(items, hidden)));
+  return figure;
+}
+
+/** Releases the charts inside a region that is about to be replaced. */
+export function releaseFigures(region) {
+  for (const figure of region.querySelectorAll('figure.kit-figure')) if (figure.kit) figure.kit.destroy();
+}

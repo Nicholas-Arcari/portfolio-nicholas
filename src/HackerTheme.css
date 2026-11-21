@@ -2614,6 +2614,135 @@ body.dark-mode .hw7-table tr.hw7-towards-spam > td {
     color: #ff6b81;
 }
 
+/* ===== Grafici interattivi (chartkit) =====
+   Il riquadro del canvas (kit-plot), dove il kit mette la tela trasparente
+   e l'etichetta; sopra, a destra, i pulsanti dello zoom, che compaiono al
+   passaggio del mouse o con il focus (sempre sui touch); il suggerimento
+   sulla rotella; i comandi di un grafico con i suoi parametri e il lettore
+   delle animazioni. */
+.kit-stage,
+.kit-plot {
+    position: relative;
+}
+.kit-plot canvas {
+    touch-action: pan-y;
+}
+.kit-plot canvas:focus-visible {
+    outline: 2px solid #d52349;
+    outline-offset: 2px;
+}
+.kit-figure .kit-tools {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    z-index: 3;
+}
+.kit-figure:hover .kit-tools,
+.kit-figure:focus-within .kit-tools,
+.kit-figure .kit-tools.is-zoomed {
+    opacity: 1;
+}
+@media (hover: none) {
+    .kit-figure .kit-tools {
+        opacity: 1;
+    }
+}
+.kit-figure .kit-tools button {
+    min-width: 28px;
+    height: 28px;
+    margin: 0;
+    padding: 0 7px;
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: none;
+    /* il template da' a ogni pulsante il testo bianco, con !important */
+    color: #444444 !important;
+    font: 600 15px/26px sans-serif;
+    letter-spacing: 0;
+    text-transform: none;
+    cursor: pointer;
+}
+.kit-figure .kit-tools button:hover:not(:disabled) {
+    border-color: #d52349;
+    background: rgba(255, 255, 255, 0.92);
+    color: #d52349 !important;
+}
+.kit-figure .kit-tools button:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+body.dark-mode .kit-figure .kit-tools button {
+    border-color: #3a3a3a;
+    background: rgba(30, 30, 30, 0.92);
+    color: #dddddd !important;
+}
+body.dark-mode .kit-figure .kit-tools button:hover:not(:disabled) {
+    background: rgba(30, 30, 30, 0.92);
+    color: #ff6b81 !important;
+}
+.kit-hint {
+    position: absolute;
+    left: 50%;
+    top: 42%;
+    z-index: 4;
+    max-width: 80%;
+    margin: 0;
+    padding: 0.5em 0.9em;
+    border-radius: 6px;
+    background: rgba(20, 20, 20, 0.82);
+    color: #ffffff;
+    font-size: 0.8em;
+    line-height: 1.4;
+    text-align: center;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+.kit-controls {
+    margin-bottom: 0.6em;
+}
+.kit-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    margin: 0.4em 0 0.6em;
+}
+.kit-toggle input {
+    width: auto;
+}
+.kit-actions,
+.kit-player {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5em;
+    margin: 0.5em 0 0.8em;
+}
+.kit-actions .button,
+.kit-player .button {
+    margin: 0;
+}
+.kit-player .kit-play {
+    min-width: 6.5em;
+}
+.kit-player .kit-position {
+    flex: 1 1 10em;
+    accent-color: #d52349;
+}
+.kit-player .kit-step {
+    min-width: 7em;
+    color: #888888;
+    font-size: 0.8em;
+}
+.kit-player .kit-speed {
+    display: inline-flex;
+    gap: 0.25em;
+}
+
 /* ===== Grafici degli homework: i valori del pezzo sotto il puntatore =====
    Il riquadro e il contorno li crea attachChartTooltip (homework1.js,
    homework2.js) dentro la figura, che per questo e' posizionata. */

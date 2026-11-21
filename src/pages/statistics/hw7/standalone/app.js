@@ -15,6 +15,7 @@
 import * as hw from '../homework7.js';
 import * as view from '../view.js';
 import { HW7_TEXTS, originalAssignment } from '../texts.js';
+import * as kit from '../../chartkit/kitDom.js';
 
 const HEADINGS = ['h2', 'h3', 'h4'];
 const LANGUAGES = ['it', 'en'];
@@ -136,43 +137,6 @@ const tryBox = (id, label, ...children) => h('div', { class: 'try' }, title(id, 
 const message = (error) => (error instanceof Error ? error.message : String(error));
 const pending = () => (computation.error ? h('p', { class: 'note', text: text.ui.error(computation.error) }) : h('p', { class: 'note pending', role: 'status', text: text.ui.computing }));
 
-// The width of every chart comes from the ResizeObserver, measured after
-// layout; the height is set at once, the drawing happens a few
-// milliseconds per frame.
-const charts = new Map(); // canvas -> { draw, data, width, detach, link, tip, hidden }
-
-// what a chart draws: its data, without the parts hidden from the legend
-const shownData = (chart) => (chart.hidden.length ? { ...chart.data, hidden: chart.hidden } : chart.data);
-
-const resizer = new ResizeObserver((entries) => {
-  for (const entry of entries) {
-    const canvas = entry.target;
-    const chart = charts.get(canvas);
-    const width = Math.round(entry.contentRect.width);
-    if (!chart || width <= 0 || width === chart.width) continue;
-    chart.width = width;
-    canvas.style.height = `${hw.chartHeight(chart.draw, shownData(chart), width)}px`;
-    view.scheduleFrameJob(() => {
-      if (charts.get(canvas) === chart && chart.width === width) chart.draw(canvas, { ...shownData(chart), width }, palette());
-    });
-  }
-});
-
-/** Ties the label under the pointer to a chart: it describes what is on screen, and leaves out the hidden parts. */
-function attachTip(canvas, chart) {
-  if (chart.detach) chart.detach();
-  const tip = chart.tip;
-  chart.detach = tip ? hw.attachChartTooltip(canvas, { draw: chart.draw, data: shownData(chart), describe: (hit) => tip(hit, chart.hidden), link: chart.link }) : null;
-}
-
-/** Draws a chart again at its width, with its data and hidden parts. */
-function redraw(canvas, chart) {
-  if (chart.width > 0) {
-    canvas.style.height = `${hw.chartHeight(chart.draw, shownData(chart), chart.width)}px`;
-    chart.draw(canvas, { ...shownData(chart), width: chart.width }, palette());
-  }
-}
-
 // what the reader hid in the legends of the charts that are built again (a box that changes)
 const kept = {};
 const keep = (name) => {
@@ -180,106 +144,28 @@ const keep = (name) => {
   return kept[name];
 };
 
-/** The parts of the drawing covered by the hidden items of a legend. */
-const partsOf = (items, hidden) => items.flatMap((item, i) => (hidden.has(i) ? item.parts || [] : []));
+const { partsOf, hideParts } = kit;
 
-/**
- * The legend of a chart: { label, color? | paletteKey?, dashed?, box?,
- * parts }. Every item is a button: pressed (as the page opens) its parts
- * are on screen, released they are hidden; onChange(parts) receives the
- * hidden parts after every press. `hidden`, the set of the hidden items,
- * outlives the legend when its chart is built again.
- */
-function legend(items, onChange = null, hidden = new Set()) {
-  const pal = palette();
-  return h(
-    'ul',
-    { class: 'series-legend' },
-    items.map((item, i) => {
-      const color = item.paletteKey ? pal[item.paletteKey] : pal.series[(item.color ?? i) % pal.series.length];
-      let swatch = null;
-      if (item.box) swatch = 'is-box';
-      else if (item.dashed) swatch = 'is-dashed';
-      const button = h(
-        'button',
-        {
-          type: 'button',
-          'aria-pressed': String(!hidden.has(i)),
-          class: hidden.has(i) ? 'is-off' : null,
-          onclick: () => {
-            if (hidden.has(i)) hidden.delete(i);
-            else hidden.add(i);
-            button.setAttribute('aria-pressed', String(!hidden.has(i)));
-            button.classList.toggle('is-off', hidden.has(i));
-            if (onChange) onChange(partsOf(items, hidden));
-          },
-        },
-        h('span', { class: swatch, 'aria-hidden': 'true', style: { borderColor: color, backgroundColor: item.box ? color : 'transparent' } }),
-        item.label,
-      );
-      return h('li', null, button);
-    }),
-  );
-}
-
-/** Hides the cells, columns and rows of a table that belong to hidden parts (data-part), and shows the others. */
-function hideParts(tableEl, parts) {
-  if (!tableEl) return;
-  for (const el of tableEl.querySelectorAll('[data-part]')) el.hidden = parts.includes(el.dataset.part);
-}
-
-/** Hides parts of a chart. */
+/** Hides parts of a chart (a legend shared by several charts). */
 function setHidden(fig, parts) {
-  const canvas = fig.querySelector('canvas.chart');
-  const chart = charts.get(canvas);
-  if (!chart) return;
-  chart.hidden = parts;
-  attachTip(canvas, chart);
-  redraw(canvas, chart);
+  fig.kit.setHidden(parts);
 }
 
 /**
- * A chart with its legend (`items`) and its label under the pointer.
- * `table` (an id of view.LINKED_TABLES) is the table tied to it: the legend
- * hides its parts there too. `keep` is the set of hidden items that
+ * A chart (chartkit/kitDom.js): drawn by homework7.js, with its legend
+ * (`items`), its label under the pointer, the table tied to it (`table`, an
+ * id of view.LINKED_TABLES: the legend hides its parts there too) and zoom
+ * on every chart with continuous axes; with `spec`, its controls, the
+ * handles to drag and the animation. `keep` is the set of hidden items that
  * outlives the chart.
  */
-function figure(label, draw, data, { wide = true, tip = null, items = null, note = null, link = null, table = null, keep: kept = null } = {}) {
-  const canvas = h('canvas', { class: 'chart', role: 'img', 'aria-label': label });
-  const hidden = kept || new Set();
-  const chart = { draw, data, width: -1, detach: null, link, tip, hidden: items ? partsOf(items, hidden) : [] };
-  const fig = h(
-    'figure',
-    { class: wide ? 'figure wide' : 'figure' },
-    canvas,
-    items &&
-      legend(
-        items,
-        (parts) => {
-          setHidden(fig, parts);
-          if (table) hideParts(document.getElementById(table), parts);
-        },
-        hidden,
-      ),
-    note && h('p', { class: 'figure-note', text: note }),
-    h('figcaption', { text: label }),
-  );
-  attachTip(canvas, chart);
-  charts.set(canvas, chart);
-  resizer.observe(canvas);
-  // the table may be built after the chart: hide its parts once both are on the page
-  if (table && chart.hidden.length) requestAnimationFrame(() => hideParts(document.getElementById(table), chart.hidden));
-  return fig;
+function figure(label, draw, data, { wide = true, tip = null, items = null, note = null, link = null, table = null, keep: hiddenItems = null, spec = null } = {}) {
+  return kit.createFigure({ label, draw, data, spec, palette: palette(), lib: hw, schedule: view.scheduleFrameJob, lang: state.lang, tip, items, note, link, table, keep: hiddenItems, wide });
 }
 
 /** Replaces the content of a region, releasing the charts it contained and their labels. */
 function fill(region, ...nodes) {
-  for (const canvas of region.querySelectorAll('canvas.chart')) {
-    resizer.unobserve(canvas);
-    const chart = charts.get(canvas);
-    if (chart && chart.detach) chart.detach();
-    charts.delete(canvas);
-  }
+  kit.releaseFigures(region);
   for (const drawing of region.querySelectorAll('svg.diagram')) {
     const detach = drawingLabels.get(drawing);
     if (detach) detach();
@@ -361,19 +247,11 @@ function live(build) {
   return { region, update };
 }
 
-/** Draws a chart again in place, with new data, label under the pointer and caption, without replacing its canvas (no flicker while a slider moves); the hidden parts stay hidden. */
+/** Draws a chart again in place, with new data, label under the pointer and caption, without replacing its canvas (no flicker while a slider moves); the hidden parts and the zoom stay. */
 function refresh(fig, data, tip, label = null) {
-  const canvas = fig.querySelector('canvas.chart');
-  const chart = charts.get(canvas);
-  if (!chart) return;
-  chart.data = data;
-  chart.tip = tip;
-  attachTip(canvas, chart);
-  if (label !== null) {
-    canvas.setAttribute('aria-label', label);
-    fig.querySelector('figcaption').textContent = label;
-  }
-  redraw(canvas, chart);
+  fig.kit.setData(data);
+  fig.kit.setTip(tip);
+  if (label !== null) fig.kit.setLabel(label);
 }
 
 /** Gives the buttons of a legend new labels (same items, same order). */
