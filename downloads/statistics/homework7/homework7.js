@@ -9422,6 +9422,7 @@ function drawGroupedBars(canvas, { categories, series, yMax, yTicks = [], yForma
 /** The height that a chart function gives a canvas of this width, to reserve the space before drawing. */
 function chartHeight(draw, data, width) {
   if (draw === drawIconArray) return iconLayout(data, width).height;
+  if (draw === drawStrip) return stripLayout(data, width).height;
   if (draw === drawLineChart) return lineLayout(data, width).height;
   if (draw === drawStackedBars) return stackLayout(data, width).height;
   if (draw === drawGroupedBars) return groupLayout(data, width).height;
@@ -9437,6 +9438,7 @@ function chartHeight(draw, data, width) {
  */
 function chartHitTest(draw, data, width, x, y) {
   if (draw === drawIconArray) return iconHit(data, width, x, y);
+  if (draw === drawStrip) return stripHit(data, width, x, y);
   const off = data.hidden || [];
   if (draw === drawLineChart) {
     const { margin, h, w, xs } = lineLayout(data, width);
@@ -9541,6 +9543,14 @@ const attachChartTooltip = (canvas, { draw, data, describe: explain, link = null
  */
 function attachPointerLabel(canvas, locate, link = null) {
   const box = canvas.parentElement;
+  // where the element lies inside its box: the offsets of an HTML element (a canvas), the
+  // difference of the rectangles for the others (an SVG drawing), which have no offsets
+  const offset = () => {
+    if (typeof canvas.offsetLeft === 'number') return { left: canvas.offsetLeft, top: canvas.offsetTop };
+    const a = canvas.getBoundingClientRect();
+    const b = box.getBoundingClientRect();
+    return { left: a.left - b.left - box.clientLeft, top: a.top - b.top - box.clientTop };
+  };
   const mark = document.createElement('div');
   const tip = document.createElement('div');
   mark.className = 'chart-mark';
@@ -9596,9 +9606,10 @@ function attachPointerLabel(canvas, locate, link = null) {
     markRow(-1);
   };
   const place = (rect) => {
+    const at = offset();
     Object.assign(mark.style, {
-      left: `${canvas.offsetLeft + rect.x}px`,
-      top: `${canvas.offsetTop + rect.y}px`,
+      left: `${at.left + rect.x}px`,
+      top: `${at.top + rect.y}px`,
       width: `${Math.max(2, rect.width)}px`,
       height: `${rect.height}px`,
     });
@@ -9620,8 +9631,7 @@ function attachPointerLabel(canvas, locate, link = null) {
       return;
     }
     const { text } = hit;
-    const left = canvas.offsetLeft;
-    const top = canvas.offsetTop;
+    const { left, top } = offset();
     place(hit.rect);
     markRow(hit.row ?? -1, true);
     if (text !== shown) {
@@ -9789,6 +9799,45 @@ function iconRegion(data, width, index) {
   const x0 = r0 === r1 ? ICON_MARGIN + (first % L.columns) * L.cell : ICON_MARGIN;
   const x1 = r0 === r1 ? ICON_MARGIN + ((last % L.columns) + 1) * L.cell : ICON_MARGIN + L.columns * L.cell;
   return { kind: 'cell', index, rect: { x: x0, y: ICON_MARGIN + r0 * L.cell, width: x1 - x0, height: (r1 - r0 + 1) * L.cell } };
+}
+
+/** Where the cells of drawStrip lie: perRow square cells per row, filling the width. */
+function stripLayout(data, width) {
+  const perRow = data.perRow || 50;
+  const rows = Math.max(1, Math.ceil(data.cells.length / perRow));
+  const size = width / perRow;
+  return { perRow, rows, size, height: Math.max(1, Math.round(rows * size)) };
+}
+
+/**
+ * A strip of events in their order, one square cell each, perRow per row:
+ * in the colour of `colorIndex` (palette.series) where the value is 1, in
+ * the grid colour where it is 0. "Try it: alarms in bursts" draws the
+ * connections, red where there is an alarm.
+ */
+function drawStrip(canvas, { cells, perRow = 50, colorIndex = 1, width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
+  const pal = { ...DEFAULT_PALETTE, ...palette };
+  const width0 = knownWidth > 0 ? knownWidth : canvas.clientWidth || 480;
+  const L = stripLayout({ cells, perRow }, width0);
+  const { ctx, width, height } = setupCanvas(canvas, L.height / width0, knownWidth);
+  const size = width / L.perRow;
+  const gap = Math.max(0.5, size * 0.08);
+  ctx.fillStyle = pal.background;
+  ctx.fillRect(0, 0, width, height);
+  for (let k = 0; k < cells.length; k++) {
+    ctx.fillStyle = cells[k] ? pal.series[colorIndex % pal.series.length] : pal.grid;
+    ctx.fillRect((k % L.perRow) * size + gap, Math.floor(k / L.perRow) * size + gap, size - 2 * gap, size - 2 * gap);
+  }
+}
+
+/** The cell of drawStrip under the point (x, y). */
+function stripHit(data, width, x, y) {
+  const L = stripLayout(data, width);
+  const col = Math.floor(x / L.size);
+  const row = Math.floor(y / L.size);
+  const index = row * L.perRow + col;
+  if (col < 0 || col >= L.perRow || row < 0 || index >= data.cells.length) return null;
+  return { kind: 'cell', index, rect: { x: col * L.size, y: row * L.size, width: L.size, height: L.size } };
 }
 
 const EDITOR_ASPECT = 0.42;
@@ -10175,7 +10224,7 @@ function runCli(argv, print = console.log) {
   return failed.length ? 1 : 0;
 }
 
-return { DEFAULT_SEED, LIMITS, SIGNIFICANCE, parseInteger, checkParams, clamp, lnGamma, lnBeta, lnChoose, incompleteGamma, gammaCdf, betaCdf, betaDensity, betaQuantile, phi, normalCdf, normalSf, normalQuantile, binomialLogPmf, binomialCdf, binomialSf, kolmogorovSf, ksTest, cauchyCdf, binomialTest, binomialLogCdf, mcnemarTest, splitMix64, xoshiro128ss, STREAMS, streamState, generator, uniform53, randomSeed, normalSampler, bernoulli, uniformInt, runStepsAsync, bayes, odds, probabilityOfOdds, sigmoid, ALARM_DEFAULT, SECOND_DETECTOR, POPULATION, ALARM_BASES, ALARM_SENSITIVITIES, ALARM_FPRS, roundCounts, alarmFacts, evidenceChain, NETWORK, CLUES, HIDDEN, compromiseGiven, networkJoint, networkPosterior, NETWORK_STEPS, SPRT_DEFAULT, SPRT_ALPHAS, SPRT_MAX_STEPS, sprtSetup, sprtDecision, sprtPath, sprtExact, sprtSimulate, SPRT_RUNS, CAMPAIGN, PRIORS, PRIOR_KEYS, campaign, betaPosterior, campaignPosteriors, TARGET_RATE, GRID_SIZE, GRID, HANDLES, HANDLE_X, PRIOR_SHAPES, PRIOR_SHAPE_KEYS, priorFromHandles, gridPosterior, COVERAGE_N, INTERVAL_METHODS, COVERAGE_PS, interval, coverageCurves, coverageAt, coverageSimulation, COVERAGE_RUNS, SMS_DATA, tokenize, messageText, inTest, smsCorpus, trainNaiveBayes, spamScore, rocArea, confusion, LOGODDS_BINS, smsModel, KDD_DATA, KDD_FEATURES, KDD_LEVELS, kddRecords, kddModel, KDD_EXAMPLE, FALSE_ALARMS, N_STEPS, deviationExact, deviationBounds, deviationTable, PATHS, PATH_POINTS, PATH_CHECKS, pathsSteps, SEQUENCES, SEQUENCE_EPSILON, SEQUENCE_MODES, sequenceFacts, SEQUENCE_POINTS, SEQUENCE_LENGTH, sequencePaths, CLT_LAWS, CLT_SIZES, BERRY_ESSEEN_C, lawFacts, standardizedSums, histogram, ksExactBernoulli, ksExactExponential, berryEsseen, cltTable, bytesFacts, BYTES_SIZES, BYTES_REPS, bytesMeans, cauchyPaths, BVM, betaNormalDistance, bvmFacts, HASH_BITS, HASH_TRY_BITS, collisionExact, collisionMedian, collisionTrial, collisionRun, HASH_TEST, MODES, IMPLICATIONS, implication, rootTable, sampleSizeFor, SCALE_ALPHAS, SCALE_SIZES, SCALE_REPS, scaleSamples, BURST_RHOS, BURST_SECTION, burstTransitions, burstVariance, burstFacts, burstSimulation, burstPath, RESULT_SIZES, ksExactT, deltaLogOdds, mleRate, GC_SIZES, GC_REPS, KOLMOGOROV_MEAN, glivenkoCantelli, kolmogorovCdf, ATTACK_CHAIN, CAMPAIGN_SIZES, attackChain, networkPair, independenceFacts, PVALUE_EXAMPLE, pvalueFacts, DISCOVERY_REALS, DISCOVERY_POWERS, DISCOVERY_ALPHAS, DISCOVERY_DEFAULT, DISCOVERY_TESTS, discoveryFacts, DECISION_LEVEL, SENSITIVITY_DATA, priorSensitivity, priorWeight, likelihoodCurve, CLT_REPS, CLT_TESTS, exploreSteps, explore, DEFAULT_PALETTE, axisLabel, niceTicks, drawLineChart, drawHistogram, drawStackedBars, drawGroupedBars, chartHeight, chartHitTest, chartHitAt, attachChartTooltip, attachPointerLabel, drawIconArray, attachPriorEditor, CHECK_VECTORS, CHECK_GROUPS, verifyAll, runCli };
+return { DEFAULT_SEED, LIMITS, SIGNIFICANCE, parseInteger, checkParams, clamp, lnGamma, lnBeta, lnChoose, incompleteGamma, gammaCdf, betaCdf, betaDensity, betaQuantile, phi, normalCdf, normalSf, normalQuantile, binomialLogPmf, binomialCdf, binomialSf, kolmogorovSf, ksTest, cauchyCdf, binomialTest, binomialLogCdf, mcnemarTest, splitMix64, xoshiro128ss, STREAMS, streamState, generator, uniform53, randomSeed, normalSampler, bernoulli, uniformInt, runStepsAsync, bayes, odds, probabilityOfOdds, sigmoid, ALARM_DEFAULT, SECOND_DETECTOR, POPULATION, ALARM_BASES, ALARM_SENSITIVITIES, ALARM_FPRS, roundCounts, alarmFacts, evidenceChain, NETWORK, CLUES, HIDDEN, compromiseGiven, networkJoint, networkPosterior, NETWORK_STEPS, SPRT_DEFAULT, SPRT_ALPHAS, SPRT_MAX_STEPS, sprtSetup, sprtDecision, sprtPath, sprtExact, sprtSimulate, SPRT_RUNS, CAMPAIGN, PRIORS, PRIOR_KEYS, campaign, betaPosterior, campaignPosteriors, TARGET_RATE, GRID_SIZE, GRID, HANDLES, HANDLE_X, PRIOR_SHAPES, PRIOR_SHAPE_KEYS, priorFromHandles, gridPosterior, COVERAGE_N, INTERVAL_METHODS, COVERAGE_PS, interval, coverageCurves, coverageAt, coverageSimulation, COVERAGE_RUNS, SMS_DATA, tokenize, messageText, inTest, smsCorpus, trainNaiveBayes, spamScore, rocArea, confusion, LOGODDS_BINS, smsModel, KDD_DATA, KDD_FEATURES, KDD_LEVELS, kddRecords, kddModel, KDD_EXAMPLE, FALSE_ALARMS, N_STEPS, deviationExact, deviationBounds, deviationTable, PATHS, PATH_POINTS, PATH_CHECKS, pathsSteps, SEQUENCES, SEQUENCE_EPSILON, SEQUENCE_MODES, sequenceFacts, SEQUENCE_POINTS, SEQUENCE_LENGTH, sequencePaths, CLT_LAWS, CLT_SIZES, BERRY_ESSEEN_C, lawFacts, standardizedSums, histogram, ksExactBernoulli, ksExactExponential, berryEsseen, cltTable, bytesFacts, BYTES_SIZES, BYTES_REPS, bytesMeans, cauchyPaths, BVM, betaNormalDistance, bvmFacts, HASH_BITS, HASH_TRY_BITS, collisionExact, collisionMedian, collisionTrial, collisionRun, HASH_TEST, MODES, IMPLICATIONS, implication, rootTable, sampleSizeFor, SCALE_ALPHAS, SCALE_SIZES, SCALE_REPS, scaleSamples, BURST_RHOS, BURST_SECTION, burstTransitions, burstVariance, burstFacts, burstSimulation, burstPath, RESULT_SIZES, ksExactT, deltaLogOdds, mleRate, GC_SIZES, GC_REPS, KOLMOGOROV_MEAN, glivenkoCantelli, kolmogorovCdf, ATTACK_CHAIN, CAMPAIGN_SIZES, attackChain, networkPair, independenceFacts, PVALUE_EXAMPLE, pvalueFacts, DISCOVERY_REALS, DISCOVERY_POWERS, DISCOVERY_ALPHAS, DISCOVERY_DEFAULT, DISCOVERY_TESTS, discoveryFacts, DECISION_LEVEL, SENSITIVITY_DATA, priorSensitivity, priorWeight, likelihoodCurve, CLT_REPS, CLT_TESTS, exploreSteps, explore, DEFAULT_PALETTE, axisLabel, niceTicks, drawLineChart, drawHistogram, drawStackedBars, drawGroupedBars, chartHeight, chartHitTest, chartHitAt, attachChartTooltip, attachPointerLabel, drawIconArray, drawStrip, attachPriorEditor, CHECK_VECTORS, CHECK_GROUPS, verifyAll, runCli };
 })();
 
 // src/pages/statistics/hw7/standalone/cli.js

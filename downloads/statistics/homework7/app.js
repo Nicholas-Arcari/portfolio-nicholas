@@ -165,6 +165,31 @@ const NETWORK_LAYOUT = Object.freeze({
 });
 /** The arrows of the network: parent -> child. */
 const NETWORK_EDGES = Object.freeze([['phishing', 'compromise'], ['exploit', 'compromise'], ['phishing', 'login'], ['compromise', 'edr'], ['exploit', 'signature']]);
+/** The drawing of the network: its width in its own units (viewBox 0 0 100 64) and the size of a node. */
+const NETWORK_VIEW = Object.freeze({ width: 100, box: Object.freeze({ w: 22, h: 12 }) });
+
+/** The map of implications of "Try it: the map": the centre of every mode in the drawing (viewBox 0 0 104 60) and the size of its box. */
+const MAP_LAYOUT = Object.freeze({
+  as: Object.freeze({ x: 18, y: 12 }),
+  l2: Object.freeze({ x: 18, y: 48 }),
+  probability: Object.freeze({ x: 52, y: 30 }),
+  distribution: Object.freeze({ x: 86, y: 30 }),
+});
+const MAP_VIEW = Object.freeze({ width: 104, box: Object.freeze({ w: 28, h: 12 }) });
+
+/**
+ * The box of a drawing (the network, the map) under the point (x, y), in
+ * CSS pixels of a drawing `width` pixels wide: { key, rect } with the
+ * rectangle to outline, or null. The drawings keep their proportions, so
+ * one scale serves both axes.
+ */
+function diagramHit(layout, viewBox, width, x, y) {
+  const k = width / viewBox.width;
+  const { w, h } = viewBox.box;
+  const key = Object.keys(layout).find((name) => Math.abs(x / k - layout[name].x) <= w / 2 && Math.abs(y / k - layout[name].y) <= h / 2);
+  if (!key) return null;
+  return { key, rect: { x: (layout[key].x - w / 2) * k, y: (layout[key].y - h / 2) * k, width: w * k, height: h * k } };
+}
 
 // ---------------------------------------------------------------------------
 // 1.4 Il test di Wald
@@ -482,21 +507,58 @@ const HASH_FACTORS = Object.freeze([0.5, 1, 2]);
 /** The number of identifiers of "Try it": a multiple of the median, rounded. */
 const hashCount = (bits, factor) => Math.max(2, Math.round(hw.collisionMedian(bits) * factor));
 
-/** The chart of "Try it: hash": the estimate after every batch of trials against the exact probability, with the band of the CLT around it. */
+/** The trial counts where "Try it: hash" records its estimate: ten per decade from 10 on, so the path shows from the first batch. */
+const hashGrid = (to) => {
+  const out = [];
+  for (let j = 0; ; j++) {
+    const t = Math.round(10 ** (1 + j / 10));
+    if (t > to) return out;
+    if (out[out.length - 1] !== t) out.push(t);
+  }
+};
+
+/**
+ * `count` more trials for "Try it: hash", from the stream 'hash' after the
+ * ones of the test (repetitions from 10^6): the run { trials, hits,
+ * history } with the estimate recorded at every point of the grid passed,
+ * and at the end.
+ */
+function hashMore(run, bits, m, count, seed = hw.DEFAULT_SEED) {
+  let { trials, hits } = run;
+  const history = [...run.history];
+  const stops = hashGrid(trials + count).filter((t) => t > trials);
+  if (stops[stops.length - 1] !== trials + count) stops.push(trials + count);
+  for (const t of stops) {
+    hits += hw.collisionRun(bits, m, t - trials, seed, 1000000 + trials);
+    trials = t;
+    history.push({ trials, hits });
+  }
+  return { trials, hits, history };
+}
+
+/**
+ * The chart of "Try it: hash": the exact probability with the band of the
+ * central limit around it, on the whole axis from the start (up to 10^4
+ * trials, then to the next power of ten), and the estimate where it was
+ * recorded.
+ */
 function hashChart(state, exact, decimal = '.') {
-  const points = state.history.length ? state.history : [{ trials: 1, hits: 0 }];
-  const x = points.map((h) => h.trials);
+  const last = state.history.length ? state.history[state.history.length - 1].trials : 0;
+  const decades = Math.max(4, Math.ceil(Math.log10(Math.max(10, last))));
+  const at = new Map(state.history.map((h) => [h.trials, h.hits / h.trials]));
+  const x = [...new Set([...hashGrid(10 ** decades), ...at.keys()])].sort((a, b) => a - b);
+  const half = (r) => 1.96 * Math.sqrt((exact * (1 - exact)) / r);
   return {
     x,
     logX: true,
     series: [
-      { values: points.map((h) => (state.history.length ? h.hits / h.trials : null)), colorIndex: 0 },
-      { values: x.map(() => exact), band: x.map((r) => [Math.max(0, exact - 1.96 * Math.sqrt((exact * (1 - exact)) / r)), Math.min(1, exact + 1.96 * Math.sqrt((exact * (1 - exact)) / r))]), colorIndex: 1, dashed: true },
+      { values: x.map((t) => (at.has(t) ? at.get(t) : null)), colorIndex: 0, dots: false },
+      { values: x.map(() => exact), band: x.map((r) => [Math.max(0, exact - half(r)), Math.min(1, exact + half(r))]), colorIndex: 1, dashed: true },
     ],
     yMin: 0,
     yMax: 1,
     yTicks: percentTicks(0, 1, 0.25),
-    xTicks: powers(0, Math.max(1, Math.ceil(Math.log10(Math.max(10, x[x.length - 1]))))),
+    xTicks: powers(1, decades),
     yFormat: pctLabel(decimal),
     decimal,
   };
@@ -651,6 +713,8 @@ const BURST_TRY_DEFAULT = Object.freeze({ rho: hw.BURST_RHOS.indexOf(0.5) });
 const BURST_N = Object.freeze([10, 30, 100, 300, 1000, 3000, 10000]);
 /** The connections drawn in the two strips of "Try it": 400, 12 alarms on average. */
 const BURST_STRIP = 400;
+/** A strip of "Try it: alarms in bursts" as a chart (drawStrip): 50 connections per row, red where there is an alarm. */
+const stripChart = (cells) => ({ cells, perRow: 50, colorIndex: 1 });
 
 /** The chart of the bursts: the exact standard error of the share of alarms, independent and with correlation rho. */
 function burstChart(rho, decimal = '.') {
@@ -847,10 +911,14 @@ const tips = {
     const b = chart.bars[hit.index];
     return b ? T.histogram(b.from, b.to, b.count, b.count / reps) : null;
   },
-  hash: (state, exact, T) => (hit, hidden = []) => {
-    const h = state.history[hit.index];
-    if (!h) return null;
-    return T.hash(h.trials, shown(hidden, 0, h.hits / h.trials), shown(hidden, 1, exact));
+  hash: (chart, exact, T) => (hit, hidden = []) => T.hash(chart.x[hit.index], shown(hidden, 0, chart.series[0].values[hit.index]), shown(hidden, 1, exact)),
+  strip: (cells, T) => (hit) => {
+    if (!cells[hit.index]) return T.strip(hit.index + 1, false, 0);
+    let from = hit.index;
+    let to = hit.index;
+    while (from > 0 && cells[from - 1]) from--;
+    while (to < cells.length - 1 && cells[to + 1]) to++;
+    return T.strip(hit.index + 1, true, to - from + 1);
   },
   cauchy: (paths, T) => (hit) => {
     const values = paths.map((line) => line[hit.index]);
@@ -1002,7 +1070,7 @@ function scheduleFrameJob(job) {
   }
 }
 
-return { SECTIONS, tocEntries, DEFAULT_PARAMS, paramsKey, parseParamsKey, pParts, pctLabel, ALARM_CATEGORIES, alarmIcons, ALARM_TRY_DEFAULT, alarmTry, alarmChains, networkRows, networkChart, NETWORK_TRY_DEFAULT, NETWORK_LAYOUT, NETWORK_EDGES, SPRT_EXAMPLES, sprtChart, SPRT_TRY_DEFAULT, sprtPosterior, campaignFacts, campaignChart, densityChart, BELIEF_TRY_DEFAULT, beliefCurves, moreEmails, PRIOR_TRY_DEFAULT, PRIOR_DATA, priorData, coverageChart, logOddsChart, SPAM_EXAMPLE, SPAM_BASES, spamPrior, KDD_TRY_DEFAULT, outsideChart, pathsChart, afterChart, mseChart, SEQUENCE_TRY_DEFAULT, SEQUENCE_TABLE_N, sequenceTableN, sequenceChart, cltChart, CLT_TRY_DEFAULT, CLT_TRY_SIZES, CLT_TRY_REPS, cltTry, HASH_TRY_DEFAULT, HASH_FACTORS, hashCount, hashChart, cauchyChart, bytesChart, speedChart, bvmChart, bvmDistanceChart, resultsRows, resultsChart, rootChart, SCALE_TRY_DEFAULT, scaleCharts, BURST_TRY_DEFAULT, BURST_N, BURST_STRIP, burstChart, DISCOVERY_TRY_DEFAULT, DISCOVERY_CATEGORIES, discoveryIcons, likelihoodChart, legends, tips, LINKED_TABLES, links, testRows, testCells, scheduleFrameJob };
+return { SECTIONS, tocEntries, DEFAULT_PARAMS, paramsKey, parseParamsKey, pParts, pctLabel, ALARM_CATEGORIES, alarmIcons, ALARM_TRY_DEFAULT, alarmTry, alarmChains, networkRows, networkChart, NETWORK_TRY_DEFAULT, NETWORK_LAYOUT, NETWORK_EDGES, NETWORK_VIEW, MAP_LAYOUT, MAP_VIEW, diagramHit, SPRT_EXAMPLES, sprtChart, SPRT_TRY_DEFAULT, sprtPosterior, campaignFacts, campaignChart, densityChart, BELIEF_TRY_DEFAULT, beliefCurves, moreEmails, PRIOR_TRY_DEFAULT, PRIOR_DATA, priorData, coverageChart, logOddsChart, SPAM_EXAMPLE, SPAM_BASES, spamPrior, KDD_TRY_DEFAULT, outsideChart, pathsChart, afterChart, mseChart, SEQUENCE_TRY_DEFAULT, SEQUENCE_TABLE_N, sequenceTableN, sequenceChart, cltChart, CLT_TRY_DEFAULT, CLT_TRY_SIZES, CLT_TRY_REPS, cltTry, HASH_TRY_DEFAULT, HASH_FACTORS, hashCount, hashMore, hashChart, cauchyChart, bytesChart, speedChart, bvmChart, bvmDistanceChart, resultsRows, resultsChart, rootChart, SCALE_TRY_DEFAULT, scaleCharts, BURST_TRY_DEFAULT, BURST_N, BURST_STRIP, stripChart, burstChart, DISCOVERY_TRY_DEFAULT, DISCOVERY_CATEGORIES, discoveryIcons, likelihoodChart, legends, tips, LINKED_TABLES, links, testRows, testCells, scheduleFrameJob };
 })();
 
 var texts$ = (function () {
@@ -1845,6 +1913,16 @@ const it = {
     clt: (n, values) => [`n = ${IT.int(n)}`, ...['bernoulli', 'bernoulliBound', 'exponential', 'exponentialBound'].map((k, i) => (values[i] === null ? null : `${it.legends[k]} ${IT.num(values[i], 4)}`))].filter(Boolean).join(' · '),
     histogram: (from, to, count, share) => `Da ${IT.num(from, 2)} a ${IT.num(to, 2)}: ${IT.int(count)} (${IT.pct(share)})`,
     hash: (trials, estimate, exact) => [`${IT.int(trials)} prove`, estimate === null ? null : `stima ${IT.pct(estimate, 2)}`, exact === null ? null : `esatta ${IT.pct(exact, 2)}`].filter(Boolean).join(' · '),
+    strip: (n, alarm, run) => (alarm ? `Connessione ${IT.int(n)}: allarme, ${run > 1 ? `in una raffica di ${IT.int(run)}` : 'isolato'}` : `Connessione ${IT.int(n)}: nessun allarme`),
+    node: (name, p, prior, observed) => (observed === null || observed === undefined ? `${name}: ${IT.pct(p, 1)} (${IT.pct(prior, 1)} prima degli indizi)` : `${name}: osservato, ${observed ? 'sì' : 'no'}`),
+    mode: (name, implies, impliedBy) => {
+      const low = (x) => x.charAt(0).toLowerCase() + x.slice(1);
+      const list = (xs) => (xs.length > 1 ? `${xs.slice(0, -1).map(low).join(', ')} e ${low(xs[xs.length - 1])}` : low(xs[0]));
+      const a = implies.length ? `implica ${list(implies)}` : 'non implica nessun’altra';
+      let b = 'nessun’altra la implica';
+      if (impliedBy.length) b = `${impliedBy.length > 1 ? 'la implicano' : 'la implica'} ${list(impliedBy)}`;
+      return `${name}: ${a}; ${b}.`;
+    },
     cauchy: (n, min, max) => `n = ${IT.int(n)}: le medie vanno da ${IT.num(min, 2)} a ${IT.num(max, 2)}`,
     speed: (n, values) => [`n = ${IT.int(n)}`, ...['exact', 'chebyshev', 'hoeffding', 'normal'].map((k, i) => (values[i] === null ? null : `${it.legends[k]} ${IT.prob(values[i])}`))].filter(Boolean).join(' · '),
     bvm: (n, clicks, u, w, truth) => [`n = ${IT.int(n)}, ${IT.int(clicks)} click`, u ? `uniforme ${it.bvm.pair(u)}` : null, w ? `sbagliato ${it.bvm.pair(w)}` : null, truth ? `vera ${IT.pct(CAMPAIGN.rate, 0)}` : null].filter(Boolean).join(' · '),
@@ -2615,6 +2693,15 @@ const en = {
     clt: (n, values) => [`n = ${EN.int(n)}`, ...['bernoulli', 'bernoulliBound', 'exponential', 'exponentialBound'].map((k, i) => (values[i] === null ? null : `${en.legends[k]} ${EN.num(values[i], 4)}`))].filter(Boolean).join(' · '),
     histogram: (from, to, count, share) => `From ${EN.num(from, 2)} to ${EN.num(to, 2)}: ${EN.int(count)} (${EN.pct(share)})`,
     hash: (trials, estimate, exact) => [`${EN.int(trials)} trials`, estimate === null ? null : `estimate ${EN.pct(estimate, 2)}`, exact === null ? null : `exact ${EN.pct(exact, 2)}`].filter(Boolean).join(' · '),
+    strip: (n, alarm, run) => (alarm ? `Connection ${EN.int(n)}: alarm, ${run > 1 ? `in a burst of ${EN.int(run)}` : 'on its own'}` : `Connection ${EN.int(n)}: no alarm`),
+    node: (name, p, prior, observed) => (observed === null || observed === undefined ? `${name}: ${EN.pct(p, 1)} (${EN.pct(prior, 1)} before the clues)` : `${name}: observed, ${observed ? 'yes' : 'no'}`),
+    mode: (name, implies, impliedBy) => {
+      const low = (x) => x.charAt(0).toLowerCase() + x.slice(1);
+      const list = (xs) => (xs.length > 1 ? `${xs.slice(0, -1).map(low).join(', ')} and ${low(xs[xs.length - 1])}` : low(xs[0]));
+      const a = implies.length ? `implies ${list(implies)}` : 'implies no other mode';
+      const b = impliedBy.length ? `implied by ${list(impliedBy)}` : 'implied by no other mode';
+      return `${name}: ${a}; ${b}.`;
+    },
     cauchy: (n, min, max) => `n = ${EN.int(n)}: the means go from ${EN.num(min, 2)} to ${EN.num(max, 2)}`,
     speed: (n, values) => [`n = ${EN.int(n)}`, ...['exact', 'chebyshev', 'hoeffding', 'normal'].map((k, i) => (values[i] === null ? null : `${en.legends[k]} ${EN.prob(values[i])}`))].filter(Boolean).join(' · '),
     bvm: (n, clicks, u, w, truth) => [`n = ${EN.int(n)}, ${EN.int(clicks)} clicks`, u ? `uniform ${en.bvm.pair(u)}` : null, w ? `wrong ${en.bvm.pair(w)}` : null, truth ? `true ${EN.pct(CAMPAIGN.rate, 0)}` : null].filter(Boolean).join(' · '),
@@ -2932,6 +3019,11 @@ function fill(region, ...nodes) {
     if (chart && chart.detach) chart.detach();
     charts.delete(canvas);
   }
+  for (const drawing of region.querySelectorAll('svg.diagram')) {
+    const detach = drawingLabels.get(drawing);
+    if (detach) detach();
+    drawingLabels.delete(drawing);
+  }
   region.replaceChildren(...nodes.flat(Infinity).filter((n) => n !== null && n !== undefined && n !== false));
 }
 
@@ -2984,6 +3076,20 @@ function slider(id, label, max, value, onChange) {
       input.setAttribute('aria-valuetext', textLabel);
     },
   };
+}
+
+// the labels of the SVG drawings: released when their drawing is replaced
+const drawingLabels = new Map(); // svg -> detach
+
+/**
+ * An SVG drawing with the label under the pointer, the same as the charts:
+ * locate(x, y, width) says what lies under the point. The drawing sits in
+ * a positioned box, where the label goes.
+ */
+function labelled(drawing, locate) {
+  const box = h('div', { class: 'drawing' }, drawing);
+  drawingLabels.set(drawing, hw.attachPointerLabel(drawing, locate));
+  return box;
 }
 
 /** A box whose output region is built again at every change: `build()` returns the nodes. */
@@ -3287,12 +3393,14 @@ function tryHashBox() {
   const run = state.hash;
   const count = () => view.hashCount(run.bits, run.factor);
   const exactOf = () => hw.collisionExact(run.bits, count());
-  const fig = figure(T.chartTitle, hw.drawLineChart, view.hashChart({ history: run.history }, exactOf(), F.decimal), { tip: view.tips.hash({ history: run.history }, exactOf(), text.tips), items: view.legends.hash(text.legends), keep: keep('hash') });
+  const first = view.hashChart({ history: run.history }, exactOf(), F.decimal);
+  const fig = figure(T.chartTitle, hw.drawLineChart, first, { tip: view.tips.hash(first, exactOf(), text.tips), items: view.legends.hash(text.legends), keep: keep('hash') });
   const line = resultLine('');
   const factorGroup = h('div');
   const update = () => {
     const exact = exactOf();
-    refresh(fig, view.hashChart({ history: run.history }, exact, F.decimal), view.tips.hash({ history: run.history }, exact, text.tips));
+    const chart = view.hashChart({ history: run.history }, exact, F.decimal);
+    refresh(fig, chart, view.tips.hash(chart, exact, text.tips));
     line.textContent = T.result(run, exact, count(), run.bits);
   };
   const clear = () => {
@@ -3311,9 +3419,7 @@ function tryHashBox() {
   );
   // more trials, from the stream 'hash' after the ones of the test (repetitions from 10^6)
   const add = (n) => {
-    run.hits += hw.collisionRun(run.bits, count(), n, hw.DEFAULT_SEED, 1000000 + run.trials);
-    run.trials += n;
-    run.history = [...run.history, { trials: run.trials, hits: run.hits }].slice(-60);
+    Object.assign(run, view.hashMore(run, run.bits, count(), n));
     update();
   };
   buildFactors();
@@ -3360,15 +3466,15 @@ function mapBlock() {
 // La mappa delle implicazioni: i quattro modi, con le frecce che valgono sempre
 function mapDiagram(mode) {
   const pal = palette();
-  const P = { as: { x: 18, y: 12 }, l2: { x: 18, y: 48 }, probability: { x: 52, y: 30 }, distribution: { x: 86, y: 30 } };
-  const box = { w: 28, h: 12 };
+  const P = view.MAP_LAYOUT;
+  const { box } = view.MAP_VIEW;
   const stateOf = (m) => {
     if (!mode) return 'idle';
     if (m === mode) return 'self';
     return hw.implication(mode, m).holds ? 'holds' : 'fails';
   };
   const fills = { idle: pal.background, self: pal.series[0], holds: pal.series[2], fails: pal.series[1] };
-  return svg(
+  const drawing = svg(
     'svg',
     { class: 'diagram', viewBox: '0 0 104 60', role: 'img', 'aria-label': text.tryMap.diagramLabel },
     svg('defs', null, svg('marker', { id: 'map-arrow', viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 5, markerHeight: 5, orient: 'auto-start-reverse' }, svg('path', { d: 'M 0 0 L 10 5 L 0 10 z', fill: pal.text }))),
@@ -3391,6 +3497,13 @@ function mapDiagram(mode) {
       );
     }),
   );
+  const names = (list) => list.map((m) => text.tryMap.modes[m]);
+  return labelled(drawing, (x, y, width) => {
+    const hit = view.diagramHit(P, view.MAP_VIEW, width, x, y);
+    if (!hit) return null;
+    const others = hw.MODES.filter((m) => m !== hit.key);
+    return { rect: hit.rect, text: text.tips.mode(text.tryMap.modes[hit.key], names(others.filter((m) => hw.implication(hit.key, m).holds)), names(others.filter((m) => hw.implication(m, hit.key).holds))) };
+  });
 }
 
 function tryMapBox() {
@@ -3561,18 +3674,6 @@ function burstsBlock() {
   ];
 }
 
-// Una striscia di connessioni, una cella per connessione: rossa se c'e' un allarme
-function burstStrip(cells, label) {
-  const pal = palette();
-  const perRow = 50;
-  const rows = Math.ceil(cells.length / perRow);
-  return svg(
-    'svg',
-    { class: 'strip', viewBox: `0 0 ${perRow * 2} ${rows * 2}`, style: `aspect-ratio: ${perRow * 2} / ${rows * 2}`, role: 'img', 'aria-label': label, preserveAspectRatio: 'none' },
-    Array.from(cells, (v, i) => svg('rect', { x: (i % perRow) * 2 + 0.15, y: Math.floor(i / perRow) * 2 + 0.15, width: 1.7, height: 1.7, fill: v ? pal.series[1] : pal.grid })),
-  );
-}
-
 function tryBurstsBox() {
   const T = text.tryBursts;
   const F = text.fmt;
@@ -3587,7 +3688,15 @@ function tryBurstsBox() {
     const bursty = hw.burstPath(view.BURST_STRIP, hw.FALSE_ALARMS.rate, rho);
     const label1 = T.stripLabel(T.strips.independent, count(independent), view.BURST_STRIP);
     const label2 = T.stripLabel(T.strips.bursts, count(bursty), view.BURST_STRIP);
-    fill(strips, h('p', { class: 'note', text: label1 }), burstStrip(independent, label1), h('p', { class: 'note', text: label2 }), burstStrip(bursty, label2));
+    fill(
+      strips,
+      h(
+        'div',
+        { class: 'charts' },
+        figure(label1, hw.drawStrip, view.stripChart(independent), { wide: false, tip: view.tips.strip(independent, text.tips) }),
+        figure(label2, hw.drawStrip, view.stripChart(bursty), { wide: false, tip: view.tips.strip(bursty, text.tips) }),
+      ),
+    );
     refresh(fig, view.burstChart(rho, F.decimal), view.tips.burst(rho, text.tips));
     line.textContent = T.result(hw.burstFacts(1000, hw.FALSE_ALARMS.rate, rho));
   };
@@ -3902,9 +4011,10 @@ function networkBlock() {
 function networkDiagram(q, evidence) {
   const pal = palette();
   const N = text.network.nodes;
-  const box = { w: 22, h: 12 };
+  const { box } = view.NETWORK_VIEW;
   const L = view.NETWORK_LAYOUT;
-  return svg(
+  const prior = hw.networkPosterior({});
+  const drawing = svg(
     'svg',
     { class: 'diagram', viewBox: '0 0 100 64', role: 'img', 'aria-label': text.tryNetwork.diagramLabel },
     svg('defs', null, svg('marker', { id: 'network-arrow', viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 5, markerHeight: 5, orient: 'auto-start-reverse' }, svg('path', { d: 'M 0 0 L 10 5 L 0 10 z', fill: pal.text }))),
@@ -3926,6 +4036,10 @@ function networkDiagram(q, evidence) {
       );
     }),
   );
+  return labelled(drawing, (x, y, width) => {
+    const hit = view.diagramHit(L, view.NETWORK_VIEW, width, x, y);
+    return hit && { rect: hit.rect, text: text.tips.node(N[hit.key], q[hit.key], prior[hit.key], evidence[hit.key]) };
+  });
 }
 
 function tryNetworkBox() {
