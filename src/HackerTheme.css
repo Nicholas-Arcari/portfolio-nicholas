@@ -848,6 +848,30 @@ body.dark-mode .course-link:hover {
     padding: 0.7em 1.6em;
 }
 
+/* ===== LA COLONNA DESTRA CHE RESTA IN VISTA =====
+   Nelle pagine con StatisticsLayout (Statistics e Reti di calcolatori), da
+   computer, la colonna destra segue lo scorrimento: top e margin-top li
+   calcola followSidebar.js. Il template da' a #main overflow: hidden, che
+   ne farebbe il contenitore di scorrimento e fermerebbe sticky: clip taglia
+   allo stesso modo senza esserlo. Da 980 px in giu' la colonna sta sotto il
+   testo e resta com'e'. */
+@media screen and (min-width: 981px) {
+    #main.stats-main {
+        overflow: clip;
+    }
+    #sidebar.stats-sidebar {
+        position: sticky;
+        top: 0;
+        align-self: flex-start;
+    }
+}
+/* il pulsante Indice in cima alla colonna, largo quanto il riquadro */
+.stats-sidebar-index .hw-index-button {
+    display: block;
+    width: 100%;
+    margin: 0;
+}
+
 /* Con il modal aperto la pagina sotto non scorre. Lo spazio della barra di
    scorrimento resta riservato: senza, la pagina si allargherebbe, i grafici
    si ridisegnerebbero piu' alti e il salto alla sezione arriverebbe storto. */

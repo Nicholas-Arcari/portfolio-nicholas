@@ -9,13 +9,16 @@
 // chiude con Esc e riporta il focus al pulsante. Qui restano lo sfondo, il
 // blocco dello scorrimento e il salto alla sezione: i titoli delle sezioni
 // hanno tabIndex -1, cosi' il focus arriva li' e la tastiera riparte da li'.
-import React, { useEffect, useRef } from 'react';
+// La stessa pagina puo' averne due (accanto al titolo e nella colonna
+// destra): l'id del titolo del modal e' diverso per ognuno.
+import React, { useEffect, useId, useRef } from 'react';
 import { goToSection } from './goToSection';
 
 const OPEN_CLASS = 'hw-index-open';
 
 const HomeworkIndex = ({ sections, labels }) => {
   const dialogRef = useRef(null);
+  const titleId = useId();
 
   // se la pagina cambia con il modal aperto, lo scorrimento torna libero
   useEffect(() => () => document.documentElement.classList.remove(OPEN_CLASS), []);
@@ -45,7 +48,7 @@ const HomeworkIndex = ({ sections, labels }) => {
       <dialog
         ref={dialogRef}
         className="hw-index"
-        aria-labelledby="hw-index-title"
+        aria-labelledby={titleId}
         onClose={close}
         onClick={(e) => {
           // il clic sullo sfondo arriva al <dialog> stesso: il riquadro interno lo riempie tutto
@@ -54,12 +57,12 @@ const HomeworkIndex = ({ sections, labels }) => {
       >
         <div className="hw-index-box">
           <div className="hw-index-head">
-            <h4 id="hw-index-title">{labels.title}</h4>
+            <h4 id={titleId}>{labels.title}</h4>
             <button type="button" className="hw-index-close" onClick={close} aria-label={labels.close}>
               &times;
             </button>
           </div>
-          <nav className="hw-index-body" aria-labelledby="hw-index-title">
+          <nav className="hw-index-body" aria-labelledby={titleId}>
             <ul className="hw-index-list">
               {sections.map((s) => (
                 <li key={s.id} className={`hw-index-level-${s.level}`}>
