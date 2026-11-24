@@ -15,12 +15,12 @@
 // e la logica di presentazione in hw5/view.js: sono gli stessi file da cui la
 // build ricava il programma scaricabile (build/homework-standalone.js), cosi'
 // la pagina e il download non possono raccontare due cose diverse.
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useLanguage } from '../../contexts/languageContext';
 import { useTheme } from '../../contexts/themeContext';
 import HomeworkShell from './HomeworkShell';
-import { ChartLegend } from './ChartLegend';
-import { hiddenParts, useHidden } from './legendState';
+import { useHidden } from './legendState';
+import { ChartFigure } from './chartkit/ChartFigure';
 import * as hw from './hw5/homework5';
 import * as view from './hw5/view';
 import { HW5_TEXTS, originalAssignment } from './hw5/texts';
@@ -73,48 +73,12 @@ const Formulas = ({ title = null, children }) => (
   </>
 );
 
-// Un grafico su canvas, ridisegnato quando cambia la larghezza, con i valori
-// del pezzo sotto il puntatore e, con `link` (view.links), la riga della
-// tabella legata: il disegno vero e' in homework5.js. Le voci della legenda
-// nascondono e mostrano le loro parti; con `hidden` e `onToggle` lo stato
-// sta nella sezione, che ne fa sparire anche le colonne o le righe della
-// tabella annessa.
-const Figure = ({ title, draw, data, palette, tip = null, wide = false, legend = null, note = null, link = null, hidden: shared = null, onToggle = null }) => {
-  const ref = useRef(null);
-  const [own, toggleOwn] = useHidden();
-  const hidden = shared || own;
-  const off = hiddenParts(legend, hidden).join(' ');
-  const shown = useMemo(() => (off ? { ...data, hidden: off.split(' ') } : data), [data, off]);
-  const describe = useMemo(() => (tip ? (hit) => tip(hit, off ? off.split(' ') : []) : null), [tip, off]);
-  useEffect(() => {
-    const canvas = ref.current;
-    let drawn = -1;
-    const observer = new ResizeObserver((entries) => {
-      const width = Math.round(entries[entries.length - 1].contentRect.width);
-      if (width <= 0 || width === drawn) return;
-      drawn = width;
-      canvas.style.height = `${hw.chartHeight(draw, shown, width)}px`;
-      view.scheduleFrameJob(() => {
-        if (canvas.isConnected && drawn === width) draw(canvas, { ...shown, width }, palette);
-      });
-    });
-    observer.observe(canvas);
-    const detach = describe ? hw.attachChartTooltip(canvas, { draw, data: shown, describe, link }) : null;
-    return () => {
-      drawn = -2;
-      observer.disconnect();
-      if (detach) detach();
-    };
-  }, [draw, shown, palette, describe, link]);
-  return (
-    <figure className={wide ? 'hw1-figure hw1-figure-wide' : 'hw1-figure'}>
-      <canvas ref={ref} className="hw1-canvas" role="img" aria-label={title} />
-      {legend && <ChartLegend items={legend} palette={palette} hidden={hidden} onToggle={onToggle || toggleOwn} />}
-      {note && <p className="hw3-figure-note">{note}</p>}
-      <figcaption>{title}</figcaption>
-    </figure>
-  );
-};
+// Un grafico interattivo (chartkit/ChartFigure.jsx): disegnato da homework5.js,
+// con l'etichetta sotto il puntatore, la legenda a pulsanti, la tabella
+// legata (link) e lo zoom su ogni grafico, anche sulle figure degli
+// integrali; `animation` e `handles` aggiungono il lettore e le linee da
+// trascinare.
+const Figure = (props) => <ChartFigure lib={hw} schedule={view.scheduleFrameJob} {...props} />;
 
 // Una scelta fra pochi valori: il pulsante premuto e' quello attivo
 const Choices = ({ label, options, value, onChange }) => (
@@ -278,6 +242,8 @@ const TryArea = ({ text, palette }) => {
   const state = useMemo(() => view.areaState({ mu, sigma, z, rule, n, strategy }, F.decimal), [mu, sigma, z, rule, n, strategy, F]);
   const tip = useMemo(() => view.tips.area(state, text.tips), [state, text]);
   const legend = useMemo(() => view.legends.area(text), [text]);
+  // the point x as a line to drag on the chart, on the grid of the slider
+  const handles = useMemo(() => ({ items: view.zHandle(state, mu, sigma, T.handleLabel(state.x)), onChange: (id, v) => setZIndex(view.zIndexAt(v, mu, sigma)) }), [state, mu, sigma, T]);
   return (
     <div className="hw4-try">
       <Title id="hw5-try-area" level={2}>{text.sections.tryArea}</Title>
@@ -291,7 +257,7 @@ const TryArea = ({ text, palette }) => {
         <Slider id="hw5-area-n" label={T.nLabel(state.n, rule)} valueText={T.nLabel(state.n, rule)} max={view.AREA.nMax - 1} value={n - 1} onChange={(v) => setN(v + 1)} />
       </div>
       <div className="hw1-charts">
-        <Figure title={T.chartTitle(state, rule)} draw={hw.drawQuadrature} data={state.chart} palette={palette} tip={tip} wide legend={legend} />
+        <Figure title={T.chartTitle(state, rule)} draw={hw.drawQuadrature} data={state.chart} palette={palette} tip={tip} wide legend={legend} handles={handles} />
       </div>
       <p className="hw1-caption hw4-line" aria-live="polite">{T.result(state, rule)}</p>
     </div>
@@ -380,6 +346,7 @@ const Convergence = React.memo(function Convergence({ text, palette }) {
   const F = text.fmt;
   const study = useMemo(() => hw.convergenceStudy(), []);
   const data = useMemo(() => view.convergenceChart(study, F.decimal), [study, F]);
+  const animation = useMemo(() => (view.reveal(data, 160)), [data]);
   const tip = useMemo(() => view.tips.convergence(study, text.tips), [study, text]);
   const facts = useMemo(() => view.convergenceFacts(study), [study]);
   // una regola nascosta nella legenda sparisce anche dalle colonne della tabella
@@ -390,7 +357,7 @@ const Convergence = React.memo(function Convergence({ text, palette }) {
     <>
       <Paras list={C.intro} />
       <div className="hw1-charts">
-        <Figure title={C.chartTitle(study.z)} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} link={view.links.convergence} wide legend={legend} hidden={hidden} onToggle={toggle} />
+        <Figure title={C.chartTitle(study.z)} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} link={view.links.convergence} wide legend={legend} hidden={hidden} onToggle={toggle} animation={animation} />
       </div>
       <p className="hw1-table-title"><strong>{C.tableTitle}</strong></p>
       <div className="hw1-scroll">
@@ -451,6 +418,7 @@ const Quantiles = React.memo(function Quantiles({ text, palette }) {
   const rows = useMemo(() => view.quantileRows(), []);
   const steps = useMemo(() => view.newtonRows(), []);
   const data = useMemo(() => view.newtonChart(steps, F.decimal), [steps, F]);
+  const animation = useMemo(() => (view.reveal(data, 320)), [data]);
   const tip = useMemo(() => view.tips.newton(steps, text.tips), [steps, text]);
   return (
     <>
@@ -487,7 +455,7 @@ const Quantiles = React.memo(function Quantiles({ text, palette }) {
         </table>
       </div>
       <div className="hw1-charts">
-        <Figure title={Q.chartTitle} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} link={view.links.newton} wide />
+        <Figure title={Q.chartTitle} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} link={view.links.newton} wide animation={animation} />
       </div>
       <Paras list={Q.after(rows)} />
     </>
@@ -499,6 +467,7 @@ const Tails = React.memo(function Tails({ text, palette }) {
   const F = text.fmt;
   const rows = useMemo(() => hw.tailRows(), []);
   const data = useMemo(() => view.tailChart(rows, F.decimal), [rows, F]);
+  const animation = useMemo(() => (view.reveal(data, 200)), [data]);
   const tip = useMemo(() => view.tips.tails(rows, text.tips), [rows, text]);
   const facts = useMemo(() => view.tailFacts(rows), [rows]);
   const alarms = useMemo(() => view.alarmRows(), []);
@@ -538,7 +507,7 @@ const Tails = React.memo(function Tails({ text, palette }) {
         </table>
       </div>
       <div className="hw1-charts">
-        <Figure title={T.chartTitle} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} link={view.links.tails} wide legend={legend} hidden={hidden} onToggle={toggle} />
+        <Figure title={T.chartTitle} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} link={view.links.tails} wide legend={legend} hidden={hidden} onToggle={toggle} animation={animation} />
       </div>
       <Paras list={T.after(facts)} />
       <Paras list={T.alarmIntro} />
@@ -573,6 +542,8 @@ const TryAlarm = ({ text, palette }) => {
   const state = useMemo(() => view.alarmState(events, rate), [events, rate]);
   const data = useMemo(() => view.alarmChart(state, F.decimal), [state, F]);
   const tip = useMemo(() => view.tips.alarm(state, data, text.tips), [state, data, text]);
+  // the accepted rate as a line to drag on the chart, among the rates of the choices
+  const handles = useMemo(() => ({ items: view.rateHandle(state, T.rates[rate]), onChange: (id, v) => setRate(view.rateAt(v, events)) }), [state, T, rate, events]);
   return (
     <div className="hw4-try">
       <Title id="hw5-try-alarm" level={2}>{text.sections.tryAlarm}</Title>
@@ -580,7 +551,7 @@ const TryAlarm = ({ text, palette }) => {
       <Choices label={T.eventsLabel} options={view.ALARM_EVENTS.map((e) => [e, F.events(e)])} value={events} onChange={setEvents} />
       <Choices label={T.rateLabel} options={Object.keys(view.ALARM_RATES).map((r) => [r, T.rates[r]])} value={rate} onChange={setRate} />
       <div className="hw1-charts">
-        <Figure title={T.chartTitle} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} wide legend={view.legends.alarm(text)} />
+        <Figure title={T.chartTitle} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} wide legend={view.legends.alarm(text)} handles={handles} />
       </div>
       <p className="hw1-caption hw4-line" aria-live="polite">{T.result(state)}</p>
     </div>
@@ -910,6 +881,7 @@ const Compare = ({ s, job, fnKey, customStudy, text, palette }) => {
   // le nove funzioni arrivano dal worker; quella scritta da chi legge si confronta nella pagina
   const study = fnKey === hw.CUSTOM ? customStudy : s ? s.compare[fnKey] : null;
   const data = useMemo(() => (study ? view.compareChart(study, F.decimal) : null), [study, F]);
+  const animation = useMemo(() => (data ? view.reveal(data, 380) : null), [data]);
   const tip = useMemo(() => (study ? view.tips.compare(study, text.tips) : null), [study, text]);
   const summary = useMemo(() => (s ? view.summaryRows(s) : null), [s]);
   // le quattro curve sono le quattro colonne della tabella, nello stesso ordine
@@ -936,6 +908,7 @@ const Compare = ({ s, job, fnKey, customStudy, text, palette }) => {
               legend={legend}
               hidden={hidden}
               onToggle={toggle}
+              animation={animation}
             />
           </div>
           <p className="hw1-table-title"><strong>{C.tableTitle}</strong></p>
@@ -1170,6 +1143,7 @@ const Efficiency = ({ s, job, spec, fnKey, customStudy, text, palette }) => {
     return s ? s.efficiency[fnKey] : null;
   }, [fnKey, spec, customStudy, s]);
   const data = useMemo(() => (study ? view.efficiencyChart(study, F.decimal) : null), [study, F]);
+  const animation = useMemo(() => (data ? view.reveal(data, 200) : null), [data]);
   const tip = useMemo(() => (data ? view.tips.cost(data, text.tips) : null), [data, text]);
   const rows = useMemo(() => (s ? view.efficiencyRows(s) : null), [s]);
   const facts = useMemo(() => (s ? view.efficiencyFacts(s) : null), [s]);
@@ -1185,7 +1159,7 @@ const Efficiency = ({ s, job, spec, fnKey, customStudy, text, palette }) => {
         <Pending text={text} result={job} />
       ) : (
         <div className="hw1-charts">
-          <Figure title={E.chartTitle(text.functionNames[fnKey])} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} wide legend={legend} hidden={hidden} onToggle={toggle} />
+          <Figure title={E.chartTitle(text.functionNames[fnKey])} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} wide legend={legend} hidden={hidden} onToggle={toggle} animation={animation} />
         </div>
       )}
       {rows && (
@@ -1341,6 +1315,7 @@ const Series = React.memo(function Series({ text, palette }) {
   const rows = useMemo(() => hw.seriesRows(), []);
   const [z, setZ] = useState(view.SERIES_CHOICES[2]);
   const data = useMemo(() => view.seriesChart(z, F.decimal), [z, F]);
+  const animation = useMemo(() => (view.reveal(data, 50)), [data]);
   // la serie degli appunti ha quattro colonne, quella a termini positivi due; il limite non ne ha
   const [hidden, toggle] = useHidden();
   const legend = useMemo(() => view.legends.series(text), [text]);
@@ -1382,7 +1357,7 @@ const Series = React.memo(function Series({ text, palette }) {
       </div>
       <Choices label={S.chooseLabel} options={view.SERIES_CHOICES.map((v) => [v, F.plain(v)])} value={z} onChange={setZ} />
       <div className="hw1-charts">
-        <Figure title={S.chartTitle(z)} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} wide legend={legend} hidden={hidden} onToggle={toggle} />
+        <Figure title={S.chartTitle(z)} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} wide legend={legend} hidden={hidden} onToggle={toggle} animation={animation} />
       </div>
       <Paras list={S.after(rows)} />
     </>

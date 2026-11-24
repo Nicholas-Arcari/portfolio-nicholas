@@ -5,6 +5,7 @@
 // citano. Tenerla qui impedisce che le due versioni dicano cose diverse
 // sugli stessi numeri.
 import * as hw from './homework5.js';
+import { reveal as revealChart } from '../chartkit/kitReveal.js';
 
 /** The sections of the homework, in page order: ids for the anchors, keys for the titles. */
 export const SECTIONS = [
@@ -124,6 +125,15 @@ export function areaState({ mu, sigma, z, rule, n, strategy }, decimal = '.') {
     chart: { x0, x1, yMin: 0, yMax, curve: curveOf(f, x0, x1, 240), from: x0, to: x, pieces, xTicks: hw.niceTicks(x0, x1, 9), yTicks: hw.niceTicks(0, yMax, 4), decimal },
   };
 }
+
+/** The point x of "Try it: the area under the bell" as a vertical line to drag, on the grid of z. */
+export const zHandle = (state, mu, sigma, label) => [{ id: 'z', axis: 'x', value: state.x, min: mu + sigma * AREA.zRange[0], max: mu + sigma * AREA.zRange[1], step: sigma * AREA.zStep, label }];
+
+/** The index of z (the slider) for the point x where the line of zHandle is. */
+export const zIndexAt = (x, mu, sigma) => Math.min(Z_STEPS, Math.max(0, indexOfZ((x - mu) / sigma)));
+
+/** An animation that draws a line chart point by point, as its x grows (chartkit/kitReveal.js): n, the steps, the terms. */
+export const reveal = revealChart;
 
 /** The picture of section 1.1: Phi(1.96) = 0.975 as the area under the bell, with no pieces. */
 export function bellChart(decimal = '.') {
@@ -278,6 +288,12 @@ export function tailFacts(rows) {
 export const ALARM_EVENTS = Object.freeze([1e4, 1e5, 1e6, 1e7]);
 export const ALARM_RATES = Object.freeze({ tenDay: 10, day: 1, week: 1 / 7, month: 1 / 30 });
 export const ALARM_DEFAULT = Object.freeze({ events: 1e6, rate: 'day' });
+
+/** The accepted rate of "Try it: the alarm threshold" as a line to drag on the axis of the tails (logarithmic), among the rates of the choices. */
+export const rateHandle = (state, label) => [{ id: 'rate', axis: 'y', value: state.target, values: Object.values(ALARM_RATES).map((r) => r / state.events), label }];
+
+/** The rate of the choices whose line lies nearest, in the logarithms, to the value v. */
+export const rateAt = (v, events) => Object.keys(ALARM_RATES).reduce((a, b) => (Math.abs(Math.log10(ALARM_RATES[b] / events / v)) < Math.abs(Math.log10(ALARM_RATES[a] / events / v)) ? b : a));
 
 /** The thresholds of the table of section 1.7, with a million events a day. */
 export const ALARM_KS = Object.freeze([2, 3, 4, 5, 6]);

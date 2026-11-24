@@ -16,6 +16,7 @@
 import * as hw from '../homework5.js';
 import * as view from '../view.js';
 import { HW5_TEXTS, originalAssignment } from '../texts.js';
+import * as kit from '../../chartkit/kitDom.js';
 
 const HEADINGS = ['h2', 'h3', 'h4'];
 const LANGUAGES = ['it', 'en'];
@@ -116,158 +117,39 @@ const pending = () => (computation.error ? h('p', { class: 'note', text: text.ui
 const check = (ok, label) => h('p', { class: ok ? 'check is-ok' : 'check is-bad' }, h('strong', { text: label }));
 const formulas = (content, label = null) => [label && subtitle(label), h('pre', { text: content })];
 
-// The width of every chart comes from the ResizeObserver, measured after
-// layout; the height is set at once, the drawing happens a few
-// milliseconds per frame.
-const charts = new Map(); // canvas -> { draw, data, width, detach, link, tip, hidden }
-
-// what a chart draws: its data, without the parts hidden from the legend
-const shownData = (chart) => (chart.hidden.length ? { ...chart.data, hidden: chart.hidden } : chart.data);
-
-const resizer = new ResizeObserver((entries) => {
-  for (const entry of entries) {
-    const canvas = entry.target;
-    const chart = charts.get(canvas);
-    const width = Math.round(entry.contentRect.width);
-    if (!chart || width <= 0 || width === chart.width) continue;
-    chart.width = width;
-    canvas.style.height = `${hw.chartHeight(chart.draw, shownData(chart), width)}px`;
-    view.scheduleFrameJob(() => {
-      if (charts.get(canvas) === chart && chart.width === width) chart.draw(canvas, { ...shownData(chart), width }, palette());
-    });
-  }
-});
-
-/** Ties the label under the pointer to a chart: it describes what is on screen, and leaves out the hidden parts. */
-function attachTip(canvas, chart) {
-  if (chart.detach) chart.detach();
-  const tip = chart.tip;
-  chart.detach = tip ? hw.attachChartTooltip(canvas, { draw: chart.draw, data: shownData(chart), describe: (hit) => tip(hit, chart.hidden), link: chart.link }) : null;
-}
-
-/** Draws a chart again at its width, with its data and hidden parts. */
-function redraw(canvas, chart) {
-  if (chart.width > 0) {
-    canvas.style.height = `${hw.chartHeight(chart.draw, shownData(chart), chart.width)}px`;
-    chart.draw(canvas, { ...shownData(chart), width: chart.width }, palette());
-  }
-}
-
 // what the reader hid in the legends of the charts that are built again (a new result, another function)
 const kept = { efficiency: new Set(), compare: new Set(), methods: new Set(), ecdfNormal: new Set(), ecdfHeavy: new Set(), estimates: new Set() };
 
-/** The parts of the drawing covered by the hidden items of a legend. */
-const partsOf = (items, hidden) => items.flatMap((item, i) => (hidden.has(i) ? item.parts || [] : []));
+const { partsOf, hideParts } = kit;
 
 /**
- * The legend of a chart, or of a group of charts: { label, color? |
- * paletteKey?, dashed?, box?, parts }. Every item is a button: pressed (as
- * the page opens) its parts are on screen, released they are hidden;
- * onChange(parts) receives the hidden parts after every press. `hidden`,
- * the set of the hidden items, outlives the legend when its chart is built
- * again.
+ * A chart (chartkit/kitDom.js): drawn by homework5.js, with its legend
+ * (`items`), its label under the pointer, the table tied to it (`link`)
+ * and zoom, on the pictures of the integrals too. tipOf(data) builds the
+ * label from the same data the chart draws; onHide(parts) runs when the
+ * reader hides or shows a part, for the table tied to the chart; `keep` is
+ * the set of hidden items that outlives the chart. `reveal` (milliseconds
+ * a point) draws a line chart point by point, as its x grows; `handles`
+ * adds the lines to drag.
  */
-function legend(items, onChange = null, hidden = new Set()) {
-  const pal = palette();
-  return h(
-    'ul',
-    { class: 'series-legend' },
-    items.map((item, i) => {
-      const color = item.paletteKey ? pal[item.paletteKey] : pal.series[(item.color ?? i) % pal.series.length];
-      let swatch = null;
-      if (item.box) swatch = 'is-box';
-      else if (item.dashed) swatch = 'is-dashed';
-      const button = h(
-        'button',
-        {
-          type: 'button',
-          'aria-pressed': String(!hidden.has(i)),
-          class: hidden.has(i) ? 'is-off' : null,
-          onclick: () => {
-            if (hidden.has(i)) hidden.delete(i);
-            else hidden.add(i);
-            button.setAttribute('aria-pressed', String(!hidden.has(i)));
-            button.classList.toggle('is-off', hidden.has(i));
-            if (onChange) onChange(partsOf(items, hidden));
-          },
-        },
-        h('span', { class: swatch, 'aria-hidden': 'true', style: { borderColor: color, backgroundColor: item.box ? color : 'transparent' } }),
-        item.label,
-      );
-      return h('li', null, button);
-    }),
-  );
-}
-
-/** Hides the cells and rows of a table that belong to hidden parts (data-part), and shows the others. */
-function hideParts(tableEl, parts) {
-  for (const el of tableEl.querySelectorAll('[data-part]')) el.hidden = parts.includes(el.dataset.part);
-}
-
-/** Hides parts of a chart (the legend of a group of charts calls it on each of them). */
-function setHidden(fig, parts) {
-  const canvas = fig.querySelector('canvas.chart');
-  const chart = charts.get(canvas);
-  if (!chart) return;
-  chart.hidden = parts;
-  attachTip(canvas, chart);
-  redraw(canvas, chart);
-}
-
-/**
- * A chart with its legend (`items`) and its label under the pointer.
- * onHide(parts) runs when the reader hides or shows a part, for the table
- * tied to the chart.
- */
-function figure(caption, draw, data, { wide = false, tip: given = null, tipOf = null, items = null, note = null, link = null, onHide = null, keep = null } = {}) {
-  // tipOf(data): the label built from the same data the chart draws
+function figure(caption, draw, data, { wide = false, tip: given = null, tipOf = null, items = null, note = null, link = null, onHide = null, keep = null, reveal = 0, handles = null } = {}) {
   const tip = given || (tipOf ? tipOf(data) : null);
-  const canvas = h('canvas', { class: 'chart', role: 'img', 'aria-label': caption });
-  const kept = keep || new Set();
-  const chart = { draw, data, width: -1, detach: null, link, tip, hidden: items ? partsOf(items, kept) : [] };
-  const fig = h(
-    'figure',
-    { class: wide ? 'figure wide' : 'figure' },
-    canvas,
-    items &&
-      legend(
-        items,
-        (parts) => {
-          setHidden(fig, parts);
-          if (onHide) onHide(parts);
-        },
-        kept,
-      ),
-    note && h('p', { class: 'figure-note', text: note }),
-    h('figcaption', { text: caption }),
-  );
-  attachTip(canvas, chart);
-  charts.set(canvas, chart);
-  resizer.observe(canvas);
+  const fig = kit.createFigure({ label: caption, draw, data, palette: palette(), lib: hw, schedule: view.scheduleFrameJob, lang: state.lang, tip, items, note, link, onHide, keep, wide, animation: reveal ? view.reveal(data, reveal) : null, handles });
+  fig.reveal = reveal;
   return fig;
 }
 
-/** Redraws a chart in place, with new data and labels, without replacing its canvas (no flicker while it plays or a slider moves); the hidden parts stay hidden. */
+/** Redraws a chart in place, with new data and labels, without replacing its canvas (no flicker while it plays or a slider moves); the hidden parts and the zoom stay. */
 function refreshFigure(fig, caption, data, tip) {
-  const canvas = fig.querySelector('canvas.chart');
-  const chart = charts.get(canvas);
-  if (!chart) return;
-  chart.data = data;
-  chart.tip = tip;
-  attachTip(canvas, chart);
-  canvas.setAttribute('aria-label', caption);
-  fig.querySelector('figcaption').textContent = caption;
-  redraw(canvas, chart);
+  fig.kit.setData(data);
+  fig.kit.setTip(tip);
+  fig.kit.setLabel(caption);
+  if (fig.reveal) fig.kit.setAnimation(view.reveal(data, fig.reveal));
 }
 
 /** Replaces the content of a region, releasing the charts it contained and their labels. */
 function fill(region, ...nodes) {
-  for (const canvas of region.querySelectorAll('canvas.chart')) {
-    resizer.unobserve(canvas);
-    const chart = charts.get(canvas);
-    if (chart && chart.detach) chart.detach();
-    charts.delete(canvas);
-  }
+  kit.releaseFigures(region);
   region.replaceChildren(...nodes.flat(Infinity).filter((n) => n !== null && n !== undefined && n !== false));
 }
 
@@ -323,11 +205,14 @@ function tests(group, s) {
 /** A choice among a few values: the pressed button is the active one. */
 function choices(label, options, value, onChange) {
   const buttons = options.map(([key, name]) => h('button', { type: 'button', class: 'btn alt', 'aria-pressed': String(key === value), text: name, onclick: () => select(key) }));
+  const set = (key) => options.forEach(([k], i) => buttons[i].setAttribute('aria-pressed', String(k === key)));
   function select(key) {
-    options.forEach(([k], i) => buttons[i].setAttribute('aria-pressed', String(k === key)));
+    set(key);
     onChange(key);
   }
-  return h('div', { class: 'choices', role: 'group', 'aria-label': label }, h('span', { class: 'choices-label', text: label }), buttons);
+  const el = h('div', { class: 'choices', role: 'group', 'aria-label': label }, h('span', { class: 'choices-label', text: label }), buttons);
+  el.set = set;
+  return el;
 }
 
 /** A slider on indices; set() moves it when the state or the language change. */
@@ -391,7 +276,7 @@ function tryAreaBlock() {
     updateArea();
   });
   const st = view.areaState(a, F.decimal);
-  tryArea.fig = figure(T.chartTitle(st, a.rule), hw.drawQuadrature, st.chart, { wide: true, tip: view.tips.area(st, text.tips), items: view.legends.area(text) });
+  tryArea.fig = figure(T.chartTitle(st, a.rule), hw.drawQuadrature, st.chart, { wide: true, tip: view.tips.area(st, text.tips), items: view.legends.area(text), handles: areaHandles(st) });
   tryArea.line = h('p', { class: 'caption line', 'aria-live': 'polite' });
   return h(
     'div',
@@ -420,6 +305,18 @@ function tryAreaBlock() {
   );
 }
 
+/** The point x as a line to drag on the chart, on the grid of the slider. */
+function areaHandles(st) {
+  const a = state.area;
+  return {
+    items: view.zHandle(st, a.mu, a.sigma, text.tryArea.handleLabel(st.x)),
+    onChange: (id, v) => {
+      a.z = view.zOfIndex(view.zIndexAt(v, a.mu, a.sigma));
+      updateArea();
+    },
+  };
+}
+
 function updateArea() {
   const T = text.tryArea;
   const a = state.area;
@@ -427,6 +324,7 @@ function updateArea() {
   tryArea.z.set(view.Z_STEPS, view.indexOfZ(a.z), T.zLabel(st.x, a.z));
   tryArea.n.set(view.AREA.nMax - 1, a.n - 1, T.nLabel(st.n, a.rule));
   refreshFigure(tryArea.fig, T.chartTitle(st, a.rule), st.chart, view.tips.area(st, text.tips));
+  tryArea.fig.kit.setHandles(areaHandles(st));
   tryArea.line.textContent = T.result(st, a.rule);
 }
 
@@ -494,7 +392,7 @@ function convergenceBlock() {
     h(
       'div',
       { class: 'charts' },
-      figure(C.chartTitle(study.z), hw.drawLineChart, view.convergenceChart(study, F.decimal), { wide: true, tip: view.tips.convergence(study, text.tips), link: view.links.convergence, items: view.legends.convergence(text), onHide: (parts) => hideParts(rules, parts) }),
+      figure(C.chartTitle(study.z), hw.drawLineChart, view.convergenceChart(study, F.decimal), { wide: true, reveal: 160, tip: view.tips.convergence(study, text.tips), link: view.links.convergence, items: view.legends.convergence(text), onHide: (parts) => hideParts(rules, parts) }),
     ),
     subtitle(C.tableTitle),
     h('div', { class: 'scroll' }, rules),
@@ -545,7 +443,7 @@ function quantilesBlock() {
       steps.map((r) => ({ cells: [{ text: String(r.k), head: true }, { text: F.num(r.z, 15) }, { text: F.num(r.F, 15) }, { text: F.sig(r.dz, 4) }, { text: F.err(r.error) }] })),
       view.LINKED_TABLES.newton,
     ),
-    h('div', { class: 'charts' }, figure(Q.chartTitle, hw.drawLineChart, view.newtonChart(steps, F.decimal), { wide: true, tip: view.tips.newton(steps, text.tips), link: view.links.newton })),
+    h('div', { class: 'charts' }, figure(Q.chartTitle, hw.drawLineChart, view.newtonChart(steps, F.decimal), { wide: true, reveal: 320, tip: view.tips.newton(steps, text.tips), link: view.links.newton })),
     paras(Q.after(rows)),
   ];
 }
@@ -569,7 +467,7 @@ function tailsBlock() {
     paras(T.intro),
     subtitle(T.tableTitle),
     tails,
-    h('div', { class: 'charts' }, figure(T.chartTitle, hw.drawLineChart, view.tailChart(rows, F.decimal), { wide: true, tip: view.tips.tails(rows, text.tips), link: view.links.tails, items: view.legends.tails(text), onHide: (parts) => hideParts(tails, parts) })),
+    h('div', { class: 'charts' }, figure(T.chartTitle, hw.drawLineChart, view.tailChart(rows, F.decimal), { wide: true, reveal: 200, tip: view.tips.tails(rows, text.tips), link: view.links.tails, items: view.legends.tails(text), onHide: (parts) => hideParts(tails, parts) })),
     paras(T.after(view.tailFacts(rows))),
     paras(T.alarmIntro),
     subtitle(T.alarmTitle),
@@ -582,14 +480,25 @@ function tailsBlock() {
   ];
 }
 
-const tryAlarm = { fig: null, line: null };
+const tryAlarm = { fig: null, line: null, rate: null };
+
+/** The accepted rate as a line to drag on the chart, among the rates of the choices. */
+function alarmHandles(st) {
+  return {
+    items: view.rateHandle(st, text.tryAlarm.rates[state.alarm.rate]),
+    onChange: (id, v) => {
+      state.alarm.rate = view.rateAt(v, state.alarm.events);
+      updateAlarm();
+    },
+  };
+}
 
 function tryAlarmBlock() {
   const T = text.tryAlarm;
   const F = text.fmt;
   const st = view.alarmState(state.alarm.events, state.alarm.rate);
   const data = view.alarmChart(st, F.decimal);
-  tryAlarm.fig = figure(T.chartTitle, hw.drawLineChart, data, { wide: true, tip: view.tips.alarm(st, data, text.tips), items: view.legends.alarm(text) });
+  tryAlarm.fig = figure(T.chartTitle, hw.drawLineChart, data, { wide: true, tip: view.tips.alarm(st, data, text.tips), items: view.legends.alarm(text), handles: alarmHandles(st) });
   tryAlarm.line = h('p', { class: 'caption line', 'aria-live': 'polite', text: T.result(st) });
   return h(
     'div',
@@ -600,10 +509,10 @@ function tryAlarmBlock() {
       state.alarm.events = v;
       updateAlarm();
     }),
-    choices(T.rateLabel, Object.keys(view.ALARM_RATES).map((r) => [r, T.rates[r]]), state.alarm.rate, (v) => {
+    (tryAlarm.rate = choices(T.rateLabel, Object.keys(view.ALARM_RATES).map((r) => [r, T.rates[r]]), state.alarm.rate, (v) => {
       state.alarm.rate = v;
       updateAlarm();
-    }),
+    })),
     h('div', { class: 'charts' }, tryAlarm.fig),
     tryAlarm.line,
   );
@@ -614,6 +523,8 @@ function updateAlarm() {
   const st = view.alarmState(state.alarm.events, state.alarm.rate);
   const data = view.alarmChart(st, text.fmt.decimal);
   refreshFigure(tryAlarm.fig, T.chartTitle, data, view.tips.alarm(st, data, text.tips));
+  tryAlarm.fig.kit.setHandles(alarmHandles(st));
+  tryAlarm.rate.set(state.alarm.rate);
   tryAlarm.line.textContent = T.result(st);
 }
 
@@ -914,7 +825,7 @@ function updateEfficiency() {
     regions.efficiency,
     !study
       ? pending()
-      : h('div', { class: 'charts' }, figure(E.chartTitle(text.functionNames[state.fnKey]), hw.drawLineChart, view.efficiencyChart(study, F.decimal), { wide: true, tipOf: (data) => view.tips.cost(data, text.tips), items: view.legends.cost(text), keep: kept.efficiency, onHide: (parts) => costs && hideParts(costs, parts) })),
+      : h('div', { class: 'charts' }, figure(E.chartTitle(text.functionNames[state.fnKey]), hw.drawLineChart, view.efficiencyChart(study, F.decimal), { wide: true, reveal: 200, tipOf: (data) => view.tips.cost(data, text.tips), items: view.legends.cost(text), keep: kept.efficiency, onHide: (parts) => costs && hideParts(costs, parts) })),
     rows && [
       subtitle(E.tableTitle),
       h('div', { class: 'scroll' }, costs),
@@ -1065,7 +976,7 @@ function seriesBlock() {
     null,
     [null, 'series:0', 'series:0', 'series:0', 'series:0', 'series:2', 'series:2'],
   );
-  series.fig = figure(S.chartTitle(series.z), hw.drawLineChart, view.seriesChart(series.z, F.decimal), { wide: true, tipOf: (data) => view.tips.series(data, text.tips), items: view.legends.series(text), onHide: (parts) => hideParts(terms, parts) });
+  series.fig = figure(S.chartTitle(series.z), hw.drawLineChart, view.seriesChart(series.z, F.decimal), { wide: true, reveal: 50, tipOf: (data) => view.tips.series(data, text.tips), items: view.legends.series(text), onHide: (parts) => hideParts(terms, parts) });
   return [
     paras(S.intro),
     formulas(S.formulas),
@@ -1460,6 +1371,7 @@ function updateCompare() {
           { class: 'charts' },
           figure(C.chartTitle(name), hw.drawLineChart, view.compareChart(study, F.decimal), {
             wide: true,
+            reveal: 380,
             tip: view.tips.compare(study, text.tips),
             link: view.links.compare,
             items: view.legends.compare(text),

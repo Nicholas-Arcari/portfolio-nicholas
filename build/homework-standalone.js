@@ -102,6 +102,7 @@ export const HOMEWORKS = [
     library: 'homework5.js',
     global: 'Homework5',
     inner: [],
+    ui: CHARTKIT,
     contents: 'Computations: five quadrature rules, the normal CDF, its table, quantiles and tails, Riemann, Darboux and Lebesgue sums,\n * a formula reader, Monte Carlo, xoshiro128** and SplitMix64, Box-Muller, hypothesis tests, charts and command line (node homework5.js [options]).',
     description: 'Homework #5 - Statistics: the distribution function of the normal law by numerical integration, and the Riemann and Lebesgue integrals computed numerically.',
   },

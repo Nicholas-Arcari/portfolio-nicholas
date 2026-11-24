@@ -180,7 +180,13 @@ export function handles({ onChange, onEnd = null }) {
     return best;
   };
   const snap = (spec, v) => {
-    if (spec.values && spec.values.length) return spec.values.reduce((a, b) => (Math.abs(b - v) < Math.abs(a - v) ? b : a));
+    if (spec.values && spec.values.length) {
+      // on a logarithmic axis the nearest value is the nearest in the logarithms, as the eye sees it
+      const f = chart && chart.getFrame();
+      const axis = f && f[spec.axis];
+      const t = axis && axis.log ? (u) => Math.log10(u) : (u) => u;
+      return spec.values.reduce((a, b) => (Math.abs(t(b) - t(v)) < Math.abs(t(a) - t(v)) ? b : a));
+    }
     let out = clamp(v, spec.min ?? -Infinity, spec.max ?? Infinity);
     if (spec.step) out = Math.round(out / spec.step) * spec.step;
     return Number(out.toPrecision(12));

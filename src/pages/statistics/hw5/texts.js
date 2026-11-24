@@ -262,7 +262,7 @@ const it = {
   assignment: {
     intro: [
       'La consegna ha due esercizi. Il primo chiede di scegliere una collezione di funzioni interessanti e di integrarle numericamente con due approcci ispirati alle due definizioni: quella di Riemann, che divide il dominio in intervalli, e quella di Lebesgue, che divide l’insieme dei valori e ne misura le controimmagini; poi di confrontarli per precisione, convergenza e costo, di discutere se arrivano allo stesso valore e di mostrare dove si comportano diversamente. Il secondo chiede un metodo efficiente per la funzione di ripartizione della normale standard, da confrontare con un riferimento affidabile trovato sul web, insieme alle ragioni per cui non ha una formula elementare (il teorema di Liouville) e al ruolo della funzione degli errori erf.',
-      'La pagina procede per esempi, con ogni numero calcolato qui. L’Esercizio 1 integra le nove funzioni della consegna e due della pagina e ne mette i risultati fianco a fianco (1.5), misura come convergono (1.6) e quanto costano (1.7), e calcola Dirichlet e Thomae con le frazioni esatte (1.8). L’Esercizio 2 parte da Liouville e da erf (2.1, 2.2), prova l’integrazione numerica, le serie e le approssimazioni dei manuali (2.3 - 2.8), ne ricava un metodo efficiente (2.9), lo confronta con la tavola del NIST e con mpmath (2.10) e misura precisione e velocità di tutti i metodi (2.11).',
+      'La pagina procede per esempi, con ogni numero calcolato qui. L’Esercizio 1 integra le nove funzioni della consegna e due della pagina e ne mette i risultati fianco a fianco (1.5), misura come convergono (1.6) e quanto costano (1.7), e calcola Dirichlet e Thomae con le frazioni esatte (1.8). L’Esercizio 2 parte da Liouville e da erf (2.1, 2.2), prova l’integrazione numerica, le serie e le approssimazioni dei manuali (2.3 - 2.8), ne ricava un metodo efficiente (2.9), lo confronta con la tavola del NIST e con mpmath (2.10) e misura precisione e velocità di tutti i metodi (2.11). I grafici si muovono: si ingrandiscono (Ctrl + rotella, oppure un rettangolo trascinato; doppio clic per tornare alla vista intera), quelli che seguono n, i passi o i termini si disegnano punto per punto, e nei riquadri dell’area e della soglia d’allarme il punto x e la frequenza accettata si trascinano sul grafico.',
     ],
     originalTitle: 'Il testo originale della consegna',
     originalNote: 'Com’è stato assegnato, in inglese: gli elenchi sono impaginati come elenchi, i trattini lunghi dei due titoli sono scritti come trattini corti e la riga di trattini fra i due esercizi è tolta.',
@@ -280,11 +280,12 @@ const it = {
   },
   tryArea: {
     intro: [
-      'Scegliete μ, σ e il punto x, la regola e il numero di pezzi n. Con la simmetria i pezzi coprono [μ, x] e la metà a sinistra di μ vale 1/2 senza calcoli; con il troncamento coprono [μ - 4σ, x], e quello che sta a sinistra di μ - 4σ (3,2 × 10^-5) resta fuori. Passate sopra un pezzo per vederne l’area. Provate Simpson con n = 2, poi Gauss con 2 nodi: con gli stessi due valori della funzione, Gauss sbaglia molto meno.',
+      'Scegliete μ, σ e il punto x, la regola e il numero di pezzi n. Con la simmetria i pezzi coprono [μ, x] e la metà a sinistra di μ vale 1/2 senza calcoli; con il troncamento coprono [μ - 4σ, x], e quello che sta a sinistra di μ - 4σ (3,2 × 10^-5) resta fuori. Passate sopra un pezzo per vederne l’area. Provate Simpson con n = 2, poi Gauss con 2 nodi: con gli stessi due valori della funzione, Gauss sbaglia molto meno. Il punto x si sposta anche trascinando la sua linea sul grafico.',
     ],
     muLabel: 'μ',
     sigmaLabel: 'σ',
     zLabel: (x, z) => `x = ${IT.num(x, 2)}  (z = ${IT.num(z, 2)})`,
+    handleLabel: (x) => `x = ${IT.num(x, 2)}`,
     ruleLabel: 'Regola',
     nLabel: (n, rule) => (rule === 'gauss' ? `n = ${n} nodi` : `n = ${n} pezzi`),
     strategyLabel: '-∞',
@@ -395,7 +396,7 @@ const it = {
   },
   tryAlarm: {
     intro: [
-      'Dite quanti eventi passano al giorno e quanti falsi allarmi siete disposti a sopportare: la pagina trova la soglia k con il metodo di Newton sulla coda integrata direttamente, e mostra cosa succederebbe con le stesse soglie se i dati avessero code pesanti.',
+      'Dite quanti eventi passano al giorno e quanti falsi allarmi siete disposti a sopportare: la pagina trova la soglia k con il metodo di Newton sulla coda integrata direttamente, e mostra cosa succederebbe con le stesse soglie se i dati avessero code pesanti. La frequenza accettata si sceglie anche trascinando la sua linea sul grafico.',
     ],
     eventsLabel: 'Eventi al giorno',
     rateLabel: 'Falsi allarmi accettati',
@@ -404,7 +405,7 @@ const it = {
       const F = IT;
       return `Con ${F.events(st.events)} eventi al giorno, P(Z > k) deve valere ${F.sci(st.target)}: la soglia è k = ${F.num(st.k, 4)} deviazioni standard (${st.steps} passi di Newton). Se i dati hanno code pesanti, la stessa soglia dà ${F.num(st.heavyPerDay, 1)} falsi allarmi al giorno invece di ${F.sig(st.perDay, 3)}.`;
     },
-    chartTitle: 'P(Z > k) per la normale e per i dati a code pesanti, con la frequenza accettata tratteggiata (scala logaritmica)',
+    chartTitle: 'P(Z > k) per la normale e per i dati a code pesanti, con la frequenza accettata tratteggiata, da trascinare (scala logaritmica)',
     legend: ['dati normali', `code pesanti, t con ${HEAVY_DF} g.d.l.`, 'frequenza accettata'],
   },
   data: {
@@ -1040,7 +1041,7 @@ const en = {
   assignment: {
     intro: [
       'The assignment has two exercises. The first asks to choose a collection of interesting functions and to integrate them numerically with two approaches inspired by the two definitions: Riemann’s, which cuts the domain into intervals, and Lebesgue’s, which cuts the range of values and measures their preimages; then to compare them in accuracy, convergence and cost, to discuss whether they reach the same value and to show where they behave differently. The second asks for an efficient method for the distribution function of the standard normal law, to be compared with a trusted reference found on the web, together with the reasons why it has no elementary formula (Liouville’s theorem) and the role of the error function erf.',
-      'The page goes by examples, with every number computed here. Exercise 1 integrates the nine functions of the assignment and two of the page and puts their results side by side (1.5), measures how they converge (1.6) and what they cost (1.7), and computes Dirichlet’s and Thomae’s functions with exact fractions (1.8). Exercise 2 starts from Liouville and erf (2.1, 2.2), tries numerical integration, series and the handbook approximations (2.3 - 2.8), derives an efficient method from them (2.9), compares it with the NIST table and with mpmath (2.10) and measures the accuracy and speed of every method (2.11).',
+      'The page goes by examples, with every number computed here. Exercise 1 integrates the nine functions of the assignment and two of the page and puts their results side by side (1.5), measures how they converge (1.6) and what they cost (1.7), and computes Dirichlet’s and Thomae’s functions with exact fractions (1.8). Exercise 2 starts from Liouville and erf (2.1, 2.2), tries numerical integration, series and the handbook approximations (2.3 - 2.8), derives an efficient method from them (2.9), compares it with the NIST table and with mpmath (2.10) and measures the accuracy and speed of every method (2.11). The charts move: they zoom (ctrl + wheel, or a rectangle dragged; double click for the whole chart again), those that follow n, the steps or the terms are drawn point by point, and in the boxes of the area and of the alarm threshold the point x and the accepted rate can be dragged on the chart.',
     ],
     originalTitle: 'The original text of the assignment',
     originalNote: 'As it was assigned: the lists are laid out as lists, the long dashes of the two titles are written as hyphens and the line of dashes between the two exercises is left out.',
@@ -1058,11 +1059,12 @@ const en = {
   },
   tryArea: {
     intro: [
-      'Choose μ, σ and the point x, the rule and the number of pieces n. With the symmetry the pieces cover [μ, x] and the half to the left of μ counts 1/2 without computing; with the truncation they cover [μ - 4σ, x], and what lies to the left of μ - 4σ (3.2 × 10^-5) is left out. Hover over a piece to see its area. Try Simpson with n = 2, then Gauss with 2 nodes: with the same two values of the function, Gauss is far more accurate.',
+      'Choose μ, σ and the point x, the rule and the number of pieces n. With the symmetry the pieces cover [μ, x] and the half to the left of μ counts 1/2 without computing; with the truncation they cover [μ - 4σ, x], and what lies to the left of μ - 4σ (3.2 × 10^-5) is left out. Hover over a piece to see its area. Try Simpson with n = 2, then Gauss with 2 nodes: with the same two values of the function, Gauss is far more accurate. The point x also moves by dragging its line on the chart.',
     ],
     muLabel: 'μ',
     sigmaLabel: 'σ',
     zLabel: (x, z) => `x = ${EN.num(x, 2)}  (z = ${EN.num(z, 2)})`,
+    handleLabel: (x) => `x = ${EN.num(x, 2)}`,
     ruleLabel: 'Rule',
     nLabel: (n, rule) => (rule === 'gauss' ? `n = ${n} nodes` : `n = ${n} pieces`),
     strategyLabel: '-∞',
@@ -1173,7 +1175,7 @@ const en = {
   },
   tryAlarm: {
     intro: [
-      'Say how many events pass every day and how many false alarms you are ready to put up with: the page finds the threshold k with Newton’s method on the tail integrated directly, and shows what the same threshold would do if the data had heavy tails.',
+      'Say how many events pass every day and how many false alarms you are ready to put up with: the page finds the threshold k with Newton’s method on the tail integrated directly, and shows what the same threshold would do if the data had heavy tails. The accepted rate can also be chosen by dragging its line on the chart.',
     ],
     eventsLabel: 'Events a day',
     rateLabel: 'False alarms accepted',
@@ -1182,7 +1184,7 @@ const en = {
       const F = EN;
       return `With ${F.events(st.events)} events a day, P(Z > k) must be ${F.sci(st.target)}: the threshold is k = ${F.num(st.k, 4)} standard deviations (${st.steps} Newton steps). If the data have heavy tails, the same threshold gives ${F.num(st.heavyPerDay, 1)} false alarms a day instead of ${F.sig(st.perDay, 3)}.`;
     },
-    chartTitle: 'P(Z > k) for the normal law and for heavy-tailed data, with the accepted rate dashed (logarithmic scale)',
+    chartTitle: 'P(Z > k) for the normal law and for heavy-tailed data, with the accepted rate dashed, to drag (logarithmic scale)',
     legend: ['normal data', `heavy tails, t with ${HEAVY_DF} df`, 'accepted rate'],
   },
   data: {
