@@ -1812,26 +1812,30 @@ const chartNumber = (text, decimal) => (decimal === '.' ? text : text.replace('.
  * largest of its bars, so that no value disappears. `decimal` is the decimal
  * separator of the axis labels ("," in Italian).
  */
-function drawBarChart(canvas, { values, expected = null, labels = null, max = null, hidden = [], decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
+function drawBarChart(canvas, { values, expected = null, labels = null, max = null, xMin = null, xMax = null, yMin = 0, hidden = [], decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
   const { ctx, width, height } = setupCanvas(canvas, BAR_ASPECT, knownWidth);
   const pal = { ...DEFAULT_PALETTE, ...palette };
-  const { margin, w, h, columns, perColumn, colW } = barLayout(values.length, width);
+  // a zoomed view shows the whole bars from `first` to `last` and the heights from yMin to `top`
+  const { first, last } = barRange({ values, xMin, xMax });
+  const count = last - first;
+  const { margin, w, h, columns, perColumn, colW } = barLayout(count, width);
   const refs = expected === null ? [] : Array.isArray(expected) ? expected : values.map(() => expected);
-  const top = max ?? Math.max(1e-9, ...values, ...refs) * 1.1;
+  const top = barTop({ values, expected, max });
+  const span = top - yMin;
   ctx.fillStyle = pal.background;
   ctx.fillRect(0, 0, width, height);
   ctx.strokeStyle = pal.grid;
   ctx.strokeRect(margin.left, margin.top, w, h);
 
-  const gap = columns === values.length ? colW * 0.12 : 0;
+  const gap = columns === count ? colW * 0.12 : 0;
   ctx.fillStyle = pal.subgroup;
   // the bars and the expected line can be hidden from the legend; the axis stays the same
   for (let c = 0; c < (hidden.includes('bars') ? 0 : columns); c++) {
-    const from = Math.floor(c * perColumn);
-    const to = Math.max(Math.floor((c + 1) * perColumn), from + 1);
+    const from = first + Math.floor(c * perColumn);
+    const to = Math.max(first + Math.floor((c + 1) * perColumn), from + 1);
     let v = 0;
     for (let i = from; i < to; i++) v = Math.max(v, values[i] ?? 0);
-    const bh = (v / top) * h;
+    const bh = Math.min(h, Math.max(0, ((v - yMin) / span) * h));
     ctx.fillRect(margin.left + c * colW + gap, margin.top + h - bh, Math.max(0.6, colW - 2 * gap), bh);
   }
   if (refs.length && !hidden.includes('expected')) {
@@ -1840,8 +1844,10 @@ function drawBarChart(canvas, { values, expected = null, labels = null, max = nu
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     for (let c = 0; c < columns; c++) {
-      const r = refs[Math.floor(c * perColumn)] ?? 0;
-      const y = margin.top + h - (r / top) * h;
+      const r = refs[first + Math.floor(c * perColumn)] ?? 0;
+      // a reference outside the heights of a zoomed view is left out
+      if (r < yMin || r > top) continue;
+      const y = margin.top + h - ((r - yMin) / span) * h;
       ctx.moveTo(margin.left + c * colW, y);
       ctx.lineTo(margin.left + (c + 1) * colW, y);
     }
@@ -1853,12 +1859,12 @@ function drawBarChart(canvas, { values, expected = null, labels = null, max = nu
   ctx.textAlign = 'right';
   const fmt = (v) => chartNumber(top <= 1.5 ? v.toFixed(2) : String(Math.round(v)), decimal);
   ctx.fillText(fmt(top), margin.left - 4, margin.top + 9);
-  ctx.fillText(fmt(0), margin.left - 4, margin.top + h);
+  ctx.fillText(fmt(yMin), margin.left - 4, margin.top + h);
   if (labels) {
     ctx.textAlign = 'center';
-    const barW = w / values.length;
-    for (const i of new Set([0, Math.floor((labels.length - 1) / 2), labels.length - 1])) {
-      ctx.fillText(labels[i], margin.left + (i + 0.5) * barW, margin.top + h + 15);
+    const barW = w / count;
+    for (const i of new Set([0, Math.floor((count - 1) / 2), count - 1])) {
+      ctx.fillText(labels[first + i], margin.left + (i + 0.5) * barW, margin.top + h + 15);
     }
   }
 }
@@ -1889,6 +1895,39 @@ function heatmapLayout(values, width) {
   return { margin: HEATMAP_MARGIN, rows, cols, cell, height: Math.round(HEATMAP_MARGIN.top + HEATMAP_MARGIN.bottom + rows * cell) };
 }
 
+/** The bars a chart shows: all of them, or the whole bars of a zoomed view (xMin and xMax in bars, counted from 0). */
+function barRange(data) {
+  const n = data.values.length;
+  if (data.xMin === undefined || data.xMin === null) return { first: 0, last: n };
+  const first = Math.max(0, Math.min(n - 1, Math.floor(data.xMin + 1e-9)));
+  const last = Math.max(first + 1, Math.min(n, Math.ceil(data.xMax - 1e-9)));
+  return { first, last };
+}
+
+/** The top of the bars' axis: `max`, or 10% above the tallest bar or reference. */
+function barTop({ values, expected = null, max = null }) {
+  const refs = expected === null ? [] : Array.isArray(expected) ? expected : values.map(() => expected);
+  return max ?? Math.max(1e-9, ...values, ...refs) * 1.1;
+}
+
+/**
+ * The cells a heatmap shows, and their size: all of them, square, or the
+ * whole rows and columns of a zoomed view (colMin, colMax, rowMin, rowMax,
+ * counted from 0), stretched over the same box.
+ */
+function heatmapView(data, width) {
+  const L = heatmapLayout(data.values, width);
+  const zoomed = data.colMin !== undefined && data.colMin !== null;
+  if (!zoomed) return { ...L, c0: 0, c1: L.cols, r0: 0, r1: L.rows, cw: L.cell, ch: L.cell };
+  const whole = (lo, hi, n) => {
+    const a = Math.max(0, Math.min(n - 1, Math.floor(lo + 1e-9)));
+    return [a, Math.max(a + 1, Math.min(n, Math.ceil(hi - 1e-9)))];
+  };
+  const [c0, c1] = whole(data.colMin, data.colMax, L.cols);
+  const [r0, r1] = whole(data.rowMin, data.rowMax, L.rows);
+  return { ...L, c0, c1, r0, r1, cw: (L.cols * L.cell) / (c1 - c0), ch: (L.rows * L.cell) / (r1 - r0) };
+}
+
 /**
  * The height, in CSS pixels, that drawBarChart or drawHeatmap gives a canvas
  * of this width: a page can reserve the space before drawing, so that the
@@ -1907,19 +1946,20 @@ function chartHeight(draw, data, width) {
  */
 function chartHitTest(draw, data, width, x, y) {
   if (draw === drawHeatmap) {
-    const { margin, rows, cols, cell } = heatmapLayout(data.values, width);
-    const col = Math.floor((x - margin.left) / cell);
-    const row = Math.floor((y - margin.top) / cell);
-    if (row < 0 || row >= rows || col < 0 || col >= cols) return null;
-    return { kind: 'cell', row, col, rect: { x: margin.left + col * cell, y: margin.top + row * cell, width: cell, height: cell } };
+    const { margin, c0, c1, r0, r1, cw, ch } = heatmapView(data, width);
+    const col = c0 + Math.floor((x - margin.left) / cw);
+    const row = r0 + Math.floor((y - margin.top) / ch);
+    if (row < r0 || row >= r1 || col < c0 || col >= c1) return null;
+    return { kind: 'cell', row, col, rect: { x: margin.left + (col - c0) * cw, y: margin.top + (row - r0) * ch, width: cw, height: ch } };
   }
-  const { margin, w, h, columns, perColumn, colW } = barLayout(data.values.length, width);
+  const { first, last } = barRange(data);
+  const { margin, w, h, columns, perColumn, colW } = barLayout(last - first, width);
   if (x < margin.left || x >= margin.left + w || y < margin.top || y > margin.top + h) return null;
   // hidden bars are not under the pointer
   if ((data.hidden || []).includes('bars')) return null;
   const column = Math.min(columns - 1, Math.floor((x - margin.left) / colW));
-  const from = Math.floor(column * perColumn);
-  const to = Math.max(Math.floor((column + 1) * perColumn), from + 1);
+  const from = first + Math.floor(column * perColumn);
+  const to = Math.max(first + Math.floor((column + 1) * perColumn), from + 1);
   return { kind: 'bar', from, to, rect: { x: margin.left + column * colW, y: margin.top, width: colW, height: h } };
 }
 
@@ -1929,14 +1969,51 @@ function chartHitTest(draw, data, width, x, y) {
  * table uses it to outline its bar.
  */
 function chartHitAt(draw, data, width, index) {
-  if (draw === drawHeatmap || !(index >= 0 && index < data.values.length)) return null;
-  const { margin, h, columns, perColumn, colW } = barLayout(data.values.length, width);
+  if (draw === drawHeatmap) return null;
+  // a bar outside the view (zoomed) has nothing to outline
+  const { first, last } = barRange(data);
+  if (!(index >= first && index < last)) return null;
+  const { margin, h, columns, perColumn, colW } = barLayout(last - first, width);
   // the pixel column of the bar: the last one that starts at or before it
-  let column = Math.min(columns - 1, Math.floor(index / perColumn));
-  while (column + 1 < columns && Math.floor((column + 1) * perColumn) <= index) column += 1;
-  const from = Math.floor(column * perColumn);
-  const to = Math.max(Math.floor((column + 1) * perColumn), from + 1);
+  const k = index - first;
+  let column = Math.min(columns - 1, Math.floor(k / perColumn));
+  while (column + 1 < columns && Math.floor((column + 1) * perColumn) <= k) column += 1;
+  const from = first + Math.floor(column * perColumn);
+  const to = Math.max(first + Math.floor((column + 1) * perColumn), from + 1);
   return { kind: 'bar', from, to, rect: { x: margin.left + column * colW, y: margin.top, width: colW, height: h } };
+}
+
+/**
+ * Where the plot of a chart lies on a canvas of this width, and the values
+ * it shows, for the interactive charts (chartkit): { plot: { x, y, w, h }
+ * in CSS pixels, x: { min, max } (bars or columns, counted from 0, whole
+ * ones in a zoomed view), y: { min, max } (heights; for heatmaps the rows,
+ * counted from the bottom), zoom: 'xy' }.
+ */
+function chartFrame(draw, data, width) {
+  if (draw === drawHeatmap) {
+    const V = heatmapView(data, width);
+    return { plot: { x: V.margin.left, y: V.margin.top, w: V.cols * V.cell, h: V.rows * V.cell }, x: { min: V.c0, max: V.c1, log: false }, y: { min: V.rows - V.r1, max: V.rows - V.r0, log: false }, zoom: 'xy' };
+  }
+  const { first, last } = barRange(data);
+  const L = barLayout(last - first, width);
+  return { plot: { x: L.margin.left, y: L.margin.top, w: L.w, h: L.h }, x: { min: first, max: last, log: false }, y: { min: data.yMin || 0, max: barTop(data), log: false }, zoom: 'xy' };
+}
+
+/** The same data drawn in another view, { x: [lo, hi] or null, y: [lo, hi] or null } in the units of chartFrame. */
+function withView(draw, data, view) {
+  if (!view || (!view.x && !view.y)) return data;
+  if (draw === drawHeatmap) {
+    const rows = data.values.length;
+    const cols = rows ? data.values[0].length : 0;
+    const x = view.x || [0, cols];
+    const y = view.y || [0, rows];
+    return { ...data, colMin: x[0], colMax: x[1], rowMin: rows - y[1], rowMax: rows - y[0] };
+  }
+  const out = { ...data };
+  if (view.x) Object.assign(out, { xMin: view.x[0], xMax: view.x[1] });
+  if (view.y) Object.assign(out, { yMin: view.y[0], max: view.y[1] });
+  return out;
 }
 
 /**
@@ -1950,8 +2027,40 @@ function chartHitAt(draw, data, width, index) {
  * is-marked), and a row under the pointer, or tapped, outlines its bar.
  * Returns the function that removes them.
  */
-function attachChartTooltip(canvas, { draw, data, describe, link = null }) {
+const attachChartTooltip = (canvas, { draw, data, describe: explain, link = null }) =>
+  attachPointerLabel(
+    canvas,
+    (x, y, width) => {
+      const hit = chartHitTest(draw, data, width, x, y);
+      const text = hit && explain(hit);
+      return text ? { rect: hit.rect, text, row: link ? link.row(hit) : -1 } : null;
+    },
+    link && {
+      table: link.table,
+      locate: (row, width) => {
+        const hit = chartHitAt(draw, data, width, link.point(row));
+        return hit && hit.rect;
+      },
+    },
+  );
+
+/**
+ * The same label for any canvas: locate(x, y, width) says what is under
+ * the point, as { rect, text, row? }, or null. With `link`, { table(),
+ * locate(row, width) }, the row `row` of the table's body is marked (class
+ * is-marked) while its point is under the pointer, and the other way round:
+ * locate(row, width) gives the rectangle of a row on the canvas, or null.
+ */
+function attachPointerLabel(canvas, locate, link = null) {
   const box = canvas.parentElement;
+  // where the element lies inside its box: the offsets of an HTML element (a canvas), the
+  // difference of the rectangles for the others (an SVG drawing), which have no offsets
+  const offset = () => {
+    if (typeof canvas.offsetLeft === 'number') return { left: canvas.offsetLeft, top: canvas.offsetTop };
+    const a = canvas.getBoundingClientRect();
+    const b = box.getBoundingClientRect();
+    return { left: a.left - b.left - box.clientLeft, top: a.top - b.top - box.clientTop };
+  };
   const mark = document.createElement('div');
   const tip = document.createElement('div');
   mark.className = 'chart-mark';
@@ -1965,6 +2074,8 @@ function attachChartTooltip(canvas, { draw, data, describe, link = null }) {
   canvas.classList.add('has-tip');
   let frame = 0;
   let shown = null;
+  // where the pointer is while the label is on screen: refresh() asks again what is under it
+  let pointer = null;
   // the marked row of the linked table, and whether the outline on the canvas comes from a row
   let marked = null;
   let fromRow = false;
@@ -2000,13 +2111,15 @@ function attachChartTooltip(canvas, { draw, data, describe, link = null }) {
     mark.hidden = true;
     tip.hidden = true;
     shown = null;
+    pointer = null;
     fromRow = false;
     markRow(-1);
   };
   const place = (rect) => {
+    const at = offset();
     Object.assign(mark.style, {
-      left: `${canvas.offsetLeft + rect.x}px`,
-      top: `${canvas.offsetTop + rect.y}px`,
+      left: `${at.left + rect.x}px`,
+      top: `${at.top + rect.y}px`,
       width: `${Math.max(2, rect.width)}px`,
       height: `${rect.height}px`,
     });
@@ -2014,20 +2127,23 @@ function attachChartTooltip(canvas, { draw, data, describe, link = null }) {
     mark.hidden = false;
   };
   const show = (clientX, clientY) => {
+    pointer = { clientX, clientY };
+    fromRow = false;
     const r = canvas.getBoundingClientRect();
     const x = clientX - r.left;
     const y = clientY - r.top;
-    const hit = chartHitTest(draw, data, r.width, x, y);
-    const text = hit && describe(hit);
-    if (!text) {
-      hide();
+    const hit = locate(x, y, r.width);
+    if (!hit) {
+      mark.hidden = true;
+      tip.hidden = true;
+      shown = null;
+      markRow(-1);
       return;
     }
-    fromRow = false;
-    const left = canvas.offsetLeft;
-    const top = canvas.offsetTop;
+    const { text } = hit;
+    const { left, top } = offset();
     place(hit.rect);
-    markRow(link ? link.row(hit) : -1, true);
+    markRow(hit.row ?? -1, true);
     if (text !== shown) {
       tip.textContent = text;
       shown = text;
@@ -2041,23 +2157,26 @@ function attachChartTooltip(canvas, { draw, data, describe, link = null }) {
     tip.style.left = `${tx}px`;
     tip.style.top = `${ty}px`;
   };
-  // the other way round: a row of the linked table under the mouse, or tapped, outlines its bar
+  // the other way round: a row of the linked table under the mouse, or tapped, outlines its point
   const rowAt = (target) => {
     const table = link && link.table();
     const row = table && target instanceof Element ? target.closest('tr') : null;
     return row && row.parentElement.tagName === 'TBODY' && row.parentElement.parentElement === table ? row : null;
   };
   const showRow = (row) => {
-    const hit = chartHitAt(draw, data, canvas.getBoundingClientRect().width, link.point(row.sectionRowIndex));
+    const rect = link.locate(row.sectionRowIndex, canvas.getBoundingClientRect().width);
     tip.hidden = true;
     shown = null;
+    pointer = null;
     fromRow = true;
-    if (hit) place(hit.rect);
+    if (rect) place(rect);
     else mark.hidden = true;
-    markRow(hit ? row.sectionRowIndex : -1);
+    markRow(rect ? row.sectionRowIndex : -1);
   };
+  // while a drag zooms or moves the chart (chartkit), the label waits
+  let suspended = false;
   const onMove = (e) => {
-    if (e.pointerType === 'touch') return;
+    if (e.pointerType === 'touch' || suspended) return;
     const { clientX, clientY } = e;
     cancelAnimationFrame(frame);
     frame = requestAnimationFrame(() => show(clientX, clientY));
@@ -2087,7 +2206,7 @@ function attachChartTooltip(canvas, { draw, data, describe, link = null }) {
   canvas.addEventListener('pointerdown', onDown);
   document.addEventListener('pointerdown', onDocumentDown);
   if (link) document.addEventListener('pointerover', onDocumentOver);
-  return () => {
+  const detach = () => {
     cancelAnimationFrame(frame);
     canvas.removeEventListener('pointermove', onMove);
     canvas.removeEventListener('pointerleave', onLeave);
@@ -2099,6 +2218,19 @@ function attachChartTooltip(canvas, { draw, data, describe, link = null }) {
     mark.remove();
     tip.remove();
   };
+  // a chart that changes under a still pointer calls it after every frame
+  detach.refresh = () => {
+    if (pointer && !suspended) show(pointer.clientX, pointer.clientY);
+  };
+  // a drag on the chart hides the label until it ends
+  detach.suspend = (on) => {
+    suspended = on;
+    if (on) {
+      cancelAnimationFrame(frame);
+      hide();
+    }
+  };
+  return detach;
 }
 
 const hexToRgb = (hex) => [1, 3, 5].map((i) => Number.parseInt(hex.slice(i, i + 2), 16));
@@ -2114,10 +2246,10 @@ const mix = (a, b, f) => {
  * bits of k, columns the bits of x and then of y, split by a line. `decimal`
  * is the decimal separator of the legend.
  */
-function drawHeatmap(canvas, { values, range = 1, split = null, rowLabel = '', colLabels = ['', ''], decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
+function drawHeatmap(canvas, { values, range = 1, split = null, rowLabel = '', colLabels = ['', ''], colMin = null, colMax = null, rowMin = null, rowMax = null, decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
   const pal = { ...DEFAULT_PALETTE, ...palette };
   const width = knownWidth > 0 ? knownWidth : canvas.clientWidth || 480;
-  const { margin, rows, cols, cell } = heatmapLayout(values, width);
+  const { margin, rows, cell, c0, c1, r0, r1, cw, ch } = heatmapView({ values, colMin, colMax, rowMin, rowMax }, width);
   const { ctx, height } = setupCanvas(canvas, (margin.top + margin.bottom + rows * cell) / width, width);
   ctx.fillStyle = pal.background;
   ctx.fillRect(0, 0, width, height);
@@ -2126,17 +2258,18 @@ function drawHeatmap(canvas, { values, range = 1, split = null, rowLabel = '', c
     const f = Math.max(-1, Math.min(1, v / range));
     return f < 0 ? mix(pal.heatZero, pal.heatNegative, -f) : mix(pal.heatZero, pal.heatPositive, f);
   };
-  for (let i = 0; i < rows; i++) {
-    for (let j = 0; j < cols; j++) {
+  for (let i = r0; i < r1; i++) {
+    for (let j = c0; j < c1; j++) {
       ctx.fillStyle = color(values[i][j]);
-      ctx.fillRect(margin.left + j * cell, margin.top + i * cell, cell - 1, cell - 1);
+      ctx.fillRect(margin.left + (j - c0) * cw, margin.top + (i - r0) * ch, cw - 1, ch - 1);
     }
   }
   ctx.fillStyle = pal.text;
   ctx.font = '10px sans-serif';
   ctx.textAlign = 'right';
-  for (let i = 0; i < rows; i += Math.max(1, Math.ceil(rows / 8))) {
-    ctx.fillText(String(i), margin.left - 4, margin.top + i * cell + cell * 0.7);
+  // the numbers of the rows in view, about eight of them
+  for (let i = r0; i < r1; i += Math.max(1, Math.ceil((r1 - r0) / 8))) {
+    ctx.fillText(String(i), margin.left - 4, margin.top + (i - r0) * ch + ch * 0.7);
   }
   ctx.save();
   ctx.translate(10, margin.top + (rows * cell) / 2);
@@ -2145,15 +2278,19 @@ function drawHeatmap(canvas, { values, range = 1, split = null, rowLabel = '', c
   ctx.fillText(rowLabel, 0, 0);
   ctx.restore();
   if (split !== null) {
-    ctx.strokeStyle = pal.text;
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(margin.left + split * cell - 0.5, margin.top - 4);
-    ctx.lineTo(margin.left + split * cell - 0.5, margin.top + rows * cell + 4);
-    ctx.stroke();
+    // the line between the two groups of columns, when it is in view, and each label over the part of its group in view
+    const from = Math.max(split, c0);
+    if (split >= c0 && split <= c1) {
+      ctx.strokeStyle = pal.text;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(margin.left + (split - c0) * cw - 0.5, margin.top - 4);
+      ctx.lineTo(margin.left + (split - c0) * cw - 0.5, margin.top + rows * cell + 4);
+      ctx.stroke();
+    }
     ctx.textAlign = 'center';
-    ctx.fillText(colLabels[0], margin.left + (split * cell) / 2, margin.top - 6);
-    ctx.fillText(colLabels[1], margin.left + split * cell + ((cols - split) * cell) / 2, margin.top - 6);
+    if (split > c0) ctx.fillText(colLabels[0], margin.left + ((Math.min(split, c1) - c0) * cw) / 2, margin.top - 6);
+    if (split < c1) ctx.fillText(colLabels[1], margin.left + (from - c0) * cw + ((c1 - from) * cw) / 2, margin.top - 6);
   }
   // legend
   const ly = margin.top + rows * cell + 12;
@@ -2248,7 +2385,7 @@ function runCli(argv, print = console.log) {
 /** True under Node, where the downloadable program can run runCli. */
 const isNode = typeof process !== 'undefined' && !!(process.versions && process.versions.node);
 
-return { TASK, EXTENSION_PRIMES, EXPLORATION_PRIMES, P_MAX, POOLED_MAX_P, isPrime, mod, modInv, makeCurve, INFINITY, isOnCurve, formatPoint, assertPoint, negate, samePoint, addDetailed, add, curvePoints, groupOrder, pointOrder, explorationCurve, defaultBasePoint, multiples, doubleAndAdd, scalarMultiply, bruteForceLog, prng, bitLength, expectedBitFraction, pearson, spearman, chiSquarePValue, twoSidedNormalTail, SIMULATIONS, exploreSteps, explore, exploreAsync, DEFAULT_PALETTE, animationOps, createAnimation, drawBarChart, chartHeight, chartHitTest, chartHitAt, attachChartTooltip, drawHeatmap, reportLines, runCli, isNode };
+return { TASK, EXTENSION_PRIMES, EXPLORATION_PRIMES, P_MAX, POOLED_MAX_P, isPrime, mod, modInv, makeCurve, INFINITY, isOnCurve, formatPoint, assertPoint, negate, samePoint, addDetailed, add, curvePoints, groupOrder, pointOrder, explorationCurve, defaultBasePoint, multiples, doubleAndAdd, scalarMultiply, bruteForceLog, prng, bitLength, expectedBitFraction, pearson, spearman, chiSquarePValue, twoSidedNormalTail, SIMULATIONS, exploreSteps, explore, exploreAsync, DEFAULT_PALETTE, animationOps, createAnimation, drawBarChart, chartHeight, chartHitTest, chartHitAt, chartFrame, withView, attachChartTooltip, attachPointerLabel, drawHeatmap, reportLines, runCli, isNode };
 })();
 
 // src/pages/statistics/hw1/standalone/cli.js
