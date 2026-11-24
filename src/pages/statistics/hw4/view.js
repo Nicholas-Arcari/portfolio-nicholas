@@ -5,6 +5,7 @@
 // citano. Tenerla qui impedisce che le due versioni dicano cose diverse
 // sugli stessi numeri.
 import * as hw from './homework4.js';
+import { reveal as revealChart } from '../chartkit/kitReveal.js';
 
 /** The sections of the homework, in page order: ids for the anchors, keys for the titles. */
 export const SECTIONS = [
@@ -292,7 +293,7 @@ export function meansChart(s, decimal = '.') {
     ...rangeOf([...values, ...half.map((h) => law.mu + h), ...half.map((h) => law.mu - h)]),
     decimal,
     series: [
-      { values: s.points.map(() => law.mu), band: half.map((h) => [law.mu - h, law.mu + h]), colorIndex: 2, dashed: true },
+      { values: s.points.map(() => law.mu), band: half.map((h) => [law.mu - h, law.mu + h]), colorIndex: 2, dashed: true, fixed: true },
       { values, colorIndex: 0 },
     ],
   };
@@ -310,9 +311,9 @@ export function variancesChart(s, decimal = '.') {
     ...rangeOf([...unbiased, ...biased, ...theory, ...half.map((h) => law.variance + h), ...half.map((h) => law.variance - h)], 0.05),
     decimal,
     series: [
-      { values: s.points.map(() => law.variance), band: half.map((h) => [law.variance - h, law.variance + h]), colorIndex: 2, dashed: true },
+      { values: s.points.map(() => law.variance), band: half.map((h) => [law.variance - h, law.variance + h]), colorIndex: 2, dashed: true, fixed: true },
       { values: unbiased, colorIndex: 0 },
-      { values: theory, colorIndex: 1, dashed: true },
+      { values: theory, colorIndex: 1, dashed: true, fixed: true },
       { values: biased, colorIndex: 1, dotsOnly: true },
     ],
   };
@@ -429,6 +430,15 @@ export function normalCurve(mean, sd, width, [x0, x1]) {
 
 /** The axis modes of the histograms of section 2.6: the same axis for every n, or the axis of the chosen n. */
 export const AXIS_MODES = Object.freeze(['fixed', 'own']);
+
+/** An animation that draws a line chart point by point, as its x grows (chartkit/kitReveal.js): the shift of 1.5, the n of 2.4. */
+export const reveal = revealChart;
+
+/** The n of the samples as a vertical line to drag on a chart against n (2.6, 2.7): its handle, among the n of the simulation. */
+export const nHandle = (s, g, label) => [{ id: 'n', axis: 'x', value: s.points[g].n, values: s.points.map((pt) => pt.n), label }];
+
+/** The index of the n where the line of nHandle is. */
+export const nIndexAt = (s, v) => Math.max(0, s.points.findIndex((pt) => pt.n === v));
 
 const quantile = (sorted, q) => sorted[Math.min(sorted.length - 1, Math.max(0, Math.floor(q * (sorted.length - 1))))];
 

@@ -21,6 +21,7 @@ import { useTheme } from '../../contexts/themeContext';
 import HomeworkShell from './HomeworkShell';
 import { ChartLegend } from './ChartLegend';
 import { hiddenParts, useHidden } from './legendState';
+import { ChartFigure } from './chartkit/ChartFigure';
 import * as hw from './hw4/homework4';
 import * as view from './hw4/view';
 import { HW4_TEXTS, originalAssignment } from './hw4/texts';
@@ -73,49 +74,12 @@ const Formulas = ({ title = null, children }) => (
   </>
 );
 
-// Un grafico su canvas, ridisegnato quando cambia la larghezza, con i valori
-// del pezzo sotto il puntatore e, con `link` (view.links), la riga della
-// tabella legata: il disegno vero e' in homework4.js. Le voci della legenda
-// nascondono e mostrano le loro parti; con `hidden` e `onToggle` lo stato
-// sta nella sezione, che ne fa sparire anche le colonne della tabella
-// annessa, e con `off` la legenda e' fuori dal grafico (un gruppo di grafici
-// con una legenda sola).
-const Figure = ({ title, draw, data, palette, tip = null, wide = false, legend = null, note = null, link = null, hidden: shared = null, onToggle = null, off: given = null }) => {
-  const ref = useRef(null);
-  const [own, toggleOwn] = useHidden();
-  const hidden = shared || own;
-  const off = (given || hiddenParts(legend, hidden)).join(' ');
-  const shown = useMemo(() => (off ? { ...data, hidden: off.split(' ') } : data), [data, off]);
-  const describe = useMemo(() => (tip ? (hit) => tip(hit, off ? off.split(' ') : []) : null), [tip, off]);
-  useEffect(() => {
-    const canvas = ref.current;
-    let drawn = -1;
-    const observer = new ResizeObserver((entries) => {
-      const width = Math.round(entries[entries.length - 1].contentRect.width);
-      if (width <= 0 || width === drawn) return;
-      drawn = width;
-      canvas.style.height = `${hw.chartHeight(draw, shown, width)}px`;
-      view.scheduleFrameJob(() => {
-        if (canvas.isConnected && drawn === width) draw(canvas, { ...shown, width }, palette);
-      });
-    });
-    observer.observe(canvas);
-    const detach = describe ? hw.attachChartTooltip(canvas, { draw, data: shown, describe, link }) : null;
-    return () => {
-      drawn = -2;
-      observer.disconnect();
-      if (detach) detach();
-    };
-  }, [draw, shown, palette, describe, link]);
-  return (
-    <figure className={wide ? 'hw1-figure hw1-figure-wide' : 'hw1-figure'}>
-      <canvas ref={ref} className="hw1-canvas" role="img" aria-label={title} />
-      {legend && <ChartLegend items={legend} palette={palette} hidden={hidden} onToggle={onToggle || toggleOwn} />}
-      {note && <p className="hw3-figure-note">{note}</p>}
-      <figcaption>{title}</figcaption>
-    </figure>
-  );
-};
+// Un grafico interattivo (chartkit/ChartFigure.jsx): disegnato da homework4.js,
+// con l'etichetta sotto il puntatore, la legenda a pulsanti, la tabella
+// legata (link) e lo zoom su ogni grafico; con `off` la legenda e' fuori
+// dal grafico (un gruppo di grafici con una legenda sola); `animation` e
+// `handles` aggiungono il lettore e le linee da trascinare.
+const Figure = (props) => <ChartFigure lib={hw} schedule={view.scheduleFrameJob} {...props} />;
 
 // Una scelta fra pochi valori: il pulsante premuto e' quello attivo
 const Choices = ({ label, options, value, onChange }) => (
@@ -321,6 +285,7 @@ const Stability = React.memo(function Stability({ text, palette }) {
   const rows = useMemo(() => hw.cancellationRows(), []);
   const curve = useMemo(() => hw.stabilityCurve(), []);
   const data = useMemo(() => view.stabilityChart(curve, F.decimal), [curve, F]);
+  const animation = useMemo(() => view.reveal(data, 200), [data]);
   const tip = useMemo(() => view.tips.stability(curve, text.tips), [curve, text]);
   const offset = (c) => (c === 0 ? '0' : F.pow(Math.round(Math.log10(c))));
   // le tre formule sono le tre curve del grafico e le tre colonne della tabella
@@ -365,6 +330,7 @@ const Stability = React.memo(function Stability({ text, palette }) {
           legend={legend}
           hidden={hidden}
           onToggle={toggle}
+          animation={animation}
         />
       </div>
       <Paras list={S.facts(view.stabilityFacts(curve))} />
@@ -592,9 +558,11 @@ const Averages = React.memo(function Averages({ s, job, text, palette }) {
   const rows = useMemo(() => (s ? view.averageRows(s) : null), [s]);
   const charts = useMemo(() => {
     if (!s) return null;
+    const means = view.meansChart(s, F.decimal);
+    const variances = view.variancesChart(s, F.decimal);
     return {
-      means: { data: view.meansChart(s, F.decimal), tip: view.tips.means(s, text.tips) },
-      variances: { data: view.variancesChart(s, F.decimal), tip: view.tips.variances(s, text.tips) },
+      means: { data: means, tip: view.tips.means(s, text.tips), animation: view.reveal(means, 160) },
+      variances: { data: variances, tip: view.tips.variances(s, text.tips), animation: view.reveal(variances, 160) },
     };
   }, [s, F, text]);
   // i due grafici hanno una tabella sola: la media delle M_n, la media delle s_n² e le due versioni con n
@@ -632,7 +600,7 @@ const Averages = React.memo(function Averages({ s, job, text, palette }) {
             </table>
           </div>
           <div className="hw1-charts">
-            <Figure title={A.meansChart(s.m)} draw={hw.drawLineChart} data={charts.means.data} palette={palette} tip={charts.means.tip} link={view.links.averages} legend={meansLegend} hidden={meansHidden} onToggle={toggleMeans} />
+            <Figure title={A.meansChart(s.m)} draw={hw.drawLineChart} data={charts.means.data} palette={palette} tip={charts.means.tip} link={view.links.averages} legend={meansLegend} hidden={meansHidden} onToggle={toggleMeans} animation={charts.means.animation} />
             <Figure
               title={A.variancesChart(s.m)}
               draw={hw.drawLineChart}
@@ -643,6 +611,7 @@ const Averages = React.memo(function Averages({ s, job, text, palette }) {
               legend={variancesLegend}
               hidden={variancesHidden}
               onToggle={toggleVariances}
+              animation={charts.variances.animation}
             />
           </div>
           <Paras list={A.facts(s)} />
@@ -690,6 +659,7 @@ const Spread = React.memo(function Spread({ s, job, text, palette }) {
   const [seriesHidden, toggleSeries] = useHidden();
   const legend = useMemo(() => view.legends.spread(text), [text]);
   const keys = ['varMean', 'varMeanTheory', 'varVariance', 'varVarianceTheory', 'normalVariance'].filter((_, i) => !seriesHidden.has(i));
+  const handles = s ? { items: view.nHandle(s, g, text.ui.nHandle(s.points[g].n)), onChange: (id, v) => choose(view.nIndexAt(s, v)) } : null;
   return (
     <>
       <Paras list={S.intro} />
@@ -723,6 +693,7 @@ const Spread = React.memo(function Spread({ s, job, text, palette }) {
               legend={legend}
               hidden={seriesHidden}
               onToggle={toggleSeries}
+              handles={handles}
             />
           </div>
           <p className="hw1-table-title"><strong>{S.tableTitle}</strong></p>
@@ -773,6 +744,7 @@ const Inference = React.memo(function Inference({ s, job, text, palette }) {
   const coverageLegend = useMemo(() => view.legends.coverage(text), [text]);
   const scatterLegend = useMemo(() => view.legends.scatter(text), [text]);
   const shown = { t: !coverageHidden.has(2), tQuantile: !coverageHidden.has(2), chi2: !coverageHidden.has(3), corr: !scatterHidden.has(0), corrTheory: !scatterHidden.has(2) };
+  const handles = useMemo(() => (s ? { items: view.nHandle(s, g, text.ui.nHandle(s.points[g].n)), onChange: (id, v) => setChosen(view.nIndexAt(s, v)) } : null), [s, g, text]);
   return (
     <>
       <Paras list={I.intro} />
@@ -798,6 +770,7 @@ const Inference = React.memo(function Inference({ s, job, text, palette }) {
               legend={coverageLegend}
               hidden={coverageHidden}
               onToggle={toggleCoverage}
+              handles={handles}
             />
             <Figure title={I.scatterTitle(s.points[g].n, s.m)} draw={hw.drawScatter} data={charts.scatter.data} palette={palette} tip={charts.scatter.tip} legend={scatterLegend} hidden={scatterHidden} onToggle={toggleScatter} />
           </div>

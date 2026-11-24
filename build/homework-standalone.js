@@ -92,6 +92,7 @@ export const HOMEWORKS = [
     library: 'homework4.js',
     global: 'Homework4',
     inner: [],
+    ui: CHARTKIT,
     contents: 'Computations: the recurrences of Knuth and Welford, xoshiro128** and SplitMix64, the four laws of the scores,\n * the m hackers, the sampling mean and variance, hypothesis tests, charts, the animation and command line (node homework4.js [options]).',
     description: 'Homework #4 - Statistics: Welford\'s recurrence formulas, and the sampling mean and variance of m hackers on n systems.',
   },

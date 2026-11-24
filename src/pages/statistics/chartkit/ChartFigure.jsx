@@ -8,6 +8,7 @@
 //   animation  { frames, at(t) -> data, ms }: il grafico passo per passo, con il lettore
 //   handles    { items: [{ id, axis, value, ... }], onChange(id, value) }: le linee da trascinare
 //   pending    una simulazione e' in corso: il grafico mostra ancora i dati di prima
+//   off        le parti nascoste da una legenda fuori dal grafico (una legenda per un gruppo di grafici)
 // I parametri non stanno qui ma nel modello della sezione (useModel), che li
 // condivide con le tabelle.
 //
@@ -41,7 +42,7 @@ const ChartPlayer = ({ id, state, player, labels }) => (
   </div>
 );
 
-export const ChartFigure = ({ title, draw, data: given, palette, tip = null, wide = false, legend = null, note = null, link = null, hidden: shared = null, onToggle = null, lib, schedule = null, animation = null, handles = null, pending = false }) => {
+export const ChartFigure = ({ title, draw, data: given, palette, tip = null, wide = false, legend = null, note = null, link = null, hidden: shared = null, onToggle = null, lib, schedule = null, animation = null, handles = null, pending = false, off: offGiven = null }) => {
   const { language } = useLanguage();
   const labels = kitLabels(language);
   const id = useId();
@@ -51,7 +52,7 @@ export const ChartFigure = ({ title, draw, data: given, palette, tip = null, wid
   const handlesChange = useRef(null);
   const [own, toggleOwn] = useHidden();
   const hidden = shared || own;
-  const off = hiddenParts(legend, hidden).join(' ');
+  const off = (offGiven || hiddenParts(legend, hidden)).join(' ');
   const [zoom, setZoom] = useState({ can: false, zoomed: false });
   const [hint, setHint] = useState(false);
 

@@ -34,7 +34,12 @@ COME SI USA
   stessa, a fette di pochi millisecondi: con i valori iniziali i risultati
   arrivano in qualche secondo, senza bloccarla, e intanto l'animazione
   funziona già. La sezione 2.1 sceglie la legge dei punteggi, i campi
-  della 2.2 cambiano p, n, m e il seme, e tutte le sezioni seguono.
+  della 2.2 cambiano p, n, m e il seme, e tutte le sezioni seguono. I
+  grafici si ingrandiscono (Ctrl + rotella, due dita, oppure un rettangolo
+  trascinato; doppio clic per tornare alla vista intera); quelli della
+  stabilita' numerica e delle medie si disegnano punto per punto, e nella
+  2.6 e nella 2.7 la n dei campioni si sceglie anche trascinando la sua
+  linea sul grafico.
 
   Da terminale, con Node.js 14 o successivo:
 
@@ -115,7 +120,11 @@ HOW TO USE IT
   milliseconds: with the initial values the results arrive in a few
   seconds, without freezing it, and meanwhile the animation already works.
   Section 2.1 chooses the law of the scores, the fields of section 2.2
-  change p, n, m and the seed, and every section follows.
+  change p, n, m and the seed, and every section follows. The charts zoom
+  (ctrl + wheel, two fingers, or a rectangle dragged; double click for the
+  whole chart again); those of the numerical stability and of the averages
+  are drawn point by point, and in 2.6 and 2.7 the n of the samples can
+  also be chosen by dragging its line on the chart.
 
   From a terminal, with Node.js 14 or later:
 

@@ -176,6 +176,7 @@ const it = {
     backToTop: 'Torna su',
     computing: 'Simulazione in corso...',
     language: 'Lingua',
+    nHandle: (n) => `n = ${IT.int(n)}`,
     error: (m) => `Errore: ${m}`,
   },
   sections: {
@@ -206,7 +207,7 @@ const it = {
   assignment: {
     intro: [
       'La consegna ha due parti. La Part 1 chiede di ricavare le formule ricorsive di Welford per la somma dei quadrati (SS) e per la varianza, seguendo lo stesso procedimento della formula ricorsiva di Knuth per la media, e di scriverne il codice, il cui nucleo deve stare in circa tre righe. La Part 2 estende l’Homework #3: ogni tentativo di penetrazione riceve un punteggio fra 0 e 10, estratto da una distribuzione fissa a scelta con media μ e varianza σ²; m hacker attaccano n sistemi ciascuno, e ogni hacker calcola con le formule di Welford la media e la varianza campionarie dei suoi n punteggi. Sugli m hacker si confrontano la media delle medie campionarie con μ e la media delle varianze campionarie con σ², si discutono le conclusioni e la loro utilità per la statistica inferenziale, e si ripete l’esperimento per diversi n, studiando come cambia la variabilità delle medie e delle varianze campionarie.',
-      'La Part 1 ricava le formule passo per passo, le anima su dati scelti da chi legge e ne misura la stabilità numerica contro la formula da manuale; il codice richiesto, in tre righe, è nel programma scaricabile in fondo alla pagina. La Part 2 sceglie la distribuzione dei punteggi, simula gli hacker, confronta le medie con μ e σ², risponde alle tre domande della consegna (sezioni 2.5, 2.6 e 2.7) e collega i risultati all’inferenza. La sezione 3 riassume i test statistici, la 4 colloca le idee nel tempo e la 5 trae le conclusioni. Tutti i numeri sono calcolati nel browser, e il programma scaricabile stampa gli stessi.',
+      'La Part 1 ricava le formule passo per passo, le anima su dati scelti da chi legge e ne misura la stabilità numerica contro la formula da manuale; il codice richiesto, in tre righe, è nel programma scaricabile in fondo alla pagina. La Part 2 sceglie la distribuzione dei punteggi, simula gli hacker, confronta le medie con μ e σ², risponde alle tre domande della consegna (sezioni 2.5, 2.6 e 2.7) e collega i risultati all’inferenza. La sezione 3 riassume i test statistici, la 4 colloca le idee nel tempo e la 5 trae le conclusioni. Tutti i numeri sono calcolati nel browser, e il programma scaricabile stampa gli stessi. I grafici si muovono: si ingrandiscono (Ctrl + rotella, oppure un rettangolo trascinato; doppio clic per tornare alla vista intera), quelli della stabilità numerica e delle medie si disegnano punto per punto, e nella 2.6 e nella 2.7 la n dei campioni si sceglie anche trascinando la sua linea sul grafico.',
     ],
     originalTitle: 'Il testo originale della consegna',
     originalNote: 'Com’è stato assegnato, in inglese. L’unica modifica è il trattino dei due titoli, scritto "-" come in tutto il sito.',
@@ -454,7 +455,7 @@ const it = {
       const isMean = quantity === 'mean';
       return `Media ${F.num(stats.mean, 4)} (teoria ${F.num(isMean ? theory.mean : theory.variance, 4)}), deviazione standard ${F.num(Math.sqrt(stats.variance), 4)} (teoria ${F.num(isMean ? theory.sdMean : theory.sdVariance, 4)}), asimmetria ${F.num(stats.skewness, 3)}${isMean ? ` (teoria ${F.num(theory.skewMean, 3)})` : ''}.`;
     },
-    chartTitle: 'Varianza delle medie e delle varianze campionarie fra gli hacker, per n (scale logaritmiche)',
+    chartTitle: 'Varianza delle medie e delle varianze campionarie fra gli hacker, per n (scale logaritmiche), con la n degli istogrammi da trascinare',
     legend: ['Var(M_n) simulata', 'σ²/n', 'Var(s_n²) simulata', 'μ₄/n - σ⁴ (n - 3)/(n (n - 1))', '2σ⁴/(n - 1), dati normali'],
     tableTitle: 'La variabilità fra gli hacker, per n',
     cols: { n: 'n', varMean: 'Var(M_n)', varMeanTheory: 'σ²/n', varVariance: 'Var(s_n²)', varVarianceTheory: 'Teoria', normalVariance: 'Dati normali', skewMean: 'Asimmetria delle M_n' },
@@ -483,7 +484,7 @@ const it = {
     afterList: [
       'La simulazione mette alla prova l’intervallo più usato, M_n ± t_(0,975; n-1) s_n/√n: per ogni n conta per quanti hacker l’intervallo contiene μ. Il grafico mostra anche l’intervallo per σ² basato sul chi quadrato, da (n - 1) s_n²/χ²_(0,975; n-1) a (n - 1) s_n²/χ²_(0,025; n-1), che è esatto soltanto per dati normali.',
     ],
-    coverageTitle: 'Quota di hacker il cui intervallo al 95% contiene il valore vero, per n',
+    coverageTitle: 'Quota di hacker il cui intervallo al 95% contiene il valore vero, per n, con la n della dispersione da trascinare',
     coverageLegend: ['95%', 'limite dell’intervallo χ² per n grande', 'intervallo t per μ', 'intervallo χ² per σ²'],
     scatterTitle: (n, m) => `Le ${IT.int(m)} coppie (M_n, s_n²) a n = ${IT.int(n)}`,
     scatterLegend: ['hacker', '(μ, σ²)', 'retta teorica di pendenza μ₃/σ²'],
@@ -750,6 +751,7 @@ const en = {
     backToTop: 'Back to top',
     computing: 'Simulation running...',
     language: 'Language',
+    nHandle: (n) => `n = ${EN.int(n)}`,
     error: (m) => `Error: ${m}`,
   },
   sections: {
@@ -780,7 +782,7 @@ const en = {
   assignment: {
     intro: [
       'The assignment has two parts. Part 1 asks to derive Welford’s recurrence formulas for the sum of squares (SS) and for the variance, following the same approach as Knuth’s recurrence formula for the mean, and to write the code, whose core should take about three lines. Part 2 extends Homework #3: every penetration attempt gets a score between 0 and 10, drawn from a fixed distribution of one’s choice with mean μ and variance σ²; m hackers attack n systems each, and every hacker computes with Welford’s formulas the sampling mean and variance of its n scores. Over the m hackers, the average of the sampling means is compared with μ and the average of the sampling variances with σ², the conclusions and their use in inferential statistics are discussed, and the experiment is repeated for several n, to see how the variability of the sampling means and variances changes.',
-      'Part 1 derives the formulas step by step, animates them on data chosen by the reader and measures their numerical stability against the textbook formula; the code asked for, in three lines, is in the downloadable program at the bottom of the page. Part 2 chooses the distribution of the scores, simulates the hackers, compares the averages with μ and σ², answers the three questions of the assignment (sections 2.5, 2.6 and 2.7) and connects the results to inference. Section 3 summarizes the statistical tests, section 4 places the ideas in time and section 5 draws the conclusions. Every number is computed in the browser, and the downloadable program prints the same ones.',
+      'Part 1 derives the formulas step by step, animates them on data chosen by the reader and measures their numerical stability against the textbook formula; the code asked for, in three lines, is in the downloadable program at the bottom of the page. Part 2 chooses the distribution of the scores, simulates the hackers, compares the averages with μ and σ², answers the three questions of the assignment (sections 2.5, 2.6 and 2.7) and connects the results to inference. Section 3 summarizes the statistical tests, section 4 places the ideas in time and section 5 draws the conclusions. Every number is computed in the browser, and the downloadable program prints the same ones. The charts move: they zoom (ctrl + wheel, or a rectangle dragged; double click for the whole chart again), those of the numerical stability and of the averages are drawn point by point, and in 2.6 and 2.7 the n of the samples can also be chosen by dragging its line on the chart.',
     ],
     originalTitle: 'The original text of the assignment',
     originalNote: 'As it was assigned. The only change is the dash of the two titles, written "-" as everywhere on this site.',
@@ -1028,7 +1030,7 @@ const en = {
       const isMean = quantity === 'mean';
       return `Mean ${F.num(stats.mean, 4)} (theory ${F.num(isMean ? theory.mean : theory.variance, 4)}), standard deviation ${F.num(Math.sqrt(stats.variance), 4)} (theory ${F.num(isMean ? theory.sdMean : theory.sdVariance, 4)}), skewness ${F.num(stats.skewness, 3)}${isMean ? ` (theory ${F.num(theory.skewMean, 3)})` : ''}.`;
     },
-    chartTitle: 'Variance of the sampling means and variances across the hackers, per n (logarithmic scales)',
+    chartTitle: 'Variance of the sampling means and variances across the hackers, per n (logarithmic scales), with the n of the histograms to drag',
     legend: ['Var(M_n) simulated', 'σ²/n', 'Var(s_n²) simulated', 'μ₄/n - σ⁴ (n - 3)/(n (n - 1))', '2σ⁴/(n - 1), normal data'],
     tableTitle: 'The variability across the hackers, per n',
     cols: { n: 'n', varMean: 'Var(M_n)', varMeanTheory: 'σ²/n', varVariance: 'Var(s_n²)', varVarianceTheory: 'Theory', normalVariance: 'Normal data', skewMean: 'Skewness of M_n' },
@@ -1057,7 +1059,7 @@ const en = {
     afterList: [
       'The simulation puts the most used interval to the test, M_n ± t_(0.975; n-1) s_n/√n: for every n it counts for how many hackers the interval contains μ. The chart also shows the chi-square interval for σ², from (n - 1) s_n²/χ²_(0.975; n-1) to (n - 1) s_n²/χ²_(0.025; n-1), which is exact only for normal data.',
     ],
-    coverageTitle: 'Share of hackers whose 95% interval contains the true value, per n',
+    coverageTitle: 'Share of hackers whose 95% interval contains the true value, per n, with the n of the scatter plot to drag',
     coverageLegend: ['95%', 'limit of the χ² interval for large n', 't interval for μ', 'χ² interval for σ²'],
     scatterTitle: (n, m) => `The ${EN.int(m)} pairs (M_n, s_n²) at n = ${EN.int(n)}`,
     scatterLegend: ['hackers', '(μ, σ²)', 'theoretical line of slope μ₃/σ²'],

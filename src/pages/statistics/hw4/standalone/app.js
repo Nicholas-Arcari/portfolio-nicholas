@@ -15,6 +15,7 @@
 import * as hw from '../homework4.js';
 import * as view from '../view.js';
 import { HW4_TEXTS, originalAssignment } from '../texts.js';
+import * as kit from '../../chartkit/kitDom.js';
 
 const HEADINGS = ['h2', 'h3', 'h4'];
 const LANGUAGES = ['it', 'en'];
@@ -112,43 +113,6 @@ const pending = () => (computation.error ? h('p', { class: 'note', text: text.ui
 const check = (ok, label) => h('p', { class: ok ? 'check is-ok' : 'check is-bad' }, h('strong', { text: label }));
 const formulas = (content, label = null) => [label && subtitle(label), h('pre', { text: content })];
 
-// The width of every chart comes from the ResizeObserver, measured after
-// layout; the height is set at once, the drawing happens a few
-// milliseconds per frame.
-const charts = new Map(); // canvas -> { draw, data, width, detach, link, tip, hidden }
-
-// what a chart draws: its data, without the parts hidden from the legend
-const shownData = (chart) => (chart.hidden.length ? { ...chart.data, hidden: chart.hidden } : chart.data);
-
-const resizer = new ResizeObserver((entries) => {
-  for (const entry of entries) {
-    const canvas = entry.target;
-    const chart = charts.get(canvas);
-    const width = Math.round(entry.contentRect.width);
-    if (!chart || width <= 0 || width === chart.width) continue;
-    chart.width = width;
-    canvas.style.height = `${hw.chartHeight(chart.draw, shownData(chart), width)}px`;
-    view.scheduleFrameJob(() => {
-      if (charts.get(canvas) === chart && chart.width === width) chart.draw(canvas, { ...shownData(chart), width }, palette());
-    });
-  }
-});
-
-/** Ties the label under the pointer to a chart: it describes what is on screen, and leaves out the hidden parts. */
-function attachTip(canvas, chart) {
-  if (chart.detach) chart.detach();
-  const tip = chart.tip;
-  chart.detach = tip ? hw.attachChartTooltip(canvas, { draw: chart.draw, data: shownData(chart), describe: (hit) => tip(hit, chart.hidden), link: chart.link }) : null;
-}
-
-/** Draws a chart again at its width, with its data and hidden parts. */
-function redraw(canvas, chart) {
-  if (chart.width > 0) {
-    canvas.style.height = `${hw.chartHeight(chart.draw, shownData(chart), chart.width)}px`;
-    chart.draw(canvas, { ...shownData(chart), width: chart.width }, palette());
-  }
-}
-
 // what the reader hid in the legends: the charts of a region are built again at every step or result
 const kept = { steps: new Set(), stability: new Set(), scores: new Set(), trajectories: new Set(), means: new Set(), variances: new Set(), histograms: new Set(), spread: new Set(), coverage: new Set(), scatter: new Set(), drag: new Set() };
 
@@ -205,55 +169,26 @@ function hideParts(tableEl, parts) {
 
 /** Hides parts of a chart (the legend of a group of charts calls it on each of them). */
 function setHidden(fig, parts) {
-  const canvas = fig.querySelector('canvas.chart');
-  const chart = charts.get(canvas);
-  if (!chart) return;
-  chart.hidden = parts;
-  attachTip(canvas, chart);
-  redraw(canvas, chart);
+  fig.kit.setHidden(parts);
 }
 
 /**
- * A chart with its legend (`items`) and its label under the pointer.
- * onHide(parts) runs when the reader hides or shows a part, for the table
- * tied to the chart, and `keep` (a set) remembers the hidden items when
- * the chart is built again; the charts of a group share one legend outside them
- * (groupLegend) and have no `items`.
+ * A chart (chartkit/kitDom.js): drawn by homework4.js, with its legend
+ * (`items`), its label under the pointer, the table tied to it (`link`)
+ * and zoom. onHide(parts) runs when the reader hides or shows a part, for
+ * the table tied to the chart, and `keep` (a set) remembers the hidden
+ * items when the chart is built again; the charts of a group share one
+ * legend outside them and have no `items`. `reveal` (milliseconds a point)
+ * draws a line chart point by point, as its x grows; `handles` adds the
+ * lines to drag.
  */
-function figure(caption, draw, data, { wide = false, tip = null, items = null, note = null, link = null, onHide = null, keep = null } = {}) {
-  const canvas = h('canvas', { class: 'chart', role: 'img', 'aria-label': caption });
-  const kept = keep || new Set();
-  const chart = { draw, data, width: -1, detach: null, link, tip, hidden: items ? partsOf(items, kept) : [] };
-  const fig = h(
-    'figure',
-    { class: wide ? 'figure wide' : 'figure' },
-    canvas,
-    items &&
-      legend(
-        items,
-        (parts) => {
-          setHidden(fig, parts);
-          if (onHide) onHide(parts);
-        },
-        kept,
-      ),
-    note && h('p', { class: 'figure-note', text: note }),
-    h('figcaption', { text: caption }),
-  );
-  attachTip(canvas, chart);
-  charts.set(canvas, chart);
-  resizer.observe(canvas);
-  return fig;
+function figure(caption, draw, data, { wide = false, tip = null, items = null, note = null, link = null, onHide = null, keep = null, reveal = 0, handles = null } = {}) {
+  return kit.createFigure({ label: caption, draw, data, palette: palette(), lib: hw, schedule: view.scheduleFrameJob, lang: state.lang, tip, items, note, link, onHide, keep, wide, animation: reveal ? view.reveal(data, reveal) : null, handles });
 }
 
 /** Replaces the content of a region, releasing the charts it contained and their labels. */
 function fill(region, ...nodes) {
-  for (const canvas of region.querySelectorAll('canvas.chart')) {
-    resizer.unobserve(canvas);
-    const chart = charts.get(canvas);
-    if (chart && chart.detach) chart.detach();
-    charts.delete(canvas);
-  }
+  kit.releaseFigures(region);
   region.replaceChildren(...nodes.flat(Infinity).filter((n) => n !== null && n !== undefined && n !== false));
 }
 
@@ -543,22 +478,32 @@ function updateSteps() {
     [null, 'points', 'delta', 'mean', 'after', null, null, 'band'],
   );
   hideParts(steps, partsOf(items, kept.steps));
-  fill(
-    regions.steps,
-    figure(label, hw.drawWelfordChart, view.stepsChart(rows, g + 1, F.decimal), {
-      wide: true,
-      tip: view.tips.steps(rows, text.tips),
-      link: view.links.steps,
-      items,
-      keep: kept.steps,
-      onHide: (parts) => hideParts(steps, parts),
-    }),
+  stepsView.table = steps;
+  const data = view.stepsChart(rows, g + 1, F.decimal);
+  const tip = view.tips.steps(rows, text.tips);
+  const rest = [
     h('p', { class: 'caption line', 'aria-live': state.steps.playing ? 'off' : 'polite', text: S.line(rows[g], rows[g - 1]) }),
     subtitle(S.tableTitle),
     h('div', { class: rows.length > 16 ? 'scroll' : null }, steps),
     check(c.welfordError < 1e-9, S.check(c)),
-  );
+  ];
+  // the chart stays while the steps go by (its zoom too); the caption, the table and the check are made again
+  if (sameFigures(stepsView, rows)) {
+    refreshFigure(stepsView.fig, label, data, tip);
+    for (const node of stepsView.rest) node.remove();
+    stepsView.fig.after(...rest);
+    stepsView.rest = rest;
+    return;
+  }
+  const fig = figure(label, hw.drawWelfordChart, data, { wide: true, tip, link: view.links.steps, items, keep: kept.steps, onHide: (parts) => hideParts(stepsView.table, parts) });
+  fill(regions.steps, fig, rest);
+  Object.assign(stepsView, { fig, data: rows, lang: state.lang, rest });
 }
+
+// the chart of 1.4, the one of 2.6 with its histograms and the one of 2.7 with its scatter plot, kept while a slider or the player moves
+const stepsView = { fig: null, data: null, lang: null, rest: [], table: null };
+const spreadView = { fig: null, data: null, lang: null, histMean: null, histVariance: null };
+const inferenceView = { fig: null, data: null, lang: null, scatter: null };
 
 // --- 1.5 La stabilita' numerica --------------------------------------------------------
 
@@ -587,6 +532,7 @@ function stabilityBlock() {
       { class: 'charts' },
       figure(S.chartTitle(F.int(stability.curve.size)), hw.drawLineChart, view.stabilityChart(stability.curve, F.decimal), {
         wide: true,
+        reveal: 200,
         tip: view.tips.stability(stability.curve, text.tips),
         link: view.links.cancellation,
         items: view.legends.stability(text),
@@ -972,8 +918,9 @@ function updateAverages() {
     h(
       'div',
       { class: 'charts' },
-      figure(A.meansChart(s.m), hw.drawLineChart, view.meansChart(s, F.decimal), { tip: view.tips.means(s, text.tips), link: view.links.averages, items: meansItems, keep: kept.means, onHide: hideAverages }),
+      figure(A.meansChart(s.m), hw.drawLineChart, view.meansChart(s, F.decimal), { reveal: 160, tip: view.tips.means(s, text.tips), link: view.links.averages, items: meansItems, keep: kept.means, onHide: hideAverages }),
       figure(A.variancesChart(s.m), hw.drawLineChart, view.variancesChart(s, F.decimal), {
+        reveal: 160,
         tip: view.tips.variances(s, text.tips),
         link: view.links.averages,
         items: variancesItems,
@@ -1008,6 +955,16 @@ function updateSpread() {
   controls.spreadSlider.set(lastIndex(), g, S.nLabel(pt.n));
   const mean = view.spreadHistogram(s, g, 'mean', state.spread.mode, F.decimal);
   const variance = view.spreadHistogram(s, g, 'variance', state.spread.mode, F.decimal);
+  const handles = { items: view.nHandle(s, g, text.ui.nHandle(pt.n)), onChange: (id, v) => choose('spread', view.nIndexAt(s, v)) };
+  // another n or another axis: the same figures, changed in place (the zoom stays)
+  if (sameFigures(spreadView, s)) {
+    refreshFigure(spreadView.histMean, S.histMean(pt.n, s.m), mean, view.tips.histogram(mean, text.tips));
+    spreadView.histMean.kit.setNote(S.histNote(pt.meanStats, pt.theory, 'mean'));
+    refreshFigure(spreadView.histVariance, S.histVariance(pt.n, s.m), variance, view.tips.histogram(variance, text.tips));
+    spreadView.histVariance.kit.setNote(S.histNote(pt.varStats, pt.theory, 'variance'));
+    spreadView.fig.kit.setHandles(handles);
+    return;
+  }
   // una legenda per i due istogrammi; le cinque curve del grafico sono cinque colonne della tabella
   const histItems = view.legends.histograms(text);
   const histMean = figure(S.histMean(pt.n, s.m), hw.drawHistogram, mean, { tip: view.tips.histogram(mean, text.tips), note: S.histNote(pt.meanStats, pt.theory, 'mean') });
@@ -1022,6 +979,16 @@ function updateSpread() {
     [null, 'series:0', 'series:1', 'series:2', 'series:3', 'series:4', null],
   );
   hideParts(spread, partsOf(items, kept.spread));
+  const fig = figure(S.chartTitle, hw.drawLineChart, view.spreadChart(s, F.decimal), {
+    wide: true,
+    tip: view.tips.spread(s, text.tips),
+    link: view.links.spread,
+    items,
+    keep: kept.spread,
+    onHide: (parts) => hideParts(spread, parts),
+    handles,
+  });
+  Object.assign(spreadView, { fig, data: s, lang: state.lang, histMean, histVariance });
   fill(
     regions.spread,
     h('div', { class: 'charts' }, histMean, histVariance),
@@ -1032,18 +999,7 @@ function updateSpread() {
       },
       kept.histograms,
     ),
-    h(
-      'div',
-      { class: 'charts' },
-      figure(S.chartTitle, hw.drawLineChart, view.spreadChart(s, F.decimal), {
-        wide: true,
-        tip: view.tips.spread(s, text.tips),
-        link: view.links.spread,
-        items,
-        keep: kept.spread,
-        onHide: (parts) => hideParts(spread, parts),
-      }),
-    ),
+    h('div', { class: 'charts' }, fig),
     subtitle(S.tableTitle),
     h('div', { class: 'scroll' }, spread),
     paras(S.facts(s)),
@@ -1067,6 +1023,19 @@ function updateInference() {
   const pt = s.points[g];
   controls.inferenceSlider.set(last, g, I.nLabel(pt.n));
   const scatter = view.scatterData(s, g, F.decimal);
+  const handles = {
+    items: view.nHandle(s, g, text.ui.nHandle(pt.n)),
+    onChange: (id, v) => {
+      state.inference.g = view.nIndexAt(s, v);
+      updateInference();
+    },
+  };
+  // another n: the same figures, changed in place (the zoom stays)
+  if (sameFigures(inferenceView, s)) {
+    refreshFigure(inferenceView.scatter, I.scatterTitle(pt.n, s.m), scatter, view.tips.scatter(scatter, text.tips));
+    inferenceView.fig.kit.setHandles(handles);
+    return;
+  }
   // la copertura dei due intervalli e la correlazione degli hacker sono colonne della tabella
   const coverageItems = view.legends.coverage(text);
   const scatterItems = view.legends.scatter(text);
@@ -1086,20 +1055,19 @@ function updateInference() {
       ]),
     );
   hideInference();
+  const fig = figure(I.coverageTitle, hw.drawLineChart, view.coverageChart(s, F.decimal), {
+    tip: view.tips.coverage(s, text.tips),
+    link: view.links.inference,
+    items: coverageItems,
+    keep: kept.coverage,
+    onHide: hideInference,
+    handles,
+  });
+  const scatterFig = figure(I.scatterTitle(pt.n, s.m), hw.drawScatter, scatter, { tip: view.tips.scatter(scatter, text.tips), items: scatterItems, keep: kept.scatter, onHide: hideInference });
+  Object.assign(inferenceView, { fig, data: s, lang: state.lang, scatter: scatterFig });
   fill(
     regions.inference,
-    h(
-      'div',
-      { class: 'charts' },
-      figure(I.coverageTitle, hw.drawLineChart, view.coverageChart(s, F.decimal), {
-        tip: view.tips.coverage(s, text.tips),
-        link: view.links.inference,
-        items: coverageItems,
-        keep: kept.coverage,
-        onHide: hideInference,
-      }),
-      figure(I.scatterTitle(pt.n, s.m), hw.drawScatter, scatter, { tip: view.tips.scatter(scatter, text.tips), items: scatterItems, keep: kept.scatter, onHide: hideInference }),
-    ),
+    h('div', { class: 'charts' }, fig, scatterFig),
     subtitle(I.tableTitle),
     h('div', { class: 'scroll' }, inference),
     paras(I.facts(s)),
@@ -1111,18 +1079,15 @@ function updateInference() {
 // Gli esempi interattivi ("Prova")
 // ---------------------------------------------------------------------------
 
-/** Redraws a chart in place, with new data and labels, without replacing its canvas (no flicker while it plays); the hidden parts stay hidden. */
+/** Redraws a chart in place, with new data and labels, without replacing its canvas (no flicker while it plays); the hidden parts and the zoom stay. */
 function refreshFigure(fig, caption, data, tip) {
-  const canvas = fig.querySelector('canvas.chart');
-  const chart = charts.get(canvas);
-  if (!chart) return;
-  chart.data = data;
-  chart.tip = tip;
-  attachTip(canvas, chart);
-  canvas.setAttribute('aria-label', caption);
-  fig.querySelector('figcaption').textContent = caption;
-  redraw(canvas, chart);
+  fig.kit.setData(data);
+  fig.kit.setTip(tip);
+  fig.kit.setLabel(caption);
 }
+
+/** Whether the figures kept for a region can be changed in place: built for the same data and language, and still on the page. */
+const sameFigures = (kept, data) => !!kept.fig && kept.data === data && kept.lang === state.lang && kept.fig.isConnected;
 
 // --- 1.2 I dati da trascinare ---------------------------------------------------------
 
