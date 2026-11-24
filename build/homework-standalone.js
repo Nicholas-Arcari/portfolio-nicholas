@@ -72,6 +72,7 @@ export const HOMEWORKS = [
     library: 'homework2a.js',
     global: 'Homework2a',
     inner: ['corpus.js'],
+    ui: CHARTKIT,
     contents: 'Computations: the toy EC-ElGamal scheme on secp256k1, the Caesar cipher, the corpus and its language models,\n * the statistical attack, the attacks on the private key, statistics and command line (node homework2a.js [options]).',
     description: 'Homework #2 - Statistics: a toy elliptic-curve scheme and the Caesar cipher, with statistical cryptanalysis and attacks.',
   },

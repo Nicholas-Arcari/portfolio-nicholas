@@ -1932,6 +1932,35 @@ function setupCanvas(canvas, aspect, knownWidth = 0) {
 }
 
 const chartNumber = (text, decimal) => (decimal === '.' ? text : text.replace('.', decimal));
+
+/** About `count` round values covering [lo, hi], for the ticks of an axis in a zoomed view. */
+function niceTicks(lo, hi, count = 5) {
+  if (!(hi > lo)) return [lo];
+  const raw = (hi - lo) / Math.max(1, count - 1);
+  const power = 10 ** Math.floor(Math.log10(raw));
+  const unit = [1, 2, 2.5, 5, 10].map((f) => f * power).find((u) => u >= raw) || 10 * power;
+  const ticks = [];
+  for (let v = Math.ceil(lo / unit) * unit; v <= hi + unit * 1e-9; v += unit) ticks.push(Math.abs(v) < unit * 1e-9 ? 0 : Number(v.toPrecision(12)));
+  return ticks;
+}
+
+/**
+ * The ticks of an axis shown from lo to hi: round values on a linear axis,
+ * powers of ten on a logarithmic one (1, 2 and 5 times them when the view
+ * holds fewer than two powers).
+ */
+export function axisTicks(lo, hi, log = false) {
+  if (!log) return niceTicks(lo, hi, 5);
+  const inside = (v) => v >= lo * (1 - 1e-9) && v <= hi * (1 + 1e-9);
+  const first = Math.floor(Math.log10(lo));
+  const last = Math.ceil(Math.log10(hi));
+  const powers = [];
+  for (let k = first; k <= last; k++) if (inside(10 ** k)) powers.push(10 ** k);
+  if (powers.length >= 2) return powers;
+  const steps = [];
+  for (let k = first; k <= last; k++) for (const f of [1, 2, 5]) if (inside(f * 10 ** k)) steps.push(Number((f * 10 ** k).toPrecision(12)));
+  return steps.length >= 2 ? steps : niceTicks(lo, hi, 4);
+}
 const BAR_ASPECT = 0.42;
 const BAR_MARGIN = { left: 34, right: 8, top: 10, bottom: 22 };
 const LINE_ASPECT = 0.56;
@@ -1950,6 +1979,21 @@ function barLayout(bars, width) {
   return { margin: BAR_MARGIN, w, h, height, columns, perColumn: bars / columns, colW: w / columns };
 }
 
+/** The bars a chart shows: all of them, or the whole bars of a zoomed view (xMin and xMax in bars, counted from 0). */
+function barRange(data) {
+  const n = data.values.length;
+  if (data.xMin === undefined || data.xMin === null) return { first: 0, last: n };
+  const first = Math.max(0, Math.min(n - 1, Math.floor(data.xMin + 1e-9)));
+  const last = Math.max(first + 1, Math.min(n, Math.ceil(data.xMax - 1e-9)));
+  return { first, last };
+}
+
+/** The top of the bars' axis: `max`, or 10% above the tallest bar or reference. */
+function barTop({ values, expected = null, max = null }) {
+  const refs = expected === null ? [] : Array.isArray(expected) ? expected : values.map(() => expected);
+  return max ?? Math.max(1e-9, ...values, ...refs) * 1.1;
+}
+
 /**
  * Bar chart of `values` with an optional dashed reference (`expected`, one
  * value per bar or a single number), labels under the first, the middle
@@ -1957,27 +2001,31 @@ function barLayout(bars, width) {
  * `highlight` in another colour. With more bars than pixels each pixel
  * column shows the largest of its bars, so that no value disappears.
  */
-export function drawBarChart(canvas, { values, expected = null, labels = null, allLabels = false, highlight = [], max = null, hidden = [], decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
+export function drawBarChart(canvas, { values, expected = null, labels = null, allLabels = false, highlight = [], max = null, xMin = null, xMax = null, yMin = 0, hidden = [], decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
   const pal = { ...DEFAULT_PALETTE, ...palette };
   const { ctx, width, height } = setupCanvas(canvas, BAR_ASPECT, knownWidth);
-  const { margin, w, h, columns, perColumn, colW } = barLayout(values.length, width);
+  // a zoomed view shows the whole bars from `first` to `last` and the heights from yMin to `top`
+  const { first, last } = barRange({ values, xMin, xMax });
+  const count = last - first;
+  const { margin, w, h, columns, perColumn, colW } = barLayout(count, width);
   const refs = expected === null ? [] : Array.isArray(expected) ? expected : values.map(() => expected);
-  const top = max ?? Math.max(1e-9, ...values, ...refs) * 1.1;
+  const top = barTop({ values, expected, max });
+  const span = top - yMin;
   ctx.fillStyle = pal.background;
   ctx.fillRect(0, 0, width, height);
   ctx.strokeStyle = pal.grid;
   ctx.strokeRect(margin.left, margin.top, w, h);
-  const gap = columns === values.length ? colW * 0.12 : 0;
+  const gap = columns === count ? colW * 0.12 : 0;
   for (let c = 0; c < columns; c++) {
-    const from = Math.floor(c * perColumn);
-    const to = Math.max(Math.floor((c + 1) * perColumn), from + 1);
+    const from = first + Math.floor(c * perColumn);
+    const to = Math.max(first + Math.floor((c + 1) * perColumn), from + 1);
     let v = 0;
     let marked = false;
     for (let i = from; i < to; i++) {
       v = Math.max(v, values[i] ?? 0);
       if (highlight.includes(i)) marked = true;
     }
-    const bh = (v / top) * h;
+    const bh = Math.min(h, Math.max(0, ((v - yMin) / span) * h));
     // the legend can hide the bars and the highlighted ones apart; a highlight hidden leaves an ordinary bar
     const asHighlight = marked && !hidden.includes('highlight');
     if (!asHighlight && hidden.includes('bars')) continue;
@@ -1990,7 +2038,10 @@ export function drawBarChart(canvas, { values, expected = null, labels = null, a
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     for (let c = 0; c < columns; c++) {
-      const y = margin.top + h - ((refs[Math.floor(c * perColumn)] ?? 0) / top) * h;
+      const ref = refs[first + Math.floor(c * perColumn)] ?? 0;
+      // a reference outside the heights of a zoomed view is left out
+      if (ref < yMin || ref > top) continue;
+      const y = margin.top + h - ((ref - yMin) / span) * h;
       ctx.moveTo(margin.left + c * colW, y);
       ctx.lineTo(margin.left + (c + 1) * colW, y);
     }
@@ -2002,12 +2053,12 @@ export function drawBarChart(canvas, { values, expected = null, labels = null, a
   ctx.textAlign = 'right';
   const fmt = (v) => chartNumber(top <= 1.5 ? v.toFixed(2) : String(Math.round(v)), decimal);
   ctx.fillText(fmt(top), margin.left - 4, margin.top + 9);
-  ctx.fillText(fmt(0), margin.left - 4, margin.top + h);
+  ctx.fillText(fmt(yMin), margin.left - 4, margin.top + h);
   if (labels) {
     ctx.textAlign = 'center';
-    const barW = w / values.length;
-    const shown = allLabels && barW >= 9 ? labels.map((_, i) => i) : [...new Set([0, Math.floor((labels.length - 1) / 2), labels.length - 1])];
-    for (const i of shown) ctx.fillText(labels[i], margin.left + (i + 0.5) * barW, margin.top + h + 15);
+    const barW = w / count;
+    const shown = allLabels && barW >= 9 ? labels.slice(first, last).map((_, i) => i) : [...new Set([0, Math.floor((count - 1) / 2), count - 1])];
+    for (const i of shown) ctx.fillText(labels[first + i], margin.left + (i + 0.5) * barW, margin.top + h + 15);
   }
 }
 
@@ -2017,8 +2068,8 @@ function lineLayout(data, width) {
   const margin = LINE_MARGIN;
   const w = width - margin.left - margin.right;
   const h = height - margin.top - margin.bottom;
-  const x0 = data.x[0];
-  const x1 = data.x[data.x.length - 1];
+  const x0 = data.xMin ?? data.x[0];
+  const x1 = data.xMax ?? data.x[data.x.length - 1];
   const scale = (v) => (data.logX ? (Math.log(v) - Math.log(x0)) / (Math.log(x1) - Math.log(x0)) : (v - x0) / (x1 - x0));
   const px = (v) => margin.left + w * scale(v);
   return { margin, w, h, height, px, xs: data.x.map(px) };
@@ -2032,11 +2083,13 @@ function lineLayout(data, width) {
  * of `colorIndex`; the legend is written in the page, under the figure,
  * where it can be read and translated.
  */
-export function drawLineChart(canvas, { x, series, logX = false, yMin = 0, yMax = 1, yTicks = [], xTicks = [], yFormat = (v) => String(v), hidden = [], decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
+export function drawLineChart(canvas, { x, series, logX = false, xMin = null, xMax = null, yMin = 0, yMax = 1, yTicks = [], xTicks = [], yFormat = (v) => String(v), hidden = [], zoomed = false, decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
   const pal = { ...DEFAULT_PALETTE, ...palette };
   const { ctx, width, height } = setupCanvas(canvas, LINE_ASPECT, knownWidth);
-  const { margin, w, h, px } = lineLayout({ x, logX }, width);
-  const py = (v) => margin.top + h * (1 - (Math.min(yMax, Math.max(yMin, v)) - yMin) / (yMax - yMin));
+  const { margin, w, h, px } = lineLayout({ x, logX, xMin, xMax }, width);
+  // values beyond the axis stay on its edge; in a zoomed view they go on and the plot clips them
+  const reach = zoomed ? yMax - yMin : 0;
+  const py = (v) => margin.top + h * (1 - (Math.min(yMax + reach, Math.max(yMin - reach, v)) - yMin) / (yMax - yMin));
   ctx.fillStyle = pal.background;
   ctx.fillRect(0, 0, width, height);
   ctx.font = '11px sans-serif';
@@ -2060,17 +2113,25 @@ export function drawLineChart(canvas, { x, series, logX = false, yMin = 0, yMax 
     ctx.fillText(chartNumber(String(v), decimal), px(v), margin.top + h + 15);
   }
   ctx.strokeRect(margin.left, margin.top, w, h);
+  if (zoomed) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(margin.left, margin.top, w, h);
+    ctx.clip();
+  }
   series.forEach((s, i) => {
     // a series hidden from the legend still counts for the axes, it is just not drawn
     if (hidden.includes(`series:${i}`)) return;
     const color = pal.series[(s.colorIndex ?? i) % pal.series.length];
     const points = x.map((v, j) => [px(v), s.values[j]]).filter(([, v]) => v !== null && v !== undefined && !Number.isNaN(v));
     if (s.band) {
+      // the band where it has values (an animation draws it point by point)
+      const at = x.map((_, j) => j).filter((j) => s.band[j]);
       ctx.globalAlpha = 0.14;
       ctx.fillStyle = color;
       ctx.beginPath();
-      x.forEach((v, j) => (j ? ctx.lineTo(px(v), py(s.band[j][1])) : ctx.moveTo(px(v), py(s.band[j][1]))));
-      for (let j = x.length - 1; j >= 0; j--) ctx.lineTo(px(x[j]), py(s.band[j][0]));
+      at.forEach((j, k) => (k ? ctx.lineTo(px(x[j]), py(s.band[j][1])) : ctx.moveTo(px(x[j]), py(s.band[j][1]))));
+      for (let k = at.length - 1; k >= 0; k--) ctx.lineTo(px(x[at[k]]), py(s.band[at[k]][0]));
       ctx.closePath();
       ctx.fill();
       ctx.globalAlpha = 1;
@@ -2091,11 +2152,52 @@ export function drawLineChart(canvas, { x, series, logX = false, yMin = 0, yMax 
       }
     }
   });
+  if (zoomed) ctx.restore();
 }
 
 /** The height that a chart function gives a canvas of this width, to reserve the space before drawing. */
 export function chartHeight(draw, data, width) {
   return draw === drawLineChart ? lineLayout(data, width).height : barLayout(data.values.length, width).height;
+}
+
+/**
+ * Where the plot of a chart lies on a canvas of this width, and the values
+ * it shows, for the interactive charts (chartkit): { plot: { x, y, w, h }
+ * in CSS pixels, x: { min, max, log } (for bars, the bars counted from 0,
+ * whole ones in a zoomed view), y: { min, max, log }, zoom: 'xy' }.
+ */
+export function chartFrame(draw, data, width) {
+  if (draw === drawLineChart) {
+    const L = lineLayout(data, width);
+    return {
+      plot: { x: L.margin.left, y: L.margin.top, w: L.w, h: L.h },
+      x: { min: data.xMin ?? data.x[0], max: data.xMax ?? data.x[data.x.length - 1], log: !!data.logX },
+      y: { min: data.yMin ?? 0, max: data.yMax ?? 1, log: false },
+      zoom: 'xy',
+    };
+  }
+  const { first, last } = barRange(data);
+  const L = barLayout(last - first, width);
+  return { plot: { x: L.margin.left, y: L.margin.top, w: L.w, h: L.h }, x: { min: first, max: last, log: false }, y: { min: data.yMin || 0, max: barTop(data), log: false }, zoom: 'xy' };
+}
+
+/**
+ * The same data drawn in another view, { x: [lo, hi] or null, y: [lo, hi]
+ * or null } in the units of the axes: the range (and for lines the ticks)
+ * of every axis given, the rest unchanged.
+ */
+export function withView(draw, data, view) {
+  if (!view || (!view.x && !view.y)) return data;
+  if (draw === drawLineChart) {
+    const out = { ...data, zoomed: true };
+    if (view.x) Object.assign(out, { xMin: view.x[0], xMax: view.x[1], xTicks: axisTicks(view.x[0], view.x[1], data.logX) });
+    if (view.y) Object.assign(out, { yMin: view.y[0], yMax: view.y[1], yTicks: axisTicks(view.y[0], view.y[1]) });
+    return out;
+  }
+  const out = { ...data };
+  if (view.x) Object.assign(out, { xMin: view.x[0], xMax: view.x[1] });
+  if (view.y) Object.assign(out, { yMin: view.y[0], max: view.y[1] });
+  return out;
 }
 
 /**
@@ -2109,17 +2211,21 @@ export function chartHitTest(draw, data, width, x, y) {
   if (draw === drawLineChart) {
     const { margin, h, w, xs } = lineLayout(data, width);
     if (x < margin.left - 6 || x > margin.left + w + 6 || y < margin.top || y > margin.top + h) return null;
-    let index = 0;
+    // the nearest point among those in the plot (a zoomed view leaves some outside)
+    let index = -1;
     xs.forEach((X, i) => {
-      if (Math.abs(X - x) < Math.abs(xs[index] - x)) index = i;
+      if (X < margin.left - 1 || X > margin.left + w + 1) return;
+      if (index < 0 || Math.abs(X - x) < Math.abs(xs[index] - x)) index = i;
     });
+    if (index < 0) return null;
     return { kind: 'point', index, rect: { x: xs[index] - 3, y: margin.top, width: 6, height: h } };
   }
-  const { margin, w, h, columns, perColumn, colW } = barLayout(data.values.length, width);
+  const { first, last } = barRange(data);
+  const { margin, w, h, columns, perColumn, colW } = barLayout(last - first, width);
   if (x < margin.left || x >= margin.left + w || y < margin.top || y > margin.top + h) return null;
   const column = Math.min(columns - 1, Math.floor((x - margin.left) / colW));
-  const from = Math.floor(column * perColumn);
-  const to = Math.max(Math.floor((column + 1) * perColumn), from + 1);
+  const from = first + Math.floor(column * perColumn);
+  const to = Math.max(first + Math.floor((column + 1) * perColumn), from + 1);
   // a bar hidden from the legend is not under the pointer
   const off = data.hidden || [];
   const marked = (data.highlight || []).some((i) => i >= from && i < to);
@@ -2134,17 +2240,20 @@ export function chartHitTest(draw, data, width, x, y) {
  */
 export function chartHitAt(draw, data, width, index) {
   if (draw === drawLineChart) {
-    const { margin, h, xs } = lineLayout(data, width);
-    if (!(index >= 0 && index < xs.length)) return null;
+    const { margin, w, h, xs } = lineLayout(data, width);
+    if (!(index >= 0 && index < xs.length) || xs[index] < margin.left - 1 || xs[index] > margin.left + w + 1) return null;
     return { kind: 'point', index, rect: { x: xs[index] - 3, y: margin.top, width: 6, height: h } };
   }
-  if (!(index >= 0 && index < data.values.length)) return null;
-  const { margin, h, columns, perColumn, colW } = barLayout(data.values.length, width);
+  // a bar outside the view (zoomed) has nothing to outline
+  const { first, last } = barRange(data);
+  if (!(index >= first && index < last)) return null;
+  const { margin, h, columns, perColumn, colW } = barLayout(last - first, width);
   // the pixel column of the bar: the last one that starts at or before it
-  let column = Math.min(columns - 1, Math.floor(index / perColumn));
-  while (column + 1 < columns && Math.floor((column + 1) * perColumn) <= index) column += 1;
-  const from = Math.floor(column * perColumn);
-  const to = Math.max(Math.floor((column + 1) * perColumn), from + 1);
+  const k = index - first;
+  let column = Math.min(columns - 1, Math.floor(k / perColumn));
+  while (column + 1 < columns && Math.floor((column + 1) * perColumn) <= k) column += 1;
+  const from = first + Math.floor(column * perColumn);
+  const to = Math.max(first + Math.floor((column + 1) * perColumn), from + 1);
   return { kind: 'bar', from, to, rect: { x: margin.left + column * colW, y: margin.top, width: colW, height: h } };
 }
 
@@ -2155,12 +2264,44 @@ export function chartHitAt(draw, data, width, index) {
  * canvas's parent, which must be positioned. `link` ties the chart to a
  * table, as { table() (the element, or null), row(hit) (the index of the
  * row in the body, -1 for none), point(row) (the index of its bar or
- * point) }: the row of what is under the pointer gets the outline too
- * (class is-marked), and a row under the pointer, or tapped, outlines its
- * bar or point. Returns the function that removes them.
+ * point) }: the row of what is under the pointer gets the outline too, and
+ * a row under the pointer, or tapped, outlines its bar or point. Returns the function
+ * that removes them.
  */
-export function attachChartTooltip(canvas, { draw, data, describe: explain, link = null }) {
+export const attachChartTooltip = (canvas, { draw, data, describe: explain, link = null }) =>
+  attachPointerLabel(
+    canvas,
+    (x, y, width) => {
+      const hit = chartHitTest(draw, data, width, x, y);
+      const text = hit && explain(hit);
+      return text ? { rect: hit.rect, text, row: link ? link.row(hit) : -1 } : null;
+    },
+    link && {
+      table: link.table,
+      locate: (row, width) => {
+        const hit = chartHitAt(draw, data, width, link.point(row));
+        return hit && hit.rect;
+      },
+    },
+  );
+
+/**
+ * The same label for any canvas: locate(x, y, width) says what is under
+ * the point, as { rect, text, row? }, or null. With `link`, { table(),
+ * locate(row, width) }, the row `row` of the table's body is marked (class
+ * is-marked) while its point is under the pointer, and the other way round:
+ * locate(row, width) gives the rectangle of a row on the canvas, or null.
+ */
+export function attachPointerLabel(canvas, locate, link = null) {
   const box = canvas.parentElement;
+  // where the element lies inside its box: the offsets of an HTML element (a canvas), the
+  // difference of the rectangles for the others (an SVG drawing), which have no offsets
+  const offset = () => {
+    if (typeof canvas.offsetLeft === 'number') return { left: canvas.offsetLeft, top: canvas.offsetTop };
+    const a = canvas.getBoundingClientRect();
+    const b = box.getBoundingClientRect();
+    return { left: a.left - b.left - box.clientLeft, top: a.top - b.top - box.clientTop };
+  };
   const mark = document.createElement('div');
   const tip = document.createElement('div');
   mark.className = 'chart-mark';
@@ -2174,6 +2315,8 @@ export function attachChartTooltip(canvas, { draw, data, describe: explain, link
   canvas.classList.add('has-tip');
   let frame = 0;
   let shown = null;
+  // where the pointer is while the label is on screen: refresh() asks again what is under it
+  let pointer = null;
   // the marked row of the linked table, and whether the outline on the canvas comes from a row
   let marked = null;
   let fromRow = false;
@@ -2209,13 +2352,15 @@ export function attachChartTooltip(canvas, { draw, data, describe: explain, link
     mark.hidden = true;
     tip.hidden = true;
     shown = null;
+    pointer = null;
     fromRow = false;
     markRow(-1);
   };
   const place = (rect) => {
+    const at = offset();
     Object.assign(mark.style, {
-      left: `${canvas.offsetLeft + rect.x}px`,
-      top: `${canvas.offsetTop + rect.y}px`,
+      left: `${at.left + rect.x}px`,
+      top: `${at.top + rect.y}px`,
       width: `${Math.max(2, rect.width)}px`,
       height: `${rect.height}px`,
     });
@@ -2223,20 +2368,23 @@ export function attachChartTooltip(canvas, { draw, data, describe: explain, link
     mark.hidden = false;
   };
   const show = (clientX, clientY) => {
+    pointer = { clientX, clientY };
+    fromRow = false;
     const r = canvas.getBoundingClientRect();
     const x = clientX - r.left;
     const y = clientY - r.top;
-    const hit = chartHitTest(draw, data, r.width, x, y);
-    const text = hit && explain(hit);
-    if (!text) {
-      hide();
+    const hit = locate(x, y, r.width);
+    if (!hit) {
+      mark.hidden = true;
+      tip.hidden = true;
+      shown = null;
+      markRow(-1);
       return;
     }
-    fromRow = false;
-    const left = canvas.offsetLeft;
-    const top = canvas.offsetTop;
+    const { text } = hit;
+    const { left, top } = offset();
     place(hit.rect);
-    markRow(link ? link.row(hit) : -1, true);
+    markRow(hit.row ?? -1, true);
     if (text !== shown) {
       tip.textContent = text;
       shown = text;
@@ -2250,23 +2398,26 @@ export function attachChartTooltip(canvas, { draw, data, describe: explain, link
     tip.style.left = `${tx}px`;
     tip.style.top = `${ty}px`;
   };
-  // the other way round: a row of the linked table under the mouse, or tapped, outlines its bar or point
+  // the other way round: a row of the linked table under the mouse, or tapped, outlines its point
   const rowAt = (target) => {
     const table = link && link.table();
     const row = table && target instanceof Element ? target.closest('tr') : null;
     return row && row.parentElement.tagName === 'TBODY' && row.parentElement.parentElement === table ? row : null;
   };
   const showRow = (row) => {
-    const hit = chartHitAt(draw, data, canvas.getBoundingClientRect().width, link.point(row.sectionRowIndex));
+    const rect = link.locate(row.sectionRowIndex, canvas.getBoundingClientRect().width);
     tip.hidden = true;
     shown = null;
+    pointer = null;
     fromRow = true;
-    if (hit) place(hit.rect);
+    if (rect) place(rect);
     else mark.hidden = true;
-    markRow(hit ? row.sectionRowIndex : -1);
+    markRow(rect ? row.sectionRowIndex : -1);
   };
+  // while a drag zooms or moves the chart (chartkit), the label waits
+  let suspended = false;
   const onMove = (e) => {
-    if (e.pointerType === 'touch') return;
+    if (e.pointerType === 'touch' || suspended) return;
     const { clientX, clientY } = e;
     cancelAnimationFrame(frame);
     frame = requestAnimationFrame(() => show(clientX, clientY));
@@ -2296,7 +2447,7 @@ export function attachChartTooltip(canvas, { draw, data, describe: explain, link
   canvas.addEventListener('pointerdown', onDown);
   document.addEventListener('pointerdown', onDocumentDown);
   if (link) document.addEventListener('pointerover', onDocumentOver);
-  return () => {
+  const detach = () => {
     cancelAnimationFrame(frame);
     canvas.removeEventListener('pointermove', onMove);
     canvas.removeEventListener('pointerleave', onLeave);
@@ -2308,6 +2459,19 @@ export function attachChartTooltip(canvas, { draw, data, describe: explain, link
     mark.remove();
     tip.remove();
   };
+  // a chart that changes under a still pointer calls it after every frame
+  detach.refresh = () => {
+    if (pointer && !suspended) show(pointer.clientX, pointer.clientY);
+  };
+  // a drag on the chart hides the label until it ends
+  detach.suspend = (on) => {
+    suspended = on;
+    if (on) {
+      cancelAnimationFrame(frame);
+      hide();
+    }
+  };
+  return detach;
 }
 
 // ---------------------------------------------------------------------------

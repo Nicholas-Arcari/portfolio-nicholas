@@ -4,6 +4,7 @@
 // campi, le righe delle tabelle e i dati dei grafici. Tenerla qui impedisce
 // che le due versioni dicano cose diverse sugli stessi numeri.
 import * as hw from './homework2a.js';
+import { reveal as revealChart } from '../chartkit/kitReveal.js';
 
 /** The sections of the homework, in page order: ids for the anchors, keys for the titles. */
 export const SECTIONS = [
@@ -278,6 +279,9 @@ export function fitChecks(crack, models) {
   };
 }
 
+/** An animation that draws a line chart point by point, as the length or the key grows (chartkit/kitReveal.js); the bounds and the lines of the theory stay whole. */
+export const reveal = revealChart;
+
 /** The ticks of the length axis, on a logarithmic scale. */
 export const LENGTH_TICKS = [1, 2, 5, 10, 20, 50, 100, 200];
 const PERCENT_TICKS = [0, 0.25, 0.5, 0.75, 1];
@@ -290,7 +294,7 @@ export function successChart(s, decimal = '.') {
     logX: true,
     series: [
       { values: c.rates.unigram, band: c.intervals.unigram },
-      { values: c.bound, dashed: true },
+      { values: c.bound, dashed: true, fixed: true },
     ],
     yMin: 0,
     yMax: 1,
@@ -384,7 +388,7 @@ export function scalingChart(sc, decimal = '.') {
     const row = sc.rows[m].find((r) => r.bits === b);
     return row ? Math.log2(row.mean) : null;
   }) }));
-  const theory = ATTACKS.map((m, i) => ({ values: bits.map((b) => sc.fits[m].constant + sc.fits[m].exponent * b), dashed: true, colorIndex: i }));
+  const theory = ATTACKS.map((m, i) => ({ values: bits.map((b) => sc.fits[m].constant + sc.fits[m].exponent * b), dashed: true, colorIndex: i, fixed: true }));
   return {
     x: bits,
     logX: false,

@@ -12,12 +12,12 @@
 // stessi file da cui la build ricava il programma scaricabile
 // (build/homework-standalone.js), cosi' la pagina e il download non
 // possono raccontare due cose diverse.
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useLanguage } from '../../contexts/languageContext';
 import { useTheme } from '../../contexts/themeContext';
 import HomeworkShell from './HomeworkShell';
-import { ChartLegend } from './ChartLegend';
-import { hiddenParts, useHidden } from './legendState';
+import { useHidden } from './legendState';
+import { ChartFigure } from './chartkit/ChartFigure';
 import * as hw from './hw2a/homework2a';
 import * as view from './hw2a/view';
 import { HW2A_TEXTS, originalAssignment } from './hw2a/texts';
@@ -83,48 +83,11 @@ const Formulas = ({ title = null, children }) => (
   </>
 );
 
-// Un grafico su canvas, ridisegnato quando cambia la larghezza, con i valori
-// del pezzo sotto il puntatore e, con `link` (view.links), la riga della
-// tabella legata: il disegno vero e' in homework2a.js. Le voci della legenda
-// nascondono e mostrano le loro parti; con `hidden` e `onToggle` lo stato
-// sta nella sezione, che ne fa sparire anche le colonne della tabella
-// annessa, e con `off` la legenda e' fuori dal grafico (un gruppo di grafici
-// con una legenda sola).
-const Figure = ({ title, draw, data, palette, tip = null, wide = false, legend = null, link = null, hidden: shared = null, onToggle = null, off: given = null }) => {
-  const ref = useRef(null);
-  const [own, toggleOwn] = useHidden();
-  const hidden = shared || own;
-  const off = (given || hiddenParts(legend, hidden)).join(' ');
-  const shown = useMemo(() => (off ? { ...data, hidden: off.split(' ') } : data), [data, off]);
-  const describe = useMemo(() => (tip ? (hit) => tip(hit, off ? off.split(' ') : []) : null), [tip, off]);
-  useEffect(() => {
-    const canvas = ref.current;
-    let drawn = -1;
-    const observer = new ResizeObserver((entries) => {
-      const width = Math.round(entries[entries.length - 1].contentRect.width);
-      if (width <= 0 || width === drawn) return;
-      drawn = width;
-      canvas.style.height = `${hw.chartHeight(draw, shown, width)}px`;
-      view.scheduleFrameJob(() => {
-        if (canvas.isConnected && drawn === width) draw(canvas, { ...shown, width }, palette);
-      });
-    });
-    observer.observe(canvas);
-    const detach = describe ? hw.attachChartTooltip(canvas, { draw, data: shown, describe, link }) : null;
-    return () => {
-      drawn = -2;
-      observer.disconnect();
-      if (detach) detach();
-    };
-  }, [draw, shown, palette, describe, link]);
-  return (
-    <figure className={wide ? 'hw1-figure hw1-figure-wide' : 'hw1-figure'}>
-      <canvas ref={ref} className="hw1-canvas" role="img" aria-label={title} />
-      {legend && <ChartLegend items={legend} palette={palette} hidden={hidden} onToggle={onToggle || toggleOwn} />}
-      <figcaption>{title}</figcaption>
-    </figure>
-  );
-};
+// Un grafico interattivo (chartkit/ChartFigure.jsx): disegnato da homework2a.js,
+// con l'etichetta sotto il puntatore, la legenda a pulsanti, la tabella
+// legata (link) e lo zoom su ogni grafico (le barre a gruppi interi); con
+// `off` la legenda e' fuori dal grafico; `animation` aggiunge il lettore.
+const Figure = (props) => <ChartFigure lib={hw} schedule={view.scheduleFrameJob} {...props} />;
 
 // Un test d'ipotesi: l'ipotesi nulla, i numeri, l'esito e come leggerlo
 const TestRow = ({ label, test, text, expected = null }) => {
@@ -527,6 +490,7 @@ const Lengths = React.memo(function Lengths({ stats, text, palette }) {
   const F = text.fmt;
   const s = stats.value || null;
   const chart = useMemo(() => (s ? view.successChart(s, F.decimal) : null), [s, F]);
+  const animation = useMemo(() => (chart ? view.reveal(chart, 200) : null), [chart]);
   const tip = useMemo(() => (s ? view.tips.success(s, text.tips) : null), [s, text]);
   // il tasso di successo (con il suo intervallo) e il limite di Chernoff sono anche colonne della tabella
   const [hidden, toggle] = useHidden();
@@ -537,7 +501,7 @@ const Lengths = React.memo(function Lengths({ stats, text, palette }) {
   return (
     <>
       <Paras list={L.intro(s)} />
-      <Figure wide title={L.chart} draw={hw.drawLineChart} data={chart} palette={palette} tip={tip} link={view.links.lengths} legend={legend} hidden={hidden} onToggle={toggle} />
+      <Figure wide title={L.chart} draw={hw.drawLineChart} data={chart} palette={palette} tip={tip} link={view.links.lengths} legend={legend} hidden={hidden} onToggle={toggle} animation={animation} />
       <p className="hw1-table-title"><strong>{L.tableTitle}</strong></p>
       <div className="hw1-scroll">
         <table id={view.LINKED_TABLES.lengths} className="hw1-table hw1-compact hw2a-lengths">
@@ -577,6 +541,7 @@ const Methods = React.memo(function Methods({ stats, text, palette }) {
   const F = text.fmt;
   const s = stats.value || null;
   const chart = useMemo(() => (s ? view.methodsChart(s, F.decimal) : null), [s, F]);
+  const animation = useMemo(() => (chart ? view.reveal(chart, 200) : null), [chart]);
   const tip = useMemo(() => (s ? view.tips.methods(s, text.tips) : null), [s, text]);
   // ogni metodo e' una curva del grafico e una riga della tabella delle soglie
   const [hidden, toggle] = useHidden();
@@ -593,7 +558,7 @@ const Methods = React.memo(function Methods({ stats, text, palette }) {
         <Pending text={text} result={stats} />
       ) : (
         <>
-          <Figure wide title={M.chart} draw={hw.drawLineChart} data={chart} palette={palette} tip={tip} legend={legend} hidden={hidden} onToggle={toggle} />
+          <Figure wide title={M.chart} draw={hw.drawLineChart} data={chart} palette={palette} tip={tip} legend={legend} hidden={hidden} onToggle={toggle} animation={animation} />
           <p className="hw1-table-title"><strong>{M.tableTitle}</strong></p>
           <table className="hw1-table hw1-discussion-table hw2a-thresholds">
             <thead>
@@ -651,6 +616,7 @@ const Scaling = React.memo(function Scaling({ result, text, palette }) {
   const F = text.fmt;
   const sc = result.value || null;
   const chart = useMemo(() => (sc ? view.scalingChart(sc, F.decimal) : null), [sc, F]);
+  const animation = useMemo(() => (chart ? view.reveal(chart, 220) : null), [chart]);
   const tip = useMemo(() => (sc ? view.tips.scaling(sc, text.tips) : null), [sc, text]);
   // ogni attacco: i suoi punti, la sua retta e la sua riga della tabella delle pendenze
   const [hidden, toggle] = useHidden();
@@ -669,6 +635,7 @@ const Scaling = React.memo(function Scaling({ result, text, palette }) {
         legend={legend}
         hidden={hidden}
         onToggle={toggle}
+        animation={animation}
       />
       <p className="hw1-table-title"><strong>{C.fitsTitle}</strong></p>
       <table className="hw1-table hw1-discussion-table hw2a-fits">
