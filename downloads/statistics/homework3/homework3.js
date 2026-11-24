@@ -1146,14 +1146,14 @@ const HIST_MARGIN = { left: 44, right: 12, top: 10, bottom: 24 };
 const QQ_ASPECT = 0.8;
 const QQ_MARGIN = { left: 40, right: 12, top: 10, bottom: 24 };
 
-/** Where the plot of drawLineChart lies on a canvas of this width, and the pixel of every x value. */
+/** Where the plot of drawLineChart lies on a canvas of this width, and the pixel of every x value; xMin and xMax, when given (a zoomed view), replace the first and last x. */
 function lineLayout(data, width) {
   const height = Math.round(width * LINE_ASPECT);
   const margin = LINE_MARGIN;
   const w = width - margin.left - margin.right;
   const h = height - margin.top - margin.bottom;
-  const x0 = data.x[0];
-  const x1 = data.x[data.x.length - 1];
+  const x0 = data.xMin ?? data.x[0];
+  const x1 = data.xMax ?? data.x[data.x.length - 1];
   const scale = (v) => (data.logX ? (Math.log(v) - Math.log(x0)) / (Math.log(x1) - Math.log(x0)) : (v - x0) / (x1 - x0));
   const px = (v) => margin.left + w * scale(v);
   return { margin, w, h, height, px, xs: data.x.map(px) };
@@ -1167,16 +1167,18 @@ function lineLayout(data, width) {
  * the one of `colorIndex`; the legend is written in the page, under the
  * figure, where it can be read and translated.
  */
-function drawLineChart(canvas, { x, series, logX = false, logY = false, yMin = 0, yMax = 1, yTicks = [], xTicks = [], yFormat = null, hidden = [], decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
+function drawLineChart(canvas, { x, series, logX = false, logY = false, xMin = null, xMax = null, yMin = 0, yMax = 1, yTicks = [], xTicks = [], yFormat = null, hidden = [], zoomed = false, decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
   const pal = { ...DEFAULT_PALETTE, ...palette };
   const { ctx, width, height } = setupCanvas(canvas, LINE_ASPECT, knownWidth);
-  const { margin, w, h, px } = lineLayout({ x, logX }, width);
+  const { margin, w, h, px } = lineLayout({ x, logX, xMin, xMax }, width);
   const ty = (v) => (logY ? Math.log10(v) : v);
   const lo = ty(yMin);
   const hi = ty(yMax);
+  // values beyond the axis stay on its edge; in a zoomed view they go on and the plot clips them
+  const reach = zoomed ? hi - lo : 0;
   const py = (v) => {
-    const t = logY && !(v > 0) ? lo : ty(v);
-    return margin.top + h * (1 - (Math.min(hi, Math.max(lo, t)) - lo) / (hi - lo));
+    const t = logY && !(v > 0) ? lo - reach : ty(v);
+    return margin.top + h * (1 - (Math.min(hi + reach, Math.max(lo - reach, t)) - lo) / (hi - lo));
   };
   const shown = (v) => v !== null && v !== undefined && !Number.isNaN(v) && (!logY || v > 0);
   const label = yFormat || ((v) => axisLabel(v, decimal));
@@ -1246,6 +1248,16 @@ function drawLineChart(canvas, { x, series, logX = false, logY = false, yMin = 0
   ctx.restore();
 }
 
+/** The top of the y axis of drawHistogram: yMax, or 8% above the tallest bar, expected count or point of the curve. */
+function histTop({ bars, expected = null, curve = null, yMax = null }) {
+  if (yMax !== null && yMax !== undefined) return yMax;
+  let top = 1e-12;
+  for (const b of bars) top = Math.max(top, b.value);
+  if (expected) for (const v of expected) top = Math.max(top, v);
+  if (curve) for (const [, v] of curve) top = Math.max(top, v);
+  return top * 1.08;
+}
+
 /** Where the plot of drawHistogram lies on a canvas of this width. */
 function histLayout(data, width) {
   const height = Math.round(width * HIST_ASPECT);
@@ -1262,19 +1274,12 @@ function histLayout(data, width) {
  * one value per bar, a dashed outline) and a curve (`curve`, points [x, y]
  * of a density, such as the normal one). The legend is in the page.
  */
-function drawHistogram(canvas, { x0, x1, bars, expected = null, curve = null, yMax = null, xTicks = [], hidden = [], decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
+function drawHistogram(canvas, { x0, x1, bars, expected = null, curve = null, yMin = 0, yMax = null, yTicks = null, xTicks = [], hidden = [], decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
   const pal = { ...DEFAULT_PALETTE, ...palette };
   const { ctx, width, height } = setupCanvas(canvas, HIST_ASPECT, knownWidth);
   const { margin, w, h, px } = histLayout({ x0, x1 }, width);
-  let top = yMax;
-  if (top === null) {
-    top = 1e-12;
-    for (const b of bars) top = Math.max(top, b.value);
-    if (expected) for (const v of expected) top = Math.max(top, v);
-    if (curve) for (const [, v] of curve) top = Math.max(top, v);
-    top *= 1.08;
-  }
-  const py = (v) => margin.top + h * (1 - Math.min(1, v / top));
+  const top = histTop({ bars, expected, curve, yMax });
+  const py = (v) => margin.top + h * (1 - Math.min(1, Math.max(0, (v - yMin) / (top - yMin))));
   ctx.fillStyle = pal.background;
   ctx.fillRect(0, 0, width, height);
   ctx.font = '11px sans-serif';
@@ -1290,7 +1295,7 @@ function drawHistogram(canvas, { x0, x1, bars, expected = null, curve = null, yM
     ctx.fillText(axisLabel(v, decimal), px(v), margin.top + h + 15);
   }
   ctx.textAlign = 'right';
-  for (const v of niceTicks(0, top / 1.08, 3)) {
+  for (const v of yTicks || niceTicks(0, top / 1.08, 3)) {
     ctx.beginPath();
     ctx.moveTo(margin.left, py(v));
     ctx.lineTo(margin.left + w, py(v));
@@ -1334,39 +1339,63 @@ function drawHistogram(canvas, { x0, x1, bars, expected = null, curve = null, yM
   ctx.restore();
 }
 
-/** Where the plot of drawQQ lies on a canvas of this width. */
+/** Where the plot of drawQQ lies on a canvas of this width: the same range [lo, hi] on both axes, or the ranges of a zoomed view (xLo, xHi, yLo, yHi). */
 function qqLayout(data, width) {
   const height = Math.round(width * QQ_ASPECT);
   const margin = QQ_MARGIN;
   const w = width - margin.left - margin.right;
   const h = height - margin.top - margin.bottom;
-  const px = (v) => margin.left + (w * (v - data.lo)) / (data.hi - data.lo);
-  const py = (v) => margin.top + h * (1 - (v - data.lo) / (data.hi - data.lo));
-  return { margin, w, h, height, px, py };
+  const xLo = data.xLo ?? data.lo;
+  const xHi = data.xHi ?? data.hi;
+  const yLo = data.yLo ?? data.lo;
+  const yHi = data.yHi ?? data.hi;
+  const px = (v) => margin.left + (w * (v - xLo)) / (xHi - xLo);
+  const py = (v) => margin.top + h * (1 - (v - yLo) / (yHi - yLo));
+  return { margin, w, h, height, px, py, xLo, xHi, yLo, yHi };
 }
 
 /** Normal quantile plot: points [theoretical, sample] and the line y = x, on the same range [lo, hi] on both axes. */
-function drawQQ(canvas, { points, lo, hi, ticks = [], hidden = [], decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
+function drawQQ(canvas, { points, lo, hi, ticks = [], xLo = null, xHi = null, yLo = null, yHi = null, xTicks = null, yTicks = null, hidden = [], decimal = '.', width: knownWidth = 0 }, palette = DEFAULT_PALETTE) {
   const pal = { ...DEFAULT_PALETTE, ...palette };
   const { ctx, width, height } = setupCanvas(canvas, QQ_ASPECT, knownWidth);
-  const { margin, w, h, px, py } = qqLayout({ lo, hi }, width);
+  const { margin, w, h, px, py } = qqLayout({ lo, hi, xLo, xHi, yLo, yHi }, width);
   ctx.fillStyle = pal.background;
   ctx.fillRect(0, 0, width, height);
   ctx.font = '11px sans-serif';
   ctx.strokeStyle = pal.grid;
   ctx.lineWidth = 1;
   ctx.fillStyle = pal.text;
-  for (const v of ticks) {
-    ctx.beginPath();
-    ctx.moveTo(px(v), margin.top);
-    ctx.lineTo(px(v), margin.top + h);
-    ctx.moveTo(margin.left, py(v));
-    ctx.lineTo(margin.left + w, py(v));
-    ctx.stroke();
+  if (xTicks === null && yTicks === null) {
+    for (const v of ticks) {
+      ctx.beginPath();
+      ctx.moveTo(px(v), margin.top);
+      ctx.lineTo(px(v), margin.top + h);
+      ctx.moveTo(margin.left, py(v));
+      ctx.lineTo(margin.left + w, py(v));
+      ctx.stroke();
+      ctx.textAlign = 'center';
+      ctx.fillText(axisLabel(v, decimal), px(v), margin.top + h + 15);
+      ctx.textAlign = 'right';
+      ctx.fillText(axisLabel(v, decimal), margin.left - 4, py(v) + 4);
+    }
+  } else {
+    // a zoomed view: each axis with the ticks of its own range
     ctx.textAlign = 'center';
-    ctx.fillText(axisLabel(v, decimal), px(v), margin.top + h + 15);
+    for (const v of xTicks ?? ticks) {
+      ctx.beginPath();
+      ctx.moveTo(px(v), margin.top);
+      ctx.lineTo(px(v), margin.top + h);
+      ctx.stroke();
+      ctx.fillText(axisLabel(v, decimal), px(v), margin.top + h + 15);
+    }
     ctx.textAlign = 'right';
-    ctx.fillText(axisLabel(v, decimal), margin.left - 4, py(v) + 4);
+    for (const v of yTicks ?? ticks) {
+      ctx.beginPath();
+      ctx.moveTo(margin.left, py(v));
+      ctx.lineTo(margin.left + w, py(v));
+      ctx.stroke();
+      ctx.fillText(axisLabel(v, decimal), margin.left - 4, py(v) + 4);
+    }
   }
   ctx.strokeRect(margin.left, margin.top, w, h);
   ctx.save();
@@ -1400,6 +1429,81 @@ function chartHeight(draw, data, width) {
 }
 
 /**
+ * The ticks of an axis shown from lo to hi: round values on a linear axis,
+ * powers of ten on a logarithmic one (1, 2 and 5 times them when the view
+ * holds fewer than two powers).
+ */
+function axisTicks(lo, hi, log = false) {
+  if (!log) return niceTicks(lo, hi, 5);
+  const inside = (v) => v >= lo * (1 - 1e-9) && v <= hi * (1 + 1e-9);
+  const first = Math.floor(Math.log10(lo));
+  const last = Math.ceil(Math.log10(hi));
+  const powers = [];
+  for (let k = first; k <= last; k++) if (inside(10 ** k)) powers.push(10 ** k);
+  if (powers.length >= 2) return powers;
+  const steps = [];
+  for (let k = first; k <= last; k++) for (const f of [1, 2, 5]) if (inside(f * 10 ** k)) steps.push(Number((f * 10 ** k).toPrecision(12)));
+  return steps.length >= 2 ? steps : niceTicks(lo, hi, 4);
+}
+
+/**
+ * Where the plot of a chart lies on a canvas of this width, and the values
+ * it shows, for the charts that can be zoomed: { plot: { x, y, w, h } in
+ * CSS pixels, x: { min, max, log }, y: { min, max, log }, zoom: 'xy' }:
+ * lines, histograms and quantile plots. The interactive charts (chartkit)
+ * convert the pointer into values with it.
+ */
+function chartFrame(draw, data, width) {
+  if (draw === drawLineChart) {
+    const L = lineLayout(data, width);
+    return {
+      plot: { x: L.margin.left, y: L.margin.top, w: L.w, h: L.h },
+      x: { min: data.xMin ?? data.x[0], max: data.xMax ?? data.x[data.x.length - 1], log: !!data.logX },
+      y: { min: data.yMin ?? 0, max: data.yMax ?? 1, log: !!data.logY },
+      zoom: 'xy',
+    };
+  }
+  if (draw === drawHistogram) {
+    const L = histLayout(data, width);
+    return { plot: { x: L.margin.left, y: L.margin.top, w: L.w, h: L.h }, x: { min: data.x0, max: data.x1, log: false }, y: { min: data.yMin || 0, max: histTop(data), log: false }, zoom: 'xy' };
+  }
+  if (draw === drawQQ) {
+    const L = qqLayout(data, width);
+    return { plot: { x: L.margin.left, y: L.margin.top, w: L.w, h: L.h }, x: { min: L.xLo, max: L.xHi, log: false }, y: { min: L.yLo, max: L.yHi, log: false }, zoom: 'xy' };
+  }
+  return null;
+}
+
+/**
+ * The same data drawn in another view, { x: [lo, hi] or null, y: [lo, hi]
+ * or null } in the units of the axes: the range and the ticks of every
+ * axis given, the rest unchanged. Charts without continuous axes come back
+ * as they are.
+ */
+function withView(draw, data, view) {
+  if (!view || (!view.x && !view.y)) return data;
+  if (draw === drawLineChart) {
+    const out = { ...data, zoomed: true };
+    if (view.x) Object.assign(out, { xMin: view.x[0], xMax: view.x[1], xTicks: axisTicks(view.x[0], view.x[1], data.logX) });
+    if (view.y) Object.assign(out, { yMin: view.y[0], yMax: view.y[1], yTicks: axisTicks(view.y[0], view.y[1], data.logY) });
+    return out;
+  }
+  if (draw === drawHistogram) {
+    const out = { ...data };
+    if (view.x) Object.assign(out, { x0: view.x[0], x1: view.x[1], xTicks: axisTicks(view.x[0], view.x[1]) });
+    if (view.y) Object.assign(out, { yMin: view.y[0], yMax: view.y[1], yTicks: axisTicks(view.y[0], view.y[1]) });
+    return out;
+  }
+  if (draw === drawQQ) {
+    const out = { ...data };
+    if (view.x) Object.assign(out, { xLo: view.x[0], xHi: view.x[1], xTicks: axisTicks(view.x[0], view.x[1]) });
+    if (view.y) Object.assign(out, { yLo: view.y[0], yHi: view.y[1], yTicks: axisTicks(view.y[0], view.y[1]) });
+    return out;
+  }
+  return data;
+}
+
+/**
  * What lies under the point (x, y) of a chart drawn at this width, in CSS
  * pixels from its top left corner; null outside the plot. For lines, the
  * index of the nearest x; for histograms, the bar; for quantile plots, the
@@ -1409,10 +1513,13 @@ function chartHitTest(draw, data, width, x, y) {
   if (draw === drawLineChart) {
     const { margin, h, w, xs } = lineLayout(data, width);
     if (x < margin.left - 6 || x > margin.left + w + 6 || y < margin.top || y > margin.top + h) return null;
-    let index = 0;
+    // the nearest point among those in the plot (a zoomed view leaves some outside)
+    let index = -1;
     xs.forEach((X, i) => {
-      if (Math.abs(X - x) < Math.abs(xs[index] - x)) index = i;
+      if (X < margin.left - 1 || X > margin.left + w + 1) return;
+      if (index < 0 || Math.abs(X - x) < Math.abs(xs[index] - x)) index = i;
     });
+    if (index < 0) return null;
     return { kind: 'point', index, rect: { x: xs[index] - 3, y: margin.top, width: 6, height: h } };
   }
   if (draw === drawQQ) {
@@ -1421,9 +1528,10 @@ function chartHitTest(draw, data, width, x, y) {
     if ((data.hidden || []).includes('points')) return null;
     let index = -1;
     let best = 144;
+    const inside = (X, Y) => X >= margin.left && X <= margin.left + w && Y >= margin.top && Y <= margin.top + h;
     data.points.forEach(([a, b], i) => {
       const d = (px(a) - x) ** 2 + (py(b) - y) ** 2;
-      if (d < best) {
+      if (d < best && inside(px(a), py(b))) {
         best = d;
         index = i;
       }
@@ -1448,8 +1556,9 @@ function chartHitTest(draw, data, width, x, y) {
  */
 function chartHitAt(draw, data, width, index) {
   if (draw !== drawLineChart) return null;
-  const { margin, h, xs } = lineLayout(data, width);
-  if (!(index >= 0 && index < xs.length)) return null;
+  const { margin, w, h, xs } = lineLayout(data, width);
+  // a point outside the view (zoomed) has nothing to outline
+  if (!(index >= 0 && index < xs.length) || xs[index] < margin.left - 1 || xs[index] > margin.left + w + 1) return null;
   return { kind: 'point', index, rect: { x: xs[index] - 3, y: margin.top, width: 6, height: h } };
 }
 
@@ -1491,6 +1600,14 @@ const attachChartTooltip = (canvas, { draw, data, describe: explain, link = null
  */
 function attachPointerLabel(canvas, locate, link = null) {
   const box = canvas.parentElement;
+  // where the element lies inside its box: the offsets of an HTML element (a canvas), the
+  // difference of the rectangles for the others (an SVG drawing), which have no offsets
+  const offset = () => {
+    if (typeof canvas.offsetLeft === 'number') return { left: canvas.offsetLeft, top: canvas.offsetTop };
+    const a = canvas.getBoundingClientRect();
+    const b = box.getBoundingClientRect();
+    return { left: a.left - b.left - box.clientLeft, top: a.top - b.top - box.clientTop };
+  };
   const mark = document.createElement('div');
   const tip = document.createElement('div');
   mark.className = 'chart-mark';
@@ -1546,9 +1663,10 @@ function attachPointerLabel(canvas, locate, link = null) {
     markRow(-1);
   };
   const place = (rect) => {
+    const at = offset();
     Object.assign(mark.style, {
-      left: `${canvas.offsetLeft + rect.x}px`,
-      top: `${canvas.offsetTop + rect.y}px`,
+      left: `${at.left + rect.x}px`,
+      top: `${at.top + rect.y}px`,
       width: `${Math.max(2, rect.width)}px`,
       height: `${rect.height}px`,
     });
@@ -1570,8 +1688,7 @@ function attachPointerLabel(canvas, locate, link = null) {
       return;
     }
     const { text } = hit;
-    const left = canvas.offsetLeft;
-    const top = canvas.offsetTop;
+    const { left, top } = offset();
     place(hit.rect);
     markRow(hit.row ?? -1, true);
     if (text !== shown) {
@@ -1603,8 +1720,10 @@ function attachPointerLabel(canvas, locate, link = null) {
     else mark.hidden = true;
     markRow(rect ? row.sectionRowIndex : -1);
   };
+  // while a drag zooms or moves the chart (chartkit), the label waits
+  let suspended = false;
   const onMove = (e) => {
-    if (e.pointerType === 'touch') return;
+    if (e.pointerType === 'touch' || suspended) return;
     const { clientX, clientY } = e;
     cancelAnimationFrame(frame);
     frame = requestAnimationFrame(() => show(clientX, clientY));
@@ -1648,7 +1767,15 @@ function attachPointerLabel(canvas, locate, link = null) {
   };
   // a chart that changes under a still pointer (the animation) calls it after every frame
   detach.refresh = () => {
-    if (pointer) show(pointer.clientX, pointer.clientY);
+    if (pointer && !suspended) show(pointer.clientX, pointer.clientY);
+  };
+  // a drag on the chart hides the label until it ends
+  detach.suspend = (on) => {
+    suspended = on;
+    if (on) {
+      cancelAnimationFrame(frame);
+      hide();
+    }
   };
   return detach;
 }
@@ -2330,7 +2457,7 @@ function runCli(argv, print = console.log) {
 /** True under Node, where the downloadable program can run runCli. */
 const isNode = typeof process !== 'undefined' && !!(process.versions && process.versions.node);
 
-return { MODELS, QUANTITIES, DEFAULT_P, DEFAULT_N, DEFAULT_M, DEFAULT_SEED, LIMITS, DEFAULT_EPSILON, EPSILON_RANGE, N_GRID, checkpoints, SMALL_N, BLOCKS, MIN_GROUPS, SIGNIFICANCE, BERRY_ESSEEN_C, parseInteger, parseProbability, checkParams, splitMix64, xoshiro128ss, attackerState, attackerGenerator, stepRule, randomSeed, modelMoments, quantityScale, quantityMoments, fourthMoment, binomialPmf, exactLaw, beyondEpsilon, exactExceedance, chebyshevBound, hoeffdingBound, normalExceedance, berryEsseen, standardAtoms, correctedNormal, simulateSteps, runSteps, runStepsAsync, chiSquarePValue, twoSidedNormalTail, normalPdf, normalSf, normalCdf, normalQuantile, kolmogorovSf, ksPValue, KS_MEAN, distanceToContinuous, distanceToLattice, latticeMoments, sampleMoments, goodnessOfFit, independenceTest, meanTest, varianceTest, jarqueBera, ksTest, wilsonInterval, fitLine, expectedMaxDiscrete, expectedMaxNormal, arcsineCdf, arcsineDensity, returnProbabilities, discreteArcsine, curveGrid, distanceCurveSteps, exploreSteps, explore, exploreAsync, statisticalTests, TEST_LABELS, DEFAULT_PALETTE, axisLabel, niceTicks, drawLineChart, drawHistogram, drawQQ, chartHeight, chartHitTest, chartHitAt, attachChartTooltip, attachPointerLabel, quantityValue, iteratedLogarithm, createTrajectoryAnimation, CHECK_VECTORS, verifyAll, runCli, isNode };
+return { MODELS, QUANTITIES, DEFAULT_P, DEFAULT_N, DEFAULT_M, DEFAULT_SEED, LIMITS, DEFAULT_EPSILON, EPSILON_RANGE, N_GRID, checkpoints, SMALL_N, BLOCKS, MIN_GROUPS, SIGNIFICANCE, BERRY_ESSEEN_C, parseInteger, parseProbability, checkParams, splitMix64, xoshiro128ss, attackerState, attackerGenerator, stepRule, randomSeed, modelMoments, quantityScale, quantityMoments, fourthMoment, binomialPmf, exactLaw, beyondEpsilon, exactExceedance, chebyshevBound, hoeffdingBound, normalExceedance, berryEsseen, standardAtoms, correctedNormal, simulateSteps, runSteps, runStepsAsync, chiSquarePValue, twoSidedNormalTail, normalPdf, normalSf, normalCdf, normalQuantile, kolmogorovSf, ksPValue, KS_MEAN, distanceToContinuous, distanceToLattice, latticeMoments, sampleMoments, goodnessOfFit, independenceTest, meanTest, varianceTest, jarqueBera, ksTest, wilsonInterval, fitLine, expectedMaxDiscrete, expectedMaxNormal, arcsineCdf, arcsineDensity, returnProbabilities, discreteArcsine, curveGrid, distanceCurveSteps, exploreSteps, explore, exploreAsync, statisticalTests, TEST_LABELS, DEFAULT_PALETTE, axisLabel, niceTicks, drawLineChart, drawHistogram, drawQQ, chartHeight, axisTicks, chartFrame, withView, chartHitTest, chartHitAt, attachChartTooltip, attachPointerLabel, quantityValue, iteratedLogarithm, createTrajectoryAnimation, CHECK_VECTORS, verifyAll, runCli, isNode };
 })();
 
 // src/pages/statistics/hw3/standalone/cli.js

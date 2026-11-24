@@ -31,7 +31,11 @@ COME SI USA
   nella pagina stessa, a fette di pochi millisecondi: con i valori iniziali
   i risultati arrivano in qualche secondo, senza bloccarla, e intanto
   l'animazione delle traiettorie funziona già. I campi della sezione 1.3
-  cambiano p, n, m e il seme, e tutte le sezioni seguono.
+  cambiano p, n, m e il seme, e tutte le sezioni seguono. I grafici si
+  ingrandiscono (Ctrl + rotella, due dita, oppure un rettangolo
+  trascinato; doppio clic per tornare alla vista intera), e quelli che
+  seguono n o il numero di attaccanti disegnano la simulazione punto per
+  punto, con i valori esatti e i limiti fermi come riferimento.
 
   Da terminale, con Node.js 14 o successivo:
 
@@ -105,7 +109,11 @@ HOW TO USE IT
   in slices of a few milliseconds: with the initial values the results
   arrive in a few seconds, without freezing it, and meanwhile the
   animation of the trajectories already works. The fields of section 1.3
-  change p, n, m and the seed, and every section follows.
+  change p, n, m and the seed, and every section follows. The charts zoom
+  (ctrl + wheel, two fingers, or a rectangle dragged; double click for the
+  whole chart again), and those that follow n or the number of attackers
+  draw the simulation point by point, with the exact values and the
+  bounds held still as a reference.
 
   From a terminal, with Node.js 14 or later:
 
