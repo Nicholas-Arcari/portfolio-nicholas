@@ -5,6 +5,7 @@
 // e i legami fra grafici e tabelle. I calcoli sono in homework6.js, le
 // parole in texts.js.
 import * as hw from './homework6.js';
+import { reveal as revealChart } from '../chartkit/kitReveal.js';
 
 /** The sections of the page, in order, with the level of their title: the index of the page and of the program is built from here. */
 export const SECTIONS = [
@@ -285,7 +286,7 @@ export function permutationChart(run, decimal = '.') {
 }
 
 /** Section 3.3: the p-value of the simulated log as n grows, against the level 0.05, on a scale of powers of ten. */
-export function dependenceChart(series, decimal = '.') {
+export function dependenceChart(series, decimal = '.', alpha = hw.SIGNIFICANCE) {
   const logs = series.map((r) => Math.max(r.log10p, -400));
   const low = Math.min(-2, ...logs);
   const step = low > -12 ? 2 : low > -60 ? 10 : low > -300 ? 50 : 100;
@@ -303,7 +304,7 @@ export function dependenceChart(series, decimal = '.') {
     decimal,
     series: [
       { values: logs, colorIndex: 0 },
-      { values: series.map(() => Math.log10(hw.SIGNIFICANCE)), colorIndex: 6, dashed: true },
+      { values: series.map(() => Math.log10(alpha)), colorIndex: 6, dashed: true, fixed: true },
     ],
   };
 }
@@ -353,9 +354,9 @@ export const legends = {
     { label: text.legends.density, color: 2, parts: ['curve'] },
     { label: text.legends.observedChi2, paletteKey: 'reference', dashed: true, parts: ['marker'] },
   ],
-  dependence: (text) => [
+  dependence: (text, alpha = hw.SIGNIFICANCE) => [
     { label: text.legends.pValue, color: 0, parts: ['series:0'] },
-    { label: text.legends.alpha, color: 6, dashed: true, parts: ['series:1'] },
+    { label: alpha === hw.SIGNIFICANCE ? text.legends.alpha : text.tryDependence.alphaLabel(alpha), color: 6, dashed: true, parts: ['series:1'] },
   ],
   simpson: (text) => [
     { label: text.legends.men, color: 0, box: true, parts: ['series:0'] },
@@ -462,6 +463,20 @@ export function readPairs(text, header) {
 
 /** The dependence of the simulated log as the page opens, and its size. */
 export const DEPENDENCE_DEFAULT = Object.freeze({ theta: 0.1, n: 1000 });
+
+// ---------------------------------------------------------------------------
+// I grafici interattivi (chartkit)
+// ---------------------------------------------------------------------------
+
+/** An animation that draws a line chart point by point, as its x grows (chartkit/kitReveal.js): the series marked `fixed` stay whole. */
+export const reveal = revealChart;
+
+/** The levels of the test that the line of "Try it: an adjustable dependence" can be dragged to. */
+export const ALPHAS = Object.freeze([0.1, 0.05, 0.01, 0.001]);
+
+/** The level as a line to drag on the chart of the p-values (an axis of powers of ten): its handle, and the level where a drag ends. */
+export const alphaHandle = (alpha, label) => [{ id: 'alpha', axis: 'y', value: Math.log10(alpha), values: ALPHAS.map((a) => Math.log10(a)), label }];
+export const alphaAt = (v) => ALPHAS.reduce((a, b) => (Math.abs(Math.log10(b) - v) < Math.abs(Math.log10(a) - v) ? b : a));
 
 /** The permutation test as the page opens: the size of the sample and the number of shuffles. */
 export const PERMUTATION_DEFAULT = Object.freeze({ n: 100, B: 2000 });

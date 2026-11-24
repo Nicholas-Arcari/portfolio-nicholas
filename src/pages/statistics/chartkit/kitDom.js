@@ -197,11 +197,11 @@ const sizes = typeof ResizeObserver === 'function'
  *   label, draw, data, palette, lang
  *   lib (the library of the homework), schedule (the queue of the first drawings)
  *   tip (describe(hit, hidden)), link, items (the legend), keep (the set of hidden items that outlives the chart),
- *   table (the id of the linked table: the legend hides its parts too), note, wide
+ *   table (the id of the linked table: the legend hides its parts too), onHide(parts) (anything else the legend hides), note, wide
  *   animation ({ frames, at(t) -> data, ms }: the chart step by step, with the player)
  *   handles ({ items, onChange(id, value) }: the lines to drag), pending (a simulation is running)
  * Returns the <figure>, with figure.kit = { chart, setData, setTip, setLabel,
- * setHidden, setAnimation, setHandles, setPending, destroy }.
+ * setNote, relabel, setHidden, setAnimation, setHandles, setPending, destroy }.
  */
 export function createFigure(options) {
   const { label, draw, palette, lib, schedule = null, lang = 'en', items = null, note = null, link = null, table = null, wide = true } = options;
@@ -224,6 +224,7 @@ export function createFigure(options) {
   const hint = el('p', { class: 'kit-hint', 'aria-live': 'polite', text: labels.hint, hidden: true });
   const busy = el('p', { class: 'kit-busy', role: 'status', text: labels.pending, hidden: !options.pending });
   const caption = el('figcaption', { text: label });
+  const noteEl = el('p', { class: 'figure-note', text: note || '', hidden: !note });
 
   const handles = options.handles ? handlesPlugin({ onChange: (key, value) => onHandle && onHandle(key, value) }) : null;
   const chart = createChart(canvas, {
@@ -285,6 +286,7 @@ export function createFigure(options) {
       (parts) => {
         chart.setHidden(parts);
         if (table) hideParts(document.getElementById(table), parts);
+        if (options.onHide) options.onHide(parts);
       },
       hidden,
       palette,
@@ -296,7 +298,7 @@ export function createFigure(options) {
     el('div', { class: 'kit-stage' }, plot, tools, hint, busy),
     bar,
     legendEl,
-    note && el('p', { class: 'figure-note', text: note }),
+    noteEl,
     caption,
   );
   figure.kit = {
@@ -309,6 +311,17 @@ export function createFigure(options) {
     setLabel(next) {
       canvas.setAttribute('aria-label', next);
       caption.textContent = next;
+    },
+    setNote(next) {
+      noteEl.textContent = next || '';
+      noteEl.hidden = !next;
+    },
+    /** New labels for the buttons of the legend (the same items, in the same order). */
+    relabel(next) {
+      if (!legendEl) return;
+      legendEl.querySelectorAll('button').forEach((button, i) => {
+        if (next[i]) button.lastChild.textContent = next[i].label;
+      });
     },
     setHidden: (parts) => chart.setHidden(parts),
     /** A new animation (the parameters changed): when stopped, the player goes to the end, where the chart is complete. */

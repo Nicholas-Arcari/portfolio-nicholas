@@ -18,12 +18,12 @@
 // (build/homework-standalone.js), cosi' la pagina e il download non possono
 // raccontare due cose diverse. Ogni calcolo dura pochi millisecondi: niente
 // worker, e il test di permutazione avanza un poco a ogni fotogramma.
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useLanguage } from '../../contexts/languageContext';
 import { useTheme } from '../../contexts/themeContext';
 import HomeworkShell from './HomeworkShell';
-import { ChartLegend } from './ChartLegend';
-import { hiddenParts, useHidden } from './legendState';
+import { useHidden } from './legendState';
+import { ChartFigure } from './chartkit/ChartFigure';
 import * as hw from './hw6/homework6';
 import * as view from './hw6/view';
 import { HW6_TEXTS, originalAssignment } from './hw6/texts';
@@ -77,48 +77,11 @@ const Formulas = ({ title = null, children }) => (
 
 const TableTitle = ({ children }) => <p className="hw1-table-title"><strong>{children}</strong></p>;
 
-// Un grafico su canvas, ridisegnato quando cambia la larghezza, con i valori
-// del pezzo sotto il puntatore e, con `link` (view.links), la riga della
-// tabella legata: il disegno vero e' in homework6.js. Le voci della legenda
-// nascondono e mostrano le loro parti; con `hidden` e `onToggle` lo stato
-// sta nella sezione, che ne fa sparire anche le colonne della tabella
-// annessa.
-const Figure = ({ title, draw, data, palette, tip = null, wide = false, legend = null, note = null, link = null, hidden: shared = null, onToggle = null }) => {
-  const ref = useRef(null);
-  const [own, toggleOwn] = useHidden();
-  const hidden = shared || own;
-  const off = hiddenParts(legend, hidden).join(' ');
-  const shown = useMemo(() => (off ? { ...data, hidden: off.split(' ') } : data), [data, off]);
-  const describe = useMemo(() => (tip ? (hit) => tip(hit, off ? off.split(' ') : []) : null), [tip, off]);
-  useEffect(() => {
-    const canvas = ref.current;
-    let drawn = -1;
-    const observer = new ResizeObserver((entries) => {
-      const width = Math.round(entries[entries.length - 1].contentRect.width);
-      if (width <= 0 || width === drawn) return;
-      drawn = width;
-      canvas.style.height = `${hw.chartHeight(draw, shown, width)}px`;
-      view.scheduleFrameJob(() => {
-        if (canvas.isConnected && drawn === width) draw(canvas, { ...shown, width }, palette);
-      });
-    });
-    observer.observe(canvas);
-    const detach = describe ? hw.attachChartTooltip(canvas, { draw, data: shown, describe, link }) : null;
-    return () => {
-      drawn = -2;
-      observer.disconnect();
-      if (detach) detach();
-    };
-  }, [draw, shown, palette, describe, link]);
-  return (
-    <figure className={wide ? 'hw1-figure hw1-figure-wide' : 'hw1-figure'}>
-      <canvas ref={ref} className="hw1-canvas" role="img" aria-label={title} />
-      {legend && <ChartLegend items={legend} palette={palette} hidden={hidden} onToggle={onToggle || toggleOwn} />}
-      {note && <p className="hw3-figure-note">{note}</p>}
-      <figcaption>{title}</figcaption>
-    </figure>
-  );
-};
+// Un grafico interattivo (chartkit/ChartFigure.jsx): disegnato da homework6.js,
+// con l'etichetta sotto il puntatore, la legenda a pulsanti, la tabella
+// legata (link) e lo zoom su ogni grafico con assi continui; `animation` e
+// `handles` aggiungono il lettore e le linee da trascinare.
+const Figure = (props) => <ChartFigure lib={hw} schedule={view.scheduleFrameJob} {...props} />;
 
 // Una scelta fra pochi valori: il pulsante premuto e' quello attivo
 const Choices = ({ label, options, value, onChange }) => (
@@ -870,8 +833,12 @@ const TryDependence = ({ dependence, setDependence, text, palette }) => {
   const counts = useMemo(() => hw.dependenceTable(n, theta, hw.DEFAULT_SEED), [n, theta]);
   const st = useMemo(() => hw.tableStats(counts), [counts]);
   const series = useMemo(() => hw.dependenceSeries(theta, hw.DEFAULT_SEED), [theta]);
-  const data = useMemo(() => view.dependenceChart(series, F.decimal), [series, F]);
-  const legend = useMemo(() => view.legends.dependence(text), [text]);
+  // the level of the test: a line to drag on the chart (the summary of the tests stays at 5%)
+  const alpha = dependence.alpha ?? hw.SIGNIFICANCE;
+  const data = useMemo(() => view.dependenceChart(series, F.decimal, alpha), [series, F, alpha]);
+  const animation = useMemo(() => view.reveal(data, 260), [data]);
+  const handles = useMemo(() => ({ items: view.alphaHandle(alpha, T.alphaLabel(alpha)), onChange: (id, v) => setDependence((o) => ({ ...o, alpha: view.alphaAt(v) })) }), [alpha, T, setDependence]);
+  const legend = useMemo(() => view.legends.dependence(text, alpha), [text, alpha]);
   const tip = useMemo(() => view.tips.dependence(series, text.tips), [series, text]);
   const [hidden, toggle] = useHidden();
   const showP = !hidden.has(0);
@@ -884,6 +851,7 @@ const TryDependence = ({ dependence, setDependence, text, palette }) => {
         <Slider id="hw6-theta" label={T.thetaLabel(theta)} valueText={T.thetaLabel(theta)} max={hw.THETAS.length - 1} value={dependence.theta} onChange={(v) => setDependence((o) => ({ ...o, theta: v }))} />
         <Slider id="hw6-logins" label={T.nLabel(n)} valueText={T.nLabel(n)} max={hw.DEPENDENCE_SIZES.length - 1} value={dependence.n} onChange={(v) => setDependence((o) => ({ ...o, n: v }))} />
       </div>
+      <Choices label={T.alphaChoice} options={view.ALPHAS.map((a) => [a, F.plain(a)])} value={alpha} onChange={(a) => setDependence((o) => ({ ...o, alpha: a }))} />
       <Matrix
         corner={`${T.xName} \\ ${T.fName}`}
         rows={[0, 1, 2]}
@@ -896,7 +864,7 @@ const TryDependence = ({ dependence, setDependence, text, palette }) => {
         totalLabel={text.ui.total}
         className="hw6-residuals"
       />
-      <p className="hw1-caption hw4-line" aria-live="polite"><strong>{T.result(st, n, theta)}</strong></p>
+      <p className="hw1-caption hw4-line" aria-live="polite"><strong>{T.result(st, n, theta, alpha)}</strong></p>
       <TableTitle>{T.tableTitle}</TableTitle>
       <div className="hw1-scroll">
         <table id={view.LINKED_TABLES.series} className="hw1-table hw1-compact hw6-series">
@@ -906,7 +874,7 @@ const TryDependence = ({ dependence, setDependence, text, palette }) => {
               <th scope="col">{T.cols.chi2}</th>
               {showP && <th scope="col">{T.cols.p}</th>}
               <th scope="col">{T.cols.V}</th>
-              {showAlpha && <th scope="col">{T.cols.verdict}</th>}
+              {showAlpha && <th scope="col">{T.verdictCol(alpha)}</th>}
             </tr>
           </thead>
           <tbody>
@@ -916,14 +884,14 @@ const TryDependence = ({ dependence, setDependence, text, palette }) => {
                 <td>{F.num(r.chi2, 2)}</td>
                 {showP && <td>{F.p(r.p, r.log10p)}</td>}
                 <td>{F.num(r.V, 3)}</td>
-                {showAlpha && <td>{T.verdicts[r.p < hw.SIGNIFICANCE ? 'reject' : 'accept']}</td>}
+                {showAlpha && <td>{T.verdicts[r.p < alpha ? 'reject' : 'accept']}</td>}
               </tr>
             ))}
           </tbody>
         </table>
       </div>
       <div className="hw1-charts">
-        <Figure title={T.chartTitle} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} wide legend={legend} hidden={hidden} onToggle={toggle} link={view.links.series} />
+        <Figure title={T.chartTitle} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} wide legend={legend} hidden={hidden} onToggle={toggle} link={view.links.series} animation={animation} handles={handles} />
       </div>
       <p>{T.after}</p>
     </div>
@@ -1130,7 +1098,7 @@ const Homework6 = () => {
   const [permResult, setPermResult] = useState(null);
   const permKey = `${pairKey}|${permParams.n}|${permParams.B}|${permParams.draw}`;
   const perm = permResult && permResult.key === permKey ? permResult : null;
-  const [dependence, setDependence] = useState({ theta: hw.THETAS.indexOf(view.DEPENDENCE_DEFAULT.theta), n: hw.DEPENDENCE_SIZES.indexOf(view.DEPENDENCE_DEFAULT.n) });
+  const [dependence, setDependence] = useState({ theta: hw.THETAS.indexOf(view.DEPENDENCE_DEFAULT.theta), n: hw.DEPENDENCE_SIZES.indexOf(view.DEPENDENCE_DEFAULT.n), alpha: hw.SIGNIFICANCE });
   const theta = hw.THETAS[dependence.theta];
   const dependenceStats = useMemo(() => hw.tableStats(hw.dependenceTable(hw.DEPENDENCE_SIZES[dependence.n], theta, hw.DEFAULT_SEED)), [dependence.n, theta]);
   const testRows = useMemo(() => view.testRows({ s, perm, small: smallCounts, dependence: dependenceStats, theta }), [s, perm, smallCounts, dependenceStats, theta]);

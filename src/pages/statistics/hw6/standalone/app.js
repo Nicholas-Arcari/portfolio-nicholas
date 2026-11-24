@@ -15,6 +15,7 @@
 import * as hw from '../homework6.js';
 import * as view from '../view.js';
 import { HW6_TEXTS, originalAssignment } from '../texts.js';
+import * as kit from '../../chartkit/kitDom.js';
 
 const HEADINGS = ['h2', 'h3', 'h4'];
 const LANGUAGES = ['it', 'en'];
@@ -69,7 +70,7 @@ const state = {
   tryTable: { mode: 'grid', cells: startCells(), pairs: null, header: false },
   small: { n: view.SMALL_DEFAULT, draw: 0 },
   perm: { n: view.PERMUTATION_DEFAULT.n, B: view.PERMUTATION_DEFAULT.B, draw: 0 },
-  dependence: { theta: hw.THETAS.indexOf(view.DEPENDENCE_DEFAULT.theta), n: hw.DEPENDENCE_SIZES.indexOf(view.DEPENDENCE_DEFAULT.n) },
+  dependence: { theta: hw.THETAS.indexOf(view.DEPENDENCE_DEFAULT.theta), n: hw.DEPENDENCE_SIZES.indexOf(view.DEPENDENCE_DEFAULT.n), alpha: hw.SIGNIFICANCE },
   simpson: 'all',
 };
 let text = HW6_TEXTS[state.lang];
@@ -109,159 +110,34 @@ const formulas = (content) => h('pre', { text: content });
 const caption = (...children) => h('div', { class: 'caption line', 'aria-live': 'polite' }, children);
 const range = (n) => Array.from({ length: n }, (_, i) => i);
 
-// The width of every chart comes from the ResizeObserver, measured after
-// layout; the height is set at once, the drawing happens a few
-// milliseconds per frame.
-const charts = new Map(); // canvas -> { draw, data, width, detach, link, tip, hidden }
-
-// what a chart draws: its data, without the parts hidden from the legend
-const shownData = (chart) => (chart.hidden.length ? { ...chart.data, hidden: chart.hidden } : chart.data);
-
-const resizer = new ResizeObserver((entries) => {
-  for (const entry of entries) {
-    const canvas = entry.target;
-    const chart = charts.get(canvas);
-    const width = Math.round(entry.contentRect.width);
-    if (!chart || width <= 0 || width === chart.width) continue;
-    chart.width = width;
-    canvas.style.height = `${hw.chartHeight(chart.draw, shownData(chart), width)}px`;
-    view.scheduleFrameJob(() => {
-      if (charts.get(canvas) === chart && chart.width === width) chart.draw(canvas, { ...shownData(chart), width }, palette());
-    });
-  }
-});
-
-/** Ties the label under the pointer to a chart: it describes what is on screen, and leaves out the hidden parts. */
-function attachTip(canvas, chart) {
-  if (chart.detach) chart.detach();
-  const tip = chart.tip;
-  chart.detach = tip ? hw.attachChartTooltip(canvas, { draw: chart.draw, data: shownData(chart), describe: (hit) => tip(hit, chart.hidden), link: chart.link }) : null;
-}
-
-/** Draws a chart again at its width, with its data and hidden parts. */
-function redraw(canvas, chart) {
-  if (chart.width > 0) {
-    canvas.style.height = `${hw.chartHeight(chart.draw, shownData(chart), chart.width)}px`;
-    chart.draw(canvas, { ...shownData(chart), width: chart.width }, palette());
-  }
-}
-
 // what the reader hid in the legends of the charts that are built again (another pair, a slider)
 const kept = { conditional: new Set(), expected: new Set(), permutation: new Set(), dependence: new Set(), simpson: new Set() };
 
-/** The parts of the drawing covered by the hidden items of a legend. */
-const partsOf = (items, hidden) => items.flatMap((item, i) => (hidden.has(i) ? item.parts || [] : []));
+const { partsOf, hideParts } = kit;
 
 /**
- * The legend of a chart: { label, color? | paletteKey?, dashed?, box?,
- * parts }. Every item is a button: pressed (as the page opens) its parts
- * are on screen, released they are hidden; onChange(parts) receives the
- * hidden parts after every press. `hidden`, the set of the hidden items,
- * outlives the legend when its chart is built again.
+ * A chart (chartkit/kitDom.js): drawn by homework6.js, with its legend
+ * (`items`), its label under the pointer, the table tied to it (`link`)
+ * and zoom on every chart with continuous axes. onHide(parts) runs when the
+ * reader hides or shows a part, for the table tied to the chart; `keep` is
+ * the set of hidden items that outlives the chart; `animation` and
+ * `handles` add the player and the lines to drag.
  */
-function legend(items, onChange = null, hidden = new Set()) {
-  const pal = palette();
-  return h(
-    'ul',
-    { class: 'series-legend' },
-    items.map((item, i) => {
-      const color = item.paletteKey ? pal[item.paletteKey] : pal.series[(item.color ?? i) % pal.series.length];
-      let swatch = null;
-      if (item.box) swatch = 'is-box';
-      else if (item.dashed) swatch = 'is-dashed';
-      const button = h(
-        'button',
-        {
-          type: 'button',
-          'aria-pressed': String(!hidden.has(i)),
-          class: hidden.has(i) ? 'is-off' : null,
-          onclick: () => {
-            if (hidden.has(i)) hidden.delete(i);
-            else hidden.add(i);
-            button.setAttribute('aria-pressed', String(!hidden.has(i)));
-            button.classList.toggle('is-off', hidden.has(i));
-            if (onChange) onChange(partsOf(items, hidden));
-          },
-        },
-        h('span', { class: swatch, 'aria-hidden': 'true', style: { borderColor: color, backgroundColor: item.box ? color : 'transparent' } }),
-        item.label,
-      );
-      return h('li', null, button);
-    }),
-  );
+function figure(label, draw, data, { wide = false, tip = null, items = null, note = null, link = null, onHide = null, keep = null, animation = null, handles = null } = {}) {
+  return kit.createFigure({ label, draw, data, palette: palette(), lib: hw, schedule: view.scheduleFrameJob, lang: state.lang, tip, items, note, link, onHide, keep, wide, animation, handles });
 }
 
-/** Hides the cells and rows of a table that belong to hidden parts (data-part), and shows the others. */
-function hideParts(tableEl, parts) {
-  for (const el of tableEl.querySelectorAll('[data-part]')) el.hidden = parts.includes(el.dataset.part);
-}
-
-/** Hides parts of a chart. */
-function setHidden(fig, parts) {
-  const canvas = fig.querySelector('canvas.chart');
-  const chart = charts.get(canvas);
-  if (!chart) return;
-  chart.hidden = parts;
-  attachTip(canvas, chart);
-  redraw(canvas, chart);
-}
-
-/**
- * A chart with its legend (`items`) and its label under the pointer.
- * onHide(parts) runs when the reader hides or shows a part, for the table
- * tied to the chart; `keep` is the set of hidden items that outlives the
- * chart.
- */
-function figure(label, draw, data, { wide = false, tip = null, items = null, note = null, link = null, onHide = null, keep = null } = {}) {
-  const canvas = h('canvas', { class: 'chart', role: 'img', 'aria-label': label });
-  const hidden = keep || new Set();
-  const chart = { draw, data, width: -1, detach: null, link, tip, hidden: items ? partsOf(items, hidden) : [] };
-  const fig = h(
-    'figure',
-    { class: wide ? 'figure wide' : 'figure' },
-    canvas,
-    items &&
-      legend(
-        items,
-        (parts) => {
-          setHidden(fig, parts);
-          if (onHide) onHide(parts);
-        },
-        hidden,
-      ),
-    h('p', { class: 'figure-note', text: note || '', hidden: !note }),
-    h('figcaption', { text: label }),
-  );
-  attachTip(canvas, chart);
-  charts.set(canvas, chart);
-  resizer.observe(canvas);
-  return fig;
-}
-
-/** Redraws a chart in place, with new data, label and note, without replacing its canvas (no flicker while it grows); the hidden parts stay hidden. */
+/** Redraws a chart in place, with new data, label and note, without replacing its canvas (no flicker while it grows); the hidden parts and the zoom stay. */
 function refreshFigure(fig, label, data, tip, note = null) {
-  const canvas = fig.querySelector('canvas.chart');
-  const chart = charts.get(canvas);
-  if (!chart) return;
-  chart.data = data;
-  chart.tip = tip;
-  attachTip(canvas, chart);
-  canvas.setAttribute('aria-label', label);
-  fig.querySelector('figcaption').textContent = label;
-  const noteEl = fig.querySelector('.figure-note');
-  noteEl.textContent = note || '';
-  noteEl.hidden = !note;
-  redraw(canvas, chart);
+  fig.kit.setData(data);
+  fig.kit.setTip(tip);
+  fig.kit.setLabel(label);
+  fig.kit.setNote(note);
 }
 
 /** Replaces the content of a region, releasing the charts it contained and their labels. */
 function fill(region, ...nodes) {
-  for (const canvas of region.querySelectorAll('canvas.chart')) {
-    resizer.unobserve(canvas);
-    const chart = charts.get(canvas);
-    if (chart && chart.detach) chart.detach();
-    charts.delete(canvas);
-  }
+  kit.releaseFigures(region);
   region.replaceChildren(...nodes.flat(Infinity).filter((n) => n !== null && n !== undefined && n !== false));
 }
 
@@ -1106,7 +982,17 @@ function tryDependenceBlock() {
   const seriesRegion = h('div');
   const items = view.legends.dependence(text);
   let fig = null;
-  let lastTheta = null;
+  let lastKey = null;
+  // the level of the test: a line to drag on the chart (the summary of the tests stays at 5%)
+  const alphaOf = () => state.dependence.alpha ?? hw.SIGNIFICANCE;
+  const moveAlpha = (id, v) => {
+    state.dependence.alpha = view.alphaAt(v);
+    update();
+  };
+  const alphaChoice = choices(T.alphaChoice, view.ALPHAS.map((a) => [a, text.fmt.plain(a)]), alphaOf(), (a) => {
+    state.dependence.alpha = a;
+    update();
+  });
   const thetaSlider = slider('hw6-theta', '', hw.THETAS.length - 1, state.dependence.theta, (v) => {
     state.dependence.theta = v;
     update();
@@ -1121,6 +1007,7 @@ function tryDependenceBlock() {
     const n = hw.DEPENDENCE_SIZES[state.dependence.n];
     thetaSlider.label(T.thetaLabel(theta));
     nSlider.label(T.nLabel(n));
+    alphaChoice.set(alphaOf());
     const counts = hw.dependenceTable(n, theta, hw.DEFAULT_SEED);
     const st = hw.tableStats(counts);
     fill(
@@ -1137,7 +1024,7 @@ function tryDependenceBlock() {
         totalLabel: text.ui.total,
         className: 'residuals',
       }),
-      h('p', { class: 'caption line', 'aria-live': 'polite' }, h('strong', { text: T.result(st, n, theta) })),
+      h('p', { class: 'caption line', 'aria-live': 'polite' }, h('strong', { text: T.result(st, n, theta, alphaOf()) })),
     );
     const series = hw.dependenceSeries(theta, hw.DEFAULT_SEED);
     fill(
@@ -1148,26 +1035,36 @@ function tryDependenceBlock() {
         { class: 'scroll' },
         table(
           'compact num series',
-          [T.cols.n, T.cols.chi2, T.cols.p, T.cols.V, T.cols.verdict],
-          series.map((r) => ({ class: r.n === n ? 'is-current' : null, cells: [{ head: true, text: F.int(r.n) }, { text: F.num(r.chi2, 2) }, { text: F.p(r.p, r.log10p) }, { text: F.num(r.V, 3) }, { text: T.verdicts[r.p < hw.SIGNIFICANCE ? 'reject' : 'accept'] }] })),
+          [T.cols.n, T.cols.chi2, T.cols.p, T.cols.V, T.verdictCol(alphaOf())],
+          series.map((r) => ({ class: r.n === n ? 'is-current' : null, cells: [{ head: true, text: F.int(r.n) }, { text: F.num(r.chi2, 2) }, { text: F.p(r.p, r.log10p) }, { text: F.num(r.V, 3) }, { text: T.verdicts[r.p < alphaOf() ? 'reject' : 'accept'] }] })),
           view.LINKED_TABLES.series,
           [null, null, 'series:0', null, 'series:1'],
         ),
       ),
     );
     hideParts(seriesRegion, partsOf(items, kept.dependence));
-    if (lastTheta !== theta) {
-      lastTheta = theta;
-      if (fig) refreshFigure(fig, T.chartTitle, view.dependenceChart(series, F.decimal), view.tips.dependence(series, text.tips));
-      else
-        fig = figure(T.chartTitle, hw.drawLineChart, view.dependenceChart(series, F.decimal), {
+    const key = `${theta}|${alphaOf()}`;
+    if (lastKey !== key) {
+      lastKey = key;
+      const chart = view.dependenceChart(series, F.decimal, alphaOf());
+      const handles = { items: view.alphaHandle(alphaOf(), T.alphaLabel(alphaOf())), onChange: moveAlpha };
+      if (fig) {
+        refreshFigure(fig, T.chartTitle, chart, view.tips.dependence(series, text.tips));
+        fig.kit.setAnimation(view.reveal(chart, 260));
+        fig.kit.setHandles(handles);
+        fig.kit.relabel(view.legends.dependence(text, alphaOf()));
+      } else {
+        fig = figure(T.chartTitle, hw.drawLineChart, chart, {
           wide: true,
           tip: view.tips.dependence(series, text.tips),
-          items,
+          items: view.legends.dependence(text, alphaOf()),
           keep: kept.dependence,
           link: view.links.series,
           onHide: (parts) => hideParts(seriesRegion, parts),
+          animation: view.reveal(chart, 260),
+          handles,
         });
+      }
     }
     updateTests();
   }
@@ -1178,6 +1075,7 @@ function tryDependenceBlock() {
     title('hw6-try-dependence', 2, text.sections.tryDependence),
     h('p', { text: T.intro }),
     h('div', { class: 'slider-row' }, thetaSlider.el, nSlider.el),
+    alphaChoice,
     tableRegion,
     seriesRegion,
     h('div', { class: 'charts' }, fig),

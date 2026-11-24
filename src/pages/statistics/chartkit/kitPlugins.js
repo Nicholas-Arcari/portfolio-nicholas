@@ -238,8 +238,9 @@ export function handles({ onChange, onEnd = null }) {
           ctx.lineTo(f.plot.x + f.plot.w, at);
         }
         ctx.stroke();
-        // the knob to grab, on the edge of the plot, with the label beside it
-        const kx = spec.axis === 'x' ? at : f.plot.x + f.plot.w - 9;
+        // the knob to grab, with the label beside it: at the left of a horizontal line, away from
+        // the zoom buttons in the top right corner, and at the top of a vertical one, above the bars
+        const kx = spec.axis === 'x' ? at : f.plot.x + 9;
         const ky = spec.axis === 'x' ? f.plot.y + 9 : at;
         ctx.beginPath();
         ctx.arc(kx, ky, active ? 7 : 6, 0, 2 * Math.PI);
@@ -250,9 +251,12 @@ export function handles({ onChange, onEnd = null }) {
         if (spec.label) {
           ctx.font = '11px sans-serif';
           ctx.fillStyle = pal.text;
-          ctx.textAlign = spec.axis === 'x' ? (at > f.plot.x + f.plot.w * 0.7 ? 'right' : 'left') : 'right';
-          const tx = spec.axis === 'x' ? at + (ctx.textAlign === 'left' ? 10 : -10) : kx - 11;
-          const ty = spec.axis === 'x' ? f.plot.y + 13 : at - 8;
+          const right = spec.axis === 'x' && at > f.plot.x + f.plot.w * 0.7;
+          ctx.textAlign = right ? 'right' : 'left';
+          const tx = spec.axis === 'x' ? at + (right ? -10 : 10) : kx + 11;
+          // above the line, or below it when the line is at the top of the plot
+          let ty = spec.axis === 'x' ? f.plot.y + 13 : at - 7;
+          if (spec.axis === 'y' && at - f.plot.y < 16) ty = at + 15;
           ctx.fillText(spec.label, tx, ty);
         }
       }

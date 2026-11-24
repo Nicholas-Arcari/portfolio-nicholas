@@ -42,7 +42,7 @@ const STATIC_FILES = ['index.html', 'style.css', 'README.txt'];
  * a preparare lo scheletro di un homework prima della consegna.
  */
 // il kit dei grafici interattivi, nell'ordine in cui i moduli dipendono l'uno dall'altro
-const CHARTKIT = ['kitView.js', 'kitGestures.js', 'kitChart.js', 'kitPlugins.js', 'kitPlayer.js', 'kitSpec.js', 'kitLabels.js', 'kitDom.js'].map((file) => `../chartkit/${file}`);
+const CHARTKIT = ['kitView.js', 'kitGestures.js', 'kitChart.js', 'kitPlugins.js', 'kitPlayer.js', 'kitSpec.js', 'kitLabels.js', 'kitReveal.js', 'kitDom.js'].map((file) => `../chartkit/${file}`);
 
 export const HOMEWORKS = [
   {
@@ -112,6 +112,7 @@ export const HOMEWORKS = [
     library: 'homework6.js',
     global: 'Homework6',
     inner: ['nslkdd.js'],
+    ui: CHARTKIT,
     contents: 'Data and computations: the 22,544 connections of NSL-KDD (KDDTest+), contingency tables, marginal, conditional and expected frequencies,\n * chi-square, G, Fisher, Yates, residuals, Cramer\'s V, permutation and Cochran-Mantel-Haenszel tests, xoshiro128** and SplitMix64,\n * charts with labels and toggling legends, and command line (node homework6.js [options]).',
     description: 'Homework #6 - Statistics: statistical independence, the contingency table and the chi-square test on real security data (NSL-KDD), and association against causation.',
   },

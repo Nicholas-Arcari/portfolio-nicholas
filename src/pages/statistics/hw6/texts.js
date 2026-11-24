@@ -79,6 +79,9 @@ const IT = formatters(',', '.', 'n/d', '×');
 
 const effectIt = { negligible: 'trascurabile', small: 'piccola', medium: 'media', large: 'grande' };
 
+// "al 5%" with the article the number wants: all'1%, allo 0,1%
+const atLevelIt = (alpha) => ({ 0.1: 'Al 10%', 0.05: 'Al 5%', 0.01: 'All’1%', 0.001: 'Allo 0,1%' })[alpha] || `Al livello ${IT.plain(alpha)}`;
+
 const it = {
   fmt: IT,
   effects: effectIt,
@@ -135,7 +138,7 @@ const it = {
     intro: [
       'La consegna chiede di partire da un dataset bivariato (X, F) qualsiasi e di costruirne via codice la tabella di contingenza, con le frequenze marginali e condizionate; poi di calcolare le frequenze attese se X e F fossero indipendenti e la statistica chi quadrato, con il suo p-value (facoltativo). Chiede infine di richiamare i concetti di indipendenza in probabilità e in statistica, di interpretare i risultati per dire se le due variabili sono indipendenti o dipendenti e di discutere brevemente le conclusioni, distinguendo l’associazione statistica dalla causalità.',
       'La pagina segue quest’ordine. La sezione 1 lavora su dati veri di sicurezza informatica, le 22.544 connessioni di rete del test set di NSL-KDD: si scelgono X e F fra cinque variabili, e la tabella (1.2), le frequenze marginali e condizionate (1.3), le attese (1.4), il χ² e il p-value (1.5) si ricalcolano dai record. Accanto ci sono il test G (1.6), i rimedi per le tabelle piccole (1.7), il test di permutazione, che arriva al p-value senza formule (1.8), e le verifiche dei calcoli (1.9). La sezione 2 richiama la teoria, la 3 interpreta i risultati, la 4 separa l’associazione dalla causalità con un caso reale, le ammissioni a Berkeley del 1973. Seguono il riepilogo dei test, il contesto storico e le conclusioni.',
-      'Quattro riquadri «Prova» lasciano mettere le mani sui numeri: una tabella da scrivere o incollare, il rimescolamento di F, una dipendenza da regolare con un cursore e il paradosso di Simpson diviso per dipartimento. Tutti i numeri sono calcolati nel browser, e il programma scaricabile stampa gli stessi.',
+      'Quattro riquadri «Prova» lasciano mettere le mani sui numeri: una tabella da scrivere o incollare, il rimescolamento di F, una dipendenza da regolare con un cursore e il paradosso di Simpson diviso per dipartimento. Tutti i numeri sono calcolati nel browser, e il programma scaricabile stampa gli stessi. Anche i grafici si muovono: si ingrandiscono (Ctrl + rotella, oppure un rettangolo trascinato; doppio clic per tornare alla vista intera), e in quello della dipendenza il livello α si trascina e la curva si disegna al crescere di n.',
     ],
     originalTitle: 'Il testo originale della consegna',
     originalNote: 'Com’è stato assegnato, in inglese.',
@@ -340,16 +343,19 @@ const it = {
     result: (s, pair) => `Per ${pair.x} e ${pair.f}: V = ${IT.num(s.V, 3)} e w = ${IT.num(s.w, 3)}, un’associazione ${effectIt[s.effect]}. Il p-value di 10^${Math.floor(s.log10p)} e un’associazione ${effectIt[s.effect]} non si contraddicono: il primo dice che la dipendenza è certa, la seconda quanto pesa.`,
   },
   tryDependence: {
-    intro: 'Un registro di accessi simulato con il generatore della pagina: X è la fascia oraria del login (notte, giorno, sera), F il suo esito (riuscito, fallito, bloccato). Con probabilità θ l’esito segue la fascia (di notte bloccato, di giorno riuscito, di sera fallito), altrimenti è estratto per conto suo: θ = 0 è l’indipendenza perfetta, θ = 1 un legame deterministico. Spostate i cursori: con θ fisso il χ² cresce con n e il p-value scende, mentre la V resta circa la stessa.',
+    intro: 'Un registro di accessi simulato con il generatore della pagina: X è la fascia oraria del login (notte, giorno, sera), F il suo esito (riuscito, fallito, bloccato). Con probabilità θ l’esito segue la fascia (di notte bloccato, di giorno riuscito, di sera fallito), altrimenti è estratto per conto suo: θ = 0 è l’indipendenza perfetta, θ = 1 un legame deterministico. Spostate i cursori: con θ fisso il χ² cresce con n e il p-value scende, mentre la V resta circa la stessa. Il livello α decide quali righe sono rifiutate: sceglietelo qui sotto o trascinate la sua linea sul grafico.',
     names: { x: ['notte', 'giorno', 'sera'], f: ['riuscito', 'fallito', 'bloccato'] },
     xName: 'Fascia oraria',
     fName: 'Esito',
     thetaLabel: (t) => `Dipendenza θ = ${IT.num(t, 2)}`,
     nLabel: (n) => `Accessi n = ${IT.int(n)}`,
-    result: (s, n, t) => `Su ${IT.int(n)} accessi con θ = ${IT.num(t, 2)}: χ² = ${IT.num(s.chi2, 2)}, p ≈ ${IT.p(s.p, s.log10p)}, V = ${IT.num(s.V, 3)} (${effectIt[s.effect]}). ${s.p < SIGNIFICANCE ? 'Al 5% l’indipendenza è rifiutata.' : 'Al 5% l’indipendenza non è rifiutata.'}`,
-    chartTitle: 'Il p-value della stessa dipendenza al crescere di n (scala delle potenze di dieci), con il livello 0,05 tratteggiato',
+    result: (s, n, t, alpha = SIGNIFICANCE) => `Su ${IT.int(n)} accessi con θ = ${IT.num(t, 2)}: χ² = ${IT.num(s.chi2, 2)}, p ≈ ${IT.p(s.p, s.log10p)}, V = ${IT.num(s.V, 3)} (${effectIt[s.effect]}). ${atLevelIt(alpha)} l’indipendenza ${s.p < alpha ? 'è rifiutata' : 'non è rifiutata'}.`,
+    chartTitle: 'Il p-value della stessa dipendenza al crescere di n (scala delle potenze di dieci), con il livello α tratteggiato: trascinatelo',
     tableTitle: 'La stessa dipendenza a ogni n',
     cols: { n: 'n', chi2: 'χ²', p: 'p-value', V: 'V', verdict: 'Al 5%' },
+    verdictCol: (alpha) => atLevelIt(alpha),
+    alphaLabel: (alpha) => `α = ${IT.plain(alpha)}`,
+    alphaChoice: 'Livello α',
     verdicts: { reject: 'rifiutata', accept: 'non rifiutata' },
     after: `Il messaggio pratico: un p-value minuscolo su milioni di righe di log non vuol dire che il legame conti; un p-value grande su pochi eventi non vuol dire che il legame non ci sia. La significatività dipende da n, l’intensità no. Le righe della tabella vanno da ${IT.int(DEPENDENCE_SIZES[0])} a ${IT.int(DEPENDENCE_SIZES[DEPENDENCE_SIZES.length - 1])} accessi, ognuna con un campione nuovo.`,
   },
@@ -494,6 +500,8 @@ const EN = formatters('.', ',', 'n/a', '×');
 
 const effectEn = { negligible: 'negligible', small: 'small', medium: 'medium', large: 'large' };
 
+const atLevelEn = (alpha) => ({ 0.1: 'At 10%', 0.05: 'At 5%', 0.01: 'At 1%', 0.001: 'At 0.1%' })[alpha] || `At level ${EN.plain(alpha)}`;
+
 const en = {
   fmt: EN,
   effects: effectEn,
@@ -550,7 +558,7 @@ const en = {
     intro: [
       'The assignment asks to start from any bivariate dataset (X, F) and to build its contingency table in code, with the marginal and conditional frequencies; then to compute the expected frequencies if X and F were independent and the chi-square statistic, with its p-value (optional). Finally it asks to recall the concepts of independence in probability and in statistics, to interpret the results to tell whether the two variables are independent or dependent, and to discuss the conclusions briefly, distinguishing statistical association from causation.',
       'The page follows this order. Section 1 works on real cybersecurity data, the 22,544 network connections of the NSL-KDD test set: X and F are chosen among five variables, and the table (1.2), the marginal and conditional frequencies (1.3), the expected ones (1.4), the chi-square and the p-value (1.5) are computed again from the records. Next to them are the G test (1.6), the remedies for small tables (1.7), the permutation test, which reaches the p-value without formulas (1.8), and the checks of the computations (1.9). Section 2 recalls the theory, section 3 interprets the results, section 4 separates association from causation with a real case, the Berkeley admissions of 1973. Then come the summary of the tests, the historical context and the conclusions.',
-      'Four "Try it" boxes let you get your hands on the numbers: a table to type or paste, the shuffling of F, a dependence to adjust with a slider and Simpson’s paradox split by department. Every number is computed in the browser, and the downloadable program prints the same ones.',
+      'Four "Try it" boxes let you get your hands on the numbers: a table to type or paste, the shuffling of F, a dependence to adjust with a slider and Simpson’s paradox split by department. Every number is computed in the browser, and the downloadable program prints the same ones. The charts move too: they zoom (ctrl + wheel, or a rectangle dragged; double click for the whole chart again), and in the one of the dependence the level α can be dragged and the curve drawn as n grows.',
     ],
     originalTitle: 'The original text of the assignment',
     originalNote: 'As it was assigned, in English.',
@@ -755,16 +763,19 @@ const en = {
     result: (s, pair) => `For ${pair.x} and ${pair.f}: V = ${EN.num(s.V, 3)} and w = ${EN.num(s.w, 3)}, a ${effectEn[s.effect]} association. A p-value of 10^${Math.floor(s.log10p)} and a ${effectEn[s.effect]} association do not contradict each other: the first says the dependence is certain, the second how much it weighs.`,
   },
   tryDependence: {
-    intro: 'A log of logins simulated with the generator of the page: X is the time slot of the login (night, day, evening), F its outcome (success, failure, blocked). With probability θ the outcome follows the time slot (at night blocked, by day success, in the evening failure), otherwise it is drawn on its own: θ = 0 is perfect independence, θ = 1 a deterministic link. Move the sliders: with θ fixed, the chi-square grows with n and the p-value falls, while V stays about the same.',
+    intro: 'A log of logins simulated with the generator of the page: X is the time slot of the login (night, day, evening), F its outcome (success, failure, blocked). With probability θ the outcome follows the time slot (at night blocked, by day success, in the evening failure), otherwise it is drawn on its own: θ = 0 is perfect independence, θ = 1 a deterministic link. Move the sliders: with θ fixed, the chi-square grows with n and the p-value falls, while V stays about the same. The level α decides which rows are rejected: choose it below or drag its line on the chart.',
     names: { x: ['night', 'day', 'evening'], f: ['success', 'failure', 'blocked'] },
     xName: 'Time slot',
     fName: 'Outcome',
     thetaLabel: (t) => `Dependence θ = ${EN.num(t, 2)}`,
     nLabel: (n) => `Logins n = ${EN.int(n)}`,
-    result: (s, n, t) => `Over ${EN.int(n)} logins with θ = ${EN.num(t, 2)}: χ² = ${EN.num(s.chi2, 2)}, p ≈ ${EN.p(s.p, s.log10p)}, V = ${EN.num(s.V, 3)} (${effectEn[s.effect]}). ${s.p < SIGNIFICANCE ? 'At 5% independence is rejected.' : 'At 5% independence is not rejected.'}`,
-    chartTitle: 'The p-value of the same dependence as n grows (scale of powers of ten), with the level 0.05 dashed',
+    result: (s, n, t, alpha = SIGNIFICANCE) => `Over ${EN.int(n)} logins with θ = ${EN.num(t, 2)}: χ² = ${EN.num(s.chi2, 2)}, p ≈ ${EN.p(s.p, s.log10p)}, V = ${EN.num(s.V, 3)} (${effectEn[s.effect]}). ${atLevelEn(alpha)} independence ${s.p < alpha ? 'is rejected' : 'is not rejected'}.`,
+    chartTitle: 'The p-value of the same dependence as n grows (scale of powers of ten), with the level α dashed: drag it',
     tableTitle: 'The same dependence at every n',
     cols: { n: 'n', chi2: 'χ²', p: 'p-value', V: 'V', verdict: 'At 5%' },
+    verdictCol: (alpha) => atLevelEn(alpha),
+    alphaLabel: (alpha) => `α = ${EN.plain(alpha)}`,
+    alphaChoice: 'Level α',
     verdicts: { reject: 'rejected', accept: 'not rejected' },
     after: `The practical message: a tiny p-value over millions of log lines does not mean the link matters; a large p-value over a few events does not mean there is no link. Significance depends on n, strength does not. The rows of the table go from ${EN.int(DEPENDENCE_SIZES[0])} to ${EN.int(DEPENDENCE_SIZES[DEPENDENCE_SIZES.length - 1])} logins, each with a new sample.`,
   },

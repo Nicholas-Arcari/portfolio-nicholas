@@ -6,6 +6,7 @@
 // tabelle legate ai grafici, i valori iniziali dei riquadri "Prova" e le
 // righe del riepilogo dei test. Qui non ci sono testi: arrivano da texts.js.
 import * as hw from './homework7.js';
+import { reveal as revealChart } from '../chartkit/kitReveal.js';
 
 /** The sections of the page, in order, with the level of their title: the index of the page and of the program is built from here. */
 export const SECTIONS = [
@@ -1062,17 +1063,8 @@ export function scheduleFrameJob(job) {
 // pagina e il programma scaricabile leggono da qui gli stessi modelli e gli
 // stessi comandi; le etichette vengono dai testi (text.controls).
 
-/** An animation that draws a line chart point by point, as its x grows: { frames, at(t), ms }. The series marked `fixed` (references, bands, thresholds) stay whole. */
-export function reveal(chart, ms = 110) {
-  return {
-    frames: chart.x.length,
-    ms,
-    at: (t) => ({
-      ...chart,
-      series: chart.series.map((s) => (s.fixed ? s : { ...s, values: s.values.map((v, i) => (i <= t ? v : null)), band: s.band ? s.band.map((b, i) => (i <= t ? b : null)) : s.band })),
-    }),
-  };
-}
+/** An animation that draws a line chart point by point, as its x grows (chartkit/kitReveal.js): the series marked `fixed` stay whole. */
+export const reveal = revealChart;
 
 const RATES = Object.freeze([0.01, 0.02, 0.03, 0.05, 0.1]);
 const EPSILONS = Object.freeze([0.005, 0.01, 0.015, 0.02]);
