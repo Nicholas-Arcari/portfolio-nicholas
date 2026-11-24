@@ -2705,6 +2705,28 @@ body.dark-mode .kit-figure .kit-tools button:hover:not(:disabled) {
 .kit-controls {
     margin-bottom: 0.6em;
 }
+/* una simulazione in corso: il grafico resta, piu' chiaro, con l'avviso sopra */
+.kit-figure.is-pending .kit-plot canvas {
+    opacity: 0.55;
+    transition: opacity 0.2s ease;
+}
+.kit-busy {
+    position: absolute;
+    left: 50%;
+    top: 10px;
+    z-index: 4;
+    margin: 0;
+    padding: 0.25em 0.8em;
+    border-radius: 999px;
+    background: #d52349;
+    color: #ffffff;
+    font-size: 0.75em;
+    transform: translateX(-50%);
+    pointer-events: none;
+}
+.kit-pending {
+    margin: 0.2em 0 0;
+}
 .kit-toggle {
     display: flex;
     align-items: center;
@@ -2726,21 +2748,54 @@ body.dark-mode .kit-figure .kit-tools button:hover:not(:disabled) {
 .kit-player .button {
     margin: 0;
 }
-.kit-player .kit-play {
-    min-width: 6.5em;
+/* il lettore e' compatto: i pulsanti del template sono grandi, maiuscoli e spaziati */
+.kit-figure .kit-player {
+    gap: 0.4em;
+    margin: 0.35em 0 0.6em;
 }
-.kit-player .kit-position {
-    flex: 1 1 10em;
+/* sui telefoni il template fa ogni pulsante largo quanto la pagina: quelli del lettore restano in fila */
+.kit-figure .kit-player .button {
+    display: inline-block;
+    width: auto;
+    min-width: 0;
+    padding: 0.25em 0.75em;
+    box-shadow: none;
+    font-size: 0.7em;
+    letter-spacing: 0.5px;
+    line-height: 1.7;
+}
+.kit-figure .kit-player .kit-play {
+    min-width: 5.5em;
+}
+.kit-figure .kit-player .button[aria-pressed="true"] {
+    background: #d52349;
+}
+/* il tema toglie l'aspetto nativo a ogni input: il cursore lo riprende, altrimenti la barra non si vede */
+.kit-figure .kit-player .kit-position {
+    -webkit-appearance: auto;
+    appearance: auto;
+    flex: 1 1 6em;
+    min-width: 5em;
+    width: auto;
+    height: auto;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
     accent-color: #d52349;
 }
-.kit-player .kit-step {
-    min-width: 7em;
+.kit-figure .kit-player .kit-step {
     color: #888888;
-    font-size: 0.8em;
+    font-size: 0.75em;
+    white-space: nowrap;
 }
-.kit-player .kit-speed {
+.kit-figure .kit-player .kit-speed {
     display: inline-flex;
-    gap: 0.25em;
+    gap: 0.2em;
+}
+.kit-figure .kit-player .kit-speed .button {
+    padding: 0.25em 0.5em;
 }
 
 /* ===== Grafici degli homework: i valori del pezzo sotto il puntatore =====

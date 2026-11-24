@@ -1466,3 +1466,34 @@ canvas.editor:focus-visible {
   background: var(--accent);
   color: #ffffff;
 }
+
+/* una simulazione in corso: il grafico resta, piu' chiaro, con l'avviso sopra */
+.kit-figure.is-pending .kit-plot canvas {
+  opacity: 0.55;
+  transition: opacity 0.2s ease;
+}
+
+.kit-busy {
+  position: absolute;
+  left: 50%;
+  top: 10px;
+  z-index: 4;
+  margin: 0;
+  padding: 0.25rem 0.8rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #ffffff;
+  font-size: 0.75rem;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.kit-busy[hidden],
+.kit-player[hidden],
+.kit-pending[hidden] {
+  display: none;
+}
+
+.kit-pending {
+  margin: 0.2rem 0 0;
+}

@@ -29,6 +29,8 @@ import { useTheme } from '../../contexts/themeContext';
 import HomeworkShell from './HomeworkShell';
 import { useHidden } from './legendState';
 import { ChartFigure } from './chartkit/ChartFigure';
+import { ChartControls } from './chartkit/ChartControls';
+import { useModel } from './chartkit/useModel';
 import * as hw from './hw7/homework7';
 import * as view from './hw7/view';
 import { HW7_TEXTS, originalAssignment } from './hw7/texts';
@@ -91,6 +93,11 @@ const Try = ({ id, title, children }) => (
 // legata (link), e lo zoom su ogni grafico con assi continui; con `spec`,
 // i suoi comandi, le maniglie da trascinare e l'animazione.
 const Figure = (props) => <ChartFigure lib={hw} schedule={view.scheduleFrameJob} {...props} />;
+
+// Il modello di una sezione con comandi (view.MODELS): parametri e, dove
+// serve, la simulazione, eseguita a fette dalla libreria; `sim` e' il
+// risultato gia' calcolato dal worker per i parametri iniziali.
+const useSectionModel = (key, sim = null) => useModel({ ...view.MODELS[key], runner: hw.runStepsAsync }, sim);
 
 // Una scelta fra pochi valori: il pulsante premuto e' quello attivo
 const Choices = ({ label, options, value, onChange }) => (
@@ -448,16 +455,20 @@ const TryNetwork = ({ text, palette }) => {
 const Sprt = ({ s, job, text, palette }) => {
   const W = text.sprt;
   const F = text.fmt;
-  const setup = useMemo(() => hw.sprtSetup(hw.SPRT_DEFAULT), []);
+  const start = useMemo(() => hw.sprtSetup(hw.SPRT_DEFAULT), []);
+  const startExact = useMemo(() => ({ legit: hw.sprtExact(start, hw.SPRT_DEFAULT.p0), attacker: hw.sprtExact(start, hw.SPRT_DEFAULT.p1) }), [start]);
+  const [m, model] = useSectionModel('sprt');
+  const controls = useMemo(() => view.controls.sprt(text.controls), [text]);
+  const setup = useMemo(() => hw.sprtSetup({ ...hw.SPRT_DEFAULT, alpha: m.params.alpha, beta: m.params.beta }), [m.params.alpha, m.params.beta]);
   const exact = useMemo(() => ({ legit: hw.sprtExact(setup, hw.SPRT_DEFAULT.p0), attacker: hw.sprtExact(setup, hw.SPRT_DEFAULT.p1) }), [setup]);
-  const walks = useMemo(() => [
-    { ...hw.sprtPath(setup, view.SPRT_EXAMPLES.legit), key: 'legit', color: 0 },
-    { ...hw.sprtPath(setup, view.SPRT_EXAMPLES.attacker), key: 'attacker', color: 1 },
-  ], [setup]);
+  const walks = useMemo(() => view.sprtWalks(setup, m.params.seed), [setup, m.params.seed]);
   const data = useMemo(() => view.sprtChart(setup, walks, F.decimal), [setup, walks, F]);
+  const animation = useMemo(() => view.reveal(data, 320), [data]);
+  const handles = useMemo(() => ({ items: view.handles.sprt(setup, text.controls), onChange: (id, v) => model.setParams(view.handles.sprtMove(model.get().params, id, v)) }), [setup, text, model]);
   const legend = useMemo(() => view.legends.sprt(text.legends, walks), [text, walks]);
   const tip = useMemo(() => view.tips.sprt(setup, walks, text.tips), [setup, walks, text]);
-  const sim = s ? s.sprt : null;
+  // the simulation of the page was run with the starting errors
+  const sim = s && m.params.alpha === hw.SPRT_DEFAULT.alpha && m.params.beta === hw.SPRT_DEFAULT.beta ? s.sprt : null;
   const row = (who, ex, wald, simulated) => ({
     key: who,
     cells: {
@@ -473,11 +484,12 @@ const Sprt = ({ s, job, text, palette }) => {
     <>
       <Title id="hw7-sprt" level={1}>{text.sections.sprt}</Title>
       <Paras list={W.intro} />
-      <Formulas>{W.formulas(setup)}</Formulas>
+      <Formulas>{W.formulas(start)}</Formulas>
+      <ChartControls controls={controls} params={m.params} onChange={model.setParams} />
       <div className="hw1-charts">
-        <Figure title={W.chartTitle} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} wide legend={legend} />
+        <Figure title={W.chartTitle} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} wide legend={legend} animation={animation} handles={handles} />
       </div>
-      <Paras list={W.paras(setup, exact.legit, exact.attacker)} />
+      <Paras list={W.paras(start, startExact.legit, startExact.attacker)} />
       <DataTable
         title={W.tableTitle}
         columns={[
@@ -490,7 +502,7 @@ const Sprt = ({ s, job, text, palette }) => {
         ]}
         rows={[row('legit', exact.legit, setup.waldLegit, sim && sim.legit), row('attacker', exact.attacker, setup.waldAttacker, sim && sim.attackers)]}
       />
-      {sim ? <p>{W.simulation(sim)}</p> : <Pending text={text} result={job} />}
+      {s ? <p>{W.simulation(s.sprt)}</p> : <Pending text={text} result={job} />}
     </>
   );
 };
@@ -536,18 +548,24 @@ const TrySprt = ({ text, palette }) => {
 const Rate = ({ text, palette }) => {
   const R = text.rate;
   const F = text.fmt;
-  const c = useMemo(() => view.campaignFacts(), []);
+  const start = useMemo(() => view.campaignFacts(), []);
+  const [m, model] = useSectionModel('campaign');
+  const controls = useMemo(() => view.controls.campaign(text.controls), [text]);
+  const c = useMemo(() => (view.atStart('campaign', m.params) ? start : view.campaignFacts(m.params.seed, { rate: m.params.rate, perDay: m.params.perDay })), [start, m.params]);
   const data = useMemo(() => view.campaignChart(c, F.decimal), [c, F]);
+  const animation = useMemo(() => view.reveal(data, 450), [data]);
+  const handles = useMemo(() => ({ items: view.handles.trueRate(m.params.rate, text.controls), onChange: (id, v) => model.setParams(view.handles.trueRateMove(model.get().params, id, v)) }), [m.params.rate, text, model]);
   const legend = useMemo(() => view.legends.campaign(text.legends), [text]);
   const tip = useMemo(() => view.tips.campaign(c, text.tips), [c, text]);
   const [hidden, toggle] = useHidden();
   return (
     <>
       <Title id="hw7-rate" level={1}>{text.sections.rate}</Title>
-      <p>{R.intro(c)}</p>
-      <Paras list={R.paras(c)} />
+      <p>{R.intro(start)}</p>
+      <Paras list={R.paras(start)} />
+      <ChartControls controls={controls} params={m.params} onChange={model.setParams} />
       <div className="hw1-charts">
-        <Figure title={R.chartTitle} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} wide legend={legend} hidden={hidden} onToggle={toggle} link={view.links.campaign} />
+        <Figure title={R.chartTitle} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} wide legend={legend} hidden={hidden} onToggle={toggle} link={view.links.campaign} animation={animation} handles={handles} />
       </div>
       <DataTable
         id={view.LINKED_TABLES.campaign}
@@ -630,7 +648,10 @@ const TryPrior = ({ text, palette }) => {
 const Frequentist = ({ s, job, text, palette }) => {
   const Q = text.frequentist;
   const F = text.fmt;
-  const cov = useMemo(() => hw.coverageCurves(), []);
+  const start = useMemo(() => hw.coverageCurves(), []);
+  const [m, model] = useSectionModel('coverage');
+  const controls = useMemo(() => view.controls.coverage(text.controls), [text]);
+  const cov = useMemo(() => (view.atStart('coverage', m.params) ? start : hw.coverageCurves(m.params.n)), [start, m.params]);
   const data = useMemo(() => view.coverageChart(cov, F.decimal), [cov, F]);
   const legend = useMemo(() => view.legends.coverage(text.legends), [text]);
   const tip = useMemo(() => view.tips.coverage(cov, text.tips), [cov, text]);
@@ -638,6 +659,7 @@ const Frequentist = ({ s, job, text, palette }) => {
     <>
       <Title id="hw7-frequentist" level={1}>{text.sections.frequentist}</Title>
       <Paras list={Q.intro} />
+      <ChartControls controls={controls} params={m.params} onChange={model.setParams} />
       <div className="hw1-charts">
         <Figure title={Q.chartTitle} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} wide legend={legend} note={Q.chartNote} />
       </div>
@@ -650,9 +672,9 @@ const Frequentist = ({ s, job, text, palette }) => {
           { key: 'at', label: Q.cols.at, num: true },
           { key: 'width', label: Q.cols.width, num: true },
         ]}
-        rows={hw.INTERVAL_METHODS.map((m) => ({ key: m, cells: { method: text.names.methods[m], mean: F.pct(cov.summary[m].mean), min: F.pct(cov.summary[m].min), at: `p = ${F.pct(cov.summary[m].minAt, 1)}`, width: F.pct(cov.summary[m].width) } }))}
+        rows={hw.INTERVAL_METHODS.map((k) => ({ key: k, cells: { method: text.names.methods[k], mean: F.pct(cov.summary[k].mean), min: F.pct(cov.summary[k].min), at: `p = ${F.pct(cov.summary[k].minAt, 1)}`, width: F.pct(cov.summary[k].width) } }))}
       />
-      <Paras list={Q.paras(cov)} />
+      <Paras list={Q.paras(start)} />
       {s ? <p>{Q.simulation(s.coverage)}</p> : <Pending text={text} result={job} />}
     </>
   );
@@ -667,6 +689,11 @@ const Spam = ({ sms, text, palette }) => {
   const legend = useMemo(() => view.legends.logOdds(text.legends), [text]);
   const tip = useMemo(() => view.tips.logOdds(sms, text.tips), [sms, text]);
   const [hidden, toggle] = useHidden();
+  // the threshold of the filter, between two bins of log-odds: a slider, or a line to drag on the chart
+  const [cutState, cutModel] = useSectionModel('spam');
+  const cutControls = useMemo(() => view.controls.spam(text.controls, sms.bins), [text, sms]);
+  const cut = useMemo(() => view.spamCut(sms.bins, cutState.params.cut), [sms, cutState.params.cut]);
+  const handles = useMemo(() => ({ items: view.handles.spam(cutState.params.cut, sms.bins, text.controls), onChange: (id, v) => cutModel.setParams(view.handles.spamMove(cutModel.get().params, id, v)) }), [cutState.params.cut, sms, text, cutModel]);
   // null: the example, until the reader changes it
   const [message, setMessage] = useState(null);
   const [base, setBase] = useState('train');
@@ -699,9 +726,11 @@ const Spam = ({ sms, text, palette }) => {
         columns={[{ key: 'spam', label: M.wordsCols.spam }, { key: 'spamWeight', label: M.wordsCols.spamWeight, num: true }, { key: 'ham', label: M.wordsCols.ham }, { key: 'hamWeight', label: M.wordsCols.hamWeight, num: true }]}
         rows={words.map((i) => ({ key: i, cells: { spam: sms.spamWords[i].token, spamWeight: F.num(sms.spamWords[i].weight, 2), ham: sms.hamWords[i].token, hamWeight: F.num(sms.hamWords[i].weight, 2) } }))}
       />
+      <ChartControls controls={cutControls} params={cutState.params} onChange={cutModel.setParams} />
       <div className="hw1-charts">
-        <Figure title={M.chartTitle} draw={hw.drawGroupedBars} data={data} palette={palette} tip={tip} wide legend={legend} hidden={hidden} onToggle={toggle} link={view.links.logOdds} />
+        <Figure title={M.chartTitle} draw={hw.drawGroupedBars} data={data} palette={palette} tip={tip} wide legend={legend} hidden={hidden} onToggle={toggle} link={view.links.logOdds} handles={handles} />
       </div>
+      <p className="hw4-line" aria-live="polite">{text.controls.spam(cut)}</p>
       <DataTable
         id={view.LINKED_TABLES.logOdds}
         title={M.tableTitle}
@@ -841,22 +870,27 @@ const TryPvalue = ({ text, palette }) => {
 const Engine = ({ text, palette }) => {
   const E = text.engine;
   const F = text.fmt;
-  const lik = useMemo(() => view.likelihoodChart(hw.DEFAULT_SEED, F.decimal), [F]);
-  const legend = useMemo(() => view.legends.likelihood(text.legends), [text]);
+  const [m, model] = useSectionModel('likelihood');
+  const controls = useMemo(() => view.controls.likelihood(text.controls), [text]);
+  // the text speaks of the first day and of ten days; the chart follows the days chosen
+  const start = useMemo(() => view.likelihoodChart(hw.DEFAULT_SEED, F.decimal), [F]);
+  const lik = useMemo(() => view.likelihoodChart(hw.DEFAULT_SEED, F.decimal, m.params.days), [F, m.params.days]);
+  const legend = useMemo(() => view.legends.likelihood(text.legends, m.params.days), [text, m.params.days]);
   const tip = useMemo(() => view.tips.likelihood(lik.curves, text.tips), [lik, text]);
   const weights = useMemo(() => {
-    const d1 = lik.curves.data.day1;
-    const d10 = lik.curves.data.days10;
+    const d1 = start.curves.data.day1;
+    const d10 = start.curves.data.days10;
     return [hw.priorWeight(hw.PRIORS.informed, d1.clicks, d1.sent), hw.priorWeight(hw.PRIORS.informed, d10.clicks, d10.sent)];
-  }, [lik]);
+  }, [start]);
   return (
     <>
       <Title id="hw7-engine" level={1}>{text.sections.engine}</Title>
       <p>{E.components}</p>
+      <ChartControls controls={controls} params={m.params} onChange={model.setParams} />
       <div className="hw1-charts">
         <Figure title={E.likelihoodTitle} draw={hw.drawLineChart} data={lik.chart} palette={palette} tip={tip} wide legend={legend} />
       </div>
-      <p>{E.likelihood(lik.curves)}</p>
+      <p>{E.likelihood(start.curves)}</p>
       <p>{E.odds}</p>
       <Formulas>{E.formulas}</Formulas>
       <p>{E.weights(weights[0], weights[1])}</p>
@@ -891,26 +925,31 @@ const Probability = ({ s, job, text, palette }) => {
   const P = text.probability;
   const F = text.fmt;
   const rows = useMemo(() => hw.deviationTable(), []);
-  const data = useMemo(() => (s ? view.outsideChart(s.paths, F.decimal) : null), [s, F]);
+  const [m, model] = useSectionModel('paths', s ? s.paths : null);
+  const controls = useMemo(() => view.controls.paths(text.controls), [text]);
+  const paths = m.sim;
+  const data = useMemo(() => (paths ? view.outsideChart(paths, F.decimal) : null), [paths, F]);
+  const animation = useMemo(() => (data ? view.reveal(data) : null), [data]);
   const legend = useMemo(() => view.legends.outside(text.legends), [text]);
-  const tip = useMemo(() => (s ? view.tips.outside(s.paths, text.tips) : null), [s, text]);
+  const tip = useMemo(() => (paths ? view.tips.outside(paths, text.tips) : null), [paths, text]);
   const [hidden, toggle] = useHidden();
   return (
     <>
       <Title id="hw7-probability" level={1}>{text.sections.probability}</Title>
       <Paras list={P.paras(rows)} />
-      {!s ? (
+      {!paths ? (
         <Pending text={text} result={job} />
       ) : (
         <>
+          <ChartControls controls={controls} params={m.params} onChange={model.setParams} pending={m.pending} />
           <div className="hw1-charts">
-            <Figure title={P.chartTitle} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} wide legend={legend} hidden={hidden} onToggle={toggle} link={view.links.outside} />
+            <Figure title={P.chartTitle} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} wide legend={legend} hidden={hidden} onToggle={toggle} link={view.links.outside} animation={animation} pending={m.pending} />
           </div>
           <DataTable
             id={view.LINKED_TABLES.outside}
             title={P.tableTitle}
             columns={[{ key: 'n', label: P.cols.n }, { key: 'simulated', label: P.cols.simulated, num: true, hidden: hidden.has(0) }, { key: 'exact', label: P.cols.exact, num: true, hidden: hidden.has(1) }, { key: 'chebyshev', label: P.cols.chebyshev, num: true, hidden: hidden.has(2) }]}
-            rows={s.paths.checks.map((c) => ({ key: c.n, cells: { n: F.int(c.n), simulated: F.pct(c.outside), exact: F.pct(c.exactOutside, 2), chebyshev: F.pct(hw.deviationBounds(c.n, s.paths.rate, s.paths.epsilon).chebyshev) } }))}
+            rows={paths.checks.map((c) => ({ key: c.n, cells: { n: F.int(c.n), simulated: F.pct(c.outside), exact: F.pct(c.exactOutside, 2), chebyshev: F.pct(hw.deviationBounds(c.n, paths.rate, paths.epsilon).chebyshev) } }))}
           />
         </>
       )}
@@ -924,30 +963,38 @@ const Probability = ({ s, job, text, palette }) => {
 const Almost = ({ s, job, text, palette }) => {
   const A = text.almost;
   const F = text.fmt;
-  const paths = useMemo(() => (s ? view.pathsChart(s.paths, F.decimal) : null), [s, F]);
-  const after = useMemo(() => (s ? view.afterChart(s.paths, F.decimal) : null), [s, F]);
+  const [m, model] = useSectionModel('paths', s ? s.paths : null);
+  const controls = useMemo(() => view.controls.paths(text.controls), [text]);
+  const paths = m.sim;
+  // the band follows the controls at once, the paths when their simulation arrives
+  const pathsData = useMemo(() => (paths ? view.pathsChart({ ...paths, rate: m.params.rate, epsilon: m.params.epsilon }, F.decimal) : null), [paths, m.params, F]);
+  const pathsAnimation = useMemo(() => (pathsData ? view.reveal(pathsData, 80) : null), [pathsData]);
+  const after = useMemo(() => (paths ? view.afterChart(paths, F.decimal) : null), [paths, F]);
+  const afterAnimation = useMemo(() => (after ? view.reveal(after) : null), [after]);
+  const handles = useMemo(() => ({ items: view.handles.paths(m.params, text.controls), onChange: (id, v) => model.setParams(view.handles.pathsMove(model.get().params, id, v)) }), [m.params, text, model]);
   const pathsLegend = useMemo(() => view.legends.paths(text.legends), [text]);
   const afterLegend = useMemo(() => view.legends.after(text.legends), [text]);
-  const pathsTip = useMemo(() => (s ? view.tips.paths(s.paths, text.tips) : null), [s, text]);
-  const afterTip = useMemo(() => (s ? view.tips.after(s.paths, text.tips) : null), [s, text]);
+  const pathsTip = useMemo(() => (paths ? view.tips.paths(paths, text.tips) : null), [paths, text]);
+  const afterTip = useMemo(() => (paths ? view.tips.after(paths, text.tips) : null), [paths, text]);
   const [hidden, toggle] = useHidden();
   return (
     <>
       <Title id="hw7-almost" level={1}>{text.sections.almost}</Title>
-      {!s ? (
+      {!paths || !s ? (
         <Pending text={text} result={job} />
       ) : (
         <>
           <Paras list={A.paras(s.paths)} />
+          <ChartControls controls={controls} params={m.params} onChange={model.setParams} pending={m.pending} />
           <div className="hw1-charts">
-            <Figure title={A.chartTitle} draw={hw.drawLineChart} data={paths} palette={palette} tip={pathsTip} wide legend={pathsLegend} />
-            <Figure title={A.chart2Title} draw={hw.drawLineChart} data={after} palette={palette} tip={afterTip} wide legend={afterLegend} hidden={hidden} onToggle={toggle} link={view.links.after} />
+            <Figure title={A.chartTitle} draw={hw.drawLineChart} data={pathsData} palette={palette} tip={pathsTip} wide legend={pathsLegend} animation={pathsAnimation} handles={handles} pending={m.pending} />
+            <Figure title={A.chart2Title} draw={hw.drawLineChart} data={after} palette={palette} tip={afterTip} wide legend={afterLegend} hidden={hidden} onToggle={toggle} link={view.links.after} animation={afterAnimation} pending={m.pending} />
           </div>
           <DataTable
             id={view.LINKED_TABLES.after}
             title={A.tableTitle}
             columns={[{ key: 'n', label: A.cols.n }, { key: 'outside', label: A.cols.outside, num: true, hidden: hidden.has(0) }, { key: 'after', label: A.cols.after, num: true, hidden: hidden.has(1) }]}
-            rows={s.paths.checks.map((c) => ({ key: c.n, cells: { n: F.int(c.n), outside: F.pct(c.outside), after: F.pct(c.after) } }))}
+            rows={paths.checks.map((c) => ({ key: c.n, cells: { n: F.int(c.n), outside: F.pct(c.outside), after: F.pct(c.after) } }))}
           />
         </>
       )}
@@ -1005,26 +1052,31 @@ const TrySequences = ({ text, palette }) => {
 const L2 = ({ s, job, text, palette }) => {
   const Q = text.l2;
   const F = text.fmt;
-  const data = useMemo(() => (s ? view.mseChart(s.paths, F.decimal) : null), [s, F]);
+  const [m, model] = useSectionModel('pathsRate', s ? s.paths : null);
+  const controls = useMemo(() => view.controls.pathsRate(text.controls), [text]);
+  const paths = m.sim;
+  const data = useMemo(() => (paths ? view.mseChart(paths, F.decimal) : null), [paths, F]);
+  const animation = useMemo(() => (data ? view.reveal(data) : null), [data]);
   const legend = useMemo(() => view.legends.mse(text.legends), [text]);
-  const tip = useMemo(() => (s ? view.tips.mse(s.paths, text.tips) : null), [s, text]);
+  const tip = useMemo(() => (paths ? view.tips.mse(paths, text.tips) : null), [paths, text]);
   const [hidden, toggle] = useHidden();
   return (
     <>
       <Title id="hw7-l2" level={1}>{text.sections.l2}</Title>
-      {!s ? (
+      {!paths || !s ? (
         <Pending text={text} result={job} />
       ) : (
         <>
           <Paras list={Q.paras(s.paths)} />
+          <ChartControls controls={controls} params={m.params} onChange={model.setParams} pending={m.pending} />
           <div className="hw1-charts">
-            <Figure title={Q.chartTitle} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} wide legend={legend} hidden={hidden} onToggle={toggle} link={view.links.mse} />
+            <Figure title={Q.chartTitle} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} wide legend={legend} hidden={hidden} onToggle={toggle} link={view.links.mse} animation={animation} pending={m.pending} />
           </div>
           <DataTable
             id={view.LINKED_TABLES.mse}
             title={Q.tableTitle}
             columns={[{ key: 'n', label: Q.cols.n }, { key: 'simulated', label: Q.cols.simulated, num: true, hidden: hidden.has(0) }, { key: 'exact', label: Q.cols.exact, num: true, hidden: hidden.has(1) }]}
-            rows={s.paths.checks.map((c) => ({ key: c.n, cells: { n: F.int(c.n), simulated: F.sci(c.mse, 2), exact: F.sci(c.exactMse, 2) } }))}
+            rows={paths.checks.map((c) => ({ key: c.n, cells: { n: F.int(c.n), simulated: F.sci(c.mse, 2), exact: F.sci(c.exactMse, 2) } }))}
           />
         </>
       )}
@@ -1046,9 +1098,17 @@ const L2 = ({ s, job, text, palette }) => {
 const Distribution = ({ s, job, text, palette }) => {
   const D = text.distribution;
   const F = text.fmt;
-  const data = useMemo(() => (s ? view.cltChart(s.clt.rows, F.decimal) : null), [s, F]);
+  const [m, model] = useSectionModel('clt');
+  const controls = useMemo(() => view.controls.clt(text.controls), [text]);
+  // the exact distances for another p are computed here, in a few milliseconds
+  const rows = useMemo(() => {
+    if (!s) return null;
+    return view.atStart('clt', m.params) ? s.clt.rows : hw.cltTable(hw.CLT_SIZES, m.params.p);
+  }, [s, m.params]);
+  const data = useMemo(() => (rows ? view.cltChart(rows, F.decimal) : null), [rows, F]);
+  const animation = useMemo(() => (data ? view.reveal(data) : null), [data]);
   const legend = useMemo(() => view.legends.clt(text.legends), [text]);
-  const tip = useMemo(() => (s ? view.tips.clt(s.clt.rows, text.tips) : null), [s, text]);
+  const tip = useMemo(() => (rows ? view.tips.clt(rows, text.tips) : null), [rows, text]);
   const [hidden, toggle] = useHidden();
   return (
     <>
@@ -1058,8 +1118,9 @@ const Distribution = ({ s, job, text, palette }) => {
       ) : (
         <>
           <Paras list={D.paras(s.clt.rows)} />
+          <ChartControls controls={controls} params={m.params} onChange={model.setParams} />
           <div className="hw1-charts">
-            <Figure title={D.chartTitle} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} wide legend={legend} hidden={hidden} onToggle={toggle} link={view.links.clt} />
+            <Figure title={D.chartTitle} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} wide legend={legend} hidden={hidden} onToggle={toggle} link={view.links.clt} animation={animation} />
           </div>
           <DataTable
             id={view.LINKED_TABLES.clt}
@@ -1071,7 +1132,7 @@ const Distribution = ({ s, job, text, palette }) => {
               { key: 'exponential', label: D.cols.exponential, num: true, hidden: hidden.has(2) },
               { key: 'exponentialBound', label: D.cols.exponentialBound, num: true, hidden: hidden.has(3) },
             ]}
-            rows={s.clt.rows.map((r) => ({ key: r.n, cells: { n: F.int(r.n), bernoulli: F.num(r.bernoulli, 4), bernoulliBound: F.num(r.bernoulliBound, 4), exponential: F.num(r.exponential, 4), exponentialBound: F.num(r.exponentialBound, 4) } }))}
+            rows={rows.map((r) => ({ key: r.n, cells: { n: F.int(r.n), bernoulli: F.num(r.bernoulli, 4), bernoulliBound: F.num(r.bernoulliBound, 4), exponential: F.num(r.exponential, 4), exponentialBound: F.num(r.exponentialBound, 4) } }))}
           />
           <p>{D.tests(s.clt)}</p>
         </>
@@ -1181,9 +1242,20 @@ const Heavy = ({ s, job, text, palette }) => {
   const H = text.heavy;
   const F = text.fmt;
   const b = useMemo(() => hw.bytesFacts(), []);
-  const cauchy = useMemo(() => (s ? view.cauchyChart(s.cauchy, F.decimal) : null), [s, F]);
-  const cauchyTip = useMemo(() => (s ? view.tips.cauchy(s.cauchy, text.tips) : null), [s, text]);
-  const hist = useMemo(() => (s ? view.bytesChart(s.bytes[s.bytes.length - 1], F.decimal) : null), [s, F]);
+  const [mc, cauchyModel] = useSectionModel('cauchy');
+  const [mb, bytesModel] = useSectionModel('bytes');
+  const cauchyControls = useMemo(() => view.controls.cauchy(text.controls), [text]);
+  const bytesControls = useMemo(() => view.controls.bytes(text.controls), [text]);
+  // a new sample of Cauchy paths takes a few milliseconds; the first one comes from the worker
+  const lines = useMemo(() => {
+    if (!s) return null;
+    return mc.params.seed === hw.DEFAULT_SEED ? s.cauchy : hw.cauchyPaths(mc.params.seed);
+  }, [s, mc.params]);
+  const cauchy = useMemo(() => (lines ? view.cauchyChart(lines, F.decimal) : null), [lines, F]);
+  const cauchyAnimation = useMemo(() => (cauchy ? view.reveal(cauchy, 80) : null), [cauchy]);
+  const cauchyTip = useMemo(() => (lines ? view.tips.cauchy(lines, text.tips) : null), [lines, text]);
+  const means = s ? s.bytes.find((x) => x.n === mb.params.n) || s.bytes[s.bytes.length - 1] : null;
+  const hist = useMemo(() => (means ? view.bytesChart(means, F.decimal) : null), [means, F]);
   const histLegend = useMemo(() => view.legends.bytes(text.legends), [text]);
   const histTip = useMemo(() => (hist ? view.tips.histogram(hist, text.tips, hw.BYTES_REPS) : null), [hist, text]);
   const facts = [
@@ -1207,8 +1279,14 @@ const Heavy = ({ s, job, text, palette }) => {
       ) : (
         <>
           <div className="hw1-charts">
-            <Figure title={H.cauchyTitle} draw={hw.drawLineChart} data={cauchy} palette={palette} tip={cauchyTip} wide />
-            <Figure title={H.histTitle} draw={hw.drawHistogram} data={hist} palette={palette} tip={histTip} wide legend={histLegend} />
+            <div>
+              <ChartControls controls={cauchyControls} params={mc.params} onChange={cauchyModel.setParams} />
+              <Figure title={H.cauchyTitle} draw={hw.drawLineChart} data={cauchy} palette={palette} tip={cauchyTip} wide animation={cauchyAnimation} />
+            </div>
+            <div>
+              <ChartControls controls={bytesControls} params={mb.params} onChange={bytesModel.setParams} />
+              <Figure title={H.histTitle} draw={hw.drawHistogram} data={hist} palette={palette} tip={histTip} wide legend={histLegend} />
+            </div>
           </div>
           <DataTable
             title={H.tableTitle}
@@ -1227,17 +1305,22 @@ const Heavy = ({ s, job, text, palette }) => {
 const Speed = ({ text, palette }) => {
   const V = text.speed;
   const F = text.fmt;
-  const rows = useMemo(() => hw.deviationTable(), []);
+  const start = useMemo(() => hw.deviationTable(), []);
+  const [m, model] = useSectionModel('speed');
+  const controls = useMemo(() => view.controls.speed(text.controls), [text]);
+  const rows = useMemo(() => hw.deviationTable(m.params.rate, m.params.epsilon), [m.params]);
   const data = useMemo(() => view.speedChart(rows, F.decimal), [rows, F]);
+  const animation = useMemo(() => view.reveal(data), [data]);
   const legend = useMemo(() => view.legends.speed(text.legends), [text]);
   const tip = useMemo(() => view.tips.speed(rows, text.tips), [rows, text]);
   const [hidden, toggle] = useHidden();
   return (
     <>
       <Title id="hw7-speed" level={1}>{text.sections.speed}</Title>
-      <Paras list={V.paras(rows)} />
+      <Paras list={V.paras(start)} />
+      <ChartControls controls={controls} params={m.params} onChange={model.setParams} />
       <div className="hw1-charts">
-        <Figure title={V.chartTitle} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} wide legend={legend} hidden={hidden} onToggle={toggle} link={view.links.speed} />
+        <Figure title={V.chartTitle} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} wide legend={legend} hidden={hidden} onToggle={toggle} link={view.links.speed} animation={animation} />
       </div>
       <DataTable
         id={view.LINKED_TABLES.speed}
@@ -1260,24 +1343,35 @@ const Speed = ({ text, palette }) => {
 const Bvm = ({ s, job, text, palette }) => {
   const B = text.bvm;
   const F = text.fmt;
-  const means = useMemo(() => (s ? view.bvmChart(s.bvm, F.decimal) : null), [s, F]);
-  const distances = useMemo(() => (s ? view.bvmDistanceChart(s.bvm, F.decimal) : null), [s, F]);
+  const [m, model] = useSectionModel('bvm');
+  const controls = useMemo(() => view.controls.bvm(text.controls), [text]);
+  // another true rate or sample takes a few milliseconds; the first one comes from the worker
+  const rows = useMemo(() => {
+    if (!s) return null;
+    return view.atStart('bvm', m.params) ? s.bvm : hw.bvmFacts(m.params.seed, { rate: m.params.rate });
+  }, [s, m.params]);
+  const means = useMemo(() => (rows ? view.bvmChart(rows, F.decimal) : null), [rows, F]);
+  const meansAnimation = useMemo(() => (means ? view.reveal(means) : null), [means]);
+  const distances = useMemo(() => (rows ? view.bvmDistanceChart(rows, F.decimal) : null), [rows, F]);
+  const distancesAnimation = useMemo(() => (distances ? view.reveal(distances) : null), [distances]);
+  const handles = useMemo(() => ({ items: view.handles.trueRate(m.params.rate, text.controls), onChange: (id, v) => model.setParams(view.handles.trueRateMove(model.get().params, id, v)) }), [m.params.rate, text, model]);
   const legend = useMemo(() => view.legends.bvm(text.legends), [text]);
   const legend2 = useMemo(() => view.legends.bvmDistance(text.legends), [text]);
-  const tip = useMemo(() => (s ? view.tips.bvm(s.bvm, text.tips) : null), [s, text]);
-  const tip2 = useMemo(() => (s ? view.tips.bvmDistance(s.bvm, text.tips) : null), [s, text]);
+  const tip = useMemo(() => (rows ? view.tips.bvm(rows, text.tips) : null), [rows, text]);
+  const tip2 = useMemo(() => (rows ? view.tips.bvmDistance(rows, text.tips) : null), [rows, text]);
   const [hidden, toggle] = useHidden();
   return (
     <>
       <Title id="hw7-bvm" level={1}>{text.sections.bvm}</Title>
-      {!s ? (
+      {!rows || !s ? (
         <Pending text={text} result={job} />
       ) : (
         <>
           <Paras list={B.paras(s.bvm)} />
+          <ChartControls controls={controls} params={m.params} onChange={model.setParams} />
           <div className="hw1-charts">
-            <Figure title={B.chartTitle} draw={hw.drawLineChart} data={means} palette={palette} tip={tip} wide legend={legend} hidden={hidden} onToggle={toggle} link={view.links.bvm} />
-            <Figure title={B.chart2Title} draw={hw.drawLineChart} data={distances} palette={palette} tip={tip2} wide legend={legend2} link={view.links.bvmDistance} />
+            <Figure title={B.chartTitle} draw={hw.drawLineChart} data={means} palette={palette} tip={tip} wide legend={legend} hidden={hidden} onToggle={toggle} link={view.links.bvm} animation={meansAnimation} handles={handles} />
+            <Figure title={B.chart2Title} draw={hw.drawLineChart} data={distances} palette={palette} tip={tip2} wide legend={legend2} link={view.links.bvmDistance} animation={distancesAnimation} />
           </div>
           <DataTable
             id={view.LINKED_TABLES.bvm}
@@ -1290,7 +1384,7 @@ const Bvm = ({ s, job, text, palette }) => {
               { key: 'dUniform', label: B.cols.dUniform, num: true },
               { key: 'dWrong', label: B.cols.dWrong, num: true },
             ]}
-            rows={s.bvm.map((r) => ({ key: r.n, cells: { n: F.int(r.n), clicks: F.int(r.clicks), uniform: B.pair(r.uniform), wrong: B.pair(r.wrong), dUniform: F.num(r.uniform.distance, 4), dWrong: F.num(r.wrong.distance, 4) } }))}
+            rows={rows.map((r) => ({ key: r.n, cells: { n: F.int(r.n), clicks: F.int(r.clicks), uniform: B.pair(r.uniform), wrong: B.pair(r.wrong), dUniform: F.num(r.uniform.distance, 4), dWrong: F.num(r.wrong.distance, 4) } }))}
           />
         </>
       )}
@@ -1431,9 +1525,13 @@ const Roles = React.memo(function Roles({ text }) {
 const Results = ({ s, job, text, palette }) => {
   const R = text.results;
   const F = text.fmt;
-  const rows = useMemo(() => view.resultsRows(), []);
+  const start = useMemo(() => view.resultsRows(), []);
+  const [m, model] = useSectionModel('results');
+  const controls = useMemo(() => view.controls.results(text.controls), [text]);
+  const rows = useMemo(() => (view.atStart('results', m.params) ? start : view.resultsRows(m.params.p)), [start, m.params]);
   const delta = useMemo(() => [100, 1000, 10000].map((n) => hw.deltaLogOdds(n)), []);
   const data = useMemo(() => view.resultsChart(rows, F.decimal), [rows, F]);
+  const animation = useMemo(() => view.reveal(data, 300), [data]);
   const legend = useMemo(() => view.legends.results(text.legends), [text]);
   const tip = useMemo(() => view.tips.results(rows, text.tips), [rows, text]);
   const [hidden, toggle] = useHidden();
@@ -1442,9 +1540,10 @@ const Results = ({ s, job, text, palette }) => {
       <Title id="hw7-results" level={1}>{text.sections.results}</Title>
       <p>{R.intro}</p>
       <p>{R.consistency}</p>
-      <p>{R.slutsky(rows)}</p>
+      <p>{R.slutsky(start)}</p>
+      <ChartControls controls={controls} params={m.params} onChange={model.setParams} />
       <div className="hw1-charts">
-        <Figure title={R.chartTitle} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} wide legend={legend} hidden={hidden} onToggle={toggle} link={view.links.results} />
+        <Figure title={R.chartTitle} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} wide legend={legend} hidden={hidden} onToggle={toggle} link={view.links.results} animation={animation} />
       </div>
       <DataTable
         id={view.LINKED_TABLES.results}
@@ -1477,7 +1576,7 @@ const Results = ({ s, job, text, palette }) => {
           />
         </>
       )}
-      <p>{R.mle(rows)}</p>
+      <p>{R.mle(start)}</p>
     </>
   );
 };
@@ -1488,22 +1587,27 @@ const Root = ({ s, job, text, palette }) => {
   const R = text.root;
   const F = text.fmt;
   const sizes = useMemo(() => [hw.sampleSizeFor(0.01), hw.sampleSizeFor(0.005), hw.sampleSizeFor(0.001)], []);
-  const inference = useMemo(() => hw.rootTable(), []);
-  const data = useMemo(() => (s ? view.rootChart(s.paths, F.decimal) : null), [s, F]);
+  const [m, model] = useSectionModel('pathsRate', s ? s.paths : null);
+  const controls = useMemo(() => view.controls.pathsRate(text.controls), [text]);
+  const paths = m.sim;
+  const inference = useMemo(() => hw.rootTable(m.params.rate), [m.params.rate]);
+  const data = useMemo(() => (paths ? view.rootChart(paths, F.decimal) : null), [paths, F]);
+  const animation = useMemo(() => (data ? view.reveal(data) : null), [data]);
   const legend = useMemo(() => view.legends.root(text.legends), [text]);
-  const tip = useMemo(() => (s ? view.tips.root(s.paths, text.tips) : null), [s, text]);
+  const tip = useMemo(() => (paths ? view.tips.root(paths, text.tips) : null), [paths, text]);
   const [hidden, toggle] = useHidden();
-  const sigma = Math.sqrt(hw.FALSE_ALARMS.rate * (1 - hw.FALSE_ALARMS.rate));
+  const sigma = paths ? Math.sqrt(paths.rate * (1 - paths.rate)) : 0;
   return (
     <>
       <Title id="hw7-root" level={1}>{text.sections.root}</Title>
       <Paras list={R.paras(sizes)} />
-      {!s ? (
+      <ChartControls controls={controls} params={m.params} onChange={model.setParams} pending={m.pending} />
+      {!paths ? (
         <Pending text={text} result={job} />
       ) : (
         <>
           <div className="hw1-charts">
-            <Figure title={R.chartTitle} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} wide legend={legend} hidden={hidden} onToggle={toggle} link={view.links.root} />
+            <Figure title={R.chartTitle} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} wide legend={legend} hidden={hidden} onToggle={toggle} link={view.links.root} animation={animation} pending={m.pending} />
           </div>
           <DataTable
             id={view.LINKED_TABLES.root}
@@ -1515,7 +1619,7 @@ const Root = ({ s, job, text, palette }) => {
               { key: 'sdShare', label: R.cols.sdShare, num: true, hidden: hidden.has(1) },
               { key: 'exactShare', label: R.cols.exactShare, num: true, hidden: hidden.has(1) },
             ]}
-            rows={s.paths.checks.map((c) => ({ key: c.n, cells: { n: F.int(c.n), sdCount: F.num(c.n * Math.sqrt(c.mse), 2), exactCount: F.num(sigma * Math.sqrt(c.n), 2), sdShare: F.num(Math.sqrt(c.mse), 5), exactShare: F.num(sigma / Math.sqrt(c.n), 5) } }))}
+            rows={paths.checks.map((c) => ({ key: c.n, cells: { n: F.int(c.n), sdCount: F.num(c.n * Math.sqrt(c.mse), 2), exactCount: F.num(sigma * Math.sqrt(c.n), 2), sdShare: F.num(Math.sqrt(c.mse), 5), exactShare: F.num(sigma / Math.sqrt(c.n), 5) } }))}
           />
         </>
       )}

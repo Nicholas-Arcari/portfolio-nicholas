@@ -1616,11 +1616,14 @@ export function ksExactExponential(n) {
 /** The Berry-Esseen bound C rho/(sigma^3 sqrt n), capped at 1. */
 export const berryEsseen = (ratio, n) => Math.min(1, (BERRY_ESSEEN_C * ratio) / Math.sqrt(n));
 
-/** The table of section 2.4: for every n, the exact distance from the normal law of the two sums, and their Berry-Esseen bounds. */
-export function cltTable(ns = CLT_SIZES) {
-  const b = lawFacts('bernoulli');
+/** The Berry-Esseen ratio rho/sigma^3 of a Bernoulli(p): ((1 - p)^2 + p^2) / sqrt(p (1 - p)). */
+export const bernoulliRatio = (p) => ((1 - p) ** 2 + p ** 2) / Math.sqrt(p * (1 - p));
+
+/** The table of section 1.4: for every n, the exact distance from the normal law of the two sums (a Bernoulli(p) and an exponential), and their Berry-Esseen bounds. */
+export function cltTable(ns = CLT_SIZES, p = FALSE_ALARMS.rate) {
   const e = lawFacts('exponential');
-  return ns.map((n) => ({ n, bernoulli: ksExactBernoulli(n), bernoulliBound: berryEsseen(b.ratio, n), exponential: ksExactExponential(n), exponentialBound: berryEsseen(e.ratio, n) }));
+  const ratio = p === FALSE_ALARMS.rate ? lawFacts('bernoulli').ratio : bernoulliRatio(p);
+  return ns.map((n) => ({ n, bernoulli: ksExactBernoulli(n, p), bernoulliBound: berryEsseen(ratio, n), exponential: ksExactExponential(n), exponentialBound: berryEsseen(e.ratio, n) }));
 }
 
 // --- 5.5 Le code pesanti: Cauchy e i byte di NSL-KDD --------------------------
@@ -1746,15 +1749,15 @@ export function betaNormalDistance(a, b) {
  * posterior mean and standard deviation of each, and the distance of each
  * posterior from its normal approximation. Both forget their prior.
  */
-export function bvmFacts(seed) {
+export function bvmFacts(seed, { rate = BVM.rate } = {}) {
   const next = generator(seed, 'bvm', 0);
   const checks = new Set(BVM.checks);
   let clicks = 0;
   const rows = [];
   for (let n = 1; n <= BVM.length; n++) {
-    clicks += bernoulli(next, BVM.rate);
+    clicks += bernoulli(next, rate);
     if (!checks.has(n)) continue;
-    const row = { n, clicks, mle: clicks / n };
+    const row = { n, clicks, mle: clicks / n, rate };
     for (const key of ['uniform', 'wrong']) {
       const [a0, b0] = PRIORS[key];
       const a = a0 + clicks;
@@ -2826,8 +2829,9 @@ export function chartFrame(draw, data, width) {
     return { plot: { x: L.margin.left, y: L.margin.top, w: L.w, h: L.h }, x: { min: data.x0, max: data.x1, log: false }, y: { min: data.yMin || 0, max: histTop(data), log: false }, zoom: 'xy' };
   }
   if (draw === drawGroupedBars) {
+    // x counts the categories (0 at the left edge, one per slot): a handle can stand between two of them; only y zooms
     const L = groupLayout(data, width);
-    return { plot: { x: L.margin.left, y: L.margin.top, w: L.w, h: L.h }, x: null, y: { min: data.yMin || 0, max: data.yMax, log: false }, zoom: 'y' };
+    return { plot: { x: L.margin.left, y: L.margin.top, w: L.w, h: L.h }, x: { min: 0, max: data.categories.length, log: false }, y: { min: data.yMin || 0, max: data.yMax, log: false }, zoom: 'y' };
   }
   return null;
 }

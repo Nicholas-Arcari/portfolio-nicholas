@@ -20,7 +20,11 @@ sequenziale di Wald, il tasso di click di un phishing con prior diversi, il
 confronto con gli intervalli frequentisti, due filtri naive Bayes su dati
 veri (SMS e NSL-KDD), vantaggi, limiti e influenza del prior, e il
 posterior che converge (Bernstein-von Mises). Dodici riquadri "Prova"
-lasciano mettere le mani sui numeri.
+lasciano mettere le mani sui numeri. Anche i grafici delle sezioni si
+muovono: si ingrandiscono (Ctrl + rotella, due dita, oppure un
+rettangolo trascinato; doppio clic per tornare alla vista intera) e molti
+hanno comandi, linee da trascinare e animazioni; grafici e tabelle
+seguono i comandi, i paragrafi raccontano i valori iniziali.
 
 Come si apre
   Estrarre tutto l'archivio in una cartella e aprire index.html con un
@@ -93,7 +97,11 @@ for triage, Wald's sequential test, the click rate of a phishing campaign
 with different priors, the comparison with frequentist intervals, two naive
 Bayes filters on real data (SMS and NSL-KDD), advantages, limitations and
 influence of the prior, and the posterior that converges (Bernstein-von
-Mises). Twelve "Try it" boxes let you get your hands on the numbers.
+Mises). Twelve "Try it" boxes let you get your hands on the numbers. The
+charts of the sections move too: they zoom (ctrl + wheel, two fingers, or
+a rectangle dragged; double click for the whole chart again) and many
+have controls, lines to drag and animations; charts and tables follow the
+controls, the paragraphs tell the starting values.
 
 How to open it
   Extract the whole archive into a folder and double click index.html: it

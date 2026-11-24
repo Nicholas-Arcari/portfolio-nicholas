@@ -17,6 +17,7 @@ export const KIT_LABELS = Object.freeze({
     forward: 'Un passo avanti',
     speed: 'Velocità',
     position: (t, n) => `Passo ${t} di ${n}`,
+    pending: 'Simulazione in corso...',
   }),
   en: Object.freeze({
     tools: 'Chart zoom',
@@ -32,6 +33,7 @@ export const KIT_LABELS = Object.freeze({
     forward: 'One step forward',
     speed: 'Speed',
     position: (t, n) => `Step ${t} of ${n}`,
+    pending: 'Simulating...',
   }),
 });
 

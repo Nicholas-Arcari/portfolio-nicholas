@@ -13,9 +13,10 @@ const cancelFrame = (id) => (typeof cancelAnimationFrame === 'function' ? cancel
  * A player of `frames` steps, one every `ms` milliseconds at speed 1.
  * onFrame(t) draws step t; onChange(state) tells the interface { t,
  * frames, playing, speed }. Returns { play, pause, toggle, step, seek,
- * setSpeed, setFrames, state, destroy }.
+ * setSpeed, setFrames, setMs, state, destroy }.
  */
-export function createPlayer({ frames = 1, ms = 60, loop = false, onFrame, onChange = null }) {
+export function createPlayer({ frames = 1, ms: stepMs = 60, loop = false, onFrame, onChange = null }) {
+  let ms = stepMs;
   let count = Math.max(1, frames);
   let t = count - 1;
   let playing = false;
@@ -99,6 +100,10 @@ export function createPlayer({ frames = 1, ms = 60, loop = false, onFrame, onCha
       count = Math.max(1, next);
       if (!playing || t > count - 1) t = count - 1;
       notify();
+    },
+    /** Another length of a step, in milliseconds at speed 1 (a new animation). */
+    setMs(next) {
+      ms = Math.max(1, next);
     },
     state,
     destroy() {

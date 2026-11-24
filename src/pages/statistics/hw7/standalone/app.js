@@ -77,6 +77,8 @@ const state = {
   message: null,
   base: 'train',
   kdd: { ...view.KDD_TRY_DEFAULT },
+  // the parameters of the sections with controls, by section
+  params: {},
 };
 let text = HW7_TEXTS[state.lang];
 const regions = {};
@@ -137,6 +139,33 @@ const tryBox = (id, label, ...children) => h('div', { class: 'try' }, title(id, 
 const message = (error) => (error instanceof Error ? error.message : String(error));
 const pending = () => (computation.error ? h('p', { class: 'note', text: text.ui.error(computation.error) }) : h('p', { class: 'note pending', role: 'status', text: text.ui.computing }));
 
+// the models of the sections with controls, made again at every drawing of the page; their parameters survive it
+let sectionModels = [];
+
+/**
+ * The model of a section with controls (view.MODELS[key], chartkit): its
+ * parameters survive a change of language; `sim` is the result already
+ * computed for the starting parameters.
+ */
+function sectionModel(name, key, sim = null) {
+  const start = view.MODELS[key].params;
+  const model = kit.createModel({ ...view.MODELS[key], params: state.params[name] || start, runner: hw.runStepsAsync });
+  if (sim) model.provide(sim, start);
+  // other parameters, kept from before: their simulation starts now
+  if (state.params[name]) model.setParams(state.params[name]);
+  model.subscribe(() => {
+    state.params[name] = model.get().params;
+  });
+  sectionModels.push(model);
+  return model;
+}
+
+/** What follows a model: update(state) now and after every change (charts updated in place, tables built again). */
+function follow(model, update) {
+  update(model.get());
+  model.subscribe(() => update(model.get()));
+}
+
 // what the reader hid in the legends of the charts that are built again (a box that changes)
 const kept = {};
 const keep = (name) => {
@@ -155,12 +184,13 @@ function setHidden(fig, parts) {
  * A chart (chartkit/kitDom.js): drawn by homework7.js, with its legend
  * (`items`), its label under the pointer, the table tied to it (`table`, an
  * id of view.LINKED_TABLES: the legend hides its parts there too) and zoom
- * on every chart with continuous axes; with `spec`, its controls, the
- * handles to drag and the animation. `keep` is the set of hidden items that
- * outlives the chart.
+ * on every chart with continuous axes; `animation` ({ frames, at(t), ms })
+ * plays it step by step, `handles` ({ items, onChange }) are the lines to
+ * drag, `pending` says that a simulation is running. `keep` is the set of
+ * hidden items that outlives the chart.
  */
-function figure(label, draw, data, { wide = true, tip = null, items = null, note = null, link = null, table = null, keep: hiddenItems = null, spec = null } = {}) {
-  return kit.createFigure({ label, draw, data, spec, palette: palette(), lib: hw, schedule: view.scheduleFrameJob, lang: state.lang, tip, items, note, link, table, keep: hiddenItems, wide });
+function figure(label, draw, data, { wide = true, tip = null, items = null, note = null, link = null, table = null, keep: hiddenItems = null, animation = null, handles = null, pending = false } = {}) {
+  return kit.createFigure({ label, draw, data, palette: palette(), lib: hw, schedule: view.scheduleFrameJob, lang: state.lang, tip, items, note, link, table, keep: hiddenItems, wide, animation, handles, pending });
 }
 
 /** Replaces the content of a region, releasing the charts it contained and their labels. */
@@ -318,20 +348,37 @@ function probabilityBlock() {
   return [
     title('hw7-probability', 1, text.sections.probability),
     paras(P.paras(hw.deviationTable())),
-    whenComputed((s) => (!s ? pending() : [
-      h('div', { class: 'charts' }, figure(P.chartTitle, hw.drawLineChart, view.outsideChart(s.paths, F.decimal), { tip: view.tips.outside(s.paths, text.tips), items, link: view.links.outside, table: view.LINKED_TABLES.outside, keep: keep('outside') })),
-      dataTable({
-        id: view.LINKED_TABLES.outside,
-        caption: P.tableTitle,
-        columns: [
-          { key: 'n', label: P.cols.n },
-          { key: 'simulated', label: P.cols.simulated, num: true, part: part(items, 0) },
-          { key: 'exact', label: P.cols.exact, num: true, part: part(items, 1) },
-          { key: 'chebyshev', label: P.cols.chebyshev, num: true, part: part(items, 2) },
-        ],
-        rows: s.paths.checks.map((c) => ({ cells: { n: F.int(c.n), simulated: F.pct(c.outside), exact: F.pct(c.exactOutside, 2), chebyshev: F.pct(hw.deviationBounds(c.n, s.paths.rate, s.paths.epsilon).chebyshev) } })),
-      }),
-    ])),
+    whenComputed((s) => {
+      if (!s) return pending();
+      const model = sectionModel('probability', 'paths', s.paths);
+      const simOf = (m) => m.sim || s.paths;
+      const fig = figure(P.chartTitle, hw.drawLineChart, view.outsideChart(simOf(model.get()), F.decimal), { items, link: view.links.outside, table: view.LINKED_TABLES.outside, keep: keep('outside') });
+      const tableRegion = h('div');
+      follow(model, (m) => {
+        const paths = simOf(m);
+        const data = view.outsideChart(paths, F.decimal);
+        fig.kit.setData(data);
+        fig.kit.setTip(view.tips.outside(paths, text.tips));
+        fig.kit.setAnimation(view.reveal(data));
+        fig.kit.setPending(m.pending);
+        fill(
+          tableRegion,
+          dataTable({
+            id: view.LINKED_TABLES.outside,
+            caption: P.tableTitle,
+            columns: [
+              { key: 'n', label: P.cols.n },
+              { key: 'simulated', label: P.cols.simulated, num: true, part: part(items, 0) },
+              { key: 'exact', label: P.cols.exact, num: true, part: part(items, 1) },
+              { key: 'chebyshev', label: P.cols.chebyshev, num: true, part: part(items, 2) },
+            ],
+            rows: paths.checks.map((c) => ({ cells: { n: F.int(c.n), simulated: F.pct(c.outside), exact: F.pct(c.exactOutside, 2), chebyshev: F.pct(hw.deviationBounds(c.n, paths.rate, paths.epsilon).chebyshev) } })),
+          }),
+        );
+        hideParts(tableRegion.querySelector('table'), partsOf(items, keep('outside')));
+      });
+      return [kit.modelControls(model, view.controls.paths(text.controls), state.lang), h('div', { class: 'charts' }, fig), tableRegion];
+    }),
     h('p', { text: P.after }),
   ];
 }
@@ -343,25 +390,47 @@ function almostBlock() {
   const afterItems = view.legends.after(text.legends);
   return [
     title('hw7-almost', 1, text.sections.almost),
-    whenComputed((s) => (!s ? pending() : [
-      paras(A.paras(s.paths)),
-      h(
-        'div',
-        { class: 'charts' },
-        figure(A.chartTitle, hw.drawLineChart, view.pathsChart(s.paths, F.decimal), { tip: view.tips.paths(s.paths, text.tips), items: pathsItems, keep: keep('paths') }),
-        figure(A.chart2Title, hw.drawLineChart, view.afterChart(s.paths, F.decimal), { tip: view.tips.after(s.paths, text.tips), items: afterItems, link: view.links.after, table: view.LINKED_TABLES.after, keep: keep('after') }),
-      ),
-      dataTable({
-        id: view.LINKED_TABLES.after,
-        caption: A.tableTitle,
-        columns: [
-          { key: 'n', label: A.cols.n },
-          { key: 'outside', label: A.cols.outside, num: true, part: part(afterItems, 0) },
-          { key: 'after', label: A.cols.after, num: true, part: part(afterItems, 1) },
-        ],
-        rows: s.paths.checks.map((c) => ({ cells: { n: F.int(c.n), outside: F.pct(c.outside), after: F.pct(c.after) } })),
-      }),
-    ])),
+    whenComputed((s) => {
+      if (!s) return pending();
+      const model = sectionModel('almost', 'paths', s.paths);
+      const simOf = (m) => m.sim || s.paths;
+      // the band follows the controls at once, the paths when their simulation arrives
+      const pathsOf = (m) => view.pathsChart({ ...simOf(m), rate: m.params.rate, epsilon: m.params.epsilon }, F.decimal);
+      const moveHandle = (id, v) => model.setParams(view.handles.pathsMove(model.get().params, id, v));
+      const first = model.get();
+      const pathsFig = figure(A.chartTitle, hw.drawLineChart, pathsOf(first), { items: pathsItems, keep: keep('paths'), handles: { items: view.handles.paths(first.params, text.controls), onChange: moveHandle } });
+      const afterFig = figure(A.chart2Title, hw.drawLineChart, view.afterChart(simOf(first), F.decimal), { items: afterItems, link: view.links.after, table: view.LINKED_TABLES.after, keep: keep('after') });
+      const tableRegion = h('div');
+      follow(model, (m) => {
+        const paths = simOf(m);
+        const pathsData = pathsOf(m);
+        const after = view.afterChart(paths, F.decimal);
+        pathsFig.kit.setData(pathsData);
+        pathsFig.kit.setTip(view.tips.paths(paths, text.tips));
+        pathsFig.kit.setAnimation(view.reveal(pathsData, 80));
+        pathsFig.kit.setHandles({ items: view.handles.paths(m.params, text.controls), onChange: moveHandle });
+        afterFig.kit.setData(after);
+        afterFig.kit.setTip(view.tips.after(paths, text.tips));
+        afterFig.kit.setAnimation(view.reveal(after));
+        pathsFig.kit.setPending(m.pending);
+        afterFig.kit.setPending(m.pending);
+        fill(
+          tableRegion,
+          dataTable({
+            id: view.LINKED_TABLES.after,
+            caption: A.tableTitle,
+            columns: [
+              { key: 'n', label: A.cols.n },
+              { key: 'outside', label: A.cols.outside, num: true, part: part(afterItems, 0) },
+              { key: 'after', label: A.cols.after, num: true, part: part(afterItems, 1) },
+            ],
+            rows: paths.checks.map((c) => ({ cells: { n: F.int(c.n), outside: F.pct(c.outside), after: F.pct(c.after) } })),
+          }),
+        );
+        hideParts(tableRegion.querySelector('table'), partsOf(afterItems, keep('after')));
+      });
+      return [paras(A.paras(s.paths)), kit.modelControls(model, view.controls.paths(text.controls), state.lang), h('div', { class: 'charts' }, pathsFig, afterFig), tableRegion];
+    }),
     h('p', { text: A.after }),
   ];
 }
@@ -435,20 +504,36 @@ function l2Block() {
   const items = view.legends.mse(text.legends);
   return [
     title('hw7-l2', 1, text.sections.l2),
-    whenComputed((s) => (!s ? pending() : [
-      paras(Q.paras(s.paths)),
-      h('div', { class: 'charts' }, figure(Q.chartTitle, hw.drawLineChart, view.mseChart(s.paths, F.decimal), { tip: view.tips.mse(s.paths, text.tips), items, link: view.links.mse, table: view.LINKED_TABLES.mse, keep: keep('mse') })),
-      dataTable({
-        id: view.LINKED_TABLES.mse,
-        caption: Q.tableTitle,
-        columns: [
-          { key: 'n', label: Q.cols.n },
-          { key: 'simulated', label: Q.cols.simulated, num: true, part: part(items, 0) },
-          { key: 'exact', label: Q.cols.exact, num: true, part: part(items, 1) },
-        ],
-        rows: s.paths.checks.map((c) => ({ cells: { n: F.int(c.n), simulated: F.sci(c.mse, 2), exact: F.sci(c.exactMse, 2) } })),
-      }),
-    ])),
+    whenComputed((s) => {
+      if (!s) return pending();
+      const model = sectionModel('l2', 'pathsRate', s.paths);
+      const simOf = (m) => m.sim || s.paths;
+      const fig = figure(Q.chartTitle, hw.drawLineChart, view.mseChart(simOf(model.get()), F.decimal), { items, link: view.links.mse, table: view.LINKED_TABLES.mse, keep: keep('mse') });
+      const tableRegion = h('div');
+      follow(model, (m) => {
+        const paths = simOf(m);
+        const data = view.mseChart(paths, F.decimal);
+        fig.kit.setData(data);
+        fig.kit.setTip(view.tips.mse(paths, text.tips));
+        fig.kit.setAnimation(view.reveal(data));
+        fig.kit.setPending(m.pending);
+        fill(
+          tableRegion,
+          dataTable({
+            id: view.LINKED_TABLES.mse,
+            caption: Q.tableTitle,
+            columns: [
+              { key: 'n', label: Q.cols.n },
+              { key: 'simulated', label: Q.cols.simulated, num: true, part: part(items, 0) },
+              { key: 'exact', label: Q.cols.exact, num: true, part: part(items, 1) },
+            ],
+            rows: paths.checks.map((c) => ({ cells: { n: F.int(c.n), simulated: F.sci(c.mse, 2), exact: F.sci(c.exactMse, 2) } })),
+          }),
+        );
+        hideParts(tableRegion.querySelector('table'), partsOf(items, keep('mse')));
+      });
+      return [paras(Q.paras(s.paths)), kit.modelControls(model, view.controls.pathsRate(text.controls), state.lang), h('div', { class: 'charts' }, fig), tableRegion];
+    }),
     dataTable({
       caption: Q.counterTitle,
       columns: [
@@ -473,23 +558,38 @@ function distributionBlock() {
   const items = view.legends.clt(text.legends);
   return [
     title('hw7-distribution', 1, text.sections.distribution),
-    whenComputed((s) => (!s ? pending() : [
-      paras(D.paras(s.clt.rows)),
-      h('div', { class: 'charts' }, figure(D.chartTitle, hw.drawLineChart, view.cltChart(s.clt.rows, F.decimal), { tip: view.tips.clt(s.clt.rows, text.tips), items, link: view.links.clt, table: view.LINKED_TABLES.clt, keep: keep('clt') })),
-      dataTable({
-        id: view.LINKED_TABLES.clt,
-        caption: D.tableTitle,
-        columns: [
-          { key: 'n', label: D.cols.n },
-          { key: 'bernoulli', label: D.cols.bernoulli, num: true, part: part(items, 0) },
-          { key: 'bernoulliBound', label: D.cols.bernoulliBound, num: true, part: part(items, 1) },
-          { key: 'exponential', label: D.cols.exponential, num: true, part: part(items, 2) },
-          { key: 'exponentialBound', label: D.cols.exponentialBound, num: true, part: part(items, 3) },
-        ],
-        rows: s.clt.rows.map((r) => ({ cells: { n: F.int(r.n), bernoulli: F.num(r.bernoulli, 4), bernoulliBound: F.num(r.bernoulliBound, 4), exponential: F.num(r.exponential, 4), exponentialBound: F.num(r.exponentialBound, 4) } })),
-      }),
-      h('p', { text: D.tests(s.clt) }),
-    ])),
+    whenComputed((s) => {
+      if (!s) return pending();
+      const model = sectionModel('distribution', 'clt');
+      // the exact distances for another p take a few milliseconds
+      const rowsOf = (m) => (view.atStart('clt', m.params) ? s.clt.rows : hw.cltTable(hw.CLT_SIZES, m.params.p));
+      const fig = figure(D.chartTitle, hw.drawLineChart, view.cltChart(rowsOf(model.get()), F.decimal), { items, link: view.links.clt, table: view.LINKED_TABLES.clt, keep: keep('clt') });
+      const tableRegion = h('div');
+      follow(model, (m) => {
+        const rows = rowsOf(m);
+        const data = view.cltChart(rows, F.decimal);
+        fig.kit.setData(data);
+        fig.kit.setTip(view.tips.clt(rows, text.tips));
+        fig.kit.setAnimation(view.reveal(data));
+        fill(
+          tableRegion,
+          dataTable({
+            id: view.LINKED_TABLES.clt,
+            caption: D.tableTitle,
+            columns: [
+              { key: 'n', label: D.cols.n },
+              { key: 'bernoulli', label: D.cols.bernoulli, num: true, part: part(items, 0) },
+              { key: 'bernoulliBound', label: D.cols.bernoulliBound, num: true, part: part(items, 1) },
+              { key: 'exponential', label: D.cols.exponential, num: true, part: part(items, 2) },
+              { key: 'exponentialBound', label: D.cols.exponentialBound, num: true, part: part(items, 3) },
+            ],
+            rows: rows.map((r) => ({ cells: { n: F.int(r.n), bernoulli: F.num(r.bernoulli, 4), bernoulliBound: F.num(r.bernoulliBound, 4), exponential: F.num(r.exponential, 4), exponentialBound: F.num(r.exponentialBound, 4) } })),
+          }),
+        );
+        hideParts(tableRegion.querySelector('table'), partsOf(items, keep('clt')));
+      });
+      return [paras(D.paras(s.clt.rows)), kit.modelControls(model, view.controls.clt(text.controls), state.lang), h('div', { class: 'charts' }, fig), tableRegion, h('p', { text: D.tests(s.clt) })];
+    }),
   ];
 }
 
@@ -687,28 +787,45 @@ function rolesBlock() {
 function resultsBlock() {
   const R = text.results;
   const F = text.fmt;
-  const rows = view.resultsRows();
+  const start = view.resultsRows();
   const delta = [100, 1000, 10000].map((n) => hw.deltaLogOdds(n));
   const items = view.legends.results(text.legends);
+  const model = sectionModel('results', 'results');
+  const rowsOf = (m) => (view.atStart('results', m.params) ? start : view.resultsRows(m.params.p));
+  const fig = figure(R.chartTitle, hw.drawLineChart, view.resultsChart(rowsOf(model.get()), F.decimal), { items, link: view.links.results, table: view.LINKED_TABLES.results, keep: keep('results') });
+  const tableRegion = h('div');
+  follow(model, (m) => {
+    const rows = rowsOf(m);
+    const data = view.resultsChart(rows, F.decimal);
+    fig.kit.setData(data);
+    fig.kit.setTip(view.tips.results(rows, text.tips));
+    fig.kit.setAnimation(view.reveal(data, 300));
+    fill(
+      tableRegion,
+      dataTable({
+        id: view.LINKED_TABLES.results,
+        caption: R.tableTitle,
+        columns: [
+          { key: 'n', label: R.cols.n },
+          { key: 'z', label: R.cols.z, num: true, part: part(items, 0) },
+          { key: 't', label: R.cols.t, num: true, part: part(items, 1) },
+          { key: 'mle', label: R.cols.mle, num: true, part: part(items, 2) },
+          { key: 'bias', label: R.cols.bias, num: true, part: part(items, 2) },
+          { key: 'efficiency', label: R.cols.efficiency, num: true, part: part(items, 2) },
+        ],
+        rows: rows.map((r) => ({ cells: { n: F.int(r.n), z: F.num(r.z, 4), t: F.num(r.t, 4), mle: F.num(r.mle.distance, 4), bias: F.pct(r.mle.bias, 2), efficiency: F.num(r.mle.efficiency, 4) } })),
+      }),
+    );
+    hideParts(tableRegion.querySelector('table'), partsOf(items, keep('results')));
+  });
   return [
     title('hw7-results', 1, text.sections.results),
     h('p', { text: R.intro }),
     h('p', { text: R.consistency }),
-    h('p', { text: R.slutsky(rows) }),
-    h('div', { class: 'charts' }, figure(R.chartTitle, hw.drawLineChart, view.resultsChart(rows, F.decimal), { tip: view.tips.results(rows, text.tips), items, link: view.links.results, table: view.LINKED_TABLES.results, keep: keep('results') })),
-    dataTable({
-      id: view.LINKED_TABLES.results,
-      caption: R.tableTitle,
-      columns: [
-        { key: 'n', label: R.cols.n },
-        { key: 'z', label: R.cols.z, num: true, part: part(items, 0) },
-        { key: 't', label: R.cols.t, num: true, part: part(items, 1) },
-        { key: 'mle', label: R.cols.mle, num: true, part: part(items, 2) },
-        { key: 'bias', label: R.cols.bias, num: true, part: part(items, 2) },
-        { key: 'efficiency', label: R.cols.efficiency, num: true, part: part(items, 2) },
-      ],
-      rows: rows.map((r) => ({ cells: { n: F.int(r.n), z: F.num(r.z, 4), t: F.num(r.t, 4), mle: F.num(r.mle.distance, 4), bias: F.pct(r.mle.bias, 2), efficiency: F.num(r.mle.efficiency, 4) } })),
-    }),
+    h('p', { text: R.slutsky(start) }),
+    kit.modelControls(model, view.controls.results(text.controls), state.lang),
+    h('div', { class: 'charts' }, fig),
+    tableRegion,
     h('p', { text: R.delta(delta[0], delta[1]) }),
     dataTable({
       caption: R.deltaTitle,
@@ -723,7 +840,7 @@ function resultsBlock() {
         rows: s.gc.rows.map((r) => ({ cells: { n: F.int(r.n), meanD: F.num(r.meanD, 4), meanScaled: F.num(r.meanScaled, 3), over: F.pct(r.over, 1) } })),
       }),
     ])),
-    h('p', { text: R.mle(rows) }),
+    h('p', { text: R.mle(start) }),
   ];
 }
 
@@ -731,30 +848,51 @@ function rootBlock() {
   const R = text.root;
   const F = text.fmt;
   const items = view.legends.root(text.legends);
-  const sigma = Math.sqrt(hw.FALSE_ALARMS.rate * (1 - hw.FALSE_ALARMS.rate));
+  const inferenceRegion = h('div');
+  const inferenceOf = (rate) => dataTable({
+    caption: R.inferenceTitle,
+    columns: [{ key: 'n', label: R.inferenceCols.n }, { key: 'variance', label: R.inferenceCols.variance, num: true }, { key: 'se', label: R.inferenceCols.se, num: true }, { key: 'half', label: R.inferenceCols.half, num: true }],
+    rows: hw.rootTable(rate).map((r) => ({ cells: { n: F.int(r.n), variance: F.num(r.variance, 2), se: F.num(r.se, 5), half: `± ${F.pct(r.half, 2)}` } })),
+  });
+  fill(inferenceRegion, inferenceOf(hw.FALSE_ALARMS.rate));
   return [
     title('hw7-root', 1, text.sections.root),
     paras(R.paras([hw.sampleSizeFor(0.01), hw.sampleSizeFor(0.005), hw.sampleSizeFor(0.001)])),
-    whenComputed((s) => (!s ? pending() : [
-      h('div', { class: 'charts' }, figure(R.chartTitle, hw.drawLineChart, view.rootChart(s.paths, F.decimal), { tip: view.tips.root(s.paths, text.tips), items, link: view.links.root, table: view.LINKED_TABLES.root, keep: keep('root') })),
-      dataTable({
-        id: view.LINKED_TABLES.root,
-        caption: R.tableTitle,
-        columns: [
-          { key: 'n', label: R.cols.n },
-          { key: 'sdCount', label: R.cols.sdCount, num: true, part: part(items, 0) },
-          { key: 'exactCount', label: R.cols.exactCount, num: true, part: part(items, 0) },
-          { key: 'sdShare', label: R.cols.sdShare, num: true, part: part(items, 1) },
-          { key: 'exactShare', label: R.cols.exactShare, num: true, part: part(items, 1) },
-        ],
-        rows: s.paths.checks.map((c) => ({ cells: { n: F.int(c.n), sdCount: F.num(c.n * Math.sqrt(c.mse), 2), exactCount: F.num(sigma * Math.sqrt(c.n), 2), sdShare: F.num(Math.sqrt(c.mse), 5), exactShare: F.num(sigma / Math.sqrt(c.n), 5) } })),
-      }),
-    ])),
-    dataTable({
-      caption: R.inferenceTitle,
-      columns: [{ key: 'n', label: R.inferenceCols.n }, { key: 'variance', label: R.inferenceCols.variance, num: true }, { key: 'se', label: R.inferenceCols.se, num: true }, { key: 'half', label: R.inferenceCols.half, num: true }],
-      rows: hw.rootTable().map((r) => ({ cells: { n: F.int(r.n), variance: F.num(r.variance, 2), se: F.num(r.se, 5), half: `± ${F.pct(r.half, 2)}` } })),
+    whenComputed((s) => {
+      if (!s) return pending();
+      const model = sectionModel('root', 'pathsRate', s.paths);
+      const simOf = (m) => m.sim || s.paths;
+      const fig = figure(R.chartTitle, hw.drawLineChart, view.rootChart(simOf(model.get()), F.decimal), { items, link: view.links.root, table: view.LINKED_TABLES.root, keep: keep('root') });
+      const tableRegion = h('div');
+      follow(model, (m) => {
+        const paths = simOf(m);
+        const sigma = Math.sqrt(paths.rate * (1 - paths.rate));
+        const data = view.rootChart(paths, F.decimal);
+        fig.kit.setData(data);
+        fig.kit.setTip(view.tips.root(paths, text.tips));
+        fig.kit.setAnimation(view.reveal(data));
+        fig.kit.setPending(m.pending);
+        fill(
+          tableRegion,
+          dataTable({
+            id: view.LINKED_TABLES.root,
+            caption: R.tableTitle,
+            columns: [
+              { key: 'n', label: R.cols.n },
+              { key: 'sdCount', label: R.cols.sdCount, num: true, part: part(items, 0) },
+              { key: 'exactCount', label: R.cols.exactCount, num: true, part: part(items, 0) },
+              { key: 'sdShare', label: R.cols.sdShare, num: true, part: part(items, 1) },
+              { key: 'exactShare', label: R.cols.exactShare, num: true, part: part(items, 1) },
+            ],
+            rows: paths.checks.map((c) => ({ cells: { n: F.int(c.n), sdCount: F.num(c.n * Math.sqrt(c.mse), 2), exactCount: F.num(sigma * Math.sqrt(c.n), 2), sdShare: F.num(Math.sqrt(c.mse), 5), exactShare: F.num(sigma / Math.sqrt(c.n), 5) } })),
+          }),
+        );
+        hideParts(tableRegion.querySelector('table'), partsOf(items, keep('root')));
+        fill(inferenceRegion, inferenceOf(m.params.rate));
+      });
+      return [kit.modelControls(model, view.controls.pathsRate(text.controls), state.lang), h('div', { class: 'charts' }, fig), tableRegion];
     }),
+    inferenceRegion,
   ];
 }
 
@@ -869,13 +1007,31 @@ function heavyBlock() {
     dataTable({ caption: H.factsTitle, columns: [{ key: 'what', label: '' }, { key: 'value', label: '', num: true }], rows: facts.map(([k, v]) => ({ cells: { what: H.facts[k], value: v } })) }),
     whenComputed((s) => {
       if (!s) return pending();
-      const hist = view.bytesChart(s.bytes[s.bytes.length - 1], F.decimal);
+      // a new sample of Cauchy paths takes a few milliseconds; the first one comes from the computation of the page
+      const cauchyModel = sectionModel('cauchy', 'cauchy');
+      const linesOf = (m) => (m.params.seed === hw.DEFAULT_SEED ? s.cauchy : hw.cauchyPaths(m.params.seed));
+      const cauchyFig = figure(H.cauchyTitle, hw.drawLineChart, view.cauchyChart(linesOf(cauchyModel.get()), F.decimal));
+      follow(cauchyModel, (m) => {
+        const lines = linesOf(m);
+        const data = view.cauchyChart(lines, F.decimal);
+        cauchyFig.kit.setData(data);
+        cauchyFig.kit.setTip(view.tips.cauchy(lines, text.tips));
+        cauchyFig.kit.setAnimation(view.reveal(data, 80));
+      });
+      const bytesModel = sectionModel('bytes', 'bytes');
+      const meansOf = (m) => s.bytes.find((x) => x.n === m.params.n) || s.bytes[s.bytes.length - 1];
+      const histFig = figure(H.histTitle, hw.drawHistogram, view.bytesChart(meansOf(bytesModel.get()), F.decimal), { items: view.legends.bytes(text.legends), keep: keep('bytes') });
+      follow(bytesModel, (m) => {
+        const hist = view.bytesChart(meansOf(m), F.decimal);
+        histFig.kit.setData(hist);
+        histFig.kit.setTip(view.tips.histogram(hist, text.tips, hw.BYTES_REPS));
+      });
       return [
         h(
           'div',
           { class: 'charts' },
-          figure(H.cauchyTitle, hw.drawLineChart, view.cauchyChart(s.cauchy, F.decimal), { tip: view.tips.cauchy(s.cauchy, text.tips) }),
-          figure(H.histTitle, hw.drawHistogram, hist, { tip: view.tips.histogram(hist, text.tips, hw.BYTES_REPS), items: view.legends.bytes(text.legends), keep: keep('bytes') }),
+          h('div', null, kit.modelControls(cauchyModel, view.controls.cauchy(text.controls), state.lang), cauchyFig),
+          h('div', null, kit.modelControls(bytesModel, view.controls.bytes(text.controls), state.lang), histFig),
         ),
         dataTable({
           caption: H.tableTitle,
@@ -891,24 +1047,41 @@ function heavyBlock() {
 function speedBlock() {
   const V = text.speed;
   const F = text.fmt;
-  const rows = hw.deviationTable();
+  const start = hw.deviationTable();
   const items = view.legends.speed(text.legends);
+  const model = sectionModel('speed', 'speed');
+  const rowsOf = (m) => hw.deviationTable(m.params.rate, m.params.epsilon);
+  const fig = figure(V.chartTitle, hw.drawLineChart, view.speedChart(rowsOf(model.get()), F.decimal), { items, link: view.links.speed, table: view.LINKED_TABLES.speed, keep: keep('speed') });
+  const tableRegion = h('div');
+  follow(model, (m) => {
+    const rows = rowsOf(m);
+    const data = view.speedChart(rows, F.decimal);
+    fig.kit.setData(data);
+    fig.kit.setTip(view.tips.speed(rows, text.tips));
+    fig.kit.setAnimation(view.reveal(data));
+    fill(
+      tableRegion,
+      dataTable({
+        id: view.LINKED_TABLES.speed,
+        caption: V.tableTitle,
+        columns: [
+          { key: 'n', label: V.cols.n },
+          { key: 'exact', label: V.cols.exact, num: true, part: part(items, 0) },
+          { key: 'chebyshev', label: V.cols.chebyshev, num: true, part: part(items, 1) },
+          { key: 'hoeffding', label: V.cols.hoeffding, num: true, part: part(items, 2) },
+          { key: 'normal', label: V.cols.normal, num: true, part: part(items, 3) },
+        ],
+        rows: rows.map((r) => ({ cells: { n: F.int(r.n), exact: F.prob(r.exact), chebyshev: F.prob(r.chebyshev), hoeffding: F.prob(r.hoeffding), normal: F.prob(r.normal) } })),
+      }),
+    );
+    hideParts(tableRegion.querySelector('table'), partsOf(items, keep('speed')));
+  });
   return [
     title('hw7-speed', 1, text.sections.speed),
-    paras(V.paras(rows)),
-    h('div', { class: 'charts' }, figure(V.chartTitle, hw.drawLineChart, view.speedChart(rows, F.decimal), { tip: view.tips.speed(rows, text.tips), items, link: view.links.speed, table: view.LINKED_TABLES.speed, keep: keep('speed') })),
-    dataTable({
-      id: view.LINKED_TABLES.speed,
-      caption: V.tableTitle,
-      columns: [
-        { key: 'n', label: V.cols.n },
-        { key: 'exact', label: V.cols.exact, num: true, part: part(items, 0) },
-        { key: 'chebyshev', label: V.cols.chebyshev, num: true, part: part(items, 1) },
-        { key: 'hoeffding', label: V.cols.hoeffding, num: true, part: part(items, 2) },
-        { key: 'normal', label: V.cols.normal, num: true, part: part(items, 3) },
-      ],
-      rows: rows.map((r) => ({ cells: { n: F.int(r.n), exact: F.prob(r.exact), chebyshev: F.prob(r.chebyshev), hoeffding: F.prob(r.hoeffding), normal: F.prob(r.normal) } })),
-    }),
+    paras(V.paras(start)),
+    kit.modelControls(model, view.controls.speed(text.controls), state.lang),
+    h('div', { class: 'charts' }, fig),
+    tableRegion,
   ];
 }
 
@@ -1026,14 +1199,26 @@ function tryPvalueBox() {
 function engineBlock() {
   const E = text.engine;
   const F = text.fmt;
-  const lik = view.likelihoodChart(hw.DEFAULT_SEED, F.decimal);
-  const d1 = lik.curves.data.day1;
-  const d10 = lik.curves.data.days10;
+  // the text speaks of the first day and of ten days; the chart follows the days chosen
+  const start = view.likelihoodChart(hw.DEFAULT_SEED, F.decimal);
+  const d1 = start.curves.data.day1;
+  const d10 = start.curves.data.days10;
+  const model = sectionModel('engine', 'likelihood');
+  const likOf = (m) => view.likelihoodChart(hw.DEFAULT_SEED, F.decimal, m.params.days);
+  const first = likOf(model.get());
+  const fig = figure(E.likelihoodTitle, hw.drawLineChart, first.chart, { tip: view.tips.likelihood(first.curves, text.tips), items: view.legends.likelihood(text.legends, model.get().params.days), keep: keep('likelihood') });
+  follow(model, (m) => {
+    const lik = likOf(m);
+    fig.kit.setData(lik.chart);
+    fig.kit.setTip(view.tips.likelihood(lik.curves, text.tips));
+    relabel(fig, view.legends.likelihood(text.legends, m.params.days));
+  });
   return [
     title('hw7-engine', 1, text.sections.engine),
     h('p', { text: E.components }),
-    h('div', { class: 'charts' }, figure(E.likelihoodTitle, hw.drawLineChart, lik.chart, { tip: view.tips.likelihood(lik.curves, text.tips), items: view.legends.likelihood(text.legends), keep: keep('likelihood') })),
-    h('p', { text: E.likelihood(lik.curves) }),
+    kit.modelControls(model, view.controls.likelihood(text.controls), state.lang),
+    h('div', { class: 'charts' }, fig),
+    h('p', { text: E.likelihood(start.curves) }),
     h('p', { text: E.odds }),
     formulas(E.formulas),
     h('p', { text: E.weights(hw.priorWeight(hw.PRIORS.informed, d1.clicks, d1.sent), hw.priorWeight(hw.PRIORS.informed, d10.clicks, d10.sent)) }),
@@ -1203,36 +1388,57 @@ function tryNetworkBox() {
 function sprtBlock() {
   const W = text.sprt;
   const F = text.fmt;
-  const setup = hw.sprtSetup(hw.SPRT_DEFAULT);
-  const exact = { legit: hw.sprtExact(setup, hw.SPRT_DEFAULT.p0), attacker: hw.sprtExact(setup, hw.SPRT_DEFAULT.p1) };
-  const walks = [
-    { ...hw.sprtPath(setup, view.SPRT_EXAMPLES.legit), key: 'legit', color: 0 },
-    { ...hw.sprtPath(setup, view.SPRT_EXAMPLES.attacker), key: 'attacker', color: 1 },
-  ];
+  const start = hw.sprtSetup(hw.SPRT_DEFAULT);
+  const startExact = { legit: hw.sprtExact(start, hw.SPRT_DEFAULT.p0), attacker: hw.sprtExact(start, hw.SPRT_DEFAULT.p1) };
+  const model = sectionModel('sprt', 'sprt');
+  const setupOf = (m) => hw.sprtSetup({ ...hw.SPRT_DEFAULT, alpha: m.params.alpha, beta: m.params.beta });
+  const moveHandle = (id, v) => model.setParams(view.handles.sprtMove(model.get().params, id, v));
+  const firstSetup = setupOf(model.get());
+  const firstWalks = view.sprtWalks(firstSetup, model.get().params.seed);
+  const fig = figure(W.chartTitle, hw.drawLineChart, view.sprtChart(firstSetup, firstWalks, F.decimal), { items: view.legends.sprt(text.legends, firstWalks), keep: keep('sprt'), handles: { items: view.handles.sprt(firstSetup, text.controls), onChange: moveHandle } });
+  const tableRegion = h('div');
   const row = (who, ex, wald, simulated) => ({ cells: { who: W.who[who], block: F.prob(ex.block), clear: F.prob(ex.clear), exact: F.num(ex.mean, 2), wald: F.num(wald, 2), simulated: simulated ? F.num(simulated.meanSteps, 2) : '-' } });
+  const tableOf = (m) => {
+    const setup = setupOf(m);
+    const exact = { legit: hw.sprtExact(setup, hw.SPRT_DEFAULT.p0), attacker: hw.sprtExact(setup, hw.SPRT_DEFAULT.p1) };
+    // the simulation of the page was run with the starting errors
+    const s = computation.shown;
+    const sim = s && m.params.alpha === hw.SPRT_DEFAULT.alpha && m.params.beta === hw.SPRT_DEFAULT.beta ? s.sprt : null;
+    return dataTable({
+      caption: W.tableTitle,
+      columns: [
+        { key: 'who', label: W.cols.who },
+        { key: 'block', label: W.cols.block, num: true },
+        { key: 'clear', label: W.cols.clear, num: true },
+        { key: 'exact', label: W.cols.exact, num: true },
+        { key: 'wald', label: W.cols.wald, num: true },
+        { key: 'simulated', label: W.cols.simulated, num: true },
+      ],
+      rows: [row('legit', exact.legit, setup.waldLegit, sim && sim.legit), row('attacker', exact.attacker, setup.waldAttacker, sim && sim.attackers)],
+    });
+  };
+  follow(model, (m) => {
+    const setup = setupOf(m);
+    const walks = view.sprtWalks(setup, m.params.seed);
+    const data = view.sprtChart(setup, walks, F.decimal);
+    fig.kit.setData(data);
+    fig.kit.setTip(view.tips.sprt(setup, walks, text.tips));
+    fig.kit.setAnimation(view.reveal(data, 320));
+    fig.kit.setHandles({ items: view.handles.sprt(setup, text.controls), onChange: moveHandle });
+    fill(tableRegion, tableOf(m));
+  });
   return [
     title('hw7-sprt', 1, text.sections.sprt),
     paras(W.intro),
-    formulas(W.formulas(setup)),
-    h('div', { class: 'charts' }, figure(W.chartTitle, hw.drawLineChart, view.sprtChart(setup, walks, F.decimal), { tip: view.tips.sprt(setup, walks, text.tips), items: view.legends.sprt(text.legends, walks), keep: keep('sprt') })),
-    paras(W.paras(setup, exact.legit, exact.attacker)),
+    formulas(W.formulas(start)),
+    kit.modelControls(model, view.controls.sprt(text.controls), state.lang),
+    h('div', { class: 'charts' }, fig),
+    paras(W.paras(start, startExact.legit, startExact.attacker)),
+    tableRegion,
     whenComputed((s) => {
-      const sim = s ? s.sprt : null;
-      return [
-        dataTable({
-          caption: W.tableTitle,
-          columns: [
-            { key: 'who', label: W.cols.who },
-            { key: 'block', label: W.cols.block, num: true },
-            { key: 'clear', label: W.cols.clear, num: true },
-            { key: 'exact', label: W.cols.exact, num: true },
-            { key: 'wald', label: W.cols.wald, num: true },
-            { key: 'simulated', label: W.cols.simulated, num: true },
-          ],
-          rows: [row('legit', exact.legit, setup.waldLegit, sim && sim.legit), row('attacker', exact.attacker, setup.waldAttacker, sim && sim.attackers)],
-        }),
-        sim ? h('p', { text: W.simulation(sim) }) : pending(),
-      ];
+      // the simulated column arrives with the computation of the page
+      fill(tableRegion, tableOf(model.get()));
+      return s ? h('p', { text: W.simulation(s.sprt) }) : pending();
     }),
   ];
 }
@@ -1294,26 +1500,45 @@ function trySprtBox() {
 function rateBlock() {
   const R = text.rate;
   const F = text.fmt;
-  const c = view.campaignFacts();
+  const start = view.campaignFacts();
   const items = view.legends.campaign(text.legends);
+  const model = sectionModel('rate', 'campaign');
+  const factsOf = (m) => (view.atStart('campaign', m.params) ? start : view.campaignFacts(m.params.seed, { rate: m.params.rate, perDay: m.params.perDay }));
+  const moveHandle = (id, v) => model.setParams(view.handles.trueRateMove(model.get().params, id, v));
+  const fig = figure(R.chartTitle, hw.drawLineChart, view.campaignChart(factsOf(model.get()), F.decimal), { items, link: view.links.campaign, table: view.LINKED_TABLES.campaign, keep: keep('campaign'), handles: { items: view.handles.trueRate(model.get().params.rate, text.controls), onChange: moveHandle } });
+  const tableRegion = h('div');
+  follow(model, (m) => {
+    const c = factsOf(m);
+    const data = view.campaignChart(c, F.decimal);
+    fig.kit.setData(data);
+    fig.kit.setTip(view.tips.campaign(c, text.tips));
+    fig.kit.setAnimation(view.reveal(data, 450));
+    fig.kit.setHandles({ items: view.handles.trueRate(m.params.rate, text.controls), onChange: moveHandle });
+    fill(
+      tableRegion,
+      dataTable({
+        id: view.LINKED_TABLES.campaign,
+        caption: R.tableTitle,
+        columns: [
+          { key: 'day', label: R.cols.day },
+          { key: 'sent', label: R.cols.sent, num: true },
+          { key: 'clicks', label: R.cols.clicks, num: true },
+          { key: 'uniform', label: R.cols.uniform, num: true, part: part(items, 0) },
+          { key: 'informed', label: R.cols.informed, num: true, part: part(items, 1) },
+          { key: 'above', label: R.cols.above, num: true, part: part(items, 0) },
+        ],
+        rows: c.uniform.map((u, i) => ({ cells: { day: F.int(u.day), sent: F.int(u.sent), clicks: F.int(u.clicks), uniform: R.interval(u), informed: R.interval(c.informed[i]), above: F.pct(c.aboveUniform[i]) } })),
+      }),
+    );
+    hideParts(tableRegion.querySelector('table'), partsOf(items, keep('campaign')));
+  });
   return [
     title('hw7-rate', 1, text.sections.rate),
-    h('p', { text: R.intro(c) }),
-    paras(R.paras(c)),
-    h('div', { class: 'charts' }, figure(R.chartTitle, hw.drawLineChart, view.campaignChart(c, F.decimal), { tip: view.tips.campaign(c, text.tips), items, link: view.links.campaign, table: view.LINKED_TABLES.campaign, keep: keep('campaign') })),
-    dataTable({
-      id: view.LINKED_TABLES.campaign,
-      caption: R.tableTitle,
-      columns: [
-        { key: 'day', label: R.cols.day },
-        { key: 'sent', label: R.cols.sent, num: true },
-        { key: 'clicks', label: R.cols.clicks, num: true },
-        { key: 'uniform', label: R.cols.uniform, num: true, part: part(items, 0) },
-        { key: 'informed', label: R.cols.informed, num: true, part: part(items, 1) },
-        { key: 'above', label: R.cols.above, num: true, part: part(items, 0) },
-      ],
-      rows: c.uniform.map((u, i) => ({ cells: { day: F.int(u.day), sent: F.int(u.sent), clicks: F.int(u.clicks), uniform: R.interval(u), informed: R.interval(c.informed[i]), above: F.pct(c.aboveUniform[i]) } })),
-    }),
+    h('p', { text: R.intro(start) }),
+    paras(R.paras(start)),
+    kit.modelControls(model, view.controls.campaign(text.controls), state.lang),
+    h('div', { class: 'charts' }, fig),
+    tableRegion,
     h('p', { text: R.after }),
   ];
 }
@@ -1439,23 +1664,37 @@ function tryPriorBox() {
 function frequentistBlock() {
   const Q = text.frequentist;
   const F = text.fmt;
-  const cov = hw.coverageCurves();
+  const start = hw.coverageCurves();
+  const model = sectionModel('frequentist', 'coverage');
+  const covOf = (m) => (view.atStart('coverage', m.params) ? start : hw.coverageCurves(m.params.n));
+  const fig = figure(Q.chartTitle, hw.drawLineChart, view.coverageChart(covOf(model.get()), F.decimal), { items: view.legends.coverage(text.legends), note: Q.chartNote, keep: keep('coverage') });
+  const tableRegion = h('div');
+  follow(model, (m) => {
+    const cov = covOf(m);
+    fig.kit.setData(view.coverageChart(cov, F.decimal));
+    fig.kit.setTip(view.tips.coverage(cov, text.tips));
+    fill(
+      tableRegion,
+      dataTable({
+        caption: Q.tableTitle,
+        columns: [
+          { key: 'method', label: Q.cols.method },
+          { key: 'mean', label: Q.cols.mean, num: true },
+          { key: 'min', label: Q.cols.min, num: true },
+          { key: 'at', label: Q.cols.at, num: true },
+          { key: 'width', label: Q.cols.width, num: true },
+        ],
+        rows: hw.INTERVAL_METHODS.map((k) => ({ cells: { method: text.names.methods[k], mean: F.pct(cov.summary[k].mean), min: F.pct(cov.summary[k].min), at: `p = ${F.pct(cov.summary[k].minAt, 1)}`, width: F.pct(cov.summary[k].width) } })),
+      }),
+    );
+  });
   return [
     title('hw7-frequentist', 1, text.sections.frequentist),
     paras(Q.intro),
-    h('div', { class: 'charts' }, figure(Q.chartTitle, hw.drawLineChart, view.coverageChart(cov, F.decimal), { tip: view.tips.coverage(cov, text.tips), items: view.legends.coverage(text.legends), note: Q.chartNote, keep: keep('coverage') })),
-    dataTable({
-      caption: Q.tableTitle,
-      columns: [
-        { key: 'method', label: Q.cols.method },
-        { key: 'mean', label: Q.cols.mean, num: true },
-        { key: 'min', label: Q.cols.min, num: true },
-        { key: 'at', label: Q.cols.at, num: true },
-        { key: 'width', label: Q.cols.width, num: true },
-      ],
-      rows: hw.INTERVAL_METHODS.map((m) => ({ cells: { method: text.names.methods[m], mean: F.pct(cov.summary[m].mean), min: F.pct(cov.summary[m].min), at: `p = ${F.pct(cov.summary[m].minAt, 1)}`, width: F.pct(cov.summary[m].width) } })),
-    }),
-    paras(Q.paras(cov)),
+    kit.modelControls(model, view.controls.coverage(text.controls), state.lang),
+    h('div', { class: 'charts' }, fig),
+    tableRegion,
+    paras(Q.paras(start)),
     whenComputed((s) => (s ? h('p', { text: Q.simulation(s.coverage) }) : pending())),
   ];
 }
@@ -1471,6 +1710,16 @@ function spamBlock() {
   // the message to score: the example until the reader writes another one
   const field = h('textarea', { id: 'hw7-message', rows: 3, maxlength: 2000, ...PRIVATE_FIELD });
   field.value = state.message === null ? view.SPAM_EXAMPLE : state.message;
+  // the threshold of the filter, between two bins of log-odds: a slider, or a line to drag on the chart
+  const cutModel = sectionModel('spam', 'spam');
+  const moveCut = (id, v) => cutModel.setParams(view.handles.spamMove(cutModel.get().params, id, v));
+  const cutControls = kit.modelControls(cutModel, view.controls.spam(text.controls, sms.bins), state.lang);
+  const cutFig = figure(M.chartTitle, hw.drawGroupedBars, view.logOddsChart(sms, F.decimal), { tip: view.tips.logOdds(sms, text.tips), items, link: view.links.logOdds, table: view.LINKED_TABLES.logOdds, keep: keep('logOdds'), handles: { items: view.handles.spam(cutModel.get().params.cut, sms.bins, text.controls), onChange: moveCut } });
+  const cutLine = resultLine('');
+  follow(cutModel, (m) => {
+    cutFig.kit.setHandles({ items: view.handles.spam(m.params.cut, sms.bins, text.controls), onChange: moveCut });
+    cutLine.textContent = text.controls.spam(view.spamCut(sms.bins, m.params.cut));
+  });
   const scoreRegion = h('div');
   const update = () => {
     const score = hw.spamScore(sms.model, field.value, view.spamPrior(state.base, sms));
@@ -1513,7 +1762,9 @@ function spamBlock() {
       columns: [{ key: 'spam', label: M.wordsCols.spam }, { key: 'spamWeight', label: M.wordsCols.spamWeight, num: true }, { key: 'ham', label: M.wordsCols.ham }, { key: 'hamWeight', label: M.wordsCols.hamWeight, num: true }],
       rows: words.map((i) => ({ cells: { spam: sms.spamWords[i].token, spamWeight: F.num(sms.spamWords[i].weight, 2), ham: sms.hamWords[i].token, hamWeight: F.num(sms.hamWords[i].weight, 2) } })),
     }),
-    h('div', { class: 'charts' }, figure(M.chartTitle, hw.drawGroupedBars, view.logOddsChart(sms, F.decimal), { tip: view.tips.logOdds(sms, text.tips), items, link: view.links.logOdds, table: view.LINKED_TABLES.logOdds, keep: keep('logOdds') })),
+    cutControls,
+    h('div', { class: 'charts' }, cutFig),
+    cutLine,
     dataTable({
       id: view.LINKED_TABLES.logOdds,
       caption: M.tableTitle,
@@ -1614,28 +1865,47 @@ function bvmBlock() {
   const items = view.legends.bvm(text.legends);
   return [
     title('hw7-bvm', 1, text.sections.bvm),
-    whenComputed((s) => (!s ? pending() : [
-      paras(B.paras(s.bvm)),
-      h(
-        'div',
-        { class: 'charts' },
-        figure(B.chartTitle, hw.drawLineChart, view.bvmChart(s.bvm, F.decimal), { tip: view.tips.bvm(s.bvm, text.tips), items, link: view.links.bvm, table: view.LINKED_TABLES.bvm, keep: keep('bvm') }),
-        figure(B.chart2Title, hw.drawLineChart, view.bvmDistanceChart(s.bvm, F.decimal), { tip: view.tips.bvmDistance(s.bvm, text.tips), items: view.legends.bvmDistance(text.legends), link: view.links.bvmDistance, keep: keep('bvmDistance') }),
-      ),
-      dataTable({
-        id: view.LINKED_TABLES.bvm,
-        caption: B.tableTitle,
-        columns: [
-          { key: 'n', label: B.cols.n },
-          { key: 'clicks', label: B.cols.clicks, num: true },
-          { key: 'uniform', label: B.cols.uniform, num: true, part: part(items, 0) },
-          { key: 'wrong', label: B.cols.wrong, num: true, part: part(items, 1) },
-          { key: 'dUniform', label: B.cols.dUniform, num: true },
-          { key: 'dWrong', label: B.cols.dWrong, num: true },
-        ],
-        rows: s.bvm.map((r) => ({ cells: { n: F.int(r.n), clicks: F.int(r.clicks), uniform: B.pair(r.uniform), wrong: B.pair(r.wrong), dUniform: F.num(r.uniform.distance, 4), dWrong: F.num(r.wrong.distance, 4) } })),
-      }),
-    ])),
+    whenComputed((s) => {
+      if (!s) return pending();
+      // another true rate or sample takes a few milliseconds; the first one comes from the computation of the page
+      const model = sectionModel('bvm', 'bvm');
+      const rowsOf = (m) => (view.atStart('bvm', m.params) ? s.bvm : hw.bvmFacts(m.params.seed, { rate: m.params.rate }));
+      const moveHandle = (id, v) => model.setParams(view.handles.trueRateMove(model.get().params, id, v));
+      const first = rowsOf(model.get());
+      const meansFig = figure(B.chartTitle, hw.drawLineChart, view.bvmChart(first, F.decimal), { items, link: view.links.bvm, table: view.LINKED_TABLES.bvm, keep: keep('bvm'), handles: { items: view.handles.trueRate(model.get().params.rate, text.controls), onChange: moveHandle } });
+      const distanceFig = figure(B.chart2Title, hw.drawLineChart, view.bvmDistanceChart(first, F.decimal), { items: view.legends.bvmDistance(text.legends), link: view.links.bvmDistance, keep: keep('bvmDistance') });
+      const tableRegion = h('div');
+      follow(model, (m) => {
+        const rows = rowsOf(m);
+        const means = view.bvmChart(rows, F.decimal);
+        const distances = view.bvmDistanceChart(rows, F.decimal);
+        meansFig.kit.setData(means);
+        meansFig.kit.setTip(view.tips.bvm(rows, text.tips));
+        meansFig.kit.setAnimation(view.reveal(means));
+        meansFig.kit.setHandles({ items: view.handles.trueRate(m.params.rate, text.controls), onChange: moveHandle });
+        distanceFig.kit.setData(distances);
+        distanceFig.kit.setTip(view.tips.bvmDistance(rows, text.tips));
+        distanceFig.kit.setAnimation(view.reveal(distances));
+        fill(
+          tableRegion,
+          dataTable({
+            id: view.LINKED_TABLES.bvm,
+            caption: B.tableTitle,
+            columns: [
+              { key: 'n', label: B.cols.n },
+              { key: 'clicks', label: B.cols.clicks, num: true },
+              { key: 'uniform', label: B.cols.uniform, num: true, part: part(items, 0) },
+              { key: 'wrong', label: B.cols.wrong, num: true, part: part(items, 1) },
+              { key: 'dUniform', label: B.cols.dUniform, num: true },
+              { key: 'dWrong', label: B.cols.dWrong, num: true },
+            ],
+            rows: rows.map((r) => ({ cells: { n: F.int(r.n), clicks: F.int(r.clicks), uniform: B.pair(r.uniform), wrong: B.pair(r.wrong), dUniform: F.num(r.uniform.distance, 4), dWrong: F.num(r.wrong.distance, 4) } })),
+          }),
+        );
+        hideParts(tableRegion.querySelector('table'), partsOf(items, keep('bvm')));
+      });
+      return [paras(B.paras(s.bvm)), kit.modelControls(model, view.controls.bvm(text.controls), state.lang), h('div', { class: 'charts' }, meansFig, distanceFig), tableRegion];
+    }),
   ];
 }
 
@@ -1901,6 +2171,8 @@ function renderChrome() {
 function render() {
   text = HW7_TEXTS[state.lang];
   renderChrome();
+  sectionModels.forEach((model) => model.destroy());
+  sectionModels = [];
   waiting = [];
   const app = document.getElementById('app');
   fill(app, assignmentSection(), convergenceSection(), bayesSection(), checksSection(), testsSection(), historySection(), conclusionSection(), toTopButton());

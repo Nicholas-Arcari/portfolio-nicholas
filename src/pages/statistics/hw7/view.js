@@ -192,8 +192,8 @@ export function sprtChart(setup, walks, decimal = '.') {
     x,
     series: [
       ...walks.map((w, k) => ({ values: x.map((i) => (i < w.llr.length ? w.llr[i] : null)), colorIndex: w.color ?? k })),
-      { values: x.map(() => setup.upper), colorIndex: 1, dashed: true },
-      { values: x.map(() => setup.lower), colorIndex: 2, dashed: true },
+      { values: x.map(() => setup.upper), colorIndex: 1, dashed: true, fixed: true },
+      { values: x.map(() => setup.lower), colorIndex: 2, dashed: true, fixed: true },
     ],
     yMin: Math.floor(bottom),
     yMax: Math.ceil(top),
@@ -214,11 +214,11 @@ export const sprtPosterior = (llr) => hw.sigmoid(llr);
 // ---------------------------------------------------------------------------
 
 /** The campaign of the page and its posteriors, day after day, under two priors. */
-export function campaignFacts(seed = hw.DEFAULT_SEED) {
-  const days = hw.campaign(seed);
+export function campaignFacts(seed = hw.DEFAULT_SEED, { rate = hw.CAMPAIGN.rate, perDay = hw.CAMPAIGN.perDay } = {}) {
+  const days = hw.campaign(seed, { days: hw.CAMPAIGN.days, perDay, rate });
   const uniform = hw.campaignPosteriors(days, hw.PRIORS.uniform);
   const informed = hw.campaignPosteriors(days, hw.PRIORS.informed);
-  return { days, uniform, informed, aboveUniform: uniform.map((r) => r.above(hw.TARGET_RATE)), aboveInformed: informed.map((r) => r.above(hw.TARGET_RATE)) };
+  return { days, rate, perDay, uniform, informed, aboveUniform: uniform.map((r) => r.above(hw.TARGET_RATE)), aboveInformed: informed.map((r) => r.above(hw.TARGET_RATE)) };
 }
 
 /** The chart of section 1.5: the posterior mean of each analyst, day by day, with its 95% interval as a band; the true rate dashed. */
@@ -229,7 +229,7 @@ export function campaignChart(c, decimal = '.') {
     series: [
       { values: c.uniform.map((r) => r.mean), band: c.uniform.map((r) => [r.lo, r.hi]), colorIndex: 0 },
       { values: c.informed.map((r) => r.mean), band: c.informed.map((r) => [r.lo, r.hi]), colorIndex: 1 },
-      { values: x.map(() => hw.CAMPAIGN.rate), colorIndex: 6, dashed: true },
+      { values: x.map(() => c.rate ?? hw.CAMPAIGN.rate), colorIndex: 6, dashed: true, fixed: true },
     ],
     yMin: 0,
     yMax: 0.6,
@@ -289,7 +289,7 @@ export const PRIOR_TRY_DEFAULT = Object.freeze({ shape: 'informed', data: 'day1'
 export const PRIOR_DATA = Object.freeze(['day1', 'days3', 'days10']);
 export function priorData(key, seed = hw.DEFAULT_SEED) {
   const days = hw.campaign(seed);
-  const take = { day1: 1, days3: 3, days10: 10 }[key];
+  const take = typeof key === 'number' ? key : { day1: 1, days3: 3, days10: 10 }[key];
   const chosen = days.slice(0, take);
   return { clicks: chosen.reduce((s, d) => s + d.clicks, 0), sent: chosen.reduce((s, d) => s + d.sent, 0) };
 }
@@ -302,7 +302,7 @@ export function priorData(key, seed = hw.DEFAULT_SEED) {
 export function coverageChart(cov, decimal = '.') {
   return {
     x: cov.ps,
-    series: [...hw.INTERVAL_METHODS.map((m, k) => ({ values: cov.curves[m], colorIndex: [1, 3, 4, 0][k], dots: false })), { values: cov.ps.map(() => 0.95), colorIndex: 6, dashed: true }],
+    series: [...hw.INTERVAL_METHODS.map((m, k) => ({ values: cov.curves[m], colorIndex: [1, 3, 4, 0][k], dots: false })), { values: cov.ps.map(() => 0.95), colorIndex: 6, dashed: true, fixed: true }],
     yMin: 0.6,
     yMax: 1,
     yTicks: percentTicks(0.6, 1, 0.1),
@@ -373,8 +373,8 @@ export function pathsChart(paths, decimal = '.') {
     logX: true,
     series: [
       ...paths.paths.map((line) => ({ values: line, colorIndex: 0, dots: false })),
-      { values: x.map(() => paths.rate + paths.epsilon), colorIndex: 1, dashed: true },
-      { values: x.map(() => paths.rate - paths.epsilon), colorIndex: 1, dashed: true },
+      { values: x.map(() => paths.rate + paths.epsilon), colorIndex: 1, dashed: true, fixed: true },
+      { values: x.map(() => paths.rate - paths.epsilon), colorIndex: 1, dashed: true, fixed: true },
     ],
     yMin: 0,
     yMax: 0.15,
@@ -605,7 +605,7 @@ export function bvmChart(rows, decimal = '.') {
     series: [
       { values: rows.map((r) => r.uniform.mean), band: rows.map((r) => [r.uniform.mean - 1.96 * r.uniform.sd, r.uniform.mean + 1.96 * r.uniform.sd]), colorIndex: 0 },
       { values: rows.map((r) => r.wrong.mean), band: rows.map((r) => [r.wrong.mean - 1.96 * r.wrong.sd, r.wrong.mean + 1.96 * r.wrong.sd]), colorIndex: 1 },
-      { values: x.map(() => hw.BVM.rate), colorIndex: 6, dashed: true },
+      { values: x.map(() => (rows[0] && rows[0].rate) ?? hw.BVM.rate), colorIndex: 6, dashed: true, fixed: true },
     ],
     yMin: 0,
     yMax: 0.5,
@@ -636,7 +636,7 @@ export function bvmDistanceChart(rows, decimal = '.') {
 // ---------------------------------------------------------------------------
 
 /** The rows of section 1.7: for every n, the exact distance from the normal law of Z (sigma known), of the t statistic (sigma estimated) and of the MLE of an exponential rate. */
-export const resultsRows = () => hw.RESULT_SIZES.map((n) => ({ n, z: hw.ksExactBernoulli(n), t: hw.ksExactT(n), mle: hw.mleRate(n) }));
+export const resultsRows = (p = hw.FALSE_ALARMS.rate) => hw.RESULT_SIZES.map((n) => ({ n, z: hw.ksExactBernoulli(n, p), t: hw.ksExactT(n, p), mle: hw.mleRate(n) }));
 
 /** The chart of section 1.7: the three distances on logarithmic axes. */
 export function resultsChart(rows, decimal = '.') {
@@ -735,13 +735,13 @@ const DISCOVERY_COLORS = Object.freeze([2, 4, 1, 6]);
 export const discoveryIcons = (facts) => ({ counts: facts.counts, total: facts.total, columns: 50, colors: DISCOVERY_COLORS, faint: [3] });
 
 /** The likelihood of the share of clicks after the first day and after ten days, scaled to a maximum of 1. */
-export function likelihoodChart(seed = hw.DEFAULT_SEED, decimal = '.') {
+export function likelihoodChart(seed = hw.DEFAULT_SEED, decimal = '.', days = 10) {
   const day1 = priorData('day1', seed);
-  const days10 = priorData('days10', seed);
+  const days10 = priorData(days, seed);
   const a = hw.likelihoodCurve(day1.clicks, day1.sent);
   const b = hw.likelihoodCurve(days10.clicks, days10.sent);
   return {
-    curves: { day1: a, days10: b, data: { day1, days10 } },
+    curves: { day1: a, days10: b, days, data: { day1, days10 } },
     chart: {
       x: hw.GRID,
       series: [{ values: a.values, colorIndex: 3, dots: false }, { values: b.values, colorIndex: 0, dots: false }],
@@ -850,9 +850,9 @@ export const legends = {
     { label: L.correlated, color: 1, parts: ['series:1'] },
   ],
   discovery: (L) => DISCOVERY_CATEGORIES.map((c, k) => ({ label: L[c], color: DISCOVERY_COLORS[k], box: true, parts: [`cat:${k}`] })),
-  likelihood: (L) => [
+  likelihood: (L, days = 10) => [
     { label: L.day1, color: 3, parts: ['series:0'] },
-    { label: L.days10, color: 0, parts: ['series:1'] },
+    { label: days === 10 ? L.days10 : L.afterDays(days), color: 0, parts: ['series:1'] },
   ],
 };
 
@@ -935,7 +935,7 @@ export const tips = {
     return T.burst(n, shown(hidden, 0, Math.sqrt((p * (1 - p)) / n)), shown(hidden, 1, Math.sqrt(hw.burstVariance(n, p, rho)) / n));
   },
   discovery: (facts, T) => (hit) => T.discovery(hit.index, facts.counts[hit.index]),
-  likelihood: (curves, T) => (hit, hidden = []) => T.likelihood(hw.GRID[hit.index], shown(hidden, 0, curves.day1.values[hit.index]), shown(hidden, 1, curves.days10.values[hit.index])),
+  likelihood: (curves, T) => (hit, hidden = []) => T.likelihood(hw.GRID[hit.index], shown(hidden, 0, curves.day1.values[hit.index]), shown(hidden, 1, curves.days10.values[hit.index]), curves.days ?? 10),
 };
 
 /** The id of every table tied to a chart: the page and the program find it by id. */
@@ -1052,4 +1052,150 @@ export function scheduleFrameJob(job) {
     frameRequested = true;
     requestAnimationFrame(runFrameJobs);
   }
+}
+
+// ---------------------------------------------------------------------------
+// I grafici con i loro comandi (chartkit)
+// ---------------------------------------------------------------------------
+// Il modello di ogni sezione con comandi: i parametri all'inizio e, dove
+// serve, la simulazione che dipende da loro (eseguita a fette dal kit). La
+// pagina e il programma scaricabile leggono da qui gli stessi modelli e gli
+// stessi comandi; le etichette vengono dai testi (text.controls).
+
+/** An animation that draws a line chart point by point, as its x grows: { frames, at(t), ms }. The series marked `fixed` (references, bands, thresholds) stay whole. */
+export function reveal(chart, ms = 110) {
+  return {
+    frames: chart.x.length,
+    ms,
+    at: (t) => ({
+      ...chart,
+      series: chart.series.map((s) => (s.fixed ? s : { ...s, values: s.values.map((v, i) => (i <= t ? v : null)), band: s.band ? s.band.map((b, i) => (i <= t ? b : null)) : s.band })),
+    }),
+  };
+}
+
+const RATES = Object.freeze([0.01, 0.02, 0.03, 0.05, 0.1]);
+const EPSILONS = Object.freeze([0.005, 0.01, 0.015, 0.02]);
+const TRUE_RATES = Object.freeze(Array.from({ length: 29 }, (_, i) => Number((0.02 + 0.01 * i).toFixed(2))));
+
+/** The models of the sections with controls: the parameters at the start, and the simulation when one depends on them. */
+export const MODELS = Object.freeze({
+  // 1.1 and 1.2: the rate of the false alarms and the band; the 1,000 simulated rules depend on both
+  paths: { params: { rate: hw.FALSE_ALARMS.rate, epsilon: hw.FALSE_ALARMS.epsilon }, simulate: (p) => hw.pathsSteps(hw.DEFAULT_SEED, { rate: p.rate, epsilon: p.epsilon }) },
+  // 1.3 and 1.8: only the rate counts
+  pathsRate: { params: { rate: hw.FALSE_ALARMS.rate }, simulate: (p) => hw.pathsSteps(hw.DEFAULT_SEED, { rate: p.rate }) },
+  clt: { params: { p: hw.FALSE_ALARMS.rate } },
+  results: { params: { p: hw.FALSE_ALARMS.rate } },
+  speed: { params: { rate: hw.FALSE_ALARMS.rate, epsilon: hw.FALSE_ALARMS.epsilon } },
+  cauchy: { params: { seed: hw.DEFAULT_SEED } },
+  bytes: { params: { n: hw.BYTES_SIZES[hw.BYTES_SIZES.length - 1] } },
+  likelihood: { params: { days: 10 } },
+  // seed 0: the two addresses written by hand; the others are simulated
+  sprt: { params: { alpha: hw.SPRT_DEFAULT.alpha, beta: hw.SPRT_DEFAULT.beta, seed: 0 } },
+  campaign: { params: { rate: hw.CAMPAIGN.rate, perDay: hw.CAMPAIGN.perDay, seed: hw.DEFAULT_SEED } },
+  coverage: { params: { n: hw.COVERAGE_N } },
+  spam: { params: { cut: 6 } },
+  bvm: { params: { rate: hw.BVM.rate, seed: hw.DEFAULT_SEED } },
+});
+
+/** Whether the parameters are the ones at the start: then the page shows the results already computed by its worker. */
+export const atStart = (model, params) => Object.keys(MODELS[model].params).every((k) => params[k] === MODELS[model].params[k]);
+
+/** The controls of every section, in the language of `C` (text.controls). */
+export const controls = {
+  paths: (C) => [
+    { key: 'rate', kind: 'slider', values: RATES, label: C.rate },
+    { key: 'epsilon', kind: 'slider', values: EPSILONS, label: C.epsilon },
+  ],
+  pathsRate: (C) => [{ key: 'rate', kind: 'slider', values: RATES, label: C.rate }],
+  clt: (C) => [{ key: 'p', kind: 'slider', values: [0.01, 0.03, 0.1, 0.3, 0.5], label: C.bernoulliP }],
+  results: (C) => [{ key: 'p', kind: 'slider', values: [0.01, 0.03, 0.1, 0.3, 0.5], label: C.shareP }],
+  speed: (C) => [
+    { key: 'rate', kind: 'slider', values: RATES, label: C.rate },
+    { key: 'epsilon', kind: 'slider', values: EPSILONS, label: C.epsilon },
+  ],
+  cauchy: (C) => [{ kind: 'action', label: C.newSample, run: (p) => ({ ...p, seed: p.seed + 1 }) }],
+  bytes: (C) => [{ key: 'n', kind: 'choice', label: C.bytesN, options: hw.BYTES_SIZES.map((n) => [n, C.int(n)]) }],
+  likelihood: (C) => [{ key: 'days', kind: 'slider', values: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], label: C.days }],
+  sprt: (C) => [
+    { key: 'alpha', kind: 'slider', values: [...hw.SPRT_ALPHAS].sort((a, b) => b - a), label: C.alpha },
+    { key: 'beta', kind: 'slider', values: [0.05, 0.01, 0.001], label: C.beta },
+    { kind: 'action', label: C.newWalks, run: (p) => ({ ...p, seed: p.seed + 1 }) },
+    { kind: 'action', label: C.handWalks, run: (p) => ({ ...p, seed: 0 }) },
+  ],
+  campaign: (C) => [
+    { key: 'rate', kind: 'slider', values: TRUE_RATES, label: C.trueRate },
+    { key: 'perDay', kind: 'slider', values: [10, 20, 40, 100], label: C.perDay },
+    { kind: 'action', label: C.newCampaign, run: (p) => ({ ...p, seed: p.seed + 1 }) },
+  ],
+  coverage: (C) => [{ key: 'n', kind: 'slider', values: [10, 20, 40, 100, 400], label: C.coverageN }],
+  spam: (C, bins) => [{ key: 'cut', kind: 'slider', values: Array.from({ length: bins.length - 1 }, (_, i) => i + 1), label: (v) => C.threshold(bins[v].from) }],
+  bvm: (C) => [
+    { key: 'rate', kind: 'slider', values: TRUE_RATES, label: C.trueRate },
+    { kind: 'action', label: C.newSample, run: (p) => ({ ...p, seed: p.seed + 1 }) },
+  ],
+};
+
+/** The handles of the charts: lines to drag, bound to the parameters (the same values as their slider). */
+export const handles = {
+  // 1.2: the rate in the middle of the band, and the two edges of the band
+  paths: (p, C) => [
+    { id: 'rate', axis: 'y', value: p.rate, values: RATES, label: C.handleRate(p.rate) },
+    { id: 'up', axis: 'y', value: p.rate + p.epsilon, values: EPSILONS.map((e) => p.rate + e), label: C.bandUp },
+    { id: 'down', axis: 'y', value: p.rate - p.epsilon, values: EPSILONS.map((e) => p.rate - e), label: C.bandDown },
+  ],
+  pathsMove: (p, id, v) => {
+    if (id === 'rate') return { ...p, rate: v };
+    const e = Math.abs(v - p.rate);
+    return { ...p, epsilon: EPSILONS.reduce((a, b) => (Math.abs(b - e) < Math.abs(a - e) ? b : a)) };
+  },
+  // 2.5: the two thresholds of Wald; dragging one changes the error it controls
+  sprt: (setup, C) => [
+    { id: 'upper', axis: 'y', value: setup.upper, values: hw.SPRT_ALPHAS.map((a) => Math.log((1 - setup.beta) / a)), label: C.block },
+    { id: 'lower', axis: 'y', value: setup.lower, values: [0.05, 0.01, 0.001].map((b) => Math.log(b / (1 - setup.alpha))), label: C.clear },
+  ],
+  sprtMove: (p, id, v) => {
+    if (id === 'upper') return { ...p, alpha: Number(((1 - p.beta) / Math.exp(v)).toPrecision(1)) };
+    return { ...p, beta: Number((Math.exp(v) * (1 - p.alpha)).toPrecision(1)) };
+  },
+  // 2.6 and 2.11: the true rate
+  trueRate: (rate, C) => [{ id: 'rate', axis: 'y', value: rate, values: TRUE_RATES, label: C.handleRate(rate) }],
+  trueRateMove: (p, id, v) => ({ ...p, rate: v }),
+  // 2.8: the threshold of the filter, between two bins of log-odds
+  spam: (cut, bins, C) => [{ id: 'cut', axis: 'x', value: cut, values: Array.from({ length: bins.length - 1 }, (_, i) => i + 1), label: C.threshold(bins[cut].from) }],
+  spamMove: (p, id, v) => ({ ...p, cut: v }),
+};
+
+/** 2.5: the walks of the chart, the two written by hand (seed 0) or two simulated addresses. */
+export function sprtWalks(setup, seed) {
+  if (!seed) {
+    return [
+      { ...hw.sprtPath(setup, SPRT_EXAMPLES.legit), key: 'legit', color: 0 },
+      { ...hw.sprtPath(setup, SPRT_EXAMPLES.attacker), key: 'attacker', color: 1 },
+    ];
+  }
+  const walk = (pFail, stream) => {
+    const next = hw.generator(hw.DEFAULT_SEED, 'live', 3000000 + 1000 * seed + stream);
+    const attempts = [];
+    for (let i = 0; i < hw.SPRT_MAX_STEPS; i++) {
+      attempts.push(hw.uniform53(next) < pFail);
+      if (hw.sprtPath(setup, attempts).decision) break;
+    }
+    return hw.sprtPath(setup, attempts);
+  };
+  return [
+    { ...walk(hw.SPRT_DEFAULT.p0, 0), key: 'legit', color: 0 },
+    { ...walk(hw.SPRT_DEFAULT.p1, 1), key: 'attacker', color: 1 },
+  ];
+}
+
+/** 2.8: what the filter does with the threshold between bin cut - 1 and bin cut: spam caught and missed, legitimate messages marked and left. */
+export function spamCut(bins, cut) {
+  const sum = (key, from, to) => bins.slice(from, to).reduce((a, b) => a + b[key], 0);
+  const tp = sum('spam', cut, bins.length);
+  const fn = sum('spam', 0, cut);
+  const fp = sum('ham', cut, bins.length);
+  const tn = sum('ham', 0, cut);
+  const n = tp + fn + fp + tn;
+  return { threshold: bins[cut].from, tp, fn, fp, tn, accuracy: (tp + tn) / n, precision: tp + fp ? tp / (tp + fp) : 1, recall: tp + fn ? tp / (tp + fn) : 1 };
 }
