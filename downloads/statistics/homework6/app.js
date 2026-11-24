@@ -632,7 +632,7 @@ function zoomPan() {
       const f = chart.getFrame();
       if (mode === 'box' && box && f) {
         const wide = Math.abs(box.x1 - box.x0) > 6 && f.zoom !== 'y';
-        const tall = Math.abs(box.y1 - box.y0) > 6;
+        const tall = Math.abs(box.y1 - box.y0) > 6 && f.zoom !== 'x';
         if (wide || tall) {
           const { plot } = f;
           // a thin selection enlarges one axis only, the other one stays as it is
@@ -697,10 +697,11 @@ function zoomPan() {
     overlay(ctx, f, pal) {
       if (mode !== 'box' || !box) return;
       const yOnly = f.zoom === 'y';
+      const xOnly = f.zoom === 'x';
       const x = yOnly ? f.plot.x : Math.min(box.x0, box.x1);
       const w = yOnly ? f.plot.w : Math.abs(box.x1 - box.x0);
-      const y = Math.min(box.y0, box.y1);
-      const h = Math.abs(box.y1 - box.y0);
+      const y = xOnly ? f.plot.y : Math.min(box.y0, box.y1);
+      const h = xOnly ? f.plot.h : Math.abs(box.y1 - box.y0);
       ctx.fillStyle = pal.highlight;
       ctx.globalAlpha = 0.1;
       ctx.fillRect(x, y, w, h);
@@ -815,8 +816,11 @@ function handles({ onChange, onEnd = null }) {
         ctx.stroke();
         // the knob to grab, with the label beside it: at the left of a horizontal line, away from
         // the zoom buttons in the top right corner, and at the top of a vertical one, above the bars
+        // (at its bottom when the line runs under the zoom buttons)
+        const low = spec.axis === 'x' && at > f.plot.x + f.plot.w - 96;
         const kx = spec.axis === 'x' ? at : f.plot.x + 9;
-        const ky = spec.axis === 'x' ? f.plot.y + 9 : at;
+        let ky = at;
+        if (spec.axis === 'x') ky = low ? f.plot.y + f.plot.h - 9 : f.plot.y + 9;
         ctx.beginPath();
         ctx.arc(kx, ky, active ? 7 : 6, 0, 2 * Math.PI);
         ctx.fill();
@@ -830,7 +834,7 @@ function handles({ onChange, onEnd = null }) {
           ctx.textAlign = right ? 'right' : 'left';
           const tx = spec.axis === 'x' ? at + (right ? -10 : 10) : kx + 11;
           // above the line, or below it when the line is at the top of the plot
-          let ty = spec.axis === 'x' ? f.plot.y + 13 : at - 7;
+          let ty = spec.axis === 'x' ? ky + 4 : at - 7;
           if (spec.axis === 'y' && at - f.plot.y < 16) ty = at + 15;
           ctx.fillText(spec.label, tx, ty);
         }
