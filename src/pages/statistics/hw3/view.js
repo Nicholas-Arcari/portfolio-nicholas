@@ -4,6 +4,7 @@
 // campi, le righe delle tabelle e i dati dei grafici. Tenerla qui impedisce
 // che le due versioni dicano cose diverse sugli stessi numeri.
 import * as hw from './homework3.js';
+import { reveal as revealChart } from '../chartkit/kitReveal.js';
 
 /** The sections of the homework, in page order: ids for the anchors, keys for the titles. */
 export const SECTIONS = [
@@ -272,6 +273,9 @@ export function exceedance(M, g, epsilon) {
   };
 }
 
+/** An animation that draws the simulated values of a line chart point by point, as n (or the attackers) grows (chartkit/kitReveal.js); the exact values and the bounds stay whole. */
+export const reveal = revealChart;
+
 export const llnRows = (s, epsilon) => ({
   bernoulli: s.models.bernoulli.points.map((_, g) => exceedance(s.models.bernoulli, g, epsilon)),
   rademacher: s.models.rademacher.points.map((_, g) => exceedance(s.models.rademacher, g, epsilon)),
@@ -288,9 +292,9 @@ export function llnChart(rows, decimal = '.') {
     decimal,
     series: [
       { values: rows.map((r) => r.rate), band: rows.map((r) => r.interval), colorIndex: 0 },
-      { values: rows.map((r) => r.exact), colorIndex: 2, dots: false },
-      { values: rows.map((r) => r.chebyshev), colorIndex: 3, dashed: true },
-      { values: rows.map((r) => r.hoeffding), colorIndex: 4, dotted: true },
+      { values: rows.map((r) => r.exact), colorIndex: 2, dots: false, fixed: true },
+      { values: rows.map((r) => r.chebyshev), colorIndex: 3, dashed: true, fixed: true },
+      { values: rows.map((r) => r.hoeffding), colorIndex: 4, dotted: true, fixed: true },
     ],
   };
 }
@@ -330,7 +334,7 @@ export function varianceChart(M, decimal = '.') {
         hi = Math.max(hi, v);
       }
     }
-    series.push({ values: sample, colorIndex: i, dotsOnly: true }, { values: exact, colorIndex: i, dashed: true });
+    series.push({ values: sample, colorIndex: i, dotsOnly: true }, { values: exact, colorIndex: i, dashed: true, fixed: true });
   });
   const yMin = decade(lo, false);
   const yMax = decade(hi, true);
@@ -416,11 +420,11 @@ export function distanceChart(M, m, decimal = '.') {
     xTicks: powerTicks(ns[ns.length - 1]),
     decimal,
     series: [
-      { values: distance, colorIndex: 1, dots: false },
-      { values: corrected, colorIndex: 2, dots: false },
-      { values: bound, colorIndex: 3, dashed: true },
+      { values: distance, colorIndex: 1, dots: false, fixed: true },
+      { values: corrected, colorIndex: 2, dots: false, fixed: true },
+      { values: bound, colorIndex: 3, dashed: true, fixed: true },
       { values: ns.map((n) => (at.has(n) ? at.get(n).ks : null)), colorIndex: 0, dotsOnly: true },
-      { values: ns.map(() => noise), colorIndex: 6, dotted: true },
+      { values: ns.map(() => noise), colorIndex: 6, dotted: true, fixed: true },
     ],
   };
 }
@@ -512,9 +516,9 @@ export function bestChart(G, decimal = '.') {
     decimal,
     series: [
       { values: rows.map((r) => r.mean), band: rows.map((r) => [r.mean - 1.96 * r.error, r.mean + 1.96 * r.error]), colorIndex: 0 },
-      { values: rows.map((r) => r.exact), colorIndex: 1, dots: false },
-      { values: rows.map((r) => r.normal), colorIndex: 2, dashed: true },
-      { values: rows.map((r) => r.asymptote), colorIndex: 3, dotted: true },
+      { values: rows.map((r) => r.exact), colorIndex: 1, dots: false, fixed: true },
+      { values: rows.map((r) => r.normal), colorIndex: 2, dashed: true, fixed: true },
+      { values: rows.map((r) => r.asymptote), colorIndex: 3, dotted: true, fixed: true },
     ],
   };
 }
@@ -532,9 +536,9 @@ export function probabilityChart(G, decimal = '.') {
     decimal,
     series: [
       { values: rows.map((r) => r.beyond), colorIndex: 0, dotsOnly: true },
-      { values: rows.map((r) => r.beyondExact), colorIndex: 0, dashed: true },
+      { values: rows.map((r) => r.beyondExact), colorIndex: 0, dashed: true, fixed: true },
       { values: rows.map((r) => r.coverage), colorIndex: 2, dotsOnly: true },
-      { values: rows.map((r) => r.coverageExact), colorIndex: 2, dashed: true },
+      { values: rows.map((r) => r.coverageExact), colorIndex: 2, dashed: true, fixed: true },
     ],
   };
 }

@@ -18,6 +18,7 @@ import { useTheme } from '../../contexts/themeContext';
 import HomeworkShell from './HomeworkShell';
 import { ChartLegend } from './ChartLegend';
 import { hiddenParts, useHidden } from './legendState';
+import { ChartFigure } from './chartkit/ChartFigure';
 import * as hw from './hw3/homework3';
 import * as view from './hw3/view';
 import { HW3_TEXTS, originalAssignment } from './hw3/texts';
@@ -70,49 +71,12 @@ const Formulas = ({ title = null, children }) => (
   </>
 );
 
-// Un grafico su canvas, ridisegnato quando cambia la larghezza, con i valori
-// del pezzo sotto il puntatore e, con `link` (view.links), la riga della
-// tabella legata: il disegno vero e' in homework3.js. Le voci della legenda
-// nascondono e mostrano le loro parti; con `hidden` e `onToggle` lo stato
-// sta nella sezione, che ne fa sparire anche le colonne della tabella
-// annessa, e con `off` la legenda e' fuori dal grafico (un gruppo di grafici
-// con una legenda sola).
-const Figure = ({ title, draw, data, palette, tip = null, wide = false, legend = null, note = null, link = null, hidden: shared = null, onToggle = null, off: given = null }) => {
-  const ref = useRef(null);
-  const [own, toggleOwn] = useHidden();
-  const hidden = shared || own;
-  const off = (given || hiddenParts(legend, hidden)).join(' ');
-  const shown = useMemo(() => (off ? { ...data, hidden: off.split(' ') } : data), [data, off]);
-  const describe = useMemo(() => (tip ? (hit) => tip(hit, off ? off.split(' ') : []) : null), [tip, off]);
-  useEffect(() => {
-    const canvas = ref.current;
-    let drawn = -1;
-    const observer = new ResizeObserver((entries) => {
-      const width = Math.round(entries[entries.length - 1].contentRect.width);
-      if (width <= 0 || width === drawn) return;
-      drawn = width;
-      canvas.style.height = `${hw.chartHeight(draw, shown, width)}px`;
-      view.scheduleFrameJob(() => {
-        if (canvas.isConnected && drawn === width) draw(canvas, { ...shown, width }, palette);
-      });
-    });
-    observer.observe(canvas);
-    const detach = describe ? hw.attachChartTooltip(canvas, { draw, data: shown, describe, link }) : null;
-    return () => {
-      drawn = -2;
-      observer.disconnect();
-      if (detach) detach();
-    };
-  }, [draw, shown, palette, describe, link]);
-  return (
-    <figure className={wide ? 'hw1-figure hw1-figure-wide' : 'hw1-figure'}>
-      <canvas ref={ref} className="hw1-canvas" role="img" aria-label={title} />
-      {legend && <ChartLegend items={legend} palette={palette} hidden={hidden} onToggle={onToggle || toggleOwn} />}
-      {note && <p className="hw3-figure-note">{note}</p>}
-      <figcaption>{title}</figcaption>
-    </figure>
-  );
-};
+// Un grafico interattivo (chartkit/ChartFigure.jsx): disegnato da homework3.js,
+// con l'etichetta sotto il puntatore, la legenda a pulsanti, la tabella
+// legata (link) e lo zoom su ogni grafico; con `off` la legenda e' fuori
+// dal grafico (un gruppo di grafici con una legenda sola); `animation`
+// aggiunge il lettore.
+const Figure = (props) => <ChartFigure lib={hw} schedule={view.scheduleFrameJob} {...props} />;
 
 // Una scelta fra pochi valori: il pulsante premuto e' quello attivo
 const Choices = ({ label, options, value, onChange }) => (
@@ -577,7 +541,13 @@ const Convergence = React.memo(function Convergence({ s, job, epsilon, setEpsilo
   const F = text.fmt;
   const rows = useMemo(() => (s ? view.llnRows(s, epsilon) : null), [s, epsilon]);
   const charts = useMemo(
-    () => (rows ? hw.MODELS.map((model) => ({ model, data: view.llnChart(rows[model], F.decimal), tip: view.tips.lln(rows[model], text.tips) })) : null),
+    () =>
+      rows
+        ? hw.MODELS.map((model) => {
+          const data = view.llnChart(rows[model], F.decimal);
+          return { model, data, tip: view.tips.lln(rows[model], text.tips), animation: view.reveal(data, 180) };
+        })
+        : null,
     [rows, F, text],
   );
   // una legenda per i due grafici; la frazione simulata e quella esatta sono anche le colonne della tabella
@@ -601,7 +571,7 @@ const Convergence = React.memo(function Convergence({ s, job, epsilon, setEpsilo
       </div>
       <div className="hw1-charts">
         {charts.map((c) => (
-          <Figure key={c.model} title={C.chart(text.modelNames[c.model], epsilon)} draw={hw.drawLineChart} data={c.data} palette={palette} tip={c.tip} link={view.links.lln} off={off} />
+          <Figure key={c.model} title={C.chart(text.modelNames[c.model], epsilon)} draw={hw.drawLineChart} data={c.data} palette={palette} tip={c.tip} link={view.links.lln} off={off} animation={c.animation} />
         ))}
       </div>
       <ChartLegend items={legend} palette={palette} hidden={hidden} onToggle={toggleHidden} />
@@ -658,7 +628,13 @@ const Variance = React.memo(function Variance({ s, job, text, palette }) {
   const V = text.variance;
   const F = text.fmt;
   const charts = useMemo(
-    () => (s ? hw.MODELS.map((model) => ({ model, data: view.varianceChart(s.models[model], F.decimal), tip: view.tips.variance(s.models[model], text.tips) })) : null),
+    () =>
+      s
+        ? hw.MODELS.map((model) => {
+          const data = view.varianceChart(s.models[model], F.decimal);
+          return { model, data, tip: view.tips.variance(s.models[model], text.tips), animation: view.reveal(data, 180) };
+        })
+        : null,
     [s, F, text],
   );
   // una legenda per i due grafici: le tre grandezze sono anche le righe della tabella, i valori esatti la colonna della teoria
@@ -673,7 +649,7 @@ const Variance = React.memo(function Variance({ s, job, text, palette }) {
       <p>{V.intro}</p>
       <div className="hw1-charts">
         {charts.map((c) => (
-          <Figure key={c.model} title={V.chart(text.modelNames[c.model])} draw={hw.drawLineChart} data={c.data} palette={palette} tip={c.tip} off={off} />
+          <Figure key={c.model} title={V.chart(text.modelNames[c.model])} draw={hw.drawLineChart} data={c.data} palette={palette} tip={c.tip} off={off} animation={c.animation} />
         ))}
       </div>
       <ChartLegend items={legend} palette={palette} hidden={hidden} onToggle={toggleHidden} />
@@ -750,7 +726,13 @@ const Speed = React.memo(function Speed({ s, job, text, palette }) {
   const P = text.speed;
   const F = text.fmt;
   const charts = useMemo(
-    () => (s ? ['rademacher', 'bernoulli'].map((model) => ({ model, data: view.distanceChart(s.models[model], s.params.m, F.decimal), tip: view.tips.distance(s.models[model], text.tips) })) : null),
+    () =>
+      s
+        ? ['rademacher', 'bernoulli'].map((model) => {
+          const data = view.distanceChart(s.models[model], s.params.m, F.decimal);
+          return { model, data, tip: view.tips.distance(s.models[model], text.tips), animation: view.reveal(data, 50) };
+        })
+        : null,
     [s, F, text],
   );
   // una legenda per i due grafici
@@ -763,7 +745,7 @@ const Speed = React.memo(function Speed({ s, job, text, palette }) {
       <p>{P.intro}</p>
       <div className="hw1-charts">
         {charts.map((c) => (
-          <Figure key={c.model} title={P.chart(text.modelNames[c.model])} draw={hw.drawLineChart} data={c.data} palette={palette} tip={c.tip} off={off} />
+          <Figure key={c.model} title={P.chart(text.modelNames[c.model])} draw={hw.drawLineChart} data={c.data} palette={palette} tip={c.tip} off={off} animation={c.animation} />
         ))}
       </div>
       <ChartLegend items={legend} palette={palette} hidden={hidden} onToggle={toggleHidden} />
@@ -837,9 +819,13 @@ const Attackers = React.memo(function Attackers({ s, job, text, palette }) {
   const charts = useMemo(() => {
     if (!s) return null;
     const G = s.models.bernoulli.groups;
+    const best = view.bestChart(G, F.decimal);
+    const probability = view.probabilityChart(G, F.decimal);
     return {
-      best: view.bestChart(G, F.decimal),
-      probability: view.probabilityChart(G, F.decimal),
+      best,
+      probability,
+      bestAnimation: view.reveal(best, 240),
+      probabilityAnimation: view.reveal(probability, 240),
       bestTip: view.tips.best(G, text.tips),
       probabilityTip: view.tips.probability(G, text.tips),
     };
@@ -857,6 +843,7 @@ const Attackers = React.memo(function Attackers({ s, job, text, palette }) {
           palette={palette}
           tip={charts.bestTip}
           legend={view.legends.best(text)}
+          animation={charts.bestAnimation}
         />
         <Figure
           title={A.probabilityChart(n)}
@@ -865,6 +852,7 @@ const Attackers = React.memo(function Attackers({ s, job, text, palette }) {
           palette={palette}
           tip={charts.probabilityTip}
           legend={view.legends.probability(text)}
+          animation={charts.probabilityAnimation}
         />
       </div>
       <Paras list={A.after(s)} />

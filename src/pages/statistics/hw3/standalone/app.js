@@ -15,6 +15,7 @@
 import * as hw from '../homework3.js';
 import * as view from '../view.js';
 import { HW3_TEXTS, originalAssignment } from '../texts.js';
+import * as kit from '../../chartkit/kitDom.js';
 
 const HEADINGS = ['h2', 'h3', 'h4'];
 const LANGUAGES = ['it', 'en'];
@@ -106,43 +107,6 @@ const pending = () => (computation.error ? h('p', { class: 'note', text: text.ui
 const check = (ok, label) => h('p', { class: ok ? 'check is-ok' : 'check is-bad' }, h('strong', { text: label }));
 const formulas = (content, label = null) => [label && subtitle(label), h('pre', { text: content })];
 
-// The width of every chart comes from the ResizeObserver, measured after
-// layout; the height is set at once, the drawing happens a few
-// milliseconds per frame.
-const charts = new Map(); // canvas -> { draw, data, width, detach, link, tip, hidden }
-
-// what a chart draws: its data, without the parts hidden from the legend
-const shownData = (chart) => (chart.hidden.length ? { ...chart.data, hidden: chart.hidden } : chart.data);
-
-const resizer = new ResizeObserver((entries) => {
-  for (const entry of entries) {
-    const canvas = entry.target;
-    const chart = charts.get(canvas);
-    const width = Math.round(entry.contentRect.width);
-    if (!chart || width <= 0 || width === chart.width) continue;
-    chart.width = width;
-    canvas.style.height = `${hw.chartHeight(chart.draw, shownData(chart), width)}px`;
-    view.scheduleFrameJob(() => {
-      if (charts.get(canvas) === chart && chart.width === width) chart.draw(canvas, { ...shownData(chart), width }, palette());
-    });
-  }
-});
-
-/** Ties the label under the pointer to a chart: it describes what is on screen, and leaves out the hidden parts. */
-function attachTip(canvas, chart) {
-  if (chart.detach) chart.detach();
-  const tip = chart.tip;
-  chart.detach = tip ? hw.attachChartTooltip(canvas, { draw: chart.draw, data: shownData(chart), describe: (hit) => tip(hit, chart.hidden), link: chart.link }) : null;
-}
-
-/** Draws a chart again at its width, with its data and hidden parts. */
-function redraw(canvas, chart) {
-  if (chart.width > 0) {
-    canvas.style.height = `${hw.chartHeight(chart.draw, shownData(chart), chart.width)}px`;
-    chart.draw(canvas, { ...shownData(chart), width: chart.width }, palette());
-  }
-}
-
 // what the reader hid in the legends, by chart: a region filled anew (a step, a result) keeps it
 const kept = {};
 const keep = (name) => {
@@ -200,46 +164,36 @@ function hideParts(tableEl, parts) {
 
 /** Hides parts of a chart (the legend of a group of charts calls it on each of them). */
 function setHidden(fig, parts) {
-  const canvas = fig.querySelector('canvas.chart');
-  const chart = charts.get(canvas);
-  if (!chart) return;
-  chart.hidden = parts;
-  attachTip(canvas, chart);
-  redraw(canvas, chart);
+  fig.kit.setHidden(parts);
 }
 
 /**
- * A chart with its legend (`items`) and its label under the pointer.
- * onHide(parts) runs when the reader hides or shows a part, for the table
- * tied to the chart, and `keep` (a set, keep(name)) remembers the hidden
- * items when the chart is built again. The charts of a group share one
- * legend (groupLegend) and have no `items`.
+ * A chart (chartkit/kitDom.js): drawn by homework3.js, with its legend
+ * (`items`), its label under the pointer, the table tied to it (`link`)
+ * and zoom. onHide(parts) runs when the reader hides or shows a part, for
+ * the table tied to the chart, and `keep` (a set, keep(name)) remembers
+ * the hidden items when the chart is built again. The charts of a group
+ * share one legend (groupLegend) and have no `items`. `reveal`
+ * (milliseconds a point) draws the simulation point by point, as n grows.
  */
-function figure(caption, draw, data, { wide = false, tip = null, items = null, note = null, link = null, onHide = null, keep: kept = null } = {}) {
-  const canvas = h('canvas', { class: 'chart', role: 'img', 'aria-label': caption });
-  const hidden = kept || new Set();
-  const chart = { draw, data, width: -1, detach: null, link, tip, hidden: items ? partsOf(items, hidden) : [] };
-  const fig = h(
-    'figure',
-    { class: wide ? 'figure wide' : 'figure' },
-    canvas,
-    items &&
-      legend(
-        items,
-        (parts) => {
-          setHidden(fig, parts);
-          if (onHide) onHide(parts);
-        },
-        hidden,
-      ),
-    note && h('p', { class: 'figure-note', text: note }),
-    h('figcaption', { text: caption }),
-  );
-  attachTip(canvas, chart);
-  charts.set(canvas, chart);
-  resizer.observe(canvas);
-  return fig;
+function figure(caption, draw, data, { wide = false, tip = null, items = null, note = null, link = null, onHide = null, keep: kept = null, reveal = 0 } = {}) {
+  return kit.createFigure({ label: caption, draw, data, palette: palette(), lib: hw, schedule: view.scheduleFrameJob, lang: state.lang, tip, items, note, link, onHide, keep: kept, wide, animation: reveal ? view.reveal(data, reveal) : null });
 }
+
+/** Redraws a chart in place, with new data, labels and note, without replacing its canvas; the hidden parts and the zoom stay. */
+function refreshFigure(fig, caption, data, tip, note = null) {
+  fig.kit.setData(data);
+  fig.kit.setTip(tip);
+  fig.kit.setLabel(caption);
+  fig.kit.setNote(note);
+}
+
+/** Whether the figures kept for a region can be changed in place: built for the same result and language, and still on the page. */
+const sameFigures = (kept, data) => !!kept.fig && kept.data === data && kept.lang === state.lang && kept.fig.isConnected;
+
+// the histograms of 2.1 and 5.1, kept while the slider or the player moves n (their zoom too)
+const sweepView = { fig: null, figs: [], data: null, lang: null };
+const normalView = { fig: null, qq: null, stats: null, data: null, lang: null };
 
 /**
  * One legend for a group of charts (the two models side by side): every
@@ -262,12 +216,7 @@ function groupLegend(name, items, figs, onHide = null) {
 
 /** Replaces the content of a region, releasing the charts it contained and their labels. */
 function fill(region, ...nodes) {
-  for (const canvas of region.querySelectorAll('canvas.chart')) {
-    resizer.unobserve(canvas);
-    const chart = charts.get(canvas);
-    if (chart && chart.detach) chart.detach();
-    charts.delete(canvas);
-  }
+  kit.releaseFigures(region);
   region.replaceChildren(...nodes.flat(Infinity).filter((n) => n !== null && n !== undefined && n !== false));
 }
 
@@ -737,20 +686,22 @@ function updateSweep() {
   const q = state.sweep.quantity;
   const n = s.models.bernoulli.points[g].n;
   controls.sweepSlider.set(last, g, W.nLabel(n));
-  fill(
-    regions.sweep,
-    h(
-      'div',
-      { class: 'charts' },
-      hw.MODELS.map((model) => {
-        const M = s.models[model];
-        const data = view.sweepChart(M, g, q, text.fmt.decimal);
-        const fig = figure(W.chart(text.modelNames[model], text.quantityNames[q], n, s.params.m), hw.drawHistogram, data, { tip: view.tips.histogram(data, text.tips), note: W.stats(text.modelNames[model], view.quantityStats(M, g, q), q) });
-        setHidden(fig, partsOf(view.legends.sweep(text), keep('sweep')));
-        return fig;
-      }),
-    ),
-  );
+  const shown = hw.MODELS.map((model) => {
+    const M = s.models[model];
+    const data = view.sweepChart(M, g, q, text.fmt.decimal);
+    return { caption: W.chart(text.modelNames[model], text.quantityNames[q], n, s.params.m), data, tip: view.tips.histogram(data, text.tips), note: W.stats(text.modelNames[model], view.quantityStats(M, g, q), q) };
+  });
+  if (sameFigures(sweepView, s)) {
+    shown.forEach((c, i) => refreshFigure(sweepView.figs[i], c.caption, c.data, c.tip, c.note));
+    return;
+  }
+  const figs = shown.map((c) => {
+    const fig = figure(c.caption, hw.drawHistogram, c.data, { tip: c.tip, note: c.note });
+    setHidden(fig, partsOf(view.legends.sweep(text), keep('sweep')));
+    return fig;
+  });
+  Object.assign(sweepView, { fig: figs[0], figs, data: s, lang: state.lang });
+  fill(regions.sweep, h('div', { class: 'charts' }, figs));
 }
 
 function updateMoments() {
@@ -868,7 +819,7 @@ function updateConvergence() {
   const B = text.modelNames.bernoulli;
   const R = text.modelNames.rademacher;
   // una legenda per i due grafici; la frazione simulata e quella esatta sono anche le colonne della tabella
-  const figs = hw.MODELS.map((model) => figure(C.chart(text.modelNames[model], eps), hw.drawLineChart, view.llnChart(rows[model], F.decimal), { tip: view.tips.lln(rows[model], text.tips), link: view.links.lln }));
+  const figs = hw.MODELS.map((model) => figure(C.chart(text.modelNames[model], eps), hw.drawLineChart, view.llnChart(rows[model], F.decimal), { reveal: 180, tip: view.tips.lln(rows[model], text.tips), link: view.links.lln }));
   const frequencies = table(
     'compact lln',
     [C.cols.n, `${B}: ${C.cols.simulated}`, `${B}: ${C.cols.exact}`, `${R}: ${C.cols.simulated}`, `${R}: ${C.cols.exact}`],
@@ -912,7 +863,7 @@ function updateVariance() {
   }
   const fits = view.varianceFits(s);
   // una legenda per i due grafici: le tre grandezze sono anche le righe della tabella, i valori esatti la colonna della teoria
-  const figs = hw.MODELS.map((model) => figure(V.chart(text.modelNames[model]), hw.drawLineChart, view.varianceChart(s.models[model], F.decimal), { tip: view.tips.variance(s.models[model], text.tips) }));
+  const figs = hw.MODELS.map((model) => figure(V.chart(text.modelNames[model]), hw.drawLineChart, view.varianceChart(s.models[model], F.decimal), { reveal: 180, tip: view.tips.variance(s.models[model], text.tips) }));
   const slopes = table(
     'discussion fits',
     [V.fitCols.quantity, V.fitCols.bernoulli, V.fitCols.rademacher, V.fitCols.theory],
@@ -994,18 +945,17 @@ function updateNormal() {
   controls.normalSlider.set(last, g, N.nLabel(n));
   const hist = view.cltHistogram(M, g, F.decimal);
   const qq = view.qqData(M, g, F.decimal);
-  fill(
-    regions.normal,
-    h(
-      'div',
-      { class: 'charts' },
-      figure(N.histChart(label, n), hw.drawHistogram, hist, { tip: view.tips.histogram(hist, text.tips), items: view.legends.clt(text), keep: keep('clt') }),
-      figure(N.qqChart(label, n), hw.drawQQ, qq, { tip: view.tips.qq(qq, text.tips), items: view.legends.qq(text), keep: keep('qq') }),
-    ),
-    h('p', { class: 'stats', text: N.stats(view.shapeAt(M, g)) }),
-    paras(N.after),
-    tests('clt', s),
-  );
+  if (sameFigures(normalView, s)) {
+    refreshFigure(normalView.fig, N.histChart(label, n), hist, view.tips.histogram(hist, text.tips));
+    refreshFigure(normalView.qq, N.qqChart(label, n), qq, view.tips.qq(qq, text.tips));
+    normalView.stats.textContent = N.stats(view.shapeAt(M, g));
+    return;
+  }
+  const histFig = figure(N.histChart(label, n), hw.drawHistogram, hist, { tip: view.tips.histogram(hist, text.tips), items: view.legends.clt(text), keep: keep('clt') });
+  const qqFig = figure(N.qqChart(label, n), hw.drawQQ, qq, { tip: view.tips.qq(qq, text.tips), items: view.legends.qq(text), keep: keep('qq') });
+  const stats = h('p', { class: 'stats', text: N.stats(view.shapeAt(M, g)) });
+  Object.assign(normalView, { fig: histFig, qq: qqFig, stats, data: s, lang: state.lang });
+  fill(regions.normal, h('div', { class: 'charts' }, histFig, qqFig), stats, paras(N.after), tests('clt', s));
 }
 
 function updateSpeed() {
@@ -1017,7 +967,7 @@ function updateSpeed() {
     return;
   }
   // una legenda per i due grafici
-  const figs = ['rademacher', 'bernoulli'].map((model) => figure(P.chart(text.modelNames[model]), hw.drawLineChart, view.distanceChart(s.models[model], s.params.m, F.decimal), { tip: view.tips.distance(s.models[model], text.tips) }));
+  const figs = ['rademacher', 'bernoulli'].map((model) => figure(P.chart(text.modelNames[model]), hw.drawLineChart, view.distanceChart(s.models[model], s.params.m, F.decimal), { reveal: 50, tip: view.tips.distance(s.models[model], text.tips) }));
   fill(
     regions.speed,
     h('p', { text: P.intro }),
@@ -1111,8 +1061,8 @@ function updateAttackers() {
     h(
       'div',
       { class: 'charts' },
-      figure(A.bestChart(n), hw.drawLineChart, view.bestChart(G, F.decimal), { tip: view.tips.best(G, text.tips), items: view.legends.best(text), keep: keep('best') }),
-      figure(A.probabilityChart(n), hw.drawLineChart, view.probabilityChart(G, F.decimal), { tip: view.tips.probability(G, text.tips), items: view.legends.probability(text), keep: keep('probability') }),
+      figure(A.bestChart(n), hw.drawLineChart, view.bestChart(G, F.decimal), { reveal: 240, tip: view.tips.best(G, text.tips), items: view.legends.best(text), keep: keep('best') }),
+      figure(A.probabilityChart(n), hw.drawLineChart, view.probabilityChart(G, F.decimal), { reveal: 240, tip: view.tips.probability(G, text.tips), items: view.legends.probability(text), keep: keep('probability') }),
     ),
     paras(A.after(s)),
   );

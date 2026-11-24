@@ -1116,3 +1116,180 @@ dialog.index::backdrop {
     display: none;
   }
 }
+
+/* ===== Grafici interattivi (chartkit) =====
+   Il riquadro del canvas (kit-plot), dove il kit mette la tela trasparente
+   e l'etichetta; sopra, a destra, i pulsanti dello zoom, che compaiono al
+   passaggio del mouse o con il focus (sempre sui touch); il suggerimento
+   sulla rotella; i comandi di un grafico con i suoi parametri e il lettore
+   delle animazioni. */
+.kit-stage,
+.kit-plot {
+  position: relative;
+}
+
+.kit-plot canvas {
+  touch-action: pan-y;
+}
+
+.kit-plot canvas:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.kit-figure .kit-tools {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 3;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.kit-figure .kit-tools[hidden] {
+  display: none;
+}
+
+.kit-figure:hover .kit-tools,
+.kit-figure:focus-within .kit-tools,
+.kit-figure .kit-tools.is-zoomed {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .kit-figure .kit-tools {
+    opacity: 1;
+  }
+}
+
+.kit-figure .kit-tools button {
+  min-width: 28px;
+  height: 28px;
+  padding: 0 7px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--text);
+  font: 600 15px/26px system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.kit-figure .kit-tools button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.kit-figure .kit-tools button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.kit-hint {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  z-index: 4;
+  max-width: 80%;
+  margin: 0;
+  padding: 0.5rem 0.9rem;
+  border-radius: 6px;
+  background: rgba(20, 20, 20, 0.85);
+  color: #ffffff;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  text-align: center;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.kit-hint[hidden] {
+  display: none;
+}
+
+.kit-controls {
+  margin-bottom: 0.6rem;
+}
+
+.kit-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.4rem 0 0.6rem;
+  font-size: 0.9rem;
+}
+
+.kit-toggle input {
+  width: auto;
+  accent-color: var(--accent);
+}
+
+.kit-actions,
+.kit-player {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.5rem 0 0.8rem;
+}
+
+.kit-player .kit-play {
+  min-width: 6.5rem;
+}
+
+.kit-player .kit-position {
+  flex: 1 1 10rem;
+  width: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  accent-color: var(--accent);
+}
+
+.kit-player .kit-step {
+  min-width: 7rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.kit-player .kit-speed {
+  display: inline-flex;
+  gap: 0.25rem;
+}
+
+.kit-player .btn[aria-pressed="true"] {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+/* una simulazione in corso: il grafico resta, piu' chiaro, con l'avviso sopra */
+.kit-figure.is-pending .kit-plot canvas {
+  opacity: 0.55;
+  transition: opacity 0.2s ease;
+}
+
+.kit-busy {
+  position: absolute;
+  left: 50%;
+  top: 10px;
+  z-index: 4;
+  margin: 0;
+  padding: 0.25rem 0.8rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #ffffff;
+  font-size: 0.75rem;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.kit-busy[hidden],
+.kit-player[hidden],
+.kit-pending[hidden] {
+  display: none;
+}
+
+.kit-pending {
+  margin: 0.2rem 0 0;
+}

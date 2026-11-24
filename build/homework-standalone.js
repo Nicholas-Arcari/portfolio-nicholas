@@ -82,6 +82,7 @@ export const HOMEWORKS = [
     library: 'homework3.js',
     global: 'Homework3',
     inner: [],
+    ui: CHARTKIT,
     contents: 'Computations: xoshiro128** and SplitMix64, the m attackers of the Bernoulli and Rademacher models, the exact laws,\n * distances from the normal, hypothesis tests, charts, the animation and command line (node homework3.js [options]).',
     description: 'Homework #3 - Statistics: the penetration score of m attackers on n systems, the law of large numbers and the central limit theorem.',
   },
