@@ -43,7 +43,11 @@ COME SI USA
   a fette di pochi millisecondi: con i valori iniziali i risultati arrivano
   in qualche secondo, senza bloccarla. I campi delle sezioni 1.10 e 2.15
   cambiano i punti e le ripetizioni di Monte Carlo, il seme e i valori
-  simulati, e tutte le sezioni seguono.
+  simulati, e tutte le sezioni seguono. I grafici si ingrandiscono (Ctrl +
+  rotella, due dita, oppure un rettangolo trascinato; doppio clic per
+  tornare alla vista intera); quelli che seguono n, i passi o i termini si
+  disegnano punto per punto, e nell'area sotto la campana e nella soglia
+  d'allarme il punto x e la frequenza accettata si trascinano sul grafico.
 
   Da terminale, con Node.js 14 o successivo:
 
@@ -149,7 +153,11 @@ HOW TO USE IT
   few milliseconds: with the initial values the results arrive in a few
   seconds, without freezing it. The fields of sections 1.10 and 2.15 change
   the points and repetitions of Monte Carlo, the seed and the simulated
-  values, and every section follows.
+  values, and every section follows. The charts zoom (ctrl + wheel, two
+  fingers, or a rectangle dragged; double click for the whole chart
+  again); those that follow n, the steps or the terms are drawn point by
+  point, and in the area under the bell and the alarm threshold the point
+  x and the accepted rate can be dragged on the chart.
 
   From a terminal, with Node.js 14 or later:
 
