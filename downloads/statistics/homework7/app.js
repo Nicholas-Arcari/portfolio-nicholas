@@ -807,8 +807,9 @@ function handles({ onChange, onEnd = null }) {
           ctx.lineTo(f.plot.x + f.plot.w, at);
         }
         ctx.stroke();
-        // the knob to grab, on the edge of the plot, with the label beside it
-        const kx = spec.axis === 'x' ? at : f.plot.x + f.plot.w - 9;
+        // the knob to grab, with the label beside it: at the left of a horizontal line, away from
+        // the zoom buttons in the top right corner, and at the top of a vertical one, above the bars
+        const kx = spec.axis === 'x' ? at : f.plot.x + 9;
         const ky = spec.axis === 'x' ? f.plot.y + 9 : at;
         ctx.beginPath();
         ctx.arc(kx, ky, active ? 7 : 6, 0, 2 * Math.PI);
@@ -819,9 +820,12 @@ function handles({ onChange, onEnd = null }) {
         if (spec.label) {
           ctx.font = '11px sans-serif';
           ctx.fillStyle = pal.text;
-          ctx.textAlign = spec.axis === 'x' ? (at > f.plot.x + f.plot.w * 0.7 ? 'right' : 'left') : 'right';
-          const tx = spec.axis === 'x' ? at + (ctx.textAlign === 'left' ? 10 : -10) : kx - 11;
-          const ty = spec.axis === 'x' ? f.plot.y + 13 : at - 8;
+          const right = spec.axis === 'x' && at > f.plot.x + f.plot.w * 0.7;
+          ctx.textAlign = right ? 'right' : 'left';
+          const tx = spec.axis === 'x' ? at + (right ? -10 : 10) : kx + 11;
+          // above the line, or below it when the line is at the top of the plot
+          let ty = spec.axis === 'x' ? f.plot.y + 13 : at - 7;
+          if (spec.axis === 'y' && at - f.plot.y < 16) ty = at + 15;
           ctx.fillText(spec.label, tx, ty);
         }
       }
@@ -1145,6 +1149,31 @@ const kitLabels = (lang) => KIT_LABELS[lang] || KIT_LABELS.en;
 return { KIT_LABELS, kitLabels };
 })();
 
+var kitReveal$ = (function () {
+'use strict';
+
+// src/pages/statistics/chartkit/kitReveal.js
+// L'animazione piu' comune dei grafici degli homework: una curva disegnata
+// punto per punto, al crescere della sua x (n che cresce, i giorni, i
+// tentativi). Vale per i dati dei grafici a linee di ogni libreria, { x,
+// series: [{ values, band?, fixed? }] }: le serie `fixed` (riferimenti,
+// bande, soglie) restano intere.
+
+/** An animation that draws a line chart point by point, as its x grows: { frames, at(t), ms }. */
+function reveal(chart, ms = 110) {
+  return {
+    frames: chart.x.length,
+    ms,
+    at: (t) => ({
+      ...chart,
+      series: chart.series.map((s) => (s.fixed ? s : { ...s, values: s.values.map((v, i) => (i <= t ? v : null)), band: s.band ? s.band.map((b, i) => (i <= t ? b : null)) : s.band })),
+    }),
+  };
+}
+
+return { reveal };
+})();
+
 var kitDom$ = (function () {
 'use strict';
 
@@ -1347,11 +1376,11 @@ const sizes = typeof ResizeObserver === 'function'
  *   label, draw, data, palette, lang
  *   lib (the library of the homework), schedule (the queue of the first drawings)
  *   tip (describe(hit, hidden)), link, items (the legend), keep (the set of hidden items that outlives the chart),
- *   table (the id of the linked table: the legend hides its parts too), note, wide
+ *   table (the id of the linked table: the legend hides its parts too), onHide(parts) (anything else the legend hides), note, wide
  *   animation ({ frames, at(t) -> data, ms }: the chart step by step, with the player)
  *   handles ({ items, onChange(id, value) }: the lines to drag), pending (a simulation is running)
  * Returns the <figure>, with figure.kit = { chart, setData, setTip, setLabel,
- * setHidden, setAnimation, setHandles, setPending, destroy }.
+ * setNote, relabel, setHidden, setAnimation, setHandles, setPending, destroy }.
  */
 function createFigure(options) {
   const { label, draw, palette, lib, schedule = null, lang = 'en', items = null, note = null, link = null, table = null, wide = true } = options;
@@ -1374,6 +1403,7 @@ function createFigure(options) {
   const hint = el('p', { class: 'kit-hint', 'aria-live': 'polite', text: labels.hint, hidden: true });
   const busy = el('p', { class: 'kit-busy', role: 'status', text: labels.pending, hidden: !options.pending });
   const caption = el('figcaption', { text: label });
+  const noteEl = el('p', { class: 'figure-note', text: note || '', hidden: !note });
 
   const handles = options.handles ? handlesPlugin({ onChange: (key, value) => onHandle && onHandle(key, value) }) : null;
   const chart = createChart(canvas, {
@@ -1435,6 +1465,7 @@ function createFigure(options) {
       (parts) => {
         chart.setHidden(parts);
         if (table) hideParts(document.getElementById(table), parts);
+        if (options.onHide) options.onHide(parts);
       },
       hidden,
       palette,
@@ -1446,7 +1477,7 @@ function createFigure(options) {
     el('div', { class: 'kit-stage' }, plot, tools, hint, busy),
     bar,
     legendEl,
-    note && el('p', { class: 'figure-note', text: note }),
+    noteEl,
     caption,
   );
   figure.kit = {
@@ -1459,6 +1490,17 @@ function createFigure(options) {
     setLabel(next) {
       canvas.setAttribute('aria-label', next);
       caption.textContent = next;
+    },
+    setNote(next) {
+      noteEl.textContent = next || '';
+      noteEl.hidden = !next;
+    },
+    /** New labels for the buttons of the legend (the same items, in the same order). */
+    relabel(next) {
+      if (!legendEl) return;
+      legendEl.querySelectorAll('button').forEach((button, i) => {
+        if (next[i]) button.lastChild.textContent = next[i].label;
+      });
     },
     setHidden: (parts) => chart.setHidden(parts),
     /** A new animation (the parameters changed): when stopped, the player goes to the end, where the chart is complete. */
@@ -1513,6 +1555,7 @@ var view$ = (function () {
 // tabelle legate ai grafici, i valori iniziali dei riquadri "Prova" e le
 // righe del riepilogo dei test. Qui non ci sono testi: arrivano da texts.js.
 const hw = Homework7;
+const { reveal: revealChart } = kitReveal$;
 
 /** The sections of the page, in order, with the level of their title: the index of the page and of the program is built from here. */
 const SECTIONS = [
@@ -2569,17 +2612,8 @@ function scheduleFrameJob(job) {
 // pagina e il programma scaricabile leggono da qui gli stessi modelli e gli
 // stessi comandi; le etichette vengono dai testi (text.controls).
 
-/** An animation that draws a line chart point by point, as its x grows: { frames, at(t), ms }. The series marked `fixed` (references, bands, thresholds) stay whole. */
-function reveal(chart, ms = 110) {
-  return {
-    frames: chart.x.length,
-    ms,
-    at: (t) => ({
-      ...chart,
-      series: chart.series.map((s) => (s.fixed ? s : { ...s, values: s.values.map((v, i) => (i <= t ? v : null)), band: s.band ? s.band.map((b, i) => (i <= t ? b : null)) : s.band })),
-    }),
-  };
-}
+/** An animation that draws a line chart point by point, as its x grows (chartkit/kitReveal.js): the series marked `fixed` stay whole. */
+const reveal = revealChart;
 
 const RATES = Object.freeze([0.01, 0.02, 0.03, 0.05, 0.1]);
 const EPSILONS = Object.freeze([0.005, 0.01, 0.015, 0.02]);

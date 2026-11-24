@@ -14,7 +14,10 @@ l'interpretazione, la differenza fra associazione e causalita' con il
 paradosso di Simpson sulle ammissioni di Berkeley del 1973, il riepilogo dei
 test, il contesto storico e le conclusioni. Quattro riquadri "Prova": una
 tabella da scrivere o incollare, il rimescolamento di F, una dipendenza
-regolabile e Berkeley diviso per dipartimento.
+regolabile e Berkeley diviso per dipartimento. I grafici si ingrandiscono
+(Ctrl + rotella, due dita, oppure un rettangolo trascinato; doppio clic per
+tornare alla vista intera); in quello della dipendenza il livello alpha si
+trascina o si sceglie, e un'animazione disegna la curva al crescere di n.
 
 Come si apre
   Estrarre tutto l'archivio in una cartella e aprire index.html con un
@@ -68,7 +71,10 @@ theory, the interpretation, the difference between association and
 causation with Simpson's paradox on the Berkeley admissions of 1973, the
 summary of the tests, the historical context and the conclusions. Four
 "Try it" boxes: a table to type or paste, the shuffling of F, an adjustable
-dependence and Berkeley split by department.
+dependence and Berkeley split by department. The charts zoom (ctrl + wheel,
+two fingers, or a rectangle dragged; double click for the whole chart
+again); in the one of the dependence the level alpha can be dragged or
+chosen, and an animation draws the curve as n grows.
 
 How to open it
   Extract the whole archive into a folder and double click index.html: it

@@ -11,6 +11,1539 @@
 (function () {
 'use strict';
 
+var kitView$ = (function () {
+'use strict';
+
+// src/pages/statistics/chartkit/kitView.js
+// La matematica delle viste di un grafico interattivo: quale parte degli
+// assi si vede, come cambia con lo zoom e con lo spostamento, e la
+// conversione fra i pixel del riquadro e i valori. Niente DOM: sono funzioni
+// pure, che servono identiche alla pagina e al programma scaricabile.
+//
+// Una vista e' { x: [lo, hi] o null, y: [lo, hi] o null } nelle unita' degli
+// assi; null su un asse vuol dire "tutto". Il riquadro (frame) e' quello che
+// la libreria di ogni homework descrive con chartFrame(): { plot: { x, y, w,
+// h }, x: { min, max, log } o null, y: { min, max, log }, zoom: 'xy' o 'y' }.
+// Sugli assi logaritmici i conti si fanno sui logaritmi, cosi' lo zoom e lo
+// spostamento hanno lo stesso effetto in ogni punto dell'asse.
+
+/** How far the view can be enlarged: a thousandth of the whole axis. */
+const MIN_SPAN = 1e-3;
+
+const fwd = (axis, v) => (axis.log ? Math.log10(v) : v);
+const back = (axis, t) => (axis.log ? 10 ** t : t);
+
+/** The pixel of the value v on an axis drawn from p0 (its min) to p1 (its max). */
+function toPixel(axis, v, p0, p1) {
+  const lo = fwd(axis, axis.min);
+  const hi = fwd(axis, axis.max);
+  return p0 + ((fwd(axis, v) - lo) / (hi - lo)) * (p1 - p0);
+}
+
+/** The value of the pixel p on an axis drawn from p0 (its min) to p1 (its max). */
+function toValue(axis, p, p0, p1) {
+  const lo = fwd(axis, axis.min);
+  const hi = fwd(axis, axis.max);
+  return back(axis, lo + ((p - p0) / (p1 - p0)) * (hi - lo));
+}
+
+/** Whether the point (x, y), in CSS pixels of the canvas, lies in the plot. */
+const inPlot = (frame, x, y, slack = 0) => !!frame && x >= frame.plot.x - slack && x <= frame.plot.x + frame.plot.w + slack && y >= frame.plot.y - slack && y <= frame.plot.y + frame.plot.h + slack;
+
+/** The values under the point (x, y): { x, y }, with null on an axis without values (categories). */
+function valueAt(frame, x, y) {
+  const { plot } = frame;
+  return {
+    x: frame.x ? toValue(frame.x, x, plot.x, plot.x + plot.w) : null,
+    y: toValue(frame.y, y, plot.y + plot.h, plot.y),
+  };
+}
+
+/** The pixels of the values { x, y } (either may be null). */
+function pixelAt(frame, x, y) {
+  const { plot } = frame;
+  return {
+    x: x === null || !frame.x ? null : toPixel(frame.x, x, plot.x, plot.x + plot.w),
+    y: y === null ? null : toPixel(frame.y, y, plot.y + plot.h, plot.y),
+  };
+}
+
+/** The whole extent of the data of a frame drawn without a view: the limits zoom and panning stay within. */
+const fullView = (frame) => ({ x: frame.x ? [frame.x.min, frame.x.max] : null, y: [frame.y.min, frame.y.max] });
+
+const axesOf = (zoom) => ({ x: zoom === 'xy' || zoom === 'x', y: zoom === 'xy' || zoom === 'y' });
+
+/** One axis of a view, kept inside the whole axis and no narrower than MIN_SPAN of it; the full axis becomes null. */
+function clampAxis(range, full, axis) {
+  if (!range || !full) return null;
+  const f0 = fwd(axis, full[0]);
+  const f1 = fwd(axis, full[1]);
+  const whole = f1 - f0;
+  let a = fwd(axis, range[0]);
+  let b = fwd(axis, range[1]);
+  if (b - a >= whole * (1 - 1e-9)) return null;
+  const span = Math.max(b - a, whole * MIN_SPAN);
+  const mid = (a + b) / 2;
+  a = mid - span / 2;
+  b = mid + span / 2;
+  if (a < f0) [a, b] = [f0, f0 + span];
+  if (b > f1) [a, b] = [f1 - span, f1];
+  return [back(axis, a), back(axis, b)];
+}
+
+/** A view kept inside the whole data; null when it shows everything. */
+function clampView(view, frameAxes, full) {
+  if (!view) return null;
+  const x = frameAxes.x ? clampAxis(view.x, full.x, frameAxes.x) : null;
+  const y = clampAxis(view.y, full.y, frameAxes.y);
+  return x || y ? { x, y } : null;
+}
+
+/** The range an axis shows now: the view's, or the whole one. */
+const current = (view, full, key) => (view && view[key]) || full[key];
+
+/** Zooms one axis by k (k > 1 enlarges) about the value c. */
+function zoomAxis(range, axis, c, k) {
+  const a = fwd(axis, range[0]);
+  const b = fwd(axis, range[1]);
+  const t = fwd(axis, c);
+  return [back(axis, t - (t - a) / k), back(axis, t + (b - t) / k)];
+}
+
+/**
+ * The view zoomed by k (k > 1 enlarges, k < 1 shrinks) about the pixel (px,
+ * py) of the plot, on the axes the chart allows (frame.zoom); `frame` is
+ * the frame of the chart as drawn now, `full` its whole extent.
+ */
+function zoomView(view, frame, full, px, py, k) {
+  const allowed = axesOf(frame.zoom);
+  const at = valueAt(frame, px, py);
+  const next = { x: null, y: null };
+  if (allowed.x && frame.x) next.x = zoomAxis(current(view, full, 'x'), frame.x, at.x, k);
+  else if (view && view.x) next.x = view.x;
+  if (allowed.y) next.y = zoomAxis(current(view, full, 'y'), frame.y, at.y, k);
+  else if (view && view.y) next.y = view.y;
+  return clampView(next, frame, full);
+}
+
+/** The view moved by (dx, dy) pixels of the plot: the data follow the pointer. */
+function panView(view, frame, full, dx, dy) {
+  if (!view) return null;
+  const allowed = axesOf(frame.zoom);
+  const shift = (range, axis, pixels, size) => {
+    const a = fwd(axis, range[0]);
+    const b = fwd(axis, range[1]);
+    const d = (pixels / size) * (b - a);
+    return [back(axis, a - d), back(axis, b - d)];
+  };
+  const next = { x: view.x, y: view.y };
+  if (allowed.x && frame.x && view.x) next.x = shift(view.x, frame.x, dx, frame.plot.w);
+  if (allowed.y && view.y) next.y = shift(view.y, frame.y, -dy, frame.plot.h);
+  // keep the span while moving: clampAxis would shrink a view pushed against the edge
+  const keep = (range, full, axis) => {
+    if (!range) return null;
+    const f0 = fwd(axis, full[0]);
+    const f1 = fwd(axis, full[1]);
+    let a = fwd(axis, range[0]);
+    let b = fwd(axis, range[1]);
+    if (a < f0) [a, b] = [f0, f0 + (b - a)];
+    if (b > f1) [a, b] = [f1 - (b - a), f1];
+    return [back(axis, a), back(axis, b)];
+  };
+  return { x: frame.x ? keep(next.x, full.x, frame.x) : null, y: keep(next.y, full.y, frame.y) };
+}
+
+/** The view of the rectangle selected from (x0, y0) to (x1, y1), in pixels, on the axes the chart allows. */
+function boxView(view, frame, full, x0, y0, x1, y1) {
+  const allowed = axesOf(frame.zoom);
+  const a = valueAt(frame, Math.min(x0, x1), Math.max(y0, y1));
+  const b = valueAt(frame, Math.max(x0, x1), Math.min(y0, y1));
+  return clampView(
+    {
+      x: allowed.x && frame.x ? [a.x, b.x] : (view && view.x) || null,
+      y: allowed.y ? [a.y, b.y] : (view && view.y) || null,
+    },
+    frame,
+    full,
+  );
+}
+
+/** Whether a view shows less than the whole data. */
+const isZoomed = (view) => !!view && (!!view.x || !!view.y);
+
+return { toPixel, toValue, inPlot, valueAt, pixelAt, fullView, clampView, zoomView, panView, boxView, isZoomed };
+})();
+
+var kitGestures$ = (function () {
+'use strict';
+
+// src/pages/statistics/chartkit/kitGestures.js
+// I gesti su un elemento: il puntatore (mouse, penna, dito), la rotella e i
+// tasti, tradotti in quello che vogliono dire: passare sopra, premere e
+// trascinare, il doppio clic, la rotella con Ctrl, il pizzico a due dita.
+// Non sa niente di grafici: chi lo usa decide, con il valore che restituisce,
+// se un gesto lo riguarda (press, wheel, pinch e key restituiscono true per
+// tenerlo). Le coordinate sono in pixel CSS dall'angolo in alto a sinistra
+// dell'elemento.
+
+/**
+ * Listens to `el` and calls `handlers`:
+ *   hover(p)                     the pointer moves over it (not while a drag is on)
+ *   leave()                      it leaves
+ *   press(p) -> boolean          a button or a finger goes down; true starts a drag
+ *   drag(p, start)               the pointer moves during that drag
+ *   release(p, start)            the drag ends (or is cancelled)
+ *   dblclick(p) -> boolean       double click
+ *   wheel(p, { deltaY, ctrl }) -> boolean   true stops the page from scrolling
+ *   pinch({ x, y, scale, dx, dy }) -> boolean   two fingers: the centre, the change of their distance and of the centre
+ *   key(event) -> boolean        a key while the element has the focus; true stops its default action
+ * p is { x, y, pointerType, button, shift, ctrl }. Returns the function that stops listening.
+ */
+function attachGestures(el, handlers) {
+  const at = (e) => {
+    const r = el.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top, pointerType: e.pointerType || 'mouse', button: e.button ?? 0, shift: !!e.shiftKey, ctrl: !!(e.ctrlKey || e.metaKey) };
+  };
+  const touches = new Map(); // pointerId -> { x, y } of the fingers down
+  let drag = null; // { id, start } while a press holds the pointer
+  let pinch = null; // { distance, x, y } while two fingers are down
+
+  const twoFingers = () => {
+    const [a, b] = [...touches.values()];
+    return { distance: Math.hypot(a.x - b.x, a.y - b.y), x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  };
+
+  const onDown = (e) => {
+    const p = at(e);
+    if (e.pointerType === 'touch') {
+      touches.set(e.pointerId, p);
+      if (touches.size === 2) {
+        // two fingers: the drag of one finger, if any, ends and the pinch begins
+        if (drag && handlers.release) handlers.release(p, drag.start);
+        drag = null;
+        pinch = twoFingers();
+        return;
+      }
+      if (touches.size > 2) return;
+    }
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    if (handlers.press && handlers.press(p)) {
+      drag = { id: e.pointerId, start: p };
+      try {
+        el.setPointerCapture(e.pointerId);
+      } catch {
+        // a pointer that is already gone cannot be captured: the drag still works while it stays on the element
+      }
+      e.preventDefault();
+    }
+  };
+
+  const onMove = (e) => {
+    const p = at(e);
+    if (e.pointerType === 'touch' && touches.has(e.pointerId)) {
+      touches.set(e.pointerId, p);
+      if (pinch && touches.size === 2) {
+        const now = twoFingers();
+        const used = handlers.pinch && handlers.pinch({ x: now.x, y: now.y, scale: now.distance / Math.max(1, pinch.distance), dx: now.x - pinch.x, dy: now.y - pinch.y });
+        pinch = now;
+        if (used) e.preventDefault();
+        return;
+      }
+    }
+    if (drag && e.pointerId === drag.id) {
+      if (handlers.drag) handlers.drag(p, drag.start);
+      return;
+    }
+    if (!drag && handlers.hover && e.pointerType !== 'touch') handlers.hover(p);
+  };
+
+  const onUp = (e) => {
+    const p = at(e);
+    if (e.pointerType === 'touch') {
+      touches.delete(e.pointerId);
+      if (touches.size < 2) pinch = null;
+    }
+    if (drag && e.pointerId === drag.id) {
+      const { start } = drag;
+      drag = null;
+      if (handlers.release) handlers.release(p, start);
+    }
+  };
+
+  const onLeave = (e) => {
+    if (!drag && e.pointerType !== 'touch' && handlers.leave) handlers.leave();
+  };
+
+  const onDouble = (e) => {
+    if (handlers.dblclick && handlers.dblclick(at(e))) e.preventDefault();
+  };
+
+  const onWheel = (e) => {
+    if (handlers.wheel && handlers.wheel(at(e), { deltaY: e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY, ctrl: !!(e.ctrlKey || e.metaKey) })) e.preventDefault();
+  };
+
+  const onKey = (e) => {
+    if (handlers.key && handlers.key(e)) e.preventDefault();
+  };
+
+  el.addEventListener('pointerdown', onDown);
+  el.addEventListener('pointermove', onMove);
+  el.addEventListener('pointerup', onUp);
+  el.addEventListener('pointercancel', onUp);
+  el.addEventListener('pointerleave', onLeave);
+  el.addEventListener('dblclick', onDouble);
+  el.addEventListener('wheel', onWheel, { passive: false });
+  el.addEventListener('keydown', onKey);
+  return () => {
+    el.removeEventListener('pointerdown', onDown);
+    el.removeEventListener('pointermove', onMove);
+    el.removeEventListener('pointerup', onUp);
+    el.removeEventListener('pointercancel', onUp);
+    el.removeEventListener('pointerleave', onLeave);
+    el.removeEventListener('dblclick', onDouble);
+    el.removeEventListener('wheel', onWheel);
+    el.removeEventListener('keydown', onKey);
+  };
+}
+
+return { attachGestures };
+})();
+
+var kitChart$ = (function () {
+'use strict';
+
+// src/pages/statistics/chartkit/kitChart.js
+// Un grafico interattivo: il canvas disegnato dalla libreria dell'homework,
+// una tela trasparente sopra per i segni delle interazioni (il rettangolo
+// dello zoom, le maniglie da trascinare), la vista (quale parte degli assi
+// si vede), le parti nascoste dalla legenda e l'etichetta sotto il
+// puntatore.
+//
+// Il controllore non sa che grafico sia: lo sanno le funzioni che riceve
+// (draw, frame, withView, height, hitTest, hitAt, pointerLabel), che ogni
+// libreria fornisce (Dependency Inversion). Le interazioni sono plugin
+// (kitPlugins.js): un'interazione nuova e' un plugin nuovo, il controllore
+// non cambia (Open/Closed). I gesti passano ai plugin in ordine, e il primo
+// che ne tiene uno lo segue fino alla fine.
+const { attachGestures } = kitGestures$;
+const { clampView, fullView, isZoomed, zoomView } = kitView$;
+
+const requestFrame = (fn) => (typeof requestAnimationFrame === 'function' ? requestAnimationFrame(fn) : setTimeout(fn, 16));
+const cancelFrame = (id) => (typeof cancelAnimationFrame === 'function' ? cancelAnimationFrame(id) : clearTimeout(id));
+
+/**
+ * Makes `canvas` an interactive chart. `deps`:
+ *   draw, data, palette        the chart and what it draws
+ *   frame(draw, data, width)   where the plot lies and what it shows (null: no zoom)
+ *   withView(draw, data, view) the same data in another view
+ *   height(draw, data, width)  the height of the canvas at this width
+ *   hitTest, hitAt, pointerLabel   the label under the pointer (as attachChartTooltip)
+ *   describe(hit, hidden)      its text, or null for none; link: the linked table, or null
+ *   hidden                     the parts hidden by the legend
+ *   plugins                    the interactions, in order of priority
+ *   schedule(job)              where the first drawing goes (a queue of frames), optional
+ * Returns the controller: setData, setPalette, setHidden, setDescribe,
+ * resize, getFrame, getView, setView, zoomBy, resetView, isZoomed, on,
+ * requestOverlay, setCursor, destroy.
+ */
+function createChart(canvas, deps) {
+  const { draw, frame: frameOf, withView, height: heightOf, hitTest, hitAt, pointerLabel, schedule = null } = deps;
+  let data = deps.data;
+  let palette = deps.palette;
+  let hidden = deps.hidden || [];
+  let describe = deps.describe || null;
+  let link = deps.link || null;
+  let width = -1;
+  let view = null;
+  let viewed = data; // the data as drawn now: hidden parts and view applied
+  let frame = null; // where the plot lies now
+  let full = null; // the whole extent of the data, without a view
+  let frameRequest = 0;
+  let firstDrawn = false;
+  let destroyed = false;
+  const listeners = {};
+  const plugins = deps.plugins || [];
+
+  // the transparent canvas over the chart, for the marks of the interactions
+  const overlay = document.createElement('canvas');
+  overlay.setAttribute('aria-hidden', 'true');
+  Object.assign(overlay.style, { position: 'absolute', pointerEvents: 'none', left: '0px', top: '0px' });
+  canvas.after(overlay);
+
+  const emit = (name, payload) => (listeners[name] || []).forEach((fn) => fn(payload));
+  const shown = () => (hidden.length ? { ...data, hidden } : data);
+
+  const drawOverlay = () => {
+    const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    Object.assign(overlay.style, { left: `${canvas.offsetLeft}px`, top: `${canvas.offsetTop}px`, width: `${w}px`, height: `${h}px` });
+    if (overlay.width !== Math.round(w * dpr) || overlay.height !== Math.round(h * dpr)) {
+      overlay.width = Math.round(w * dpr);
+      overlay.height = Math.round(h * dpr);
+    }
+    const ctx = overlay.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    if (!frame) return;
+    for (const plugin of plugins) if (plugin.overlay) plugin.overlay(ctx, frame, palette);
+  };
+
+  const render = () => {
+    frameRequest = 0;
+    if (destroyed || width <= 0) return;
+    const base = shown();
+    const fullFrame = frameOf(draw, base, width);
+    full = fullFrame ? fullView(fullFrame) : null;
+    // a view that the new data no longer allows (other limits) is brought back inside them
+    if (view && fullFrame) view = clampView(view, fullFrame, full);
+    if (!fullFrame) view = null;
+    viewed = view ? withView(draw, base, view) : base;
+    canvas.style.height = `${heightOf(draw, viewed, width)}px`;
+    draw(canvas, { ...viewed, width }, palette);
+    frame = frameOf(draw, viewed, width);
+    canvas.tabIndex = frame ? 0 : -1;
+    drawOverlay();
+    // the label under a still pointer follows the chart that changed under it
+    if (detachLabel && detachLabel.refresh) detachLabel.refresh();
+    emit('render', { frame, view });
+  };
+
+  /** Draws again at the next frame (several changes in the same frame draw once). */
+  const redraw = () => {
+    if (!frameRequest && !destroyed) frameRequest = requestFrame(render);
+  };
+
+  // the label under the pointer, attached once: it always reads the data as drawn now
+  let detachLabel = null;
+  const attachLabel = () => {
+    if (detachLabel || !describe) return;
+    detachLabel = pointerLabel(
+      canvas,
+      (x, y, w) => {
+        if (!describe) return null;
+        const hit = hitTest(draw, viewed, w, x, y);
+        const text = hit && describe(hit, hidden);
+        return text ? { rect: hit.rect, text, row: link ? link.row(hit) : -1 } : null;
+      },
+      link && {
+        table: () => (link ? link.table() : null),
+        locate: (row, w) => {
+          const hit = link && hitAt(draw, viewed, w, link.point(row));
+          return hit && hit.rect;
+        },
+      },
+    );
+  };
+  attachLabel();
+
+  const api = {
+    canvas,
+    overlay,
+    get palette() {
+      return palette;
+    },
+    setData(next) {
+      data = next;
+      redraw();
+    },
+    setPalette(next) {
+      palette = next;
+      redraw();
+    },
+    setHidden(parts) {
+      hidden = parts || [];
+      redraw();
+    },
+    setDescribe(fn) {
+      describe = fn;
+      attachLabel();
+    },
+    setLink(next) {
+      link = next;
+    },
+    /** The width the canvas gets in the page (from a ResizeObserver): the first drawing goes through the queue, if any. */
+    resize(next) {
+      if (next <= 0 || next === width) return;
+      width = next;
+      if (!firstDrawn && schedule) {
+        firstDrawn = true;
+        canvas.style.height = `${heightOf(draw, shown(), width)}px`;
+        schedule(() => {
+          if (!destroyed && canvas.isConnected) render();
+        });
+        return;
+      }
+      firstDrawn = true;
+      render();
+    },
+    redraw,
+    requestOverlay: () => drawOverlay(),
+    getFrame: () => frame,
+    getFullView: () => full,
+    getView: () => view,
+    setView(next) {
+      const before = JSON.stringify(view);
+      view = next && frame ? clampView(next, frame, full) : null;
+      if (JSON.stringify(view) !== before) {
+        emit('view', view);
+        redraw();
+      }
+    },
+    /** Zooms about the centre of the plot (k > 1 enlarges). */
+    zoomBy(k) {
+      if (!frame || !full) return;
+      api.setView(zoomView(view, frame, full, frame.plot.x + frame.plot.w / 2, frame.plot.y + frame.plot.h / 2, k));
+    },
+    resetView() {
+      api.setView(null);
+    },
+    isZoomed: () => isZoomed(view),
+    canZoom: () => !!frame,
+    setCursor(cursor) {
+      canvas.style.cursor = cursor || '';
+    },
+    on(name, fn) {
+      (listeners[name] = listeners[name] || []).push(fn);
+      return () => {
+        listeners[name] = (listeners[name] || []).filter((f) => f !== fn);
+      };
+    },
+    emit,
+    destroy() {
+      destroyed = true;
+      cancelFrame(frameRequest);
+      detachGestures();
+      if (detachLabel) detachLabel();
+      for (const plugin of plugins) if (plugin.uninstall) plugin.uninstall();
+      overlay.remove();
+    },
+  };
+
+  // the gestures go to the plugins in order: the first that takes a press follows it to the end
+  let active = null;
+  const detachGestures = attachGestures(canvas, {
+    hover(p) {
+      let cursor = '';
+      for (const plugin of plugins) {
+        const c = plugin.hover && plugin.hover(p);
+        if (c) {
+          cursor = c;
+          break;
+        }
+      }
+      api.setCursor(cursor);
+    },
+    leave() {
+      for (const plugin of plugins) if (plugin.leave) plugin.leave();
+      api.setCursor('');
+    },
+    press(p) {
+      active = plugins.find((plugin) => plugin.pointerDown && plugin.pointerDown(p)) || null;
+      // the label waits while a plugin follows the drag
+      if (active && detachLabel && detachLabel.suspend) detachLabel.suspend(true);
+      return !!active;
+    },
+    drag(p, start) {
+      if (active && active.pointerMove) active.pointerMove(p, start);
+    },
+    release(p, start) {
+      if (active && active.pointerUp) active.pointerUp(p, start);
+      if (active && detachLabel && detachLabel.suspend) detachLabel.suspend(false);
+      active = null;
+    },
+    dblclick: (p) => plugins.some((plugin) => plugin.doubleClick && plugin.doubleClick(p)),
+    wheel: (p, w) => plugins.some((plugin) => plugin.wheel && plugin.wheel(p, w)),
+    pinch: (g) => plugins.some((plugin) => plugin.pinch && plugin.pinch(g)),
+    key: (e) => plugins.some((plugin) => plugin.key && plugin.key(e)),
+  });
+  for (const plugin of plugins) if (plugin.install) plugin.install(api);
+  return api;
+}
+
+return { createChart };
+})();
+
+var kitPlugins$ = (function () {
+'use strict';
+
+// src/pages/statistics/chartkit/kitPlugins.js
+// Le interazioni di un grafico (kitChart.js), una per plugin. Un plugin e'
+// un oggetto con i soli metodi che gli servono (Interface Segregation):
+//   install(chart), uninstall()
+//   hover(p) -> cursore o '', leave()
+//   pointerDown(p) -> true per tenere il gesto, pointerMove(p, start), pointerUp(p, start)
+//   doubleClick(p), wheel(p, { deltaY, ctrl }), pinch({ x, y, scale, dx, dy }), key(event) -> true se usati
+//   overlay(ctx, frame, palette): i suoi segni sulla tela trasparente sopra il grafico
+// Un'interazione nuova e' un plugin nuovo: il controllore non cambia.
+const { boxView, inPlot, panView, pixelAt, valueAt, zoomView } = kitView$;
+
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+/**
+ * Zoom and panning: ctrl (or cmd) + wheel and two fingers zoom about the
+ * pointer; a drag selects the rectangle to enlarge, or moves the view once
+ * it is enlarged (with shift it always selects); a double click and the
+ * keys 0 or Escape go back to the whole chart; + and - zoom, the arrows
+ * move. A plain wheel scrolls the page, and the chart says (event 'hint')
+ * how to zoom instead.
+ */
+function zoomPan() {
+  let chart = null;
+  let mode = null; // 'pan' or 'box' during a drag
+  let box = null;
+  let last = null;
+  return {
+    name: 'zoomPan',
+    install(c) {
+      chart = c;
+    },
+    hover(p) {
+      const f = chart.getFrame();
+      if (!inPlot(f, p.x, p.y)) return '';
+      return chart.isZoomed() && !p.shift ? 'grab' : 'zoom-in';
+    },
+    pointerDown(p) {
+      const f = chart.getFrame();
+      if (!f || p.pointerType === 'touch' || !inPlot(f, p.x, p.y)) return false;
+      if (chart.isZoomed() && !p.shift) {
+        mode = 'pan';
+        last = p;
+        chart.setCursor('grabbing');
+        return true;
+      }
+      mode = 'box';
+      box = { x0: p.x, y0: p.y, x1: p.x, y1: p.y };
+      return true;
+    },
+    pointerMove(p) {
+      const f = chart.getFrame();
+      if (!f) return;
+      if (mode === 'pan') {
+        chart.setView(panView(chart.getView(), f, chart.getFullView(), p.x - last.x, p.y - last.y));
+        last = p;
+      } else if (mode === 'box') {
+        box.x1 = clamp(p.x, f.plot.x, f.plot.x + f.plot.w);
+        box.y1 = clamp(p.y, f.plot.y, f.plot.y + f.plot.h);
+        chart.requestOverlay();
+      }
+    },
+    pointerUp() {
+      const f = chart.getFrame();
+      if (mode === 'box' && box && f) {
+        const wide = Math.abs(box.x1 - box.x0) > 6 && f.zoom !== 'y';
+        const tall = Math.abs(box.y1 - box.y0) > 6;
+        if (wide || tall) {
+          const { plot } = f;
+          // a thin selection enlarges one axis only, the other one stays as it is
+          const x0 = wide ? box.x0 : plot.x;
+          const x1 = wide ? box.x1 : plot.x + plot.w;
+          const y0 = tall ? box.y0 : plot.y;
+          const y1 = tall ? box.y1 : plot.y + plot.h;
+          const next = boxView(chart.getView(), f, chart.getFullView(), x0, y0, x1, y1);
+          const view = chart.getView();
+          chart.setView({ x: wide ? next && next.x : view && view.x, y: tall ? next && next.y : view && view.y });
+        }
+      }
+      mode = null;
+      box = null;
+      chart.requestOverlay();
+      chart.setCursor('');
+    },
+    doubleClick() {
+      if (!chart.isZoomed()) return false;
+      chart.resetView();
+      return true;
+    },
+    wheel(p, w) {
+      const f = chart.getFrame();
+      if (!f || !inPlot(f, p.x, p.y)) return false;
+      if (!w.ctrl) {
+        chart.emit('hint');
+        return false;
+      }
+      chart.setView(zoomView(chart.getView(), f, chart.getFullView(), p.x, p.y, Math.exp(-w.deltaY * 0.0025)));
+      return true;
+    },
+    pinch(g) {
+      const f = chart.getFrame();
+      if (!f) return false;
+      const zoomed = zoomView(chart.getView(), f, chart.getFullView(), g.x, g.y, g.scale);
+      chart.setView(zoomed ? panView(zoomed, f, chart.getFullView(), g.dx, g.dy) : null);
+      return true;
+    },
+    key(e) {
+      const f = chart.getFrame();
+      if (!f) return false;
+      if (e.key === '+' || e.key === '=') {
+        chart.zoomBy(1.5);
+        return true;
+      }
+      if (e.key === '-' || e.key === '_') {
+        if (!chart.isZoomed()) return false;
+        chart.zoomBy(1 / 1.5);
+        return true;
+      }
+      if (e.key === '0' || e.key === 'Escape') {
+        if (!chart.isZoomed()) return false;
+        chart.resetView();
+        return true;
+      }
+      const step = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
+      if (!step || !chart.isZoomed()) return false;
+      chart.setView(panView(chart.getView(), f, chart.getFullView(), -step[0] * f.plot.w * 0.1, -step[1] * f.plot.h * 0.1));
+      return true;
+    },
+    overlay(ctx, f, pal) {
+      if (mode !== 'box' || !box) return;
+      const yOnly = f.zoom === 'y';
+      const x = yOnly ? f.plot.x : Math.min(box.x0, box.x1);
+      const w = yOnly ? f.plot.w : Math.abs(box.x1 - box.x0);
+      const y = Math.min(box.y0, box.y1);
+      const h = Math.abs(box.y1 - box.y0);
+      ctx.fillStyle = pal.highlight;
+      ctx.globalAlpha = 0.1;
+      ctx.fillRect(x, y, w, h);
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = pal.highlight;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 3]);
+      ctx.strokeRect(x + 0.5, y + 0.5, w, h);
+      ctx.setLineDash([]);
+    },
+  };
+}
+
+/**
+ * Lines to drag on the chart, bound to the parameters of its spec: specs
+ * [{ id, axis: 'x' (a vertical line) or 'y' (a horizontal one), value,
+ * min, max, step?, values? (the allowed ones), label? }], in the units of
+ * the axes. onChange(id, value) receives the new value while dragging; the
+ * line itself moves when the spec gives the new value back (setSpecs).
+ */
+function handles({ onChange, onEnd = null }) {
+  let chart = null;
+  let specs = [];
+  let grabbed = null;
+  const where = (f, spec) => {
+    const at = spec.axis === 'x' ? pixelAt(f, spec.value, null).x : pixelAt(f, null, spec.value).y;
+    if (at === null || !Number.isFinite(at)) return null;
+    const inside = spec.axis === 'x' ? at >= f.plot.x - 1 && at <= f.plot.x + f.plot.w + 1 : at >= f.plot.y - 1 && at <= f.plot.y + f.plot.h + 1;
+    return inside ? at : null;
+  };
+  const near = (p) => {
+    const f = chart && chart.getFrame();
+    if (!f || !inPlot(f, p.x, p.y, 8)) return null;
+    const reach = p.pointerType === 'touch' ? 14 : 7;
+    let best = null;
+    let distance = reach;
+    for (const spec of specs) {
+      const at = where(f, spec);
+      if (at === null) continue;
+      const d = Math.abs((spec.axis === 'x' ? p.x : p.y) - at);
+      if (d <= distance) {
+        best = spec;
+        distance = d;
+      }
+    }
+    return best;
+  };
+  const snap = (spec, v) => {
+    if (spec.values && spec.values.length) return spec.values.reduce((a, b) => (Math.abs(b - v) < Math.abs(a - v) ? b : a));
+    let out = clamp(v, spec.min ?? -Infinity, spec.max ?? Infinity);
+    if (spec.step) out = Math.round(out / spec.step) * spec.step;
+    return Number(out.toPrecision(12));
+  };
+  return {
+    name: 'handles',
+    install(c) {
+      chart = c;
+    },
+    setSpecs(next) {
+      specs = next || [];
+      if (chart) chart.requestOverlay();
+    },
+    hover(p) {
+      const spec = near(p);
+      if (!spec) return '';
+      return spec.axis === 'x' ? 'ew-resize' : 'ns-resize';
+    },
+    pointerDown(p) {
+      grabbed = near(p);
+      if (!grabbed) return false;
+      chart.setCursor(grabbed.axis === 'x' ? 'ew-resize' : 'ns-resize');
+      return true;
+    },
+    pointerMove(p) {
+      const f = chart.getFrame();
+      if (!grabbed || !f) return;
+      const v = valueAt(f, p.x, p.y)[grabbed.axis];
+      if (v === null || !Number.isFinite(v)) return;
+      const next = snap(grabbed, v);
+      if (next !== grabbed.value) {
+        grabbed = { ...grabbed, value: next };
+        onChange(grabbed.id, next);
+      }
+    },
+    pointerUp() {
+      if (grabbed && onEnd) onEnd(grabbed.id);
+      grabbed = null;
+      chart.setCursor('');
+    },
+    overlay(ctx, f, pal) {
+      for (const spec of specs) {
+        const at = where(f, spec);
+        if (at === null) continue;
+        const active = grabbed && grabbed.id === spec.id;
+        ctx.strokeStyle = pal.highlight;
+        ctx.fillStyle = pal.highlight;
+        ctx.lineWidth = active ? 2.5 : 1.8;
+        ctx.beginPath();
+        if (spec.axis === 'x') {
+          ctx.moveTo(at, f.plot.y);
+          ctx.lineTo(at, f.plot.y + f.plot.h);
+        } else {
+          ctx.moveTo(f.plot.x, at);
+          ctx.lineTo(f.plot.x + f.plot.w, at);
+        }
+        ctx.stroke();
+        // the knob to grab, with the label beside it: at the left of a horizontal line, away from
+        // the zoom buttons in the top right corner, and at the top of a vertical one, above the bars
+        const kx = spec.axis === 'x' ? at : f.plot.x + 9;
+        const ky = spec.axis === 'x' ? f.plot.y + 9 : at;
+        ctx.beginPath();
+        ctx.arc(kx, ky, active ? 7 : 6, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.strokeStyle = pal.background;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        if (spec.label) {
+          ctx.font = '11px sans-serif';
+          ctx.fillStyle = pal.text;
+          const right = spec.axis === 'x' && at > f.plot.x + f.plot.w * 0.7;
+          ctx.textAlign = right ? 'right' : 'left';
+          const tx = spec.axis === 'x' ? at + (right ? -10 : 10) : kx + 11;
+          // above the line, or below it when the line is at the top of the plot
+          let ty = spec.axis === 'x' ? f.plot.y + 13 : at - 7;
+          if (spec.axis === 'y' && at - f.plot.y < 16) ty = at + 15;
+          ctx.fillText(spec.label, tx, ty);
+        }
+      }
+    },
+  };
+}
+
+return { zoomPan, handles };
+})();
+
+var kitPlayer$ = (function () {
+'use strict';
+
+// src/pages/statistics/chartkit/kitPlayer.js
+// Il lettore delle animazioni: un tempo t da 0 a frames - 1 che avanza a
+// una certa velocita', con avvio, pausa, un passo avanti o indietro e un
+// punto qualsiasi. Non sa niente di grafici: a ogni passo chiama
+// onFrame(t), e chi lo usa ridisegna. All'inizio sta sull'ultimo passo, cosi'
+// chi non preme Avvia vede il grafico completo, e non parte mai da solo:
+// rispetta anche chi ha chiesto meno movimento.
+
+const requestFrame = (fn) => (typeof requestAnimationFrame === 'function' ? requestAnimationFrame(fn) : setTimeout(() => fn(Date.now()), 16));
+const cancelFrame = (id) => (typeof cancelAnimationFrame === 'function' ? cancelAnimationFrame(id) : clearTimeout(id));
+
+/**
+ * A player of `frames` steps, one every `ms` milliseconds at speed 1.
+ * onFrame(t) draws step t; onChange(state) tells the interface { t,
+ * frames, playing, speed }. Returns { play, pause, toggle, step, seek,
+ * setSpeed, setFrames, setMs, state, destroy }.
+ */
+function createPlayer({ frames = 1, ms: stepMs = 60, loop = false, onFrame, onChange = null }) {
+  let ms = stepMs;
+  let count = Math.max(1, frames);
+  let t = count - 1;
+  let playing = false;
+  let speed = 1;
+  let request = 0;
+  let last = 0;
+  let elapsed = 0;
+  const state = () => ({ t, frames: count, playing, speed });
+  const notify = () => {
+    if (onChange) onChange(state());
+  };
+  const tick = (now) => {
+    if (!playing) return;
+    if (!last) last = now;
+    elapsed += (now - last) * speed;
+    last = now;
+    let moved = false;
+    while (elapsed >= ms && playing) {
+      elapsed -= ms;
+      if (t < count - 1) {
+        t += 1;
+        moved = true;
+      } else if (loop) {
+        t = 0;
+        moved = true;
+      } else {
+        playing = false;
+      }
+    }
+    if (moved) onFrame(t);
+    notify();
+    if (playing) request = requestFrame(tick);
+  };
+  const api = {
+    play() {
+      if (playing || count < 2) return;
+      // at the end, play starts again from the beginning
+      if (t >= count - 1) {
+        t = 0;
+        onFrame(t);
+      }
+      playing = true;
+      last = 0;
+      elapsed = 0;
+      request = requestFrame(tick);
+      notify();
+    },
+    pause() {
+      if (!playing) return;
+      playing = false;
+      cancelFrame(request);
+      notify();
+    },
+    toggle() {
+      if (playing) api.pause();
+      else api.play();
+    },
+    step(by = 1) {
+      api.pause();
+      const next = Math.min(count - 1, Math.max(0, t + by));
+      if (next !== t) {
+        t = next;
+        onFrame(t);
+      }
+      notify();
+    },
+    seek(at) {
+      const next = Math.min(count - 1, Math.max(0, Math.round(at)));
+      if (next !== t) {
+        t = next;
+        onFrame(t);
+      }
+      notify();
+    },
+    setSpeed(next) {
+      speed = next;
+      notify();
+    },
+    /** A new number of steps (the parameters changed): when stopped, the player goes to the end, where the chart is complete. */
+    setFrames(next) {
+      count = Math.max(1, next);
+      if (!playing || t > count - 1) t = count - 1;
+      notify();
+    },
+    /** Another length of a step, in milliseconds at speed 1 (a new animation). */
+    setMs(next) {
+      ms = Math.max(1, next);
+    },
+    state,
+    destroy() {
+      playing = false;
+      cancelFrame(request);
+    },
+  };
+  return api;
+}
+
+return { createPlayer };
+})();
+
+var kitSpec$ = (function () {
+'use strict';
+
+// src/pages/statistics/chartkit/kitSpec.js
+// I comandi di una sezione e il suo modello: i parametri che i comandi
+// cambiano e, quando una simulazione dipende da loro, il suo risultato. Il
+// modello e' della sezione, non del grafico: grafici e tabelle della stessa
+// sezione leggono gli stessi parametri e la stessa simulazione, e non
+// possono raccontare cose diverse. Non sa niente di React ne' del DOM: la
+// pagina lo usa con useModel.js, il programma scaricabile direttamente.
+//
+//   control = { key, kind: 'slider', values: [...], label(value) }
+//           | { key, kind: 'choice', options: [[value, name], ...], label }
+//           | { key, kind: 'toggle', label }
+//           | { kind: 'action', label, run(params) -> params }
+// Le etichette sono gia' nella lingua della pagina; il modello tiene solo i
+// parametri, che non dipendono dalla lingua.
+
+/** The position of a slider: the index of the value closest to the parameter. */
+function sliderIndex(control, params) {
+  const v = params[control.key];
+  let best = 0;
+  control.values.forEach((x, i) => {
+    if (Math.abs(x - v) < Math.abs(control.values[best] - v)) best = i;
+  });
+  return best;
+}
+
+/** The parameters after a control is used: a slider gives the index of its value, a choice its value, a toggle true or false, an action nothing. */
+function applyControl(control, params, input) {
+  if (control.kind === 'slider') return { ...params, [control.key]: control.values[input] };
+  if (control.kind === 'choice') return { ...params, [control.key]: input };
+  if (control.kind === 'toggle') return { ...params, [control.key]: !!input };
+  if (control.kind === 'action') return control.run(params);
+  return params;
+}
+
+const keyOf = (params) => JSON.stringify(params);
+const KEPT = 6;
+
+/**
+ * The state of a section with controls: { params, sim, pending, error }.
+ *   params            the parameters at the start
+ *   simulate(params)  optional: the steps (a generator) of a simulation, whose return value is its result
+ *   simKey(params)    which parameters the simulation depends on (default: all of them)
+ *   runner            the library's runStepsAsync: the simulation runs in slices of a few milliseconds
+ * While a simulation runs, `sim` stays the last result (so nothing goes
+ * blank) and `pending` is true; the results of the last parameters seen
+ * are kept, and a simulation nobody wants any more stops between two slices.
+ * Returns { get, setParams, provide, subscribe, destroy }.
+ */
+function createModel({ params, simulate = null, simKey = keyOf, runner = null }) {
+  let state = { params: { ...params }, sim: null, pending: false, error: null };
+  const cache = new Map();
+  const listeners = new Set();
+  let job = null;
+  const set = (patch) => {
+    state = { ...state, ...patch };
+    listeners.forEach((fn) => fn());
+  };
+  const remember = (key, value) => {
+    cache.delete(key);
+    cache.set(key, value);
+    while (cache.size > KEPT) cache.delete(cache.keys().next().value);
+  };
+  const run = (p) => {
+    if (!simulate) return;
+    const key = simKey(p);
+    if (cache.has(key)) {
+      if (job) job.cancel();
+      job = null;
+      set({ sim: cache.get(key), pending: false, error: null });
+      return;
+    }
+    if (job && job.key === key) return;
+    if (job) job.cancel();
+    if (!runner) return;
+    let cancelled = false;
+    function* guarded() {
+      const steps = simulate(p);
+      let step = steps.next();
+      while (!step.done) {
+        if (cancelled) throw new Error('cancelled');
+        yield;
+        step = steps.next();
+      }
+      return step.value;
+    }
+    job = {
+      key,
+      cancel: () => {
+        cancelled = true;
+      },
+    };
+    set({ pending: true });
+    runner(guarded).then(
+      (value) => {
+        if (cancelled) return;
+        remember(key, value);
+        job = null;
+        set({ sim: value, pending: false, error: null });
+      },
+      (error) => {
+        if (cancelled) return;
+        job = null;
+        set({ pending: false, error: error instanceof Error ? error.message : String(error) });
+      },
+    );
+  };
+  return {
+    get: () => state,
+    setParams(next) {
+      set({ params: next });
+      run(next);
+    },
+    /** A result computed elsewhere (the worker of the page) for the parameters `forParams`: used now if they are the current ones. */
+    provide(value, forParams = params) {
+      if (!simulate || !value) return;
+      const key = simKey(forParams);
+      if (!cache.has(key)) remember(key, value);
+      if (simKey(state.params) === key && state.sim !== value) {
+        if (job && job.key === key) {
+          job.cancel();
+          job = null;
+        }
+        set({ sim: value, pending: false, error: null });
+      }
+    },
+    subscribe(fn) {
+      listeners.add(fn);
+      return () => listeners.delete(fn);
+    },
+    destroy() {
+      if (job) job.cancel();
+      job = null;
+      listeners.clear();
+    },
+  };
+}
+
+return { sliderIndex, applyControl, createModel };
+})();
+
+var kitLabels$ = (function () {
+'use strict';
+
+// src/pages/statistics/chartkit/kitLabels.js
+// I testi dei comandi dei grafici interattivi, uguali in ogni homework: lo
+// zoom, il suggerimento, il lettore delle animazioni.
+
+const KIT_LABELS = Object.freeze({
+  it: Object.freeze({
+    tools: 'Zoom del grafico',
+    zoomIn: 'Ingrandisci',
+    zoomOut: 'Riduci',
+    reset: 'Vista intera',
+    hint: 'Ctrl + rotella per ingrandire; oppure trascinate per scegliere una zona, doppio clic per tornare alla vista intera',
+    touchHint: 'Due dita per ingrandire',
+    player: 'Animazione',
+    play: 'Avvia',
+    pause: 'Pausa',
+    back: 'Un passo indietro',
+    forward: 'Un passo avanti',
+    speed: 'Velocità',
+    position: (t, n) => `Passo ${t} di ${n}`,
+    pending: 'Simulazione in corso...',
+  }),
+  en: Object.freeze({
+    tools: 'Chart zoom',
+    zoomIn: 'Zoom in',
+    zoomOut: 'Zoom out',
+    reset: 'Whole chart',
+    hint: 'Ctrl + wheel to zoom; or drag to pick an area, double click to go back to the whole chart',
+    touchHint: 'Two fingers to zoom',
+    player: 'Animation',
+    play: 'Play',
+    pause: 'Pause',
+    back: 'One step back',
+    forward: 'One step forward',
+    speed: 'Speed',
+    position: (t, n) => `Step ${t} of ${n}`,
+    pending: 'Simulating...',
+  }),
+});
+
+/** The labels in a language, English when it is not known. */
+const kitLabels = (lang) => KIT_LABELS[lang] || KIT_LABELS.en;
+
+return { KIT_LABELS, kitLabels };
+})();
+
+var kitReveal$ = (function () {
+'use strict';
+
+// src/pages/statistics/chartkit/kitReveal.js
+// L'animazione piu' comune dei grafici degli homework: una curva disegnata
+// punto per punto, al crescere della sua x (n che cresce, i giorni, i
+// tentativi). Vale per i dati dei grafici a linee di ogni libreria, { x,
+// series: [{ values, band?, fixed? }] }: le serie `fixed` (riferimenti,
+// bande, soglie) restano intere.
+
+/** An animation that draws a line chart point by point, as its x grows: { frames, at(t), ms }. */
+function reveal(chart, ms = 110) {
+  return {
+    frames: chart.x.length,
+    ms,
+    at: (t) => ({
+      ...chart,
+      series: chart.series.map((s) => (s.fixed ? s : { ...s, values: s.values.map((v, i) => (i <= t ? v : null)), band: s.band ? s.band.map((b, i) => (i <= t ? b : null)) : s.band })),
+    }),
+  };
+}
+
+return { reveal };
+})();
+
+var kitDom$ = (function () {
+'use strict';
+
+// src/pages/statistics/chartkit/kitDom.js
+// L'adattatore del kit dei grafici interattivi per i programmi scaricabili:
+// lo stesso grafico della pagina (ChartFigure.jsx), costruito con il DOM, senza
+// React. Un grafico e' una <figure> con, dall'alto: il riquadro del canvas
+// con i pulsanti dello zoom, il lettore dell'animazione, la legenda a
+// pulsanti, la nota e la didascalia. I comandi di una sezione (controlsOf,
+// modelControls) stanno sopra i suoi grafici e seguono il suo modello
+// (kitSpec.createModel). Le classi sono quelle di style.css dei programmi.
+//
+// Ogni testo entra con textContent, mai come HTML.
+const { createChart } = kitChart$;
+const { kitLabels } = kitLabels$;
+const { createPlayer } = kitPlayer$;
+const { handles: handlesPlugin, zoomPan } = kitPlugins$;
+const { applyControl, createModel: makeModel, sliderIndex } = kitSpec$;
+
+const HINT_MS = 2200;
+
+/** The model of a section with controls (kitSpec.createModel), for the programs. */
+const createModel = makeModel;
+let uid = 0;
+
+/** el('p', { class: 'note', text: '...' }, child, ...): the text always through textContent. */
+function el(tag, attrs, ...children) {
+  const node = document.createElement(tag);
+  for (const [key, value] of Object.entries(attrs || {})) {
+    if (value === null || value === undefined || value === false) continue;
+    if (key === 'class') node.className = value;
+    else if (key === 'text') node.textContent = value;
+    else if (key === 'style') Object.assign(node.style, value);
+    else if (key.startsWith('on')) node.addEventListener(key.slice(2), value);
+    else node.setAttribute(key, value === true ? '' : String(value));
+  }
+  for (const child of children.flat(Infinity)) {
+    if (child === null || child === undefined || child === false) continue;
+    node.append(child instanceof Node ? child : document.createTextNode(String(child)));
+  }
+  return node;
+}
+
+/** The parts of the drawing covered by the hidden items of a legend. */
+const partsOf = (items, hidden) => items.flatMap((item, i) => (hidden.has(i) ? item.parts || [] : []));
+
+/** Hides the cells, columns and rows of a table that belong to hidden parts (data-part), and shows the others. */
+function hideParts(table, parts) {
+  if (!table) return;
+  for (const node of table.querySelectorAll('[data-part]')) node.hidden = parts.includes(node.dataset.part);
+}
+
+/**
+ * The legend of a chart: { label, color? | paletteKey?, dashed?, box?,
+ * parts }. Every item is a button: pressed its parts are on screen,
+ * released they are hidden; onChange(parts) receives the hidden parts.
+ * `hidden`, the set of the hidden items, outlives the legend.
+ */
+function legend(items, onChange, hidden, palette) {
+  return el(
+    'ul',
+    { class: 'series-legend' },
+    items.map((item, i) => {
+      const color = item.paletteKey ? palette[item.paletteKey] : palette.series[(item.color ?? i) % palette.series.length];
+      let swatch = null;
+      if (item.box) swatch = 'is-box';
+      else if (item.dashed) swatch = 'is-dashed';
+      const button = el(
+        'button',
+        {
+          type: 'button',
+          'aria-pressed': String(!hidden.has(i)),
+          class: hidden.has(i) ? 'is-off' : null,
+          onclick: () => {
+            if (hidden.has(i)) hidden.delete(i);
+            else hidden.add(i);
+            button.setAttribute('aria-pressed', String(!hidden.has(i)));
+            button.classList.toggle('is-off', hidden.has(i));
+            onChange(partsOf(items, hidden));
+          },
+        },
+        el('span', { class: swatch, 'aria-hidden': 'true', style: { borderColor: color, backgroundColor: item.box ? color : 'transparent' } }),
+        item.label,
+      );
+      return el('li', null, button);
+    }),
+  );
+}
+
+/**
+ * The controls of a section (kitSpec), with the classes of the programs:
+ * getParams() gives the parameters, onChange(params) receives them after
+ * every use. box.update() moves the controls to the current parameters
+ * without rebuilding them (a slider keeps the focus while it moves).
+ */
+function controlsOf(controls, getParams, onChange, pendingLabel = '') {
+  const id = `kitc${(uid += 1)}`;
+  const actions = controls.filter((c) => c.kind === 'action');
+  const pending = el('p', { class: 'kit-pending note', role: 'status', text: pendingLabel, hidden: true });
+  const params = getParams();
+  const blocks = controls
+    .map((c, i) => {
+      if (c.kind === 'slider') {
+        const index = sliderIndex(c, params);
+        const text = c.label(c.values[index]);
+        return el(
+          'div',
+          { class: 'slider' },
+          el('label', { for: `${id}-${c.key}`, text }),
+          el('input', { id: `${id}-${c.key}`, type: 'range', min: 0, max: c.values.length - 1, step: 1, value: index, 'aria-valuetext': text, oninput: (e) => onChange(applyControl(c, getParams(), Number(e.target.value))) }),
+        );
+      }
+      if (c.kind === 'choice') {
+        return el(
+          'div',
+          { class: 'choices', role: 'group', 'aria-label': c.label },
+          el('span', { class: 'choices-label', text: c.label }),
+          c.options.map(([value, name]) => el('button', { type: 'button', class: 'btn alt', 'aria-pressed': String(params[c.key] === value), text: name, onclick: () => onChange(applyControl(c, getParams(), value)) })),
+        );
+      }
+      if (c.kind === 'toggle') {
+        return el('label', { class: 'kit-toggle' }, el('input', { type: 'checkbox', checked: !!params[c.key], onchange: (e) => onChange(applyControl(c, getParams(), e.target.checked)) }), ` ${c.label}`);
+      }
+      if (i !== controls.indexOf(actions[0])) return null;
+      return el('p', { class: 'kit-actions' }, actions.map((a) => el('button', { type: 'button', class: 'btn alt small', text: a.label, onclick: () => onChange(applyControl(a, getParams())) })));
+    })
+    .filter(Boolean);
+  const box = el('div', { class: 'kit-controls' }, blocks, pending);
+  box.update = (busy = false) => {
+    const now = getParams();
+    let k = 0;
+    for (const c of controls) {
+      if (c.kind === 'action' && c !== actions[0]) continue;
+      const block = blocks[k];
+      k += 1;
+      if (c.kind === 'slider') {
+        const index = sliderIndex(c, now);
+        const text = c.label(c.values[index]);
+        block.querySelector('label').textContent = text;
+        const input = block.querySelector('input');
+        if (Number(input.value) !== index) input.value = String(index);
+        input.setAttribute('aria-valuetext', text);
+      } else if (c.kind === 'choice') {
+        block.querySelectorAll('button').forEach((b, j) => b.setAttribute('aria-pressed', String(now[c.key] === c.options[j][0])));
+      } else if (c.kind === 'toggle') {
+        block.querySelector('input').checked = !!now[c.key];
+      }
+    }
+    pending.hidden = !busy;
+  };
+  return box;
+}
+
+/** The controls bound to the model of a section (kitSpec.createModel): they follow it, and are released with their region (releaseFigures). */
+function modelControls(model, controls, lang = 'en') {
+  const box = controlsOf(controls, () => model.get().params, (next) => model.setParams(next), kitLabels(lang).pending);
+  box.kitRelease = model.subscribe(() => box.update(model.get().pending));
+  box.update(model.get().pending);
+  return box;
+}
+
+/** The player of an animation: back, play or pause, forward, the position and the speed. */
+function playerBar(id, player, labels) {
+  const back = el('button', { type: 'button', class: 'btn alt small', 'aria-label': labels.back, title: labels.back, text: '‹', onclick: () => player.step(-1) });
+  const play = el('button', { type: 'button', class: 'btn small kit-play', onclick: () => player.toggle() });
+  const forward = el('button', { type: 'button', class: 'btn alt small', 'aria-label': labels.forward, title: labels.forward, text: '›', onclick: () => player.step(1) });
+  const position = el('input', { id: `${id}-t`, class: 'kit-position', type: 'range', min: 0, step: 1, oninput: (e) => player.seek(Number(e.target.value)) });
+  const where = el('span', { class: 'kit-step', 'aria-hidden': 'true' });
+  const speeds = [1, 2, 4].map((s) => el('button', { type: 'button', class: 'btn alt small', text: `×${s}`, onclick: () => player.setSpeed(s) }));
+  const bar = el('div', { class: 'kit-player', role: 'group', 'aria-label': labels.player }, back, play, forward, position, where, el('span', { class: 'kit-speed', role: 'group', 'aria-label': labels.speed }, speeds));
+  bar.update = (state) => {
+    play.textContent = state.playing ? labels.pause : labels.play;
+    play.setAttribute('aria-pressed', String(state.playing));
+    back.disabled = state.t <= 0;
+    forward.disabled = state.t >= state.frames - 1;
+    position.max = String(state.frames - 1);
+    position.value = String(state.t);
+    const text = labels.position(state.t + 1, state.frames);
+    position.setAttribute('aria-label', text);
+    position.setAttribute('aria-valuetext', text);
+    where.textContent = text;
+    speeds.forEach((b, i) => b.setAttribute('aria-pressed', String(state.speed === [1, 2, 4][i])));
+  };
+  return bar;
+}
+
+// one observer for every chart of the page: the width of each canvas, measured after layout
+const sizes = typeof ResizeObserver === 'function'
+  ? new ResizeObserver((entries) => {
+    for (const entry of entries) {
+      const width = Math.round(entry.contentRect.width);
+      const figure = entry.target.closest('figure');
+      if (figure && figure.kit && width > 0) figure.kit.chart.resize(width);
+    }
+  })
+  : null;
+
+/**
+ * An interactive chart for the programs. `options`:
+ *   label, draw, data, palette, lang
+ *   lib (the library of the homework), schedule (the queue of the first drawings)
+ *   tip (describe(hit, hidden)), link, items (the legend), keep (the set of hidden items that outlives the chart),
+ *   table (the id of the linked table: the legend hides its parts too), onHide(parts) (anything else the legend hides), note, wide
+ *   animation ({ frames, at(t) -> data, ms }: the chart step by step, with the player)
+ *   handles ({ items, onChange(id, value) }: the lines to drag), pending (a simulation is running)
+ * Returns the <figure>, with figure.kit = { chart, setData, setTip, setLabel,
+ * setNote, relabel, setHidden, setAnimation, setHandles, setPending, destroy }.
+ */
+function createFigure(options) {
+  const { label, draw, palette, lib, schedule = null, lang = 'en', items = null, note = null, link = null, table = null, wide = true } = options;
+  const labels = kitLabels(lang);
+  const id = `kit${(uid += 1)}`;
+  const hidden = options.keep || new Set();
+  let given = options.data;
+  let animation = options.animation || null;
+  let onHandle = options.handles ? options.handles.onChange : null;
+  let t = animation ? Math.max(1, animation.frames) - 1 : 0;
+  const frames = () => (animation ? Math.max(1, animation.frames) : 1);
+  const dataNow = () => (animation && t < frames() - 1 ? animation.at(t) : given);
+
+  const canvas = el('canvas', { class: 'chart', role: 'img', 'aria-label': label });
+  const plot = el('div', { class: 'kit-plot' }, canvas);
+  const zoomIn = el('button', { type: 'button', 'aria-label': labels.zoomIn, title: labels.zoomIn, text: '+' });
+  const zoomOut = el('button', { type: 'button', 'aria-label': labels.zoomOut, title: labels.zoomOut, text: '-', disabled: true });
+  const reset = el('button', { type: 'button', 'aria-label': labels.reset, title: labels.reset, text: '⤢', disabled: true });
+  const tools = el('div', { class: 'kit-tools', role: 'group', 'aria-label': labels.tools, hidden: true }, zoomIn, zoomOut, reset);
+  const hint = el('p', { class: 'kit-hint', 'aria-live': 'polite', text: labels.hint, hidden: true });
+  const busy = el('p', { class: 'kit-busy', role: 'status', text: labels.pending, hidden: !options.pending });
+  const caption = el('figcaption', { text: label });
+  const noteEl = el('p', { class: 'figure-note', text: note || '', hidden: !note });
+
+  const handles = options.handles ? handlesPlugin({ onChange: (key, value) => onHandle && onHandle(key, value) }) : null;
+  const chart = createChart(canvas, {
+    draw,
+    data: dataNow(),
+    palette,
+    frame: lib.chartFrame,
+    withView: lib.withView,
+    height: lib.chartHeight,
+    hitTest: lib.chartHitTest,
+    hitAt: lib.chartHitAt,
+    pointerLabel: lib.attachPointerLabel,
+    describe: options.tip || null,
+    link,
+    hidden: items ? partsOf(items, hidden) : [],
+    plugins: handles ? [handles, zoomPan()] : [zoomPan()],
+    schedule,
+  });
+  if (handles) handles.setSpecs(options.handles.items);
+  zoomIn.addEventListener('click', () => chart.zoomBy(1.5));
+  zoomOut.addEventListener('click', () => chart.zoomBy(1 / 1.5));
+  reset.addEventListener('click', () => chart.resetView());
+  chart.on('render', ({ frame }) => {
+    tools.hidden = !frame;
+  });
+  chart.on('view', () => {
+    const zoomed = chart.isZoomed();
+    tools.classList.toggle('is-zoomed', zoomed);
+    zoomOut.disabled = !zoomed;
+    reset.disabled = !zoomed;
+  });
+  let hintTimer = 0;
+  chart.on('hint', () => {
+    hint.hidden = false;
+    clearTimeout(hintTimer);
+    hintTimer = setTimeout(() => {
+      hint.hidden = true;
+    }, HINT_MS);
+  });
+
+  // the animation: the player starts on the last step, where the chart is complete
+  let bar = null;
+  const player = createPlayer({
+    frames: frames(),
+    ms: (animation && animation.ms) || 60,
+    onFrame: (step) => {
+      t = step;
+      chart.setData(dataNow());
+    },
+    onChange: (state) => bar && bar.update(state),
+  });
+  bar = playerBar(id, player, labels);
+  bar.hidden = !animation;
+  bar.update(player.state());
+
+  const legendEl = items
+    ? legend(
+      items,
+      (parts) => {
+        chart.setHidden(parts);
+        if (table) hideParts(document.getElementById(table), parts);
+        if (options.onHide) options.onHide(parts);
+      },
+      hidden,
+      palette,
+    )
+    : null;
+  const figure = el(
+    'figure',
+    { class: `${wide ? 'figure wide' : 'figure'} kit-figure${options.pending ? ' is-pending' : ''}` },
+    el('div', { class: 'kit-stage' }, plot, tools, hint, busy),
+    bar,
+    legendEl,
+    noteEl,
+    caption,
+  );
+  figure.kit = {
+    chart,
+    setData(next) {
+      given = next;
+      chart.setData(dataNow());
+    },
+    setTip: (next) => chart.setDescribe(next),
+    setLabel(next) {
+      canvas.setAttribute('aria-label', next);
+      caption.textContent = next;
+    },
+    setNote(next) {
+      noteEl.textContent = next || '';
+      noteEl.hidden = !next;
+    },
+    /** New labels for the buttons of the legend (the same items, in the same order). */
+    relabel(next) {
+      if (!legendEl) return;
+      legendEl.querySelectorAll('button').forEach((button, i) => {
+        if (next[i]) button.lastChild.textContent = next[i].label;
+      });
+    },
+    setHidden: (parts) => chart.setHidden(parts),
+    /** A new animation (the parameters changed): when stopped, the player goes to the end, where the chart is complete. */
+    setAnimation(next) {
+      animation = next || null;
+      bar.hidden = !animation;
+      if (animation && animation.ms) player.setMs(animation.ms);
+      player.setFrames(frames());
+      t = player.state().t;
+      chart.setData(dataNow());
+    },
+    setHandles(next) {
+      if (!handles || !next) return;
+      onHandle = next.onChange;
+      handles.setSpecs(next.items);
+    },
+    setPending(on) {
+      busy.hidden = !on;
+      figure.classList.toggle('is-pending', !!on);
+      canvas.setAttribute('aria-busy', on ? 'true' : 'false');
+    },
+    destroy() {
+      clearTimeout(hintTimer);
+      if (sizes) sizes.unobserve(canvas);
+      player.destroy();
+      chart.destroy();
+    },
+  };
+  if (sizes) sizes.observe(canvas);
+  // the table may come after the chart: its parts are hidden once both are on the page
+  if (table && hidden.size && typeof requestAnimationFrame === 'function') requestAnimationFrame(() => hideParts(document.getElementById(table), partsOf(items, hidden)));
+  return figure;
+}
+
+/** Releases the charts and the controls inside a region that is about to be replaced. */
+function releaseFigures(region) {
+  for (const figure of region.querySelectorAll('figure.kit-figure')) if (figure.kit) figure.kit.destroy();
+  for (const box of region.querySelectorAll('.kit-controls')) if (box.kitRelease) box.kitRelease();
+}
+
+return { createModel, partsOf, hideParts, legend, controlsOf, modelControls, createFigure, releaseFigures };
+})();
+
 var view$ = (function () {
 'use strict';
 
@@ -21,6 +1554,7 @@ var view$ = (function () {
 // e i legami fra grafici e tabelle. I calcoli sono in homework6.js, le
 // parole in texts.js.
 const hw = Homework6;
+const { reveal: revealChart } = kitReveal$;
 
 /** The sections of the page, in order, with the level of their title: the index of the page and of the program is built from here. */
 const SECTIONS = [
@@ -301,7 +1835,7 @@ function permutationChart(run, decimal = '.') {
 }
 
 /** Section 3.3: the p-value of the simulated log as n grows, against the level 0.05, on a scale of powers of ten. */
-function dependenceChart(series, decimal = '.') {
+function dependenceChart(series, decimal = '.', alpha = hw.SIGNIFICANCE) {
   const logs = series.map((r) => Math.max(r.log10p, -400));
   const low = Math.min(-2, ...logs);
   const step = low > -12 ? 2 : low > -60 ? 10 : low > -300 ? 50 : 100;
@@ -319,7 +1853,7 @@ function dependenceChart(series, decimal = '.') {
     decimal,
     series: [
       { values: logs, colorIndex: 0 },
-      { values: series.map(() => Math.log10(hw.SIGNIFICANCE)), colorIndex: 6, dashed: true },
+      { values: series.map(() => Math.log10(alpha)), colorIndex: 6, dashed: true, fixed: true },
     ],
   };
 }
@@ -369,9 +1903,9 @@ const legends = {
     { label: text.legends.density, color: 2, parts: ['curve'] },
     { label: text.legends.observedChi2, paletteKey: 'reference', dashed: true, parts: ['marker'] },
   ],
-  dependence: (text) => [
+  dependence: (text, alpha = hw.SIGNIFICANCE) => [
     { label: text.legends.pValue, color: 0, parts: ['series:0'] },
-    { label: text.legends.alpha, color: 6, dashed: true, parts: ['series:1'] },
+    { label: alpha === hw.SIGNIFICANCE ? text.legends.alpha : text.tryDependence.alphaLabel(alpha), color: 6, dashed: true, parts: ['series:1'] },
   ],
   simpson: (text) => [
     { label: text.legends.men, color: 0, box: true, parts: ['series:0'] },
@@ -479,6 +2013,20 @@ function readPairs(text, header) {
 /** The dependence of the simulated log as the page opens, and its size. */
 const DEPENDENCE_DEFAULT = Object.freeze({ theta: 0.1, n: 1000 });
 
+// ---------------------------------------------------------------------------
+// I grafici interattivi (chartkit)
+// ---------------------------------------------------------------------------
+
+/** An animation that draws a line chart point by point, as its x grows (chartkit/kitReveal.js): the series marked `fixed` stay whole. */
+const reveal = revealChart;
+
+/** The levels of the test that the line of "Try it: an adjustable dependence" can be dragged to. */
+const ALPHAS = Object.freeze([0.1, 0.05, 0.01, 0.001]);
+
+/** The level as a line to drag on the chart of the p-values (an axis of powers of ten): its handle, and the level where a drag ends. */
+const alphaHandle = (alpha, label) => [{ id: 'alpha', axis: 'y', value: Math.log10(alpha), values: ALPHAS.map((a) => Math.log10(a)), label }];
+const alphaAt = (v) => ALPHAS.reduce((a, b) => (Math.abs(Math.log10(b) - v) < Math.abs(Math.log10(a) - v) ? b : a));
+
 /** The permutation test as the page opens: the size of the sample and the number of shuffles. */
 const PERMUTATION_DEFAULT = Object.freeze({ n: 100, B: 2000 });
 
@@ -511,7 +2059,7 @@ function scheduleFrameJob(job) {
   }
 }
 
-return { SECTIONS, tocEntries, levelName, pairNames, used, pParts, residualClass, strongestCells, extremeCell, profileGap, pairsFacts, permutationSample, permutationSlice, berkeleyFacts, testRows, labelProtocols, testCells, conditionalChart, expectedChart, permutationChart, dependenceChart, simpsonChart, simpsonRows, legends, tips, LINKED_TABLES, links, TRY_COUNTS, GRID, readGrid, checkCounts, readPairs, DEPENDENCE_DEFAULT, PERMUTATION_DEFAULT, SMALL_DEFAULT, scheduleFrameJob };
+return { SECTIONS, tocEntries, levelName, pairNames, used, pParts, residualClass, strongestCells, extremeCell, profileGap, pairsFacts, permutationSample, permutationSlice, berkeleyFacts, testRows, labelProtocols, testCells, conditionalChart, expectedChart, permutationChart, dependenceChart, simpsonChart, simpsonRows, legends, tips, LINKED_TABLES, links, TRY_COUNTS, GRID, readGrid, checkCounts, readPairs, DEPENDENCE_DEFAULT, reveal, ALPHAS, alphaHandle, alphaAt, PERMUTATION_DEFAULT, SMALL_DEFAULT, scheduleFrameJob };
 })();
 
 var texts$ = (function () {
@@ -598,6 +2146,9 @@ const IT = formatters(',', '.', 'n/d', '×');
 
 const effectIt = { negligible: 'trascurabile', small: 'piccola', medium: 'media', large: 'grande' };
 
+// "al 5%" with the article the number wants: all'1%, allo 0,1%
+const atLevelIt = (alpha) => ({ 0.1: 'Al 10%', 0.05: 'Al 5%', 0.01: 'All’1%', 0.001: 'Allo 0,1%' })[alpha] || `Al livello ${IT.plain(alpha)}`;
+
 const it = {
   fmt: IT,
   effects: effectIt,
@@ -654,7 +2205,7 @@ const it = {
     intro: [
       'La consegna chiede di partire da un dataset bivariato (X, F) qualsiasi e di costruirne via codice la tabella di contingenza, con le frequenze marginali e condizionate; poi di calcolare le frequenze attese se X e F fossero indipendenti e la statistica chi quadrato, con il suo p-value (facoltativo). Chiede infine di richiamare i concetti di indipendenza in probabilità e in statistica, di interpretare i risultati per dire se le due variabili sono indipendenti o dipendenti e di discutere brevemente le conclusioni, distinguendo l’associazione statistica dalla causalità.',
       'La pagina segue quest’ordine. La sezione 1 lavora su dati veri di sicurezza informatica, le 22.544 connessioni di rete del test set di NSL-KDD: si scelgono X e F fra cinque variabili, e la tabella (1.2), le frequenze marginali e condizionate (1.3), le attese (1.4), il χ² e il p-value (1.5) si ricalcolano dai record. Accanto ci sono il test G (1.6), i rimedi per le tabelle piccole (1.7), il test di permutazione, che arriva al p-value senza formule (1.8), e le verifiche dei calcoli (1.9). La sezione 2 richiama la teoria, la 3 interpreta i risultati, la 4 separa l’associazione dalla causalità con un caso reale, le ammissioni a Berkeley del 1973. Seguono il riepilogo dei test, il contesto storico e le conclusioni.',
-      'Quattro riquadri «Prova» lasciano mettere le mani sui numeri: una tabella da scrivere o incollare, il rimescolamento di F, una dipendenza da regolare con un cursore e il paradosso di Simpson diviso per dipartimento. Tutti i numeri sono calcolati nel browser, e il programma scaricabile stampa gli stessi.',
+      'Quattro riquadri «Prova» lasciano mettere le mani sui numeri: una tabella da scrivere o incollare, il rimescolamento di F, una dipendenza da regolare con un cursore e il paradosso di Simpson diviso per dipartimento. Tutti i numeri sono calcolati nel browser, e il programma scaricabile stampa gli stessi. Anche i grafici si muovono: si ingrandiscono (Ctrl + rotella, oppure un rettangolo trascinato; doppio clic per tornare alla vista intera), e in quello della dipendenza il livello α si trascina e la curva si disegna al crescere di n.',
     ],
     originalTitle: 'Il testo originale della consegna',
     originalNote: 'Com’è stato assegnato, in inglese.',
@@ -859,16 +2410,19 @@ const it = {
     result: (s, pair) => `Per ${pair.x} e ${pair.f}: V = ${IT.num(s.V, 3)} e w = ${IT.num(s.w, 3)}, un’associazione ${effectIt[s.effect]}. Il p-value di 10^${Math.floor(s.log10p)} e un’associazione ${effectIt[s.effect]} non si contraddicono: il primo dice che la dipendenza è certa, la seconda quanto pesa.`,
   },
   tryDependence: {
-    intro: 'Un registro di accessi simulato con il generatore della pagina: X è la fascia oraria del login (notte, giorno, sera), F il suo esito (riuscito, fallito, bloccato). Con probabilità θ l’esito segue la fascia (di notte bloccato, di giorno riuscito, di sera fallito), altrimenti è estratto per conto suo: θ = 0 è l’indipendenza perfetta, θ = 1 un legame deterministico. Spostate i cursori: con θ fisso il χ² cresce con n e il p-value scende, mentre la V resta circa la stessa.',
+    intro: 'Un registro di accessi simulato con il generatore della pagina: X è la fascia oraria del login (notte, giorno, sera), F il suo esito (riuscito, fallito, bloccato). Con probabilità θ l’esito segue la fascia (di notte bloccato, di giorno riuscito, di sera fallito), altrimenti è estratto per conto suo: θ = 0 è l’indipendenza perfetta, θ = 1 un legame deterministico. Spostate i cursori: con θ fisso il χ² cresce con n e il p-value scende, mentre la V resta circa la stessa. Il livello α decide quali righe sono rifiutate: sceglietelo qui sotto o trascinate la sua linea sul grafico.',
     names: { x: ['notte', 'giorno', 'sera'], f: ['riuscito', 'fallito', 'bloccato'] },
     xName: 'Fascia oraria',
     fName: 'Esito',
     thetaLabel: (t) => `Dipendenza θ = ${IT.num(t, 2)}`,
     nLabel: (n) => `Accessi n = ${IT.int(n)}`,
-    result: (s, n, t) => `Su ${IT.int(n)} accessi con θ = ${IT.num(t, 2)}: χ² = ${IT.num(s.chi2, 2)}, p ≈ ${IT.p(s.p, s.log10p)}, V = ${IT.num(s.V, 3)} (${effectIt[s.effect]}). ${s.p < SIGNIFICANCE ? 'Al 5% l’indipendenza è rifiutata.' : 'Al 5% l’indipendenza non è rifiutata.'}`,
-    chartTitle: 'Il p-value della stessa dipendenza al crescere di n (scala delle potenze di dieci), con il livello 0,05 tratteggiato',
+    result: (s, n, t, alpha = SIGNIFICANCE) => `Su ${IT.int(n)} accessi con θ = ${IT.num(t, 2)}: χ² = ${IT.num(s.chi2, 2)}, p ≈ ${IT.p(s.p, s.log10p)}, V = ${IT.num(s.V, 3)} (${effectIt[s.effect]}). ${atLevelIt(alpha)} l’indipendenza ${s.p < alpha ? 'è rifiutata' : 'non è rifiutata'}.`,
+    chartTitle: 'Il p-value della stessa dipendenza al crescere di n (scala delle potenze di dieci), con il livello α tratteggiato: trascinatelo',
     tableTitle: 'La stessa dipendenza a ogni n',
     cols: { n: 'n', chi2: 'χ²', p: 'p-value', V: 'V', verdict: 'Al 5%' },
+    verdictCol: (alpha) => atLevelIt(alpha),
+    alphaLabel: (alpha) => `α = ${IT.plain(alpha)}`,
+    alphaChoice: 'Livello α',
     verdicts: { reject: 'rifiutata', accept: 'non rifiutata' },
     after: `Il messaggio pratico: un p-value minuscolo su milioni di righe di log non vuol dire che il legame conti; un p-value grande su pochi eventi non vuol dire che il legame non ci sia. La significatività dipende da n, l’intensità no. Le righe della tabella vanno da ${IT.int(DEPENDENCE_SIZES[0])} a ${IT.int(DEPENDENCE_SIZES[DEPENDENCE_SIZES.length - 1])} accessi, ognuna con un campione nuovo.`,
   },
@@ -1013,6 +2567,8 @@ const EN = formatters('.', ',', 'n/a', '×');
 
 const effectEn = { negligible: 'negligible', small: 'small', medium: 'medium', large: 'large' };
 
+const atLevelEn = (alpha) => ({ 0.1: 'At 10%', 0.05: 'At 5%', 0.01: 'At 1%', 0.001: 'At 0.1%' })[alpha] || `At level ${EN.plain(alpha)}`;
+
 const en = {
   fmt: EN,
   effects: effectEn,
@@ -1069,7 +2625,7 @@ const en = {
     intro: [
       'The assignment asks to start from any bivariate dataset (X, F) and to build its contingency table in code, with the marginal and conditional frequencies; then to compute the expected frequencies if X and F were independent and the chi-square statistic, with its p-value (optional). Finally it asks to recall the concepts of independence in probability and in statistics, to interpret the results to tell whether the two variables are independent or dependent, and to discuss the conclusions briefly, distinguishing statistical association from causation.',
       'The page follows this order. Section 1 works on real cybersecurity data, the 22,544 network connections of the NSL-KDD test set: X and F are chosen among five variables, and the table (1.2), the marginal and conditional frequencies (1.3), the expected ones (1.4), the chi-square and the p-value (1.5) are computed again from the records. Next to them are the G test (1.6), the remedies for small tables (1.7), the permutation test, which reaches the p-value without formulas (1.8), and the checks of the computations (1.9). Section 2 recalls the theory, section 3 interprets the results, section 4 separates association from causation with a real case, the Berkeley admissions of 1973. Then come the summary of the tests, the historical context and the conclusions.',
-      'Four "Try it" boxes let you get your hands on the numbers: a table to type or paste, the shuffling of F, a dependence to adjust with a slider and Simpson’s paradox split by department. Every number is computed in the browser, and the downloadable program prints the same ones.',
+      'Four "Try it" boxes let you get your hands on the numbers: a table to type or paste, the shuffling of F, a dependence to adjust with a slider and Simpson’s paradox split by department. Every number is computed in the browser, and the downloadable program prints the same ones. The charts move too: they zoom (ctrl + wheel, or a rectangle dragged; double click for the whole chart again), and in the one of the dependence the level α can be dragged and the curve drawn as n grows.',
     ],
     originalTitle: 'The original text of the assignment',
     originalNote: 'As it was assigned, in English.',
@@ -1274,16 +2830,19 @@ const en = {
     result: (s, pair) => `For ${pair.x} and ${pair.f}: V = ${EN.num(s.V, 3)} and w = ${EN.num(s.w, 3)}, a ${effectEn[s.effect]} association. A p-value of 10^${Math.floor(s.log10p)} and a ${effectEn[s.effect]} association do not contradict each other: the first says the dependence is certain, the second how much it weighs.`,
   },
   tryDependence: {
-    intro: 'A log of logins simulated with the generator of the page: X is the time slot of the login (night, day, evening), F its outcome (success, failure, blocked). With probability θ the outcome follows the time slot (at night blocked, by day success, in the evening failure), otherwise it is drawn on its own: θ = 0 is perfect independence, θ = 1 a deterministic link. Move the sliders: with θ fixed, the chi-square grows with n and the p-value falls, while V stays about the same.',
+    intro: 'A log of logins simulated with the generator of the page: X is the time slot of the login (night, day, evening), F its outcome (success, failure, blocked). With probability θ the outcome follows the time slot (at night blocked, by day success, in the evening failure), otherwise it is drawn on its own: θ = 0 is perfect independence, θ = 1 a deterministic link. Move the sliders: with θ fixed, the chi-square grows with n and the p-value falls, while V stays about the same. The level α decides which rows are rejected: choose it below or drag its line on the chart.',
     names: { x: ['night', 'day', 'evening'], f: ['success', 'failure', 'blocked'] },
     xName: 'Time slot',
     fName: 'Outcome',
     thetaLabel: (t) => `Dependence θ = ${EN.num(t, 2)}`,
     nLabel: (n) => `Logins n = ${EN.int(n)}`,
-    result: (s, n, t) => `Over ${EN.int(n)} logins with θ = ${EN.num(t, 2)}: χ² = ${EN.num(s.chi2, 2)}, p ≈ ${EN.p(s.p, s.log10p)}, V = ${EN.num(s.V, 3)} (${effectEn[s.effect]}). ${s.p < SIGNIFICANCE ? 'At 5% independence is rejected.' : 'At 5% independence is not rejected.'}`,
-    chartTitle: 'The p-value of the same dependence as n grows (scale of powers of ten), with the level 0.05 dashed',
+    result: (s, n, t, alpha = SIGNIFICANCE) => `Over ${EN.int(n)} logins with θ = ${EN.num(t, 2)}: χ² = ${EN.num(s.chi2, 2)}, p ≈ ${EN.p(s.p, s.log10p)}, V = ${EN.num(s.V, 3)} (${effectEn[s.effect]}). ${atLevelEn(alpha)} independence ${s.p < alpha ? 'is rejected' : 'is not rejected'}.`,
+    chartTitle: 'The p-value of the same dependence as n grows (scale of powers of ten), with the level α dashed: drag it',
     tableTitle: 'The same dependence at every n',
     cols: { n: 'n', chi2: 'χ²', p: 'p-value', V: 'V', verdict: 'At 5%' },
+    verdictCol: (alpha) => atLevelEn(alpha),
+    alphaLabel: (alpha) => `α = ${EN.plain(alpha)}`,
+    alphaChoice: 'Level α',
     verdicts: { reject: 'rejected', accept: 'not rejected' },
     after: `The practical message: a tiny p-value over millions of log lines does not mean the link matters; a large p-value over a few events does not mean there is no link. Significance depends on n, strength does not. The rows of the table go from ${EN.int(DEPENDENCE_SIZES[0])} to ${EN.int(DEPENDENCE_SIZES[DEPENDENCE_SIZES.length - 1])} logins, each with a new sample.`,
   },
@@ -1445,6 +3004,7 @@ return { originalAssignment, HW6_TEXTS };
 const hw = Homework6;
 const view = view$;
 const { HW6_TEXTS, originalAssignment } = texts$;
+const kit = kitDom$;
 
 const HEADINGS = ['h2', 'h3', 'h4'];
 const LANGUAGES = ['it', 'en'];
@@ -1499,7 +3059,7 @@ const state = {
   tryTable: { mode: 'grid', cells: startCells(), pairs: null, header: false },
   small: { n: view.SMALL_DEFAULT, draw: 0 },
   perm: { n: view.PERMUTATION_DEFAULT.n, B: view.PERMUTATION_DEFAULT.B, draw: 0 },
-  dependence: { theta: hw.THETAS.indexOf(view.DEPENDENCE_DEFAULT.theta), n: hw.DEPENDENCE_SIZES.indexOf(view.DEPENDENCE_DEFAULT.n) },
+  dependence: { theta: hw.THETAS.indexOf(view.DEPENDENCE_DEFAULT.theta), n: hw.DEPENDENCE_SIZES.indexOf(view.DEPENDENCE_DEFAULT.n), alpha: hw.SIGNIFICANCE },
   simpson: 'all',
 };
 let text = HW6_TEXTS[state.lang];
@@ -1539,159 +3099,34 @@ const formulas = (content) => h('pre', { text: content });
 const caption = (...children) => h('div', { class: 'caption line', 'aria-live': 'polite' }, children);
 const range = (n) => Array.from({ length: n }, (_, i) => i);
 
-// The width of every chart comes from the ResizeObserver, measured after
-// layout; the height is set at once, the drawing happens a few
-// milliseconds per frame.
-const charts = new Map(); // canvas -> { draw, data, width, detach, link, tip, hidden }
-
-// what a chart draws: its data, without the parts hidden from the legend
-const shownData = (chart) => (chart.hidden.length ? { ...chart.data, hidden: chart.hidden } : chart.data);
-
-const resizer = new ResizeObserver((entries) => {
-  for (const entry of entries) {
-    const canvas = entry.target;
-    const chart = charts.get(canvas);
-    const width = Math.round(entry.contentRect.width);
-    if (!chart || width <= 0 || width === chart.width) continue;
-    chart.width = width;
-    canvas.style.height = `${hw.chartHeight(chart.draw, shownData(chart), width)}px`;
-    view.scheduleFrameJob(() => {
-      if (charts.get(canvas) === chart && chart.width === width) chart.draw(canvas, { ...shownData(chart), width }, palette());
-    });
-  }
-});
-
-/** Ties the label under the pointer to a chart: it describes what is on screen, and leaves out the hidden parts. */
-function attachTip(canvas, chart) {
-  if (chart.detach) chart.detach();
-  const tip = chart.tip;
-  chart.detach = tip ? hw.attachChartTooltip(canvas, { draw: chart.draw, data: shownData(chart), describe: (hit) => tip(hit, chart.hidden), link: chart.link }) : null;
-}
-
-/** Draws a chart again at its width, with its data and hidden parts. */
-function redraw(canvas, chart) {
-  if (chart.width > 0) {
-    canvas.style.height = `${hw.chartHeight(chart.draw, shownData(chart), chart.width)}px`;
-    chart.draw(canvas, { ...shownData(chart), width: chart.width }, palette());
-  }
-}
-
 // what the reader hid in the legends of the charts that are built again (another pair, a slider)
 const kept = { conditional: new Set(), expected: new Set(), permutation: new Set(), dependence: new Set(), simpson: new Set() };
 
-/** The parts of the drawing covered by the hidden items of a legend. */
-const partsOf = (items, hidden) => items.flatMap((item, i) => (hidden.has(i) ? item.parts || [] : []));
+const { partsOf, hideParts } = kit;
 
 /**
- * The legend of a chart: { label, color? | paletteKey?, dashed?, box?,
- * parts }. Every item is a button: pressed (as the page opens) its parts
- * are on screen, released they are hidden; onChange(parts) receives the
- * hidden parts after every press. `hidden`, the set of the hidden items,
- * outlives the legend when its chart is built again.
+ * A chart (chartkit/kitDom.js): drawn by homework6.js, with its legend
+ * (`items`), its label under the pointer, the table tied to it (`link`)
+ * and zoom on every chart with continuous axes. onHide(parts) runs when the
+ * reader hides or shows a part, for the table tied to the chart; `keep` is
+ * the set of hidden items that outlives the chart; `animation` and
+ * `handles` add the player and the lines to drag.
  */
-function legend(items, onChange = null, hidden = new Set()) {
-  const pal = palette();
-  return h(
-    'ul',
-    { class: 'series-legend' },
-    items.map((item, i) => {
-      const color = item.paletteKey ? pal[item.paletteKey] : pal.series[(item.color ?? i) % pal.series.length];
-      let swatch = null;
-      if (item.box) swatch = 'is-box';
-      else if (item.dashed) swatch = 'is-dashed';
-      const button = h(
-        'button',
-        {
-          type: 'button',
-          'aria-pressed': String(!hidden.has(i)),
-          class: hidden.has(i) ? 'is-off' : null,
-          onclick: () => {
-            if (hidden.has(i)) hidden.delete(i);
-            else hidden.add(i);
-            button.setAttribute('aria-pressed', String(!hidden.has(i)));
-            button.classList.toggle('is-off', hidden.has(i));
-            if (onChange) onChange(partsOf(items, hidden));
-          },
-        },
-        h('span', { class: swatch, 'aria-hidden': 'true', style: { borderColor: color, backgroundColor: item.box ? color : 'transparent' } }),
-        item.label,
-      );
-      return h('li', null, button);
-    }),
-  );
+function figure(label, draw, data, { wide = false, tip = null, items = null, note = null, link = null, onHide = null, keep = null, animation = null, handles = null } = {}) {
+  return kit.createFigure({ label, draw, data, palette: palette(), lib: hw, schedule: view.scheduleFrameJob, lang: state.lang, tip, items, note, link, onHide, keep, wide, animation, handles });
 }
 
-/** Hides the cells and rows of a table that belong to hidden parts (data-part), and shows the others. */
-function hideParts(tableEl, parts) {
-  for (const el of tableEl.querySelectorAll('[data-part]')) el.hidden = parts.includes(el.dataset.part);
-}
-
-/** Hides parts of a chart. */
-function setHidden(fig, parts) {
-  const canvas = fig.querySelector('canvas.chart');
-  const chart = charts.get(canvas);
-  if (!chart) return;
-  chart.hidden = parts;
-  attachTip(canvas, chart);
-  redraw(canvas, chart);
-}
-
-/**
- * A chart with its legend (`items`) and its label under the pointer.
- * onHide(parts) runs when the reader hides or shows a part, for the table
- * tied to the chart; `keep` is the set of hidden items that outlives the
- * chart.
- */
-function figure(label, draw, data, { wide = false, tip = null, items = null, note = null, link = null, onHide = null, keep = null } = {}) {
-  const canvas = h('canvas', { class: 'chart', role: 'img', 'aria-label': label });
-  const hidden = keep || new Set();
-  const chart = { draw, data, width: -1, detach: null, link, tip, hidden: items ? partsOf(items, hidden) : [] };
-  const fig = h(
-    'figure',
-    { class: wide ? 'figure wide' : 'figure' },
-    canvas,
-    items &&
-      legend(
-        items,
-        (parts) => {
-          setHidden(fig, parts);
-          if (onHide) onHide(parts);
-        },
-        hidden,
-      ),
-    h('p', { class: 'figure-note', text: note || '', hidden: !note }),
-    h('figcaption', { text: label }),
-  );
-  attachTip(canvas, chart);
-  charts.set(canvas, chart);
-  resizer.observe(canvas);
-  return fig;
-}
-
-/** Redraws a chart in place, with new data, label and note, without replacing its canvas (no flicker while it grows); the hidden parts stay hidden. */
+/** Redraws a chart in place, with new data, label and note, without replacing its canvas (no flicker while it grows); the hidden parts and the zoom stay. */
 function refreshFigure(fig, label, data, tip, note = null) {
-  const canvas = fig.querySelector('canvas.chart');
-  const chart = charts.get(canvas);
-  if (!chart) return;
-  chart.data = data;
-  chart.tip = tip;
-  attachTip(canvas, chart);
-  canvas.setAttribute('aria-label', label);
-  fig.querySelector('figcaption').textContent = label;
-  const noteEl = fig.querySelector('.figure-note');
-  noteEl.textContent = note || '';
-  noteEl.hidden = !note;
-  redraw(canvas, chart);
+  fig.kit.setData(data);
+  fig.kit.setTip(tip);
+  fig.kit.setLabel(label);
+  fig.kit.setNote(note);
 }
 
 /** Replaces the content of a region, releasing the charts it contained and their labels. */
 function fill(region, ...nodes) {
-  for (const canvas of region.querySelectorAll('canvas.chart')) {
-    resizer.unobserve(canvas);
-    const chart = charts.get(canvas);
-    if (chart && chart.detach) chart.detach();
-    charts.delete(canvas);
-  }
+  kit.releaseFigures(region);
   region.replaceChildren(...nodes.flat(Infinity).filter((n) => n !== null && n !== undefined && n !== false));
 }
 
@@ -2536,7 +3971,17 @@ function tryDependenceBlock() {
   const seriesRegion = h('div');
   const items = view.legends.dependence(text);
   let fig = null;
-  let lastTheta = null;
+  let lastKey = null;
+  // the level of the test: a line to drag on the chart (the summary of the tests stays at 5%)
+  const alphaOf = () => state.dependence.alpha ?? hw.SIGNIFICANCE;
+  const moveAlpha = (id, v) => {
+    state.dependence.alpha = view.alphaAt(v);
+    update();
+  };
+  const alphaChoice = choices(T.alphaChoice, view.ALPHAS.map((a) => [a, text.fmt.plain(a)]), alphaOf(), (a) => {
+    state.dependence.alpha = a;
+    update();
+  });
   const thetaSlider = slider('hw6-theta', '', hw.THETAS.length - 1, state.dependence.theta, (v) => {
     state.dependence.theta = v;
     update();
@@ -2551,6 +3996,7 @@ function tryDependenceBlock() {
     const n = hw.DEPENDENCE_SIZES[state.dependence.n];
     thetaSlider.label(T.thetaLabel(theta));
     nSlider.label(T.nLabel(n));
+    alphaChoice.set(alphaOf());
     const counts = hw.dependenceTable(n, theta, hw.DEFAULT_SEED);
     const st = hw.tableStats(counts);
     fill(
@@ -2567,7 +4013,7 @@ function tryDependenceBlock() {
         totalLabel: text.ui.total,
         className: 'residuals',
       }),
-      h('p', { class: 'caption line', 'aria-live': 'polite' }, h('strong', { text: T.result(st, n, theta) })),
+      h('p', { class: 'caption line', 'aria-live': 'polite' }, h('strong', { text: T.result(st, n, theta, alphaOf()) })),
     );
     const series = hw.dependenceSeries(theta, hw.DEFAULT_SEED);
     fill(
@@ -2578,26 +4024,36 @@ function tryDependenceBlock() {
         { class: 'scroll' },
         table(
           'compact num series',
-          [T.cols.n, T.cols.chi2, T.cols.p, T.cols.V, T.cols.verdict],
-          series.map((r) => ({ class: r.n === n ? 'is-current' : null, cells: [{ head: true, text: F.int(r.n) }, { text: F.num(r.chi2, 2) }, { text: F.p(r.p, r.log10p) }, { text: F.num(r.V, 3) }, { text: T.verdicts[r.p < hw.SIGNIFICANCE ? 'reject' : 'accept'] }] })),
+          [T.cols.n, T.cols.chi2, T.cols.p, T.cols.V, T.verdictCol(alphaOf())],
+          series.map((r) => ({ class: r.n === n ? 'is-current' : null, cells: [{ head: true, text: F.int(r.n) }, { text: F.num(r.chi2, 2) }, { text: F.p(r.p, r.log10p) }, { text: F.num(r.V, 3) }, { text: T.verdicts[r.p < alphaOf() ? 'reject' : 'accept'] }] })),
           view.LINKED_TABLES.series,
           [null, null, 'series:0', null, 'series:1'],
         ),
       ),
     );
     hideParts(seriesRegion, partsOf(items, kept.dependence));
-    if (lastTheta !== theta) {
-      lastTheta = theta;
-      if (fig) refreshFigure(fig, T.chartTitle, view.dependenceChart(series, F.decimal), view.tips.dependence(series, text.tips));
-      else
-        fig = figure(T.chartTitle, hw.drawLineChart, view.dependenceChart(series, F.decimal), {
+    const key = `${theta}|${alphaOf()}`;
+    if (lastKey !== key) {
+      lastKey = key;
+      const chart = view.dependenceChart(series, F.decimal, alphaOf());
+      const handles = { items: view.alphaHandle(alphaOf(), T.alphaLabel(alphaOf())), onChange: moveAlpha };
+      if (fig) {
+        refreshFigure(fig, T.chartTitle, chart, view.tips.dependence(series, text.tips));
+        fig.kit.setAnimation(view.reveal(chart, 260));
+        fig.kit.setHandles(handles);
+        fig.kit.relabel(view.legends.dependence(text, alphaOf()));
+      } else {
+        fig = figure(T.chartTitle, hw.drawLineChart, chart, {
           wide: true,
           tip: view.tips.dependence(series, text.tips),
-          items,
+          items: view.legends.dependence(text, alphaOf()),
           keep: kept.dependence,
           link: view.links.series,
           onHide: (parts) => hideParts(seriesRegion, parts),
+          animation: view.reveal(chart, 260),
+          handles,
         });
+      }
     }
     updateTests();
   }
@@ -2608,6 +4064,7 @@ function tryDependenceBlock() {
     title('hw6-try-dependence', 2, text.sections.tryDependence),
     h('p', { text: T.intro }),
     h('div', { class: 'slider-row' }, thetaSlider.el, nSlider.el),
+    alphaChoice,
     tableRegion,
     seriesRegion,
     h('div', { class: 'charts' }, fig),
