@@ -1,0 +1,1 @@
+function d(a,u=110){return{frames:a.x.length,ms:u,at:r=>({...a,series:a.series.map(e=>e.fixed?e:{...e,values:e.values.map((n,l)=>l<=r?n:null),band:e.band?e.band.map((n,l)=>l<=r?n:null):e.band})})}}export{d as r};

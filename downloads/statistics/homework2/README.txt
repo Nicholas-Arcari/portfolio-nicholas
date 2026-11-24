@@ -33,7 +33,10 @@ COME SI USA
   index.html da lì (aperto dentro il gestore di archivi resta vuoto, perché
   vengono estratti solo i file cliccati). La pagina si apre in inglese:
   IT / EN in alto cambia lingua, e il pulsante Contents (Indice, in
-  italiano) porta a qualunque sezione della consegna.
+  italiano) porta a qualunque sezione della consegna. I grafici si
+  ingrandiscono e si spostano (Ctrl + rotella, due dita, oppure un
+  rettangolo trascinato; doppio clic per tornare alla vista intera), le
+  barre per gruppi interi e le mappe di calore per righe e colonne.
 
   Da terminale, con Node.js 14 o successivo:
 
@@ -102,7 +105,9 @@ HOW TO USE IT
   index.html from there (opened inside the archive manager it stays empty,
   because only the clicked file gets extracted). The page opens in English:
   IT / EN at the top switches language, and the Contents button jumps to
-  any section of the assignment.
+  any section of the assignment. The charts zoom and pan (ctrl + wheel,
+  two fingers, or a rectangle dragged; double click for the whole chart
+  again), the bars by whole groups and the heatmaps by rows and columns.
 
   From a terminal, with Node.js 14 or later:
 
