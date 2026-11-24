@@ -14,7 +14,8 @@ import { useLanguage } from '../../contexts/languageContext';
 import { useTheme } from '../../contexts/themeContext';
 import HomeworkShell from './HomeworkShell';
 import { ChartLegend } from './ChartLegend';
-import { hiddenParts, useHidden } from './legendState';
+import { useHidden } from './legendState';
+import { ChartFigure } from './chartkit/ChartFigure';
 import * as hw from './hw1/homework1';
 import * as view from './hw1/view';
 import { HW1_TEXTS, originalAssignment } from './hw1/texts';
@@ -60,53 +61,12 @@ const Paras = ({ list }) => list.filter(Boolean).map((t, i) => <p key={i}>{t}</p
 
 const Pending = ({ text }) => <p className="hw1-note hw1-pending" role="status">{text.ui.computing}</p>;
 
-// Un grafico su canvas (barre o mappa di calore), ridisegnato quando cambia
-// la larghezza, con i valori del pezzo sotto il puntatore: il disegno vero
-// e' in homework1.js. La larghezza arriva dal
-// ResizeObserver, che la misura dopo il layout: leggerla da clientWidth dopo
-// che un altro grafico si e' appena ridimensionato costringerebbe il browser
-// a ricalcolare l'intera pagina, una volta per grafico. L'altezza e' fissata
-// subito, il disegno avviene qualche millisecondo per fotogramma.
-// Le voci della legenda (le barre, l'atteso tratteggiato) nascondono e
-// mostrano le loro parti; con `hidden` e `onToggle` lo stato sta nella
-// sezione, che ne fa sparire anche le colonne della tabella annessa.
-const Figure = ({ title, draw, data, palette, tip = null, wide = false, link = null, legend = null, hidden: shared = null, onToggle = null }) => {
-  const ref = useRef(null);
-  const [own, toggleOwn] = useHidden();
-  const hidden = shared || own;
-  const off = hiddenParts(legend, hidden).join(' ');
-  const shown = useMemo(() => (off ? { ...data, hidden: off.split(' ') } : data), [data, off]);
-  const describe = useMemo(() => (tip ? (hit) => tip(hit, off ? off.split(' ') : []) : null), [tip, off]);
-  useEffect(() => {
-    const canvas = ref.current;
-    let drawn = -1;
-    const observer = new ResizeObserver((entries) => {
-      const width = Math.round(entries[entries.length - 1].contentRect.width);
-      if (width <= 0 || width === drawn) return;
-      drawn = width;
-      canvas.style.height = `${hw.chartHeight(draw, shown, width)}px`;
-      view.scheduleFrameJob(() => {
-        if (canvas.isConnected && drawn === width) draw(canvas, { ...shown, width }, palette);
-      });
-    });
-    observer.observe(canvas);
-    // il riquadro con i valori della barra o della cella sotto il puntatore,
-    // e con `link` (view.links) la riga della tabella legata
-    const detach = describe ? hw.attachChartTooltip(canvas, { draw, data: shown, describe, link }) : null;
-    return () => {
-      drawn = -2;
-      observer.disconnect();
-      if (detach) detach();
-    };
-  }, [draw, shown, palette, describe, link]);
-  return (
-    <figure className={wide ? 'hw1-figure hw1-figure-wide' : 'hw1-figure'}>
-      <canvas ref={ref} className="hw1-canvas" role="img" aria-label={title} />
-      {legend && <ChartLegend items={legend} palette={palette} hidden={hidden} onToggle={onToggle || toggleOwn} />}
-      <figcaption>{title}</figcaption>
-    </figure>
-  );
-};
+// Un grafico interattivo (chartkit/ChartFigure.jsx), barre o mappa di calore:
+// disegnato da homework1.js, con il riquadro dei valori sotto il puntatore,
+// la tabella legata (link), la legenda a pulsanti (le barre, l'atteso
+// tratteggiato; con `hidden` e `onToggle` lo stato sta nella sezione) e lo
+// zoom, per gruppi interi di barre e per righe e colonne.
+const Figure = (props) => <ChartFigure lib={hw} schedule={view.scheduleFrameJob} {...props} />;
 
 // L'animazione al rallentatore: il disegno e' di homework1.js, qui i controlli
 const Animation = ({ curve, G, k, Q, text, palette }) => {

@@ -133,7 +133,7 @@ const it = {
   assignment: {
     intro: (task) => [
       'In Ethereum la chiave privata è un intero k scelto a caso fra 1 e n - 1, dove n ≈ 2^256 è l’ordine del punto base, e la chiave pubblica è il punto Q = kG della curva ellittica secp256k1, y² = x³ + 7 su un campo primo di 256 bit. Calcolare Q a partire da k è veloce; risalire a k partendo da Q è il problema del logaritmo discreto su curva ellittica (ECDLP), per cui non si conosce alcun algoritmo efficiente.',
-      `La consegna chiede di mostrarlo su una curva giocattolo con la stessa equazione, y² = x³ + ${task.b} (mod ${task.p}), con punto base G = ${fmtPoint(task.G)} e chiave privata k = ${task.k}. La pagina la segue punto per punto: il TASK (sezione 1), il livello guru facoltativo (sezione 2), l’esplorazione statistica (sezione 3) e la discussione finale (sezione 4). I valori si possono cambiare; quando non sono più quelli della consegna la pagina lo segnala, e un pulsante li ripristina.`,
+      `La consegna chiede di mostrarlo su una curva giocattolo con la stessa equazione, y² = x³ + ${task.b} (mod ${task.p}), con punto base G = ${fmtPoint(task.G)} e chiave privata k = ${task.k}. La pagina la segue punto per punto: il TASK (sezione 1), il livello guru facoltativo (sezione 2), l’esplorazione statistica (sezione 3) e la discussione finale (sezione 4). I valori si possono cambiare; quando non sono più quelli della consegna la pagina lo segnala, e un pulsante li ripristina. I grafici si muovono: si ingrandiscono e si spostano (Ctrl + rotella, oppure un rettangolo trascinato; doppio clic per tornare alla vista intera), le barre per gruppi interi e le mappe di calore per righe e colonne.`,
     ],
     originalTitle: 'Il testo originale della consegna',
     originalNote: 'Com’è stato assegnato, in inglese.',
@@ -694,7 +694,7 @@ const en = {
   assignment: {
     intro: (task) => [
       'In Ethereum the private key is an integer k chosen at random between 1 and n - 1, where n ≈ 2^256 is the order of the base point, and the public key is the point Q = kG on the elliptic curve secp256k1, y² = x³ + 7 over a 256-bit prime field. Computing Q from k is fast; recovering k from Q is the Elliptic Curve Discrete Logarithm Problem (ECDLP), for which no efficient algorithm is known.',
-      `The assignment asks to show this on a toy curve with the same equation, y² = x³ + ${task.b} (mod ${task.p}), with base point G = ${fmtPoint(task.G)} and private key k = ${task.k}. The page follows it point by point: the TASK (section 1), the optional guru level (section 2), the statistical exploration (section 3) and the final discussion (section 4). The values can be changed; when they are no longer the assignment’s the page says so, and a button restores them.`,
+      `The assignment asks to show this on a toy curve with the same equation, y² = x³ + ${task.b} (mod ${task.p}), with base point G = ${fmtPoint(task.G)} and private key k = ${task.k}. The page follows it point by point: the TASK (section 1), the optional guru level (section 2), the statistical exploration (section 3) and the final discussion (section 4). The values can be changed; when they are no longer the assignment’s the page says so, and a button restores them. The charts move: they zoom and pan (ctrl + wheel, or a rectangle dragged; double click for the whole chart again), the bars by whole groups and the heatmaps by rows and columns.`,
     ],
     originalTitle: 'The original text of the assignment',
     originalNote: 'As it was assigned.',

@@ -52,6 +52,7 @@ export const HOMEWORKS = [
     library: 'homework1.js',
     global: 'Homework1',
     inner: ['task.js'],
+    ui: CHARTKIT,
     contents: 'Computations: toy curve, point addition, scalar multiplication, statistics,\n * animation and command line (node homework1.js [k] [p]).',
     description: 'Homework #1 - Exercise 1 - Statistics: from a private key to a public key with elliptic-curve scalar multiplication, as in Ethereum.',
   },
