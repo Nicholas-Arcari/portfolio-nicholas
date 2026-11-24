@@ -11,6 +11,1497 @@
 (function () {
 'use strict';
 
+var kitView$ = (function () {
+'use strict';
+
+// src/pages/statistics/chartkit/kitView.js
+// La matematica delle viste di un grafico interattivo: quale parte degli
+// assi si vede, come cambia con lo zoom e con lo spostamento, e la
+// conversione fra i pixel del riquadro e i valori. Niente DOM: sono funzioni
+// pure, che servono identiche alla pagina e al programma scaricabile.
+//
+// Una vista e' { x: [lo, hi] o null, y: [lo, hi] o null } nelle unita' degli
+// assi; null su un asse vuol dire "tutto". Il riquadro (frame) e' quello che
+// la libreria di ogni homework descrive con chartFrame(): { plot: { x, y, w,
+// h }, x: { min, max, log } o null, y: { min, max, log }, zoom: 'xy' o 'y' }.
+// Sugli assi logaritmici i conti si fanno sui logaritmi, cosi' lo zoom e lo
+// spostamento hanno lo stesso effetto in ogni punto dell'asse.
+
+/** How far the view can be enlarged: a thousandth of the whole axis. */
+const MIN_SPAN = 1e-3;
+
+const fwd = (axis, v) => (axis.log ? Math.log10(v) : v);
+const back = (axis, t) => (axis.log ? 10 ** t : t);
+
+/** The pixel of the value v on an axis drawn from p0 (its min) to p1 (its max). */
+function toPixel(axis, v, p0, p1) {
+  const lo = fwd(axis, axis.min);
+  const hi = fwd(axis, axis.max);
+  return p0 + ((fwd(axis, v) - lo) / (hi - lo)) * (p1 - p0);
+}
+
+/** The value of the pixel p on an axis drawn from p0 (its min) to p1 (its max). */
+function toValue(axis, p, p0, p1) {
+  const lo = fwd(axis, axis.min);
+  const hi = fwd(axis, axis.max);
+  return back(axis, lo + ((p - p0) / (p1 - p0)) * (hi - lo));
+}
+
+/** Whether the point (x, y), in CSS pixels of the canvas, lies in the plot. */
+const inPlot = (frame, x, y, slack = 0) => !!frame && x >= frame.plot.x - slack && x <= frame.plot.x + frame.plot.w + slack && y >= frame.plot.y - slack && y <= frame.plot.y + frame.plot.h + slack;
+
+/** The values under the point (x, y): { x, y }, with null on an axis without values (categories). */
+function valueAt(frame, x, y) {
+  const { plot } = frame;
+  return {
+    x: frame.x ? toValue(frame.x, x, plot.x, plot.x + plot.w) : null,
+    y: toValue(frame.y, y, plot.y + plot.h, plot.y),
+  };
+}
+
+/** The pixels of the values { x, y } (either may be null). */
+function pixelAt(frame, x, y) {
+  const { plot } = frame;
+  return {
+    x: x === null || !frame.x ? null : toPixel(frame.x, x, plot.x, plot.x + plot.w),
+    y: y === null ? null : toPixel(frame.y, y, plot.y + plot.h, plot.y),
+  };
+}
+
+/** The whole extent of the data of a frame drawn without a view: the limits zoom and panning stay within. */
+const fullView = (frame) => ({ x: frame.x ? [frame.x.min, frame.x.max] : null, y: [frame.y.min, frame.y.max] });
+
+const axesOf = (zoom) => ({ x: zoom === 'xy' || zoom === 'x', y: zoom === 'xy' || zoom === 'y' });
+
+/** One axis of a view, kept inside the whole axis and no narrower than MIN_SPAN of it; the full axis becomes null. */
+function clampAxis(range, full, axis) {
+  if (!range || !full) return null;
+  const f0 = fwd(axis, full[0]);
+  const f1 = fwd(axis, full[1]);
+  const whole = f1 - f0;
+  let a = fwd(axis, range[0]);
+  let b = fwd(axis, range[1]);
+  if (b - a >= whole * (1 - 1e-9)) return null;
+  const span = Math.max(b - a, whole * MIN_SPAN);
+  const mid = (a + b) / 2;
+  a = mid - span / 2;
+  b = mid + span / 2;
+  if (a < f0) [a, b] = [f0, f0 + span];
+  if (b > f1) [a, b] = [f1 - span, f1];
+  return [back(axis, a), back(axis, b)];
+}
+
+/** A view kept inside the whole data; null when it shows everything. */
+function clampView(view, frameAxes, full) {
+  if (!view) return null;
+  const x = frameAxes.x ? clampAxis(view.x, full.x, frameAxes.x) : null;
+  const y = clampAxis(view.y, full.y, frameAxes.y);
+  return x || y ? { x, y } : null;
+}
+
+/** The range an axis shows now: the view's, or the whole one. */
+const current = (view, full, key) => (view && view[key]) || full[key];
+
+/** Zooms one axis by k (k > 1 enlarges) about the value c. */
+function zoomAxis(range, axis, c, k) {
+  const a = fwd(axis, range[0]);
+  const b = fwd(axis, range[1]);
+  const t = fwd(axis, c);
+  return [back(axis, t - (t - a) / k), back(axis, t + (b - t) / k)];
+}
+
+/**
+ * The view zoomed by k (k > 1 enlarges, k < 1 shrinks) about the pixel (px,
+ * py) of the plot, on the axes the chart allows (frame.zoom); `frame` is
+ * the frame of the chart as drawn now, `full` its whole extent.
+ */
+function zoomView(view, frame, full, px, py, k) {
+  const allowed = axesOf(frame.zoom);
+  const at = valueAt(frame, px, py);
+  const next = { x: null, y: null };
+  if (allowed.x && frame.x) next.x = zoomAxis(current(view, full, 'x'), frame.x, at.x, k);
+  else if (view && view.x) next.x = view.x;
+  if (allowed.y) next.y = zoomAxis(current(view, full, 'y'), frame.y, at.y, k);
+  else if (view && view.y) next.y = view.y;
+  return clampView(next, frame, full);
+}
+
+/** The view moved by (dx, dy) pixels of the plot: the data follow the pointer. */
+function panView(view, frame, full, dx, dy) {
+  if (!view) return null;
+  const allowed = axesOf(frame.zoom);
+  const shift = (range, axis, pixels, size) => {
+    const a = fwd(axis, range[0]);
+    const b = fwd(axis, range[1]);
+    const d = (pixels / size) * (b - a);
+    return [back(axis, a - d), back(axis, b - d)];
+  };
+  const next = { x: view.x, y: view.y };
+  if (allowed.x && frame.x && view.x) next.x = shift(view.x, frame.x, dx, frame.plot.w);
+  if (allowed.y && view.y) next.y = shift(view.y, frame.y, -dy, frame.plot.h);
+  // keep the span while moving: clampAxis would shrink a view pushed against the edge
+  const keep = (range, full, axis) => {
+    if (!range) return null;
+    const f0 = fwd(axis, full[0]);
+    const f1 = fwd(axis, full[1]);
+    let a = fwd(axis, range[0]);
+    let b = fwd(axis, range[1]);
+    if (a < f0) [a, b] = [f0, f0 + (b - a)];
+    if (b > f1) [a, b] = [f1 - (b - a), f1];
+    return [back(axis, a), back(axis, b)];
+  };
+  return { x: frame.x ? keep(next.x, full.x, frame.x) : null, y: keep(next.y, full.y, frame.y) };
+}
+
+/** The view of the rectangle selected from (x0, y0) to (x1, y1), in pixels, on the axes the chart allows. */
+function boxView(view, frame, full, x0, y0, x1, y1) {
+  const allowed = axesOf(frame.zoom);
+  const a = valueAt(frame, Math.min(x0, x1), Math.max(y0, y1));
+  const b = valueAt(frame, Math.max(x0, x1), Math.min(y0, y1));
+  return clampView(
+    {
+      x: allowed.x && frame.x ? [a.x, b.x] : (view && view.x) || null,
+      y: allowed.y ? [a.y, b.y] : (view && view.y) || null,
+    },
+    frame,
+    full,
+  );
+}
+
+/** Whether a view shows less than the whole data. */
+const isZoomed = (view) => !!view && (!!view.x || !!view.y);
+
+return { toPixel, toValue, inPlot, valueAt, pixelAt, fullView, clampView, zoomView, panView, boxView, isZoomed };
+})();
+
+var kitGestures$ = (function () {
+'use strict';
+
+// src/pages/statistics/chartkit/kitGestures.js
+// I gesti su un elemento: il puntatore (mouse, penna, dito), la rotella e i
+// tasti, tradotti in quello che vogliono dire: passare sopra, premere e
+// trascinare, il doppio clic, la rotella con Ctrl, il pizzico a due dita.
+// Non sa niente di grafici: chi lo usa decide, con il valore che restituisce,
+// se un gesto lo riguarda (press, wheel, pinch e key restituiscono true per
+// tenerlo). Le coordinate sono in pixel CSS dall'angolo in alto a sinistra
+// dell'elemento.
+
+/**
+ * Listens to `el` and calls `handlers`:
+ *   hover(p)                     the pointer moves over it (not while a drag is on)
+ *   leave()                      it leaves
+ *   press(p) -> boolean          a button or a finger goes down; true starts a drag
+ *   drag(p, start)               the pointer moves during that drag
+ *   release(p, start)            the drag ends (or is cancelled)
+ *   dblclick(p) -> boolean       double click
+ *   wheel(p, { deltaY, ctrl }) -> boolean   true stops the page from scrolling
+ *   pinch({ x, y, scale, dx, dy }) -> boolean   two fingers: the centre, the change of their distance and of the centre
+ *   key(event) -> boolean        a key while the element has the focus; true stops its default action
+ * p is { x, y, pointerType, button, shift, ctrl }. Returns the function that stops listening.
+ */
+function attachGestures(el, handlers) {
+  const at = (e) => {
+    const r = el.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top, pointerType: e.pointerType || 'mouse', button: e.button ?? 0, shift: !!e.shiftKey, ctrl: !!(e.ctrlKey || e.metaKey) };
+  };
+  const touches = new Map(); // pointerId -> { x, y } of the fingers down
+  let drag = null; // { id, start } while a press holds the pointer
+  let pinch = null; // { distance, x, y } while two fingers are down
+
+  const twoFingers = () => {
+    const [a, b] = [...touches.values()];
+    return { distance: Math.hypot(a.x - b.x, a.y - b.y), x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  };
+
+  const onDown = (e) => {
+    const p = at(e);
+    if (e.pointerType === 'touch') {
+      touches.set(e.pointerId, p);
+      if (touches.size === 2) {
+        // two fingers: the drag of one finger, if any, ends and the pinch begins
+        if (drag && handlers.release) handlers.release(p, drag.start);
+        drag = null;
+        pinch = twoFingers();
+        return;
+      }
+      if (touches.size > 2) return;
+    }
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    if (handlers.press && handlers.press(p)) {
+      drag = { id: e.pointerId, start: p };
+      try {
+        el.setPointerCapture(e.pointerId);
+      } catch {
+        // a pointer that is already gone cannot be captured: the drag still works while it stays on the element
+      }
+      e.preventDefault();
+    }
+  };
+
+  const onMove = (e) => {
+    const p = at(e);
+    if (e.pointerType === 'touch' && touches.has(e.pointerId)) {
+      touches.set(e.pointerId, p);
+      if (pinch && touches.size === 2) {
+        const now = twoFingers();
+        const used = handlers.pinch && handlers.pinch({ x: now.x, y: now.y, scale: now.distance / Math.max(1, pinch.distance), dx: now.x - pinch.x, dy: now.y - pinch.y });
+        pinch = now;
+        if (used) e.preventDefault();
+        return;
+      }
+    }
+    if (drag && e.pointerId === drag.id) {
+      if (handlers.drag) handlers.drag(p, drag.start);
+      return;
+    }
+    if (!drag && handlers.hover && e.pointerType !== 'touch') handlers.hover(p);
+  };
+
+  const onUp = (e) => {
+    const p = at(e);
+    if (e.pointerType === 'touch') {
+      touches.delete(e.pointerId);
+      if (touches.size < 2) pinch = null;
+    }
+    if (drag && e.pointerId === drag.id) {
+      const { start } = drag;
+      drag = null;
+      if (handlers.release) handlers.release(p, start);
+    }
+  };
+
+  const onLeave = (e) => {
+    if (!drag && e.pointerType !== 'touch' && handlers.leave) handlers.leave();
+  };
+
+  const onDouble = (e) => {
+    if (handlers.dblclick && handlers.dblclick(at(e))) e.preventDefault();
+  };
+
+  const onWheel = (e) => {
+    if (handlers.wheel && handlers.wheel(at(e), { deltaY: e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY, ctrl: !!(e.ctrlKey || e.metaKey) })) e.preventDefault();
+  };
+
+  const onKey = (e) => {
+    if (handlers.key && handlers.key(e)) e.preventDefault();
+  };
+
+  el.addEventListener('pointerdown', onDown);
+  el.addEventListener('pointermove', onMove);
+  el.addEventListener('pointerup', onUp);
+  el.addEventListener('pointercancel', onUp);
+  el.addEventListener('pointerleave', onLeave);
+  el.addEventListener('dblclick', onDouble);
+  el.addEventListener('wheel', onWheel, { passive: false });
+  el.addEventListener('keydown', onKey);
+  return () => {
+    el.removeEventListener('pointerdown', onDown);
+    el.removeEventListener('pointermove', onMove);
+    el.removeEventListener('pointerup', onUp);
+    el.removeEventListener('pointercancel', onUp);
+    el.removeEventListener('pointerleave', onLeave);
+    el.removeEventListener('dblclick', onDouble);
+    el.removeEventListener('wheel', onWheel);
+    el.removeEventListener('keydown', onKey);
+  };
+}
+
+return { attachGestures };
+})();
+
+var kitChart$ = (function () {
+'use strict';
+
+// src/pages/statistics/chartkit/kitChart.js
+// Un grafico interattivo: il canvas disegnato dalla libreria dell'homework,
+// una tela trasparente sopra per i segni delle interazioni (il rettangolo
+// dello zoom, le maniglie da trascinare), la vista (quale parte degli assi
+// si vede), le parti nascoste dalla legenda e l'etichetta sotto il
+// puntatore.
+//
+// Il controllore non sa che grafico sia: lo sanno le funzioni che riceve
+// (draw, frame, withView, height, hitTest, hitAt, pointerLabel), che ogni
+// libreria fornisce (Dependency Inversion). Le interazioni sono plugin
+// (kitPlugins.js): un'interazione nuova e' un plugin nuovo, il controllore
+// non cambia (Open/Closed). I gesti passano ai plugin in ordine, e il primo
+// che ne tiene uno lo segue fino alla fine.
+const { attachGestures } = kitGestures$;
+const { clampView, fullView, isZoomed, zoomView } = kitView$;
+
+const requestFrame = (fn) => (typeof requestAnimationFrame === 'function' ? requestAnimationFrame(fn) : setTimeout(fn, 16));
+const cancelFrame = (id) => (typeof cancelAnimationFrame === 'function' ? cancelAnimationFrame(id) : clearTimeout(id));
+
+/**
+ * Makes `canvas` an interactive chart. `deps`:
+ *   draw, data, palette        the chart and what it draws
+ *   frame(draw, data, width)   where the plot lies and what it shows (null: no zoom)
+ *   withView(draw, data, view) the same data in another view
+ *   height(draw, data, width)  the height of the canvas at this width
+ *   hitTest, hitAt, pointerLabel   the label under the pointer (as attachChartTooltip)
+ *   describe(hit, hidden)      its text, or null for none; link: the linked table, or null
+ *   hidden                     the parts hidden by the legend
+ *   plugins                    the interactions, in order of priority
+ *   schedule(job)              where the first drawing goes (a queue of frames), optional
+ * Returns the controller: setData, setPalette, setHidden, setDescribe,
+ * resize, getFrame, getView, setView, zoomBy, resetView, isZoomed, on,
+ * requestOverlay, setCursor, destroy.
+ */
+function createChart(canvas, deps) {
+  const { draw, frame: frameOf, withView, height: heightOf, hitTest, hitAt, pointerLabel, schedule = null } = deps;
+  let data = deps.data;
+  let palette = deps.palette;
+  let hidden = deps.hidden || [];
+  let describe = deps.describe || null;
+  let link = deps.link || null;
+  let width = -1;
+  let view = null;
+  let viewed = data; // the data as drawn now: hidden parts and view applied
+  let frame = null; // where the plot lies now
+  let full = null; // the whole extent of the data, without a view
+  let frameRequest = 0;
+  let firstDrawn = false;
+  let destroyed = false;
+  const listeners = {};
+  const plugins = deps.plugins || [];
+
+  // the transparent canvas over the chart, for the marks of the interactions
+  const overlay = document.createElement('canvas');
+  overlay.setAttribute('aria-hidden', 'true');
+  Object.assign(overlay.style, { position: 'absolute', pointerEvents: 'none', left: '0px', top: '0px' });
+  canvas.after(overlay);
+
+  const emit = (name, payload) => (listeners[name] || []).forEach((fn) => fn(payload));
+  const shown = () => (hidden.length ? { ...data, hidden } : data);
+
+  const drawOverlay = () => {
+    const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    Object.assign(overlay.style, { left: `${canvas.offsetLeft}px`, top: `${canvas.offsetTop}px`, width: `${w}px`, height: `${h}px` });
+    if (overlay.width !== Math.round(w * dpr) || overlay.height !== Math.round(h * dpr)) {
+      overlay.width = Math.round(w * dpr);
+      overlay.height = Math.round(h * dpr);
+    }
+    const ctx = overlay.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    if (!frame) return;
+    for (const plugin of plugins) if (plugin.overlay) plugin.overlay(ctx, frame, palette);
+  };
+
+  const render = () => {
+    frameRequest = 0;
+    if (destroyed || width <= 0) return;
+    const base = shown();
+    const fullFrame = frameOf(draw, base, width);
+    full = fullFrame ? fullView(fullFrame) : null;
+    // a view that the new data no longer allows (other limits) is brought back inside them
+    if (view && fullFrame) view = clampView(view, fullFrame, full);
+    if (!fullFrame) view = null;
+    viewed = view ? withView(draw, base, view) : base;
+    canvas.style.height = `${heightOf(draw, viewed, width)}px`;
+    draw(canvas, { ...viewed, width }, palette);
+    frame = frameOf(draw, viewed, width);
+    canvas.tabIndex = frame ? 0 : -1;
+    drawOverlay();
+    // the label under a still pointer follows the chart that changed under it
+    if (detachLabel && detachLabel.refresh) detachLabel.refresh();
+    emit('render', { frame, view });
+  };
+
+  /** Draws again at the next frame (several changes in the same frame draw once). */
+  const redraw = () => {
+    if (!frameRequest && !destroyed) frameRequest = requestFrame(render);
+  };
+
+  // the label under the pointer, attached once: it always reads the data as drawn now
+  let detachLabel = null;
+  const attachLabel = () => {
+    if (detachLabel || !describe) return;
+    detachLabel = pointerLabel(
+      canvas,
+      (x, y, w) => {
+        if (!describe) return null;
+        const hit = hitTest(draw, viewed, w, x, y);
+        const text = hit && describe(hit, hidden);
+        return text ? { rect: hit.rect, text, row: link ? link.row(hit) : -1 } : null;
+      },
+      link && {
+        table: () => (link ? link.table() : null),
+        locate: (row, w) => {
+          const hit = link && hitAt(draw, viewed, w, link.point(row));
+          return hit && hit.rect;
+        },
+      },
+    );
+  };
+  attachLabel();
+
+  const api = {
+    canvas,
+    overlay,
+    get palette() {
+      return palette;
+    },
+    setData(next) {
+      data = next;
+      redraw();
+    },
+    setPalette(next) {
+      palette = next;
+      redraw();
+    },
+    setHidden(parts) {
+      hidden = parts || [];
+      redraw();
+    },
+    setDescribe(fn) {
+      describe = fn;
+      attachLabel();
+    },
+    setLink(next) {
+      link = next;
+    },
+    /** The width the canvas gets in the page (from a ResizeObserver): the first drawing goes through the queue, if any. */
+    resize(next) {
+      if (next <= 0 || next === width) return;
+      width = next;
+      if (!firstDrawn && schedule) {
+        firstDrawn = true;
+        canvas.style.height = `${heightOf(draw, shown(), width)}px`;
+        schedule(() => {
+          if (!destroyed && canvas.isConnected) render();
+        });
+        return;
+      }
+      firstDrawn = true;
+      render();
+    },
+    redraw,
+    requestOverlay: () => drawOverlay(),
+    getFrame: () => frame,
+    getFullView: () => full,
+    getView: () => view,
+    setView(next) {
+      const before = JSON.stringify(view);
+      view = next && frame ? clampView(next, frame, full) : null;
+      if (JSON.stringify(view) !== before) {
+        emit('view', view);
+        redraw();
+      }
+    },
+    /** Zooms about the centre of the plot (k > 1 enlarges). */
+    zoomBy(k) {
+      if (!frame || !full) return;
+      api.setView(zoomView(view, frame, full, frame.plot.x + frame.plot.w / 2, frame.plot.y + frame.plot.h / 2, k));
+    },
+    resetView() {
+      api.setView(null);
+    },
+    isZoomed: () => isZoomed(view),
+    canZoom: () => !!frame,
+    setCursor(cursor) {
+      canvas.style.cursor = cursor || '';
+    },
+    on(name, fn) {
+      (listeners[name] = listeners[name] || []).push(fn);
+      return () => {
+        listeners[name] = (listeners[name] || []).filter((f) => f !== fn);
+      };
+    },
+    emit,
+    destroy() {
+      destroyed = true;
+      cancelFrame(frameRequest);
+      detachGestures();
+      if (detachLabel) detachLabel();
+      for (const plugin of plugins) if (plugin.uninstall) plugin.uninstall();
+      overlay.remove();
+    },
+  };
+
+  // the gestures go to the plugins in order: the first that takes a press follows it to the end
+  let active = null;
+  const detachGestures = attachGestures(canvas, {
+    hover(p) {
+      let cursor = '';
+      for (const plugin of plugins) {
+        const c = plugin.hover && plugin.hover(p);
+        if (c) {
+          cursor = c;
+          break;
+        }
+      }
+      api.setCursor(cursor);
+    },
+    leave() {
+      for (const plugin of plugins) if (plugin.leave) plugin.leave();
+      api.setCursor('');
+    },
+    press(p) {
+      active = plugins.find((plugin) => plugin.pointerDown && plugin.pointerDown(p)) || null;
+      // the label waits while a plugin follows the drag
+      if (active && detachLabel && detachLabel.suspend) detachLabel.suspend(true);
+      return !!active;
+    },
+    drag(p, start) {
+      if (active && active.pointerMove) active.pointerMove(p, start);
+    },
+    release(p, start) {
+      if (active && active.pointerUp) active.pointerUp(p, start);
+      if (active && detachLabel && detachLabel.suspend) detachLabel.suspend(false);
+      active = null;
+    },
+    dblclick: (p) => plugins.some((plugin) => plugin.doubleClick && plugin.doubleClick(p)),
+    wheel: (p, w) => plugins.some((plugin) => plugin.wheel && plugin.wheel(p, w)),
+    pinch: (g) => plugins.some((plugin) => plugin.pinch && plugin.pinch(g)),
+    key: (e) => plugins.some((plugin) => plugin.key && plugin.key(e)),
+  });
+  for (const plugin of plugins) if (plugin.install) plugin.install(api);
+  return api;
+}
+
+return { createChart };
+})();
+
+var kitPlugins$ = (function () {
+'use strict';
+
+// src/pages/statistics/chartkit/kitPlugins.js
+// Le interazioni di un grafico (kitChart.js), una per plugin. Un plugin e'
+// un oggetto con i soli metodi che gli servono (Interface Segregation):
+//   install(chart), uninstall()
+//   hover(p) -> cursore o '', leave()
+//   pointerDown(p) -> true per tenere il gesto, pointerMove(p, start), pointerUp(p, start)
+//   doubleClick(p), wheel(p, { deltaY, ctrl }), pinch({ x, y, scale, dx, dy }), key(event) -> true se usati
+//   overlay(ctx, frame, palette): i suoi segni sulla tela trasparente sopra il grafico
+// Un'interazione nuova e' un plugin nuovo: il controllore non cambia.
+const { boxView, inPlot, panView, pixelAt, valueAt, zoomView } = kitView$;
+
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+/**
+ * Zoom and panning: ctrl (or cmd) + wheel and two fingers zoom about the
+ * pointer; a drag selects the rectangle to enlarge, or moves the view once
+ * it is enlarged (with shift it always selects); a double click and the
+ * keys 0 or Escape go back to the whole chart; + and - zoom, the arrows
+ * move. A plain wheel scrolls the page, and the chart says (event 'hint')
+ * how to zoom instead.
+ */
+function zoomPan() {
+  let chart = null;
+  let mode = null; // 'pan' or 'box' during a drag
+  let box = null;
+  let last = null;
+  return {
+    name: 'zoomPan',
+    install(c) {
+      chart = c;
+    },
+    hover(p) {
+      const f = chart.getFrame();
+      if (!inPlot(f, p.x, p.y)) return '';
+      return chart.isZoomed() && !p.shift ? 'grab' : 'zoom-in';
+    },
+    pointerDown(p) {
+      const f = chart.getFrame();
+      if (!f || p.pointerType === 'touch' || !inPlot(f, p.x, p.y)) return false;
+      if (chart.isZoomed() && !p.shift) {
+        mode = 'pan';
+        last = p;
+        chart.setCursor('grabbing');
+        return true;
+      }
+      mode = 'box';
+      box = { x0: p.x, y0: p.y, x1: p.x, y1: p.y };
+      return true;
+    },
+    pointerMove(p) {
+      const f = chart.getFrame();
+      if (!f) return;
+      if (mode === 'pan') {
+        chart.setView(panView(chart.getView(), f, chart.getFullView(), p.x - last.x, p.y - last.y));
+        last = p;
+      } else if (mode === 'box') {
+        box.x1 = clamp(p.x, f.plot.x, f.plot.x + f.plot.w);
+        box.y1 = clamp(p.y, f.plot.y, f.plot.y + f.plot.h);
+        chart.requestOverlay();
+      }
+    },
+    pointerUp() {
+      const f = chart.getFrame();
+      if (mode === 'box' && box && f) {
+        const wide = Math.abs(box.x1 - box.x0) > 6 && f.zoom !== 'y';
+        const tall = Math.abs(box.y1 - box.y0) > 6;
+        if (wide || tall) {
+          const { plot } = f;
+          // a thin selection enlarges one axis only, the other one stays as it is
+          const x0 = wide ? box.x0 : plot.x;
+          const x1 = wide ? box.x1 : plot.x + plot.w;
+          const y0 = tall ? box.y0 : plot.y;
+          const y1 = tall ? box.y1 : plot.y + plot.h;
+          const next = boxView(chart.getView(), f, chart.getFullView(), x0, y0, x1, y1);
+          const view = chart.getView();
+          chart.setView({ x: wide ? next && next.x : view && view.x, y: tall ? next && next.y : view && view.y });
+        }
+      }
+      mode = null;
+      box = null;
+      chart.requestOverlay();
+      chart.setCursor('');
+    },
+    doubleClick() {
+      if (!chart.isZoomed()) return false;
+      chart.resetView();
+      return true;
+    },
+    wheel(p, w) {
+      const f = chart.getFrame();
+      if (!f || !inPlot(f, p.x, p.y)) return false;
+      if (!w.ctrl) {
+        chart.emit('hint');
+        return false;
+      }
+      chart.setView(zoomView(chart.getView(), f, chart.getFullView(), p.x, p.y, Math.exp(-w.deltaY * 0.0025)));
+      return true;
+    },
+    pinch(g) {
+      const f = chart.getFrame();
+      if (!f) return false;
+      const zoomed = zoomView(chart.getView(), f, chart.getFullView(), g.x, g.y, g.scale);
+      chart.setView(zoomed ? panView(zoomed, f, chart.getFullView(), g.dx, g.dy) : null);
+      return true;
+    },
+    key(e) {
+      const f = chart.getFrame();
+      if (!f) return false;
+      if (e.key === '+' || e.key === '=') {
+        chart.zoomBy(1.5);
+        return true;
+      }
+      if (e.key === '-' || e.key === '_') {
+        if (!chart.isZoomed()) return false;
+        chart.zoomBy(1 / 1.5);
+        return true;
+      }
+      if (e.key === '0' || e.key === 'Escape') {
+        if (!chart.isZoomed()) return false;
+        chart.resetView();
+        return true;
+      }
+      const step = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
+      if (!step || !chart.isZoomed()) return false;
+      chart.setView(panView(chart.getView(), f, chart.getFullView(), -step[0] * f.plot.w * 0.1, -step[1] * f.plot.h * 0.1));
+      return true;
+    },
+    overlay(ctx, f, pal) {
+      if (mode !== 'box' || !box) return;
+      const yOnly = f.zoom === 'y';
+      const x = yOnly ? f.plot.x : Math.min(box.x0, box.x1);
+      const w = yOnly ? f.plot.w : Math.abs(box.x1 - box.x0);
+      const y = Math.min(box.y0, box.y1);
+      const h = Math.abs(box.y1 - box.y0);
+      ctx.fillStyle = pal.highlight;
+      ctx.globalAlpha = 0.1;
+      ctx.fillRect(x, y, w, h);
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = pal.highlight;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 3]);
+      ctx.strokeRect(x + 0.5, y + 0.5, w, h);
+      ctx.setLineDash([]);
+    },
+  };
+}
+
+/**
+ * Lines to drag on the chart, bound to the parameters of its spec: specs
+ * [{ id, axis: 'x' (a vertical line) or 'y' (a horizontal one), value,
+ * min, max, step?, values? (the allowed ones), label? }], in the units of
+ * the axes. onChange(id, value) receives the new value while dragging; the
+ * line itself moves when the spec gives the new value back (setSpecs).
+ */
+function handles({ onChange, onEnd = null }) {
+  let chart = null;
+  let specs = [];
+  let grabbed = null;
+  const where = (f, spec) => {
+    const at = spec.axis === 'x' ? pixelAt(f, spec.value, null).x : pixelAt(f, null, spec.value).y;
+    if (at === null || !Number.isFinite(at)) return null;
+    const inside = spec.axis === 'x' ? at >= f.plot.x - 1 && at <= f.plot.x + f.plot.w + 1 : at >= f.plot.y - 1 && at <= f.plot.y + f.plot.h + 1;
+    return inside ? at : null;
+  };
+  const near = (p) => {
+    const f = chart && chart.getFrame();
+    if (!f || !inPlot(f, p.x, p.y, 8)) return null;
+    const reach = p.pointerType === 'touch' ? 14 : 7;
+    let best = null;
+    let distance = reach;
+    for (const spec of specs) {
+      const at = where(f, spec);
+      if (at === null) continue;
+      const d = Math.abs((spec.axis === 'x' ? p.x : p.y) - at);
+      if (d <= distance) {
+        best = spec;
+        distance = d;
+      }
+    }
+    return best;
+  };
+  const snap = (spec, v) => {
+    if (spec.values && spec.values.length) return spec.values.reduce((a, b) => (Math.abs(b - v) < Math.abs(a - v) ? b : a));
+    let out = clamp(v, spec.min ?? -Infinity, spec.max ?? Infinity);
+    if (spec.step) out = Math.round(out / spec.step) * spec.step;
+    return Number(out.toPrecision(12));
+  };
+  return {
+    name: 'handles',
+    install(c) {
+      chart = c;
+    },
+    setSpecs(next) {
+      specs = next || [];
+      if (chart) chart.requestOverlay();
+    },
+    hover(p) {
+      const spec = near(p);
+      if (!spec) return '';
+      return spec.axis === 'x' ? 'ew-resize' : 'ns-resize';
+    },
+    pointerDown(p) {
+      grabbed = near(p);
+      if (!grabbed) return false;
+      chart.setCursor(grabbed.axis === 'x' ? 'ew-resize' : 'ns-resize');
+      return true;
+    },
+    pointerMove(p) {
+      const f = chart.getFrame();
+      if (!grabbed || !f) return;
+      const v = valueAt(f, p.x, p.y)[grabbed.axis];
+      if (v === null || !Number.isFinite(v)) return;
+      const next = snap(grabbed, v);
+      if (next !== grabbed.value) {
+        grabbed = { ...grabbed, value: next };
+        onChange(grabbed.id, next);
+      }
+    },
+    pointerUp() {
+      if (grabbed && onEnd) onEnd(grabbed.id);
+      grabbed = null;
+      chart.setCursor('');
+    },
+    overlay(ctx, f, pal) {
+      for (const spec of specs) {
+        const at = where(f, spec);
+        if (at === null) continue;
+        const active = grabbed && grabbed.id === spec.id;
+        ctx.strokeStyle = pal.highlight;
+        ctx.fillStyle = pal.highlight;
+        ctx.lineWidth = active ? 2.5 : 1.8;
+        ctx.beginPath();
+        if (spec.axis === 'x') {
+          ctx.moveTo(at, f.plot.y);
+          ctx.lineTo(at, f.plot.y + f.plot.h);
+        } else {
+          ctx.moveTo(f.plot.x, at);
+          ctx.lineTo(f.plot.x + f.plot.w, at);
+        }
+        ctx.stroke();
+        // the knob to grab, on the edge of the plot, with the label beside it
+        const kx = spec.axis === 'x' ? at : f.plot.x + f.plot.w - 9;
+        const ky = spec.axis === 'x' ? f.plot.y + 9 : at;
+        ctx.beginPath();
+        ctx.arc(kx, ky, active ? 7 : 6, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.strokeStyle = pal.background;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        if (spec.label) {
+          ctx.font = '11px sans-serif';
+          ctx.fillStyle = pal.text;
+          ctx.textAlign = spec.axis === 'x' ? (at > f.plot.x + f.plot.w * 0.7 ? 'right' : 'left') : 'right';
+          const tx = spec.axis === 'x' ? at + (ctx.textAlign === 'left' ? 10 : -10) : kx - 11;
+          const ty = spec.axis === 'x' ? f.plot.y + 13 : at - 8;
+          ctx.fillText(spec.label, tx, ty);
+        }
+      }
+    },
+  };
+}
+
+return { zoomPan, handles };
+})();
+
+var kitPlayer$ = (function () {
+'use strict';
+
+// src/pages/statistics/chartkit/kitPlayer.js
+// Il lettore delle animazioni: un tempo t da 0 a frames - 1 che avanza a
+// una certa velocita', con avvio, pausa, un passo avanti o indietro e un
+// punto qualsiasi. Non sa niente di grafici: a ogni passo chiama
+// onFrame(t), e chi lo usa ridisegna. All'inizio sta sull'ultimo passo, cosi'
+// chi non preme Avvia vede il grafico completo, e non parte mai da solo:
+// rispetta anche chi ha chiesto meno movimento.
+
+const requestFrame = (fn) => (typeof requestAnimationFrame === 'function' ? requestAnimationFrame(fn) : setTimeout(() => fn(Date.now()), 16));
+const cancelFrame = (id) => (typeof cancelAnimationFrame === 'function' ? cancelAnimationFrame(id) : clearTimeout(id));
+
+/**
+ * A player of `frames` steps, one every `ms` milliseconds at speed 1.
+ * onFrame(t) draws step t; onChange(state) tells the interface { t,
+ * frames, playing, speed }. Returns { play, pause, toggle, step, seek,
+ * setSpeed, setFrames, setMs, state, destroy }.
+ */
+function createPlayer({ frames = 1, ms: stepMs = 60, loop = false, onFrame, onChange = null }) {
+  let ms = stepMs;
+  let count = Math.max(1, frames);
+  let t = count - 1;
+  let playing = false;
+  let speed = 1;
+  let request = 0;
+  let last = 0;
+  let elapsed = 0;
+  const state = () => ({ t, frames: count, playing, speed });
+  const notify = () => {
+    if (onChange) onChange(state());
+  };
+  const tick = (now) => {
+    if (!playing) return;
+    if (!last) last = now;
+    elapsed += (now - last) * speed;
+    last = now;
+    let moved = false;
+    while (elapsed >= ms && playing) {
+      elapsed -= ms;
+      if (t < count - 1) {
+        t += 1;
+        moved = true;
+      } else if (loop) {
+        t = 0;
+        moved = true;
+      } else {
+        playing = false;
+      }
+    }
+    if (moved) onFrame(t);
+    notify();
+    if (playing) request = requestFrame(tick);
+  };
+  const api = {
+    play() {
+      if (playing || count < 2) return;
+      // at the end, play starts again from the beginning
+      if (t >= count - 1) {
+        t = 0;
+        onFrame(t);
+      }
+      playing = true;
+      last = 0;
+      elapsed = 0;
+      request = requestFrame(tick);
+      notify();
+    },
+    pause() {
+      if (!playing) return;
+      playing = false;
+      cancelFrame(request);
+      notify();
+    },
+    toggle() {
+      if (playing) api.pause();
+      else api.play();
+    },
+    step(by = 1) {
+      api.pause();
+      const next = Math.min(count - 1, Math.max(0, t + by));
+      if (next !== t) {
+        t = next;
+        onFrame(t);
+      }
+      notify();
+    },
+    seek(at) {
+      const next = Math.min(count - 1, Math.max(0, Math.round(at)));
+      if (next !== t) {
+        t = next;
+        onFrame(t);
+      }
+      notify();
+    },
+    setSpeed(next) {
+      speed = next;
+      notify();
+    },
+    /** A new number of steps (the parameters changed): when stopped, the player goes to the end, where the chart is complete. */
+    setFrames(next) {
+      count = Math.max(1, next);
+      if (!playing || t > count - 1) t = count - 1;
+      notify();
+    },
+    /** Another length of a step, in milliseconds at speed 1 (a new animation). */
+    setMs(next) {
+      ms = Math.max(1, next);
+    },
+    state,
+    destroy() {
+      playing = false;
+      cancelFrame(request);
+    },
+  };
+  return api;
+}
+
+return { createPlayer };
+})();
+
+var kitSpec$ = (function () {
+'use strict';
+
+// src/pages/statistics/chartkit/kitSpec.js
+// I comandi di una sezione e il suo modello: i parametri che i comandi
+// cambiano e, quando una simulazione dipende da loro, il suo risultato. Il
+// modello e' della sezione, non del grafico: grafici e tabelle della stessa
+// sezione leggono gli stessi parametri e la stessa simulazione, e non
+// possono raccontare cose diverse. Non sa niente di React ne' del DOM: la
+// pagina lo usa con useModel.js, il programma scaricabile direttamente.
+//
+//   control = { key, kind: 'slider', values: [...], label(value) }
+//           | { key, kind: 'choice', options: [[value, name], ...], label }
+//           | { key, kind: 'toggle', label }
+//           | { kind: 'action', label, run(params) -> params }
+// Le etichette sono gia' nella lingua della pagina; il modello tiene solo i
+// parametri, che non dipendono dalla lingua.
+
+/** The position of a slider: the index of the value closest to the parameter. */
+function sliderIndex(control, params) {
+  const v = params[control.key];
+  let best = 0;
+  control.values.forEach((x, i) => {
+    if (Math.abs(x - v) < Math.abs(control.values[best] - v)) best = i;
+  });
+  return best;
+}
+
+/** The parameters after a control is used: a slider gives the index of its value, a choice its value, a toggle true or false, an action nothing. */
+function applyControl(control, params, input) {
+  if (control.kind === 'slider') return { ...params, [control.key]: control.values[input] };
+  if (control.kind === 'choice') return { ...params, [control.key]: input };
+  if (control.kind === 'toggle') return { ...params, [control.key]: !!input };
+  if (control.kind === 'action') return control.run(params);
+  return params;
+}
+
+const keyOf = (params) => JSON.stringify(params);
+const KEPT = 6;
+
+/**
+ * The state of a section with controls: { params, sim, pending, error }.
+ *   params            the parameters at the start
+ *   simulate(params)  optional: the steps (a generator) of a simulation, whose return value is its result
+ *   simKey(params)    which parameters the simulation depends on (default: all of them)
+ *   runner            the library's runStepsAsync: the simulation runs in slices of a few milliseconds
+ * While a simulation runs, `sim` stays the last result (so nothing goes
+ * blank) and `pending` is true; the results of the last parameters seen
+ * are kept, and a simulation nobody wants any more stops between two slices.
+ * Returns { get, setParams, provide, subscribe, destroy }.
+ */
+function createModel({ params, simulate = null, simKey = keyOf, runner = null }) {
+  let state = { params: { ...params }, sim: null, pending: false, error: null };
+  const cache = new Map();
+  const listeners = new Set();
+  let job = null;
+  const set = (patch) => {
+    state = { ...state, ...patch };
+    listeners.forEach((fn) => fn());
+  };
+  const remember = (key, value) => {
+    cache.delete(key);
+    cache.set(key, value);
+    while (cache.size > KEPT) cache.delete(cache.keys().next().value);
+  };
+  const run = (p) => {
+    if (!simulate) return;
+    const key = simKey(p);
+    if (cache.has(key)) {
+      if (job) job.cancel();
+      job = null;
+      set({ sim: cache.get(key), pending: false, error: null });
+      return;
+    }
+    if (job && job.key === key) return;
+    if (job) job.cancel();
+    if (!runner) return;
+    let cancelled = false;
+    function* guarded() {
+      const steps = simulate(p);
+      let step = steps.next();
+      while (!step.done) {
+        if (cancelled) throw new Error('cancelled');
+        yield;
+        step = steps.next();
+      }
+      return step.value;
+    }
+    job = {
+      key,
+      cancel: () => {
+        cancelled = true;
+      },
+    };
+    set({ pending: true });
+    runner(guarded).then(
+      (value) => {
+        if (cancelled) return;
+        remember(key, value);
+        job = null;
+        set({ sim: value, pending: false, error: null });
+      },
+      (error) => {
+        if (cancelled) return;
+        job = null;
+        set({ pending: false, error: error instanceof Error ? error.message : String(error) });
+      },
+    );
+  };
+  return {
+    get: () => state,
+    setParams(next) {
+      set({ params: next });
+      run(next);
+    },
+    /** A result computed elsewhere (the worker of the page) for the parameters `forParams`: used now if they are the current ones. */
+    provide(value, forParams = params) {
+      if (!simulate || !value) return;
+      const key = simKey(forParams);
+      if (!cache.has(key)) remember(key, value);
+      if (simKey(state.params) === key && state.sim !== value) {
+        if (job && job.key === key) {
+          job.cancel();
+          job = null;
+        }
+        set({ sim: value, pending: false, error: null });
+      }
+    },
+    subscribe(fn) {
+      listeners.add(fn);
+      return () => listeners.delete(fn);
+    },
+    destroy() {
+      if (job) job.cancel();
+      job = null;
+      listeners.clear();
+    },
+  };
+}
+
+return { sliderIndex, applyControl, createModel };
+})();
+
+var kitLabels$ = (function () {
+'use strict';
+
+// src/pages/statistics/chartkit/kitLabels.js
+// I testi dei comandi dei grafici interattivi, uguali in ogni homework: lo
+// zoom, il suggerimento, il lettore delle animazioni.
+
+const KIT_LABELS = Object.freeze({
+  it: Object.freeze({
+    tools: 'Zoom del grafico',
+    zoomIn: 'Ingrandisci',
+    zoomOut: 'Riduci',
+    reset: 'Vista intera',
+    hint: 'Ctrl + rotella per ingrandire; oppure trascinate per scegliere una zona, doppio clic per tornare alla vista intera',
+    touchHint: 'Due dita per ingrandire',
+    player: 'Animazione',
+    play: 'Avvia',
+    pause: 'Pausa',
+    back: 'Un passo indietro',
+    forward: 'Un passo avanti',
+    speed: 'Velocità',
+    position: (t, n) => `Passo ${t} di ${n}`,
+    pending: 'Simulazione in corso...',
+  }),
+  en: Object.freeze({
+    tools: 'Chart zoom',
+    zoomIn: 'Zoom in',
+    zoomOut: 'Zoom out',
+    reset: 'Whole chart',
+    hint: 'Ctrl + wheel to zoom; or drag to pick an area, double click to go back to the whole chart',
+    touchHint: 'Two fingers to zoom',
+    player: 'Animation',
+    play: 'Play',
+    pause: 'Pause',
+    back: 'One step back',
+    forward: 'One step forward',
+    speed: 'Speed',
+    position: (t, n) => `Step ${t} of ${n}`,
+    pending: 'Simulating...',
+  }),
+});
+
+/** The labels in a language, English when it is not known. */
+const kitLabels = (lang) => KIT_LABELS[lang] || KIT_LABELS.en;
+
+return { KIT_LABELS, kitLabels };
+})();
+
+var kitDom$ = (function () {
+'use strict';
+
+// src/pages/statistics/chartkit/kitDom.js
+// L'adattatore del kit dei grafici interattivi per i programmi scaricabili:
+// lo stesso grafico della pagina (ChartFigure.jsx), costruito con il DOM, senza
+// React. Un grafico e' una <figure> con, dall'alto: il riquadro del canvas
+// con i pulsanti dello zoom, il lettore dell'animazione, la legenda a
+// pulsanti, la nota e la didascalia. I comandi di una sezione (controlsOf,
+// modelControls) stanno sopra i suoi grafici e seguono il suo modello
+// (kitSpec.createModel). Le classi sono quelle di style.css dei programmi.
+//
+// Ogni testo entra con textContent, mai come HTML.
+const { createChart } = kitChart$;
+const { kitLabels } = kitLabels$;
+const { createPlayer } = kitPlayer$;
+const { handles: handlesPlugin, zoomPan } = kitPlugins$;
+const { applyControl, createModel: makeModel, sliderIndex } = kitSpec$;
+
+const HINT_MS = 2200;
+
+/** The model of a section with controls (kitSpec.createModel), for the programs. */
+const createModel = makeModel;
+let uid = 0;
+
+/** el('p', { class: 'note', text: '...' }, child, ...): the text always through textContent. */
+function el(tag, attrs, ...children) {
+  const node = document.createElement(tag);
+  for (const [key, value] of Object.entries(attrs || {})) {
+    if (value === null || value === undefined || value === false) continue;
+    if (key === 'class') node.className = value;
+    else if (key === 'text') node.textContent = value;
+    else if (key === 'style') Object.assign(node.style, value);
+    else if (key.startsWith('on')) node.addEventListener(key.slice(2), value);
+    else node.setAttribute(key, value === true ? '' : String(value));
+  }
+  for (const child of children.flat(Infinity)) {
+    if (child === null || child === undefined || child === false) continue;
+    node.append(child instanceof Node ? child : document.createTextNode(String(child)));
+  }
+  return node;
+}
+
+/** The parts of the drawing covered by the hidden items of a legend. */
+const partsOf = (items, hidden) => items.flatMap((item, i) => (hidden.has(i) ? item.parts || [] : []));
+
+/** Hides the cells, columns and rows of a table that belong to hidden parts (data-part), and shows the others. */
+function hideParts(table, parts) {
+  if (!table) return;
+  for (const node of table.querySelectorAll('[data-part]')) node.hidden = parts.includes(node.dataset.part);
+}
+
+/**
+ * The legend of a chart: { label, color? | paletteKey?, dashed?, box?,
+ * parts }. Every item is a button: pressed its parts are on screen,
+ * released they are hidden; onChange(parts) receives the hidden parts.
+ * `hidden`, the set of the hidden items, outlives the legend.
+ */
+function legend(items, onChange, hidden, palette) {
+  return el(
+    'ul',
+    { class: 'series-legend' },
+    items.map((item, i) => {
+      const color = item.paletteKey ? palette[item.paletteKey] : palette.series[(item.color ?? i) % palette.series.length];
+      let swatch = null;
+      if (item.box) swatch = 'is-box';
+      else if (item.dashed) swatch = 'is-dashed';
+      const button = el(
+        'button',
+        {
+          type: 'button',
+          'aria-pressed': String(!hidden.has(i)),
+          class: hidden.has(i) ? 'is-off' : null,
+          onclick: () => {
+            if (hidden.has(i)) hidden.delete(i);
+            else hidden.add(i);
+            button.setAttribute('aria-pressed', String(!hidden.has(i)));
+            button.classList.toggle('is-off', hidden.has(i));
+            onChange(partsOf(items, hidden));
+          },
+        },
+        el('span', { class: swatch, 'aria-hidden': 'true', style: { borderColor: color, backgroundColor: item.box ? color : 'transparent' } }),
+        item.label,
+      );
+      return el('li', null, button);
+    }),
+  );
+}
+
+/**
+ * The controls of a section (kitSpec), with the classes of the programs:
+ * getParams() gives the parameters, onChange(params) receives them after
+ * every use. box.update() moves the controls to the current parameters
+ * without rebuilding them (a slider keeps the focus while it moves).
+ */
+function controlsOf(controls, getParams, onChange, pendingLabel = '') {
+  const id = `kitc${(uid += 1)}`;
+  const actions = controls.filter((c) => c.kind === 'action');
+  const pending = el('p', { class: 'kit-pending note', role: 'status', text: pendingLabel, hidden: true });
+  const params = getParams();
+  const blocks = controls
+    .map((c, i) => {
+      if (c.kind === 'slider') {
+        const index = sliderIndex(c, params);
+        const text = c.label(c.values[index]);
+        return el(
+          'div',
+          { class: 'slider' },
+          el('label', { for: `${id}-${c.key}`, text }),
+          el('input', { id: `${id}-${c.key}`, type: 'range', min: 0, max: c.values.length - 1, step: 1, value: index, 'aria-valuetext': text, oninput: (e) => onChange(applyControl(c, getParams(), Number(e.target.value))) }),
+        );
+      }
+      if (c.kind === 'choice') {
+        return el(
+          'div',
+          { class: 'choices', role: 'group', 'aria-label': c.label },
+          el('span', { class: 'choices-label', text: c.label }),
+          c.options.map(([value, name]) => el('button', { type: 'button', class: 'btn alt', 'aria-pressed': String(params[c.key] === value), text: name, onclick: () => onChange(applyControl(c, getParams(), value)) })),
+        );
+      }
+      if (c.kind === 'toggle') {
+        return el('label', { class: 'kit-toggle' }, el('input', { type: 'checkbox', checked: !!params[c.key], onchange: (e) => onChange(applyControl(c, getParams(), e.target.checked)) }), ` ${c.label}`);
+      }
+      if (i !== controls.indexOf(actions[0])) return null;
+      return el('p', { class: 'kit-actions' }, actions.map((a) => el('button', { type: 'button', class: 'btn alt small', text: a.label, onclick: () => onChange(applyControl(a, getParams())) })));
+    })
+    .filter(Boolean);
+  const box = el('div', { class: 'kit-controls' }, blocks, pending);
+  box.update = (busy = false) => {
+    const now = getParams();
+    let k = 0;
+    for (const c of controls) {
+      if (c.kind === 'action' && c !== actions[0]) continue;
+      const block = blocks[k];
+      k += 1;
+      if (c.kind === 'slider') {
+        const index = sliderIndex(c, now);
+        const text = c.label(c.values[index]);
+        block.querySelector('label').textContent = text;
+        const input = block.querySelector('input');
+        if (Number(input.value) !== index) input.value = String(index);
+        input.setAttribute('aria-valuetext', text);
+      } else if (c.kind === 'choice') {
+        block.querySelectorAll('button').forEach((b, j) => b.setAttribute('aria-pressed', String(now[c.key] === c.options[j][0])));
+      } else if (c.kind === 'toggle') {
+        block.querySelector('input').checked = !!now[c.key];
+      }
+    }
+    pending.hidden = !busy;
+  };
+  return box;
+}
+
+/** The controls bound to the model of a section (kitSpec.createModel): they follow it, and are released with their region (releaseFigures). */
+function modelControls(model, controls, lang = 'en') {
+  const box = controlsOf(controls, () => model.get().params, (next) => model.setParams(next), kitLabels(lang).pending);
+  box.kitRelease = model.subscribe(() => box.update(model.get().pending));
+  box.update(model.get().pending);
+  return box;
+}
+
+/** The player of an animation: back, play or pause, forward, the position and the speed. */
+function playerBar(id, player, labels) {
+  const back = el('button', { type: 'button', class: 'btn alt small', 'aria-label': labels.back, title: labels.back, text: '‹', onclick: () => player.step(-1) });
+  const play = el('button', { type: 'button', class: 'btn small kit-play', onclick: () => player.toggle() });
+  const forward = el('button', { type: 'button', class: 'btn alt small', 'aria-label': labels.forward, title: labels.forward, text: '›', onclick: () => player.step(1) });
+  const position = el('input', { id: `${id}-t`, class: 'kit-position', type: 'range', min: 0, step: 1, oninput: (e) => player.seek(Number(e.target.value)) });
+  const where = el('span', { class: 'kit-step', 'aria-hidden': 'true' });
+  const speeds = [1, 2, 4].map((s) => el('button', { type: 'button', class: 'btn alt small', text: `×${s}`, onclick: () => player.setSpeed(s) }));
+  const bar = el('div', { class: 'kit-player', role: 'group', 'aria-label': labels.player }, back, play, forward, position, where, el('span', { class: 'kit-speed', role: 'group', 'aria-label': labels.speed }, speeds));
+  bar.update = (state) => {
+    play.textContent = state.playing ? labels.pause : labels.play;
+    play.setAttribute('aria-pressed', String(state.playing));
+    back.disabled = state.t <= 0;
+    forward.disabled = state.t >= state.frames - 1;
+    position.max = String(state.frames - 1);
+    position.value = String(state.t);
+    const text = labels.position(state.t + 1, state.frames);
+    position.setAttribute('aria-label', text);
+    position.setAttribute('aria-valuetext', text);
+    where.textContent = text;
+    speeds.forEach((b, i) => b.setAttribute('aria-pressed', String(state.speed === [1, 2, 4][i])));
+  };
+  return bar;
+}
+
+// one observer for every chart of the page: the width of each canvas, measured after layout
+const sizes = typeof ResizeObserver === 'function'
+  ? new ResizeObserver((entries) => {
+    for (const entry of entries) {
+      const width = Math.round(entry.contentRect.width);
+      const figure = entry.target.closest('figure');
+      if (figure && figure.kit && width > 0) figure.kit.chart.resize(width);
+    }
+  })
+  : null;
+
+/**
+ * An interactive chart for the programs. `options`:
+ *   label, draw, data, palette, lang
+ *   lib (the library of the homework), schedule (the queue of the first drawings)
+ *   tip (describe(hit, hidden)), link, items (the legend), keep (the set of hidden items that outlives the chart),
+ *   table (the id of the linked table: the legend hides its parts too), note, wide
+ *   animation ({ frames, at(t) -> data, ms }: the chart step by step, with the player)
+ *   handles ({ items, onChange(id, value) }: the lines to drag), pending (a simulation is running)
+ * Returns the <figure>, with figure.kit = { chart, setData, setTip, setLabel,
+ * setHidden, setAnimation, setHandles, setPending, destroy }.
+ */
+function createFigure(options) {
+  const { label, draw, palette, lib, schedule = null, lang = 'en', items = null, note = null, link = null, table = null, wide = true } = options;
+  const labels = kitLabels(lang);
+  const id = `kit${(uid += 1)}`;
+  const hidden = options.keep || new Set();
+  let given = options.data;
+  let animation = options.animation || null;
+  let onHandle = options.handles ? options.handles.onChange : null;
+  let t = animation ? Math.max(1, animation.frames) - 1 : 0;
+  const frames = () => (animation ? Math.max(1, animation.frames) : 1);
+  const dataNow = () => (animation && t < frames() - 1 ? animation.at(t) : given);
+
+  const canvas = el('canvas', { class: 'chart', role: 'img', 'aria-label': label });
+  const plot = el('div', { class: 'kit-plot' }, canvas);
+  const zoomIn = el('button', { type: 'button', 'aria-label': labels.zoomIn, title: labels.zoomIn, text: '+' });
+  const zoomOut = el('button', { type: 'button', 'aria-label': labels.zoomOut, title: labels.zoomOut, text: '-', disabled: true });
+  const reset = el('button', { type: 'button', 'aria-label': labels.reset, title: labels.reset, text: '⤢', disabled: true });
+  const tools = el('div', { class: 'kit-tools', role: 'group', 'aria-label': labels.tools, hidden: true }, zoomIn, zoomOut, reset);
+  const hint = el('p', { class: 'kit-hint', 'aria-live': 'polite', text: labels.hint, hidden: true });
+  const busy = el('p', { class: 'kit-busy', role: 'status', text: labels.pending, hidden: !options.pending });
+  const caption = el('figcaption', { text: label });
+
+  const handles = options.handles ? handlesPlugin({ onChange: (key, value) => onHandle && onHandle(key, value) }) : null;
+  const chart = createChart(canvas, {
+    draw,
+    data: dataNow(),
+    palette,
+    frame: lib.chartFrame,
+    withView: lib.withView,
+    height: lib.chartHeight,
+    hitTest: lib.chartHitTest,
+    hitAt: lib.chartHitAt,
+    pointerLabel: lib.attachPointerLabel,
+    describe: options.tip || null,
+    link,
+    hidden: items ? partsOf(items, hidden) : [],
+    plugins: handles ? [handles, zoomPan()] : [zoomPan()],
+    schedule,
+  });
+  if (handles) handles.setSpecs(options.handles.items);
+  zoomIn.addEventListener('click', () => chart.zoomBy(1.5));
+  zoomOut.addEventListener('click', () => chart.zoomBy(1 / 1.5));
+  reset.addEventListener('click', () => chart.resetView());
+  chart.on('render', ({ frame }) => {
+    tools.hidden = !frame;
+  });
+  chart.on('view', () => {
+    const zoomed = chart.isZoomed();
+    tools.classList.toggle('is-zoomed', zoomed);
+    zoomOut.disabled = !zoomed;
+    reset.disabled = !zoomed;
+  });
+  let hintTimer = 0;
+  chart.on('hint', () => {
+    hint.hidden = false;
+    clearTimeout(hintTimer);
+    hintTimer = setTimeout(() => {
+      hint.hidden = true;
+    }, HINT_MS);
+  });
+
+  // the animation: the player starts on the last step, where the chart is complete
+  let bar = null;
+  const player = createPlayer({
+    frames: frames(),
+    ms: (animation && animation.ms) || 60,
+    onFrame: (step) => {
+      t = step;
+      chart.setData(dataNow());
+    },
+    onChange: (state) => bar && bar.update(state),
+  });
+  bar = playerBar(id, player, labels);
+  bar.hidden = !animation;
+  bar.update(player.state());
+
+  const legendEl = items
+    ? legend(
+      items,
+      (parts) => {
+        chart.setHidden(parts);
+        if (table) hideParts(document.getElementById(table), parts);
+      },
+      hidden,
+      palette,
+    )
+    : null;
+  const figure = el(
+    'figure',
+    { class: `${wide ? 'figure wide' : 'figure'} kit-figure${options.pending ? ' is-pending' : ''}` },
+    el('div', { class: 'kit-stage' }, plot, tools, hint, busy),
+    bar,
+    legendEl,
+    note && el('p', { class: 'figure-note', text: note }),
+    caption,
+  );
+  figure.kit = {
+    chart,
+    setData(next) {
+      given = next;
+      chart.setData(dataNow());
+    },
+    setTip: (next) => chart.setDescribe(next),
+    setLabel(next) {
+      canvas.setAttribute('aria-label', next);
+      caption.textContent = next;
+    },
+    setHidden: (parts) => chart.setHidden(parts),
+    /** A new animation (the parameters changed): when stopped, the player goes to the end, where the chart is complete. */
+    setAnimation(next) {
+      animation = next || null;
+      bar.hidden = !animation;
+      if (animation && animation.ms) player.setMs(animation.ms);
+      player.setFrames(frames());
+      t = player.state().t;
+      chart.setData(dataNow());
+    },
+    setHandles(next) {
+      if (!handles || !next) return;
+      onHandle = next.onChange;
+      handles.setSpecs(next.items);
+    },
+    setPending(on) {
+      busy.hidden = !on;
+      figure.classList.toggle('is-pending', !!on);
+      canvas.setAttribute('aria-busy', on ? 'true' : 'false');
+    },
+    destroy() {
+      clearTimeout(hintTimer);
+      if (sizes) sizes.unobserve(canvas);
+      player.destroy();
+      chart.destroy();
+    },
+  };
+  if (sizes) sizes.observe(canvas);
+  // the table may come after the chart: its parts are hidden once both are on the page
+  if (table && hidden.size && typeof requestAnimationFrame === 'function') requestAnimationFrame(() => hideParts(document.getElementById(table), partsOf(items, hidden)));
+  return figure;
+}
+
+/** Releases the charts and the controls inside a region that is about to be replaced. */
+function releaseFigures(region) {
+  for (const figure of region.querySelectorAll('figure.kit-figure')) if (figure.kit) figure.kit.destroy();
+  for (const box of region.querySelectorAll('.kit-controls')) if (box.kitRelease) box.kitRelease();
+}
+
+return { createModel, partsOf, hideParts, legend, controlsOf, modelControls, createFigure, releaseFigures };
+})();
+
 var view$ = (function () {
 'use strict';
 
@@ -208,8 +1699,8 @@ function sprtChart(setup, walks, decimal = '.') {
     x,
     series: [
       ...walks.map((w, k) => ({ values: x.map((i) => (i < w.llr.length ? w.llr[i] : null)), colorIndex: w.color ?? k })),
-      { values: x.map(() => setup.upper), colorIndex: 1, dashed: true },
-      { values: x.map(() => setup.lower), colorIndex: 2, dashed: true },
+      { values: x.map(() => setup.upper), colorIndex: 1, dashed: true, fixed: true },
+      { values: x.map(() => setup.lower), colorIndex: 2, dashed: true, fixed: true },
     ],
     yMin: Math.floor(bottom),
     yMax: Math.ceil(top),
@@ -230,11 +1721,11 @@ const sprtPosterior = (llr) => hw.sigmoid(llr);
 // ---------------------------------------------------------------------------
 
 /** The campaign of the page and its posteriors, day after day, under two priors. */
-function campaignFacts(seed = hw.DEFAULT_SEED) {
-  const days = hw.campaign(seed);
+function campaignFacts(seed = hw.DEFAULT_SEED, { rate = hw.CAMPAIGN.rate, perDay = hw.CAMPAIGN.perDay } = {}) {
+  const days = hw.campaign(seed, { days: hw.CAMPAIGN.days, perDay, rate });
   const uniform = hw.campaignPosteriors(days, hw.PRIORS.uniform);
   const informed = hw.campaignPosteriors(days, hw.PRIORS.informed);
-  return { days, uniform, informed, aboveUniform: uniform.map((r) => r.above(hw.TARGET_RATE)), aboveInformed: informed.map((r) => r.above(hw.TARGET_RATE)) };
+  return { days, rate, perDay, uniform, informed, aboveUniform: uniform.map((r) => r.above(hw.TARGET_RATE)), aboveInformed: informed.map((r) => r.above(hw.TARGET_RATE)) };
 }
 
 /** The chart of section 1.5: the posterior mean of each analyst, day by day, with its 95% interval as a band; the true rate dashed. */
@@ -245,7 +1736,7 @@ function campaignChart(c, decimal = '.') {
     series: [
       { values: c.uniform.map((r) => r.mean), band: c.uniform.map((r) => [r.lo, r.hi]), colorIndex: 0 },
       { values: c.informed.map((r) => r.mean), band: c.informed.map((r) => [r.lo, r.hi]), colorIndex: 1 },
-      { values: x.map(() => hw.CAMPAIGN.rate), colorIndex: 6, dashed: true },
+      { values: x.map(() => c.rate ?? hw.CAMPAIGN.rate), colorIndex: 6, dashed: true, fixed: true },
     ],
     yMin: 0,
     yMax: 0.6,
@@ -305,7 +1796,7 @@ const PRIOR_TRY_DEFAULT = Object.freeze({ shape: 'informed', data: 'day1' });
 const PRIOR_DATA = Object.freeze(['day1', 'days3', 'days10']);
 function priorData(key, seed = hw.DEFAULT_SEED) {
   const days = hw.campaign(seed);
-  const take = { day1: 1, days3: 3, days10: 10 }[key];
+  const take = typeof key === 'number' ? key : { day1: 1, days3: 3, days10: 10 }[key];
   const chosen = days.slice(0, take);
   return { clicks: chosen.reduce((s, d) => s + d.clicks, 0), sent: chosen.reduce((s, d) => s + d.sent, 0) };
 }
@@ -318,7 +1809,7 @@ function priorData(key, seed = hw.DEFAULT_SEED) {
 function coverageChart(cov, decimal = '.') {
   return {
     x: cov.ps,
-    series: [...hw.INTERVAL_METHODS.map((m, k) => ({ values: cov.curves[m], colorIndex: [1, 3, 4, 0][k], dots: false })), { values: cov.ps.map(() => 0.95), colorIndex: 6, dashed: true }],
+    series: [...hw.INTERVAL_METHODS.map((m, k) => ({ values: cov.curves[m], colorIndex: [1, 3, 4, 0][k], dots: false })), { values: cov.ps.map(() => 0.95), colorIndex: 6, dashed: true, fixed: true }],
     yMin: 0.6,
     yMax: 1,
     yTicks: percentTicks(0.6, 1, 0.1),
@@ -389,8 +1880,8 @@ function pathsChart(paths, decimal = '.') {
     logX: true,
     series: [
       ...paths.paths.map((line) => ({ values: line, colorIndex: 0, dots: false })),
-      { values: x.map(() => paths.rate + paths.epsilon), colorIndex: 1, dashed: true },
-      { values: x.map(() => paths.rate - paths.epsilon), colorIndex: 1, dashed: true },
+      { values: x.map(() => paths.rate + paths.epsilon), colorIndex: 1, dashed: true, fixed: true },
+      { values: x.map(() => paths.rate - paths.epsilon), colorIndex: 1, dashed: true, fixed: true },
     ],
     yMin: 0,
     yMax: 0.15,
@@ -621,7 +2112,7 @@ function bvmChart(rows, decimal = '.') {
     series: [
       { values: rows.map((r) => r.uniform.mean), band: rows.map((r) => [r.uniform.mean - 1.96 * r.uniform.sd, r.uniform.mean + 1.96 * r.uniform.sd]), colorIndex: 0 },
       { values: rows.map((r) => r.wrong.mean), band: rows.map((r) => [r.wrong.mean - 1.96 * r.wrong.sd, r.wrong.mean + 1.96 * r.wrong.sd]), colorIndex: 1 },
-      { values: x.map(() => hw.BVM.rate), colorIndex: 6, dashed: true },
+      { values: x.map(() => (rows[0] && rows[0].rate) ?? hw.BVM.rate), colorIndex: 6, dashed: true, fixed: true },
     ],
     yMin: 0,
     yMax: 0.5,
@@ -652,7 +2143,7 @@ function bvmDistanceChart(rows, decimal = '.') {
 // ---------------------------------------------------------------------------
 
 /** The rows of section 1.7: for every n, the exact distance from the normal law of Z (sigma known), of the t statistic (sigma estimated) and of the MLE of an exponential rate. */
-const resultsRows = () => hw.RESULT_SIZES.map((n) => ({ n, z: hw.ksExactBernoulli(n), t: hw.ksExactT(n), mle: hw.mleRate(n) }));
+const resultsRows = (p = hw.FALSE_ALARMS.rate) => hw.RESULT_SIZES.map((n) => ({ n, z: hw.ksExactBernoulli(n, p), t: hw.ksExactT(n, p), mle: hw.mleRate(n) }));
 
 /** The chart of section 1.7: the three distances on logarithmic axes. */
 function resultsChart(rows, decimal = '.') {
@@ -751,13 +2242,13 @@ const DISCOVERY_COLORS = Object.freeze([2, 4, 1, 6]);
 const discoveryIcons = (facts) => ({ counts: facts.counts, total: facts.total, columns: 50, colors: DISCOVERY_COLORS, faint: [3] });
 
 /** The likelihood of the share of clicks after the first day and after ten days, scaled to a maximum of 1. */
-function likelihoodChart(seed = hw.DEFAULT_SEED, decimal = '.') {
+function likelihoodChart(seed = hw.DEFAULT_SEED, decimal = '.', days = 10) {
   const day1 = priorData('day1', seed);
-  const days10 = priorData('days10', seed);
+  const days10 = priorData(days, seed);
   const a = hw.likelihoodCurve(day1.clicks, day1.sent);
   const b = hw.likelihoodCurve(days10.clicks, days10.sent);
   return {
-    curves: { day1: a, days10: b, data: { day1, days10 } },
+    curves: { day1: a, days10: b, days, data: { day1, days10 } },
     chart: {
       x: hw.GRID,
       series: [{ values: a.values, colorIndex: 3, dots: false }, { values: b.values, colorIndex: 0, dots: false }],
@@ -866,9 +2357,9 @@ const legends = {
     { label: L.correlated, color: 1, parts: ['series:1'] },
   ],
   discovery: (L) => DISCOVERY_CATEGORIES.map((c, k) => ({ label: L[c], color: DISCOVERY_COLORS[k], box: true, parts: [`cat:${k}`] })),
-  likelihood: (L) => [
+  likelihood: (L, days = 10) => [
     { label: L.day1, color: 3, parts: ['series:0'] },
-    { label: L.days10, color: 0, parts: ['series:1'] },
+    { label: days === 10 ? L.days10 : L.afterDays(days), color: 0, parts: ['series:1'] },
   ],
 };
 
@@ -951,7 +2442,7 @@ const tips = {
     return T.burst(n, shown(hidden, 0, Math.sqrt((p * (1 - p)) / n)), shown(hidden, 1, Math.sqrt(hw.burstVariance(n, p, rho)) / n));
   },
   discovery: (facts, T) => (hit) => T.discovery(hit.index, facts.counts[hit.index]),
-  likelihood: (curves, T) => (hit, hidden = []) => T.likelihood(hw.GRID[hit.index], shown(hidden, 0, curves.day1.values[hit.index]), shown(hidden, 1, curves.days10.values[hit.index])),
+  likelihood: (curves, T) => (hit, hidden = []) => T.likelihood(hw.GRID[hit.index], shown(hidden, 0, curves.day1.values[hit.index]), shown(hidden, 1, curves.days10.values[hit.index]), curves.days ?? 10),
 };
 
 /** The id of every table tied to a chart: the page and the program find it by id. */
@@ -1070,7 +2561,153 @@ function scheduleFrameJob(job) {
   }
 }
 
-return { SECTIONS, tocEntries, DEFAULT_PARAMS, paramsKey, parseParamsKey, pParts, pctLabel, ALARM_CATEGORIES, alarmIcons, ALARM_TRY_DEFAULT, alarmTry, alarmChains, networkRows, networkChart, NETWORK_TRY_DEFAULT, NETWORK_LAYOUT, NETWORK_EDGES, NETWORK_VIEW, MAP_LAYOUT, MAP_VIEW, diagramHit, SPRT_EXAMPLES, sprtChart, SPRT_TRY_DEFAULT, sprtPosterior, campaignFacts, campaignChart, densityChart, BELIEF_TRY_DEFAULT, beliefCurves, moreEmails, PRIOR_TRY_DEFAULT, PRIOR_DATA, priorData, coverageChart, logOddsChart, SPAM_EXAMPLE, SPAM_BASES, spamPrior, KDD_TRY_DEFAULT, outsideChart, pathsChart, afterChart, mseChart, SEQUENCE_TRY_DEFAULT, SEQUENCE_TABLE_N, sequenceTableN, sequenceChart, cltChart, CLT_TRY_DEFAULT, CLT_TRY_SIZES, CLT_TRY_REPS, cltTry, HASH_TRY_DEFAULT, HASH_FACTORS, hashCount, hashMore, hashChart, cauchyChart, bytesChart, speedChart, bvmChart, bvmDistanceChart, resultsRows, resultsChart, rootChart, SCALE_TRY_DEFAULT, scaleCharts, BURST_TRY_DEFAULT, BURST_N, BURST_STRIP, stripChart, burstChart, DISCOVERY_TRY_DEFAULT, DISCOVERY_CATEGORIES, discoveryIcons, likelihoodChart, legends, tips, LINKED_TABLES, links, testRows, testCells, scheduleFrameJob };
+// ---------------------------------------------------------------------------
+// I grafici con i loro comandi (chartkit)
+// ---------------------------------------------------------------------------
+// Il modello di ogni sezione con comandi: i parametri all'inizio e, dove
+// serve, la simulazione che dipende da loro (eseguita a fette dal kit). La
+// pagina e il programma scaricabile leggono da qui gli stessi modelli e gli
+// stessi comandi; le etichette vengono dai testi (text.controls).
+
+/** An animation that draws a line chart point by point, as its x grows: { frames, at(t), ms }. The series marked `fixed` (references, bands, thresholds) stay whole. */
+function reveal(chart, ms = 110) {
+  return {
+    frames: chart.x.length,
+    ms,
+    at: (t) => ({
+      ...chart,
+      series: chart.series.map((s) => (s.fixed ? s : { ...s, values: s.values.map((v, i) => (i <= t ? v : null)), band: s.band ? s.band.map((b, i) => (i <= t ? b : null)) : s.band })),
+    }),
+  };
+}
+
+const RATES = Object.freeze([0.01, 0.02, 0.03, 0.05, 0.1]);
+const EPSILONS = Object.freeze([0.005, 0.01, 0.015, 0.02]);
+const TRUE_RATES = Object.freeze(Array.from({ length: 29 }, (_, i) => Number((0.02 + 0.01 * i).toFixed(2))));
+
+/** The models of the sections with controls: the parameters at the start, and the simulation when one depends on them. */
+const MODELS = Object.freeze({
+  // 1.1 and 1.2: the rate of the false alarms and the band; the 1,000 simulated rules depend on both
+  paths: { params: { rate: hw.FALSE_ALARMS.rate, epsilon: hw.FALSE_ALARMS.epsilon }, simulate: (p) => hw.pathsSteps(hw.DEFAULT_SEED, { rate: p.rate, epsilon: p.epsilon }) },
+  // 1.3 and 1.8: only the rate counts
+  pathsRate: { params: { rate: hw.FALSE_ALARMS.rate }, simulate: (p) => hw.pathsSteps(hw.DEFAULT_SEED, { rate: p.rate }) },
+  clt: { params: { p: hw.FALSE_ALARMS.rate } },
+  results: { params: { p: hw.FALSE_ALARMS.rate } },
+  speed: { params: { rate: hw.FALSE_ALARMS.rate, epsilon: hw.FALSE_ALARMS.epsilon } },
+  cauchy: { params: { seed: hw.DEFAULT_SEED } },
+  bytes: { params: { n: hw.BYTES_SIZES[hw.BYTES_SIZES.length - 1] } },
+  likelihood: { params: { days: 10 } },
+  // seed 0: the two addresses written by hand; the others are simulated
+  sprt: { params: { alpha: hw.SPRT_DEFAULT.alpha, beta: hw.SPRT_DEFAULT.beta, seed: 0 } },
+  campaign: { params: { rate: hw.CAMPAIGN.rate, perDay: hw.CAMPAIGN.perDay, seed: hw.DEFAULT_SEED } },
+  coverage: { params: { n: hw.COVERAGE_N } },
+  spam: { params: { cut: 6 } },
+  bvm: { params: { rate: hw.BVM.rate, seed: hw.DEFAULT_SEED } },
+});
+
+/** Whether the parameters are the ones at the start: then the page shows the results already computed by its worker. */
+const atStart = (model, params) => Object.keys(MODELS[model].params).every((k) => params[k] === MODELS[model].params[k]);
+
+/** The controls of every section, in the language of `C` (text.controls). */
+const controls = {
+  paths: (C) => [
+    { key: 'rate', kind: 'slider', values: RATES, label: C.rate },
+    { key: 'epsilon', kind: 'slider', values: EPSILONS, label: C.epsilon },
+  ],
+  pathsRate: (C) => [{ key: 'rate', kind: 'slider', values: RATES, label: C.rate }],
+  clt: (C) => [{ key: 'p', kind: 'slider', values: [0.01, 0.03, 0.1, 0.3, 0.5], label: C.bernoulliP }],
+  results: (C) => [{ key: 'p', kind: 'slider', values: [0.01, 0.03, 0.1, 0.3, 0.5], label: C.shareP }],
+  speed: (C) => [
+    { key: 'rate', kind: 'slider', values: RATES, label: C.rate },
+    { key: 'epsilon', kind: 'slider', values: EPSILONS, label: C.epsilon },
+  ],
+  cauchy: (C) => [{ kind: 'action', label: C.newSample, run: (p) => ({ ...p, seed: p.seed + 1 }) }],
+  bytes: (C) => [{ key: 'n', kind: 'choice', label: C.bytesN, options: hw.BYTES_SIZES.map((n) => [n, C.int(n)]) }],
+  likelihood: (C) => [{ key: 'days', kind: 'slider', values: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], label: C.days }],
+  sprt: (C) => [
+    { key: 'alpha', kind: 'slider', values: [...hw.SPRT_ALPHAS].sort((a, b) => b - a), label: C.alpha },
+    { key: 'beta', kind: 'slider', values: [0.05, 0.01, 0.001], label: C.beta },
+    { kind: 'action', label: C.newWalks, run: (p) => ({ ...p, seed: p.seed + 1 }) },
+    { kind: 'action', label: C.handWalks, run: (p) => ({ ...p, seed: 0 }) },
+  ],
+  campaign: (C) => [
+    { key: 'rate', kind: 'slider', values: TRUE_RATES, label: C.trueRate },
+    { key: 'perDay', kind: 'slider', values: [10, 20, 40, 100], label: C.perDay },
+    { kind: 'action', label: C.newCampaign, run: (p) => ({ ...p, seed: p.seed + 1 }) },
+  ],
+  coverage: (C) => [{ key: 'n', kind: 'slider', values: [10, 20, 40, 100, 400], label: C.coverageN }],
+  spam: (C, bins) => [{ key: 'cut', kind: 'slider', values: Array.from({ length: bins.length - 1 }, (_, i) => i + 1), label: (v) => C.threshold(bins[v].from) }],
+  bvm: (C) => [
+    { key: 'rate', kind: 'slider', values: TRUE_RATES, label: C.trueRate },
+    { kind: 'action', label: C.newSample, run: (p) => ({ ...p, seed: p.seed + 1 }) },
+  ],
+};
+
+/** The handles of the charts: lines to drag, bound to the parameters (the same values as their slider). */
+const handles = {
+  // 1.2: the rate in the middle of the band, and the two edges of the band
+  paths: (p, C) => [
+    { id: 'rate', axis: 'y', value: p.rate, values: RATES, label: C.handleRate(p.rate) },
+    { id: 'up', axis: 'y', value: p.rate + p.epsilon, values: EPSILONS.map((e) => p.rate + e), label: C.bandUp },
+    { id: 'down', axis: 'y', value: p.rate - p.epsilon, values: EPSILONS.map((e) => p.rate - e), label: C.bandDown },
+  ],
+  pathsMove: (p, id, v) => {
+    if (id === 'rate') return { ...p, rate: v };
+    const e = Math.abs(v - p.rate);
+    return { ...p, epsilon: EPSILONS.reduce((a, b) => (Math.abs(b - e) < Math.abs(a - e) ? b : a)) };
+  },
+  // 2.5: the two thresholds of Wald; dragging one changes the error it controls
+  sprt: (setup, C) => [
+    { id: 'upper', axis: 'y', value: setup.upper, values: hw.SPRT_ALPHAS.map((a) => Math.log((1 - setup.beta) / a)), label: C.block },
+    { id: 'lower', axis: 'y', value: setup.lower, values: [0.05, 0.01, 0.001].map((b) => Math.log(b / (1 - setup.alpha))), label: C.clear },
+  ],
+  sprtMove: (p, id, v) => {
+    if (id === 'upper') return { ...p, alpha: Number(((1 - p.beta) / Math.exp(v)).toPrecision(1)) };
+    return { ...p, beta: Number((Math.exp(v) * (1 - p.alpha)).toPrecision(1)) };
+  },
+  // 2.6 and 2.11: the true rate
+  trueRate: (rate, C) => [{ id: 'rate', axis: 'y', value: rate, values: TRUE_RATES, label: C.handleRate(rate) }],
+  trueRateMove: (p, id, v) => ({ ...p, rate: v }),
+  // 2.8: the threshold of the filter, between two bins of log-odds
+  spam: (cut, bins, C) => [{ id: 'cut', axis: 'x', value: cut, values: Array.from({ length: bins.length - 1 }, (_, i) => i + 1), label: C.threshold(bins[cut].from) }],
+  spamMove: (p, id, v) => ({ ...p, cut: v }),
+};
+
+/** 2.5: the walks of the chart, the two written by hand (seed 0) or two simulated addresses. */
+function sprtWalks(setup, seed) {
+  if (!seed) {
+    return [
+      { ...hw.sprtPath(setup, SPRT_EXAMPLES.legit), key: 'legit', color: 0 },
+      { ...hw.sprtPath(setup, SPRT_EXAMPLES.attacker), key: 'attacker', color: 1 },
+    ];
+  }
+  const walk = (pFail, stream) => {
+    const next = hw.generator(hw.DEFAULT_SEED, 'live', 3000000 + 1000 * seed + stream);
+    const attempts = [];
+    for (let i = 0; i < hw.SPRT_MAX_STEPS; i++) {
+      attempts.push(hw.uniform53(next) < pFail);
+      if (hw.sprtPath(setup, attempts).decision) break;
+    }
+    return hw.sprtPath(setup, attempts);
+  };
+  return [
+    { ...walk(hw.SPRT_DEFAULT.p0, 0), key: 'legit', color: 0 },
+    { ...walk(hw.SPRT_DEFAULT.p1, 1), key: 'attacker', color: 1 },
+  ];
+}
+
+/** 2.8: what the filter does with the threshold between bin cut - 1 and bin cut: spam caught and missed, legitimate messages marked and left. */
+function spamCut(bins, cut) {
+  const sum = (key, from, to) => bins.slice(from, to).reduce((a, b) => a + b[key], 0);
+  const tp = sum('spam', cut, bins.length);
+  const fn = sum('spam', 0, cut);
+  const fp = sum('ham', cut, bins.length);
+  const tn = sum('ham', 0, cut);
+  const n = tp + fn + fp + tn;
+  return { threshold: bins[cut].from, tp, fn, fp, tn, accuracy: (tp + tn) / n, precision: tp + fp ? tp / (tp + fp) : 1, recall: tp + fn ? tp / (tp + fn) : 1 };
+}
+
+return { SECTIONS, tocEntries, DEFAULT_PARAMS, paramsKey, parseParamsKey, pParts, pctLabel, ALARM_CATEGORIES, alarmIcons, ALARM_TRY_DEFAULT, alarmTry, alarmChains, networkRows, networkChart, NETWORK_TRY_DEFAULT, NETWORK_LAYOUT, NETWORK_EDGES, NETWORK_VIEW, MAP_LAYOUT, MAP_VIEW, diagramHit, SPRT_EXAMPLES, sprtChart, SPRT_TRY_DEFAULT, sprtPosterior, campaignFacts, campaignChart, densityChart, BELIEF_TRY_DEFAULT, beliefCurves, moreEmails, PRIOR_TRY_DEFAULT, PRIOR_DATA, priorData, coverageChart, logOddsChart, SPAM_EXAMPLE, SPAM_BASES, spamPrior, KDD_TRY_DEFAULT, outsideChart, pathsChart, afterChart, mseChart, SEQUENCE_TRY_DEFAULT, SEQUENCE_TABLE_N, sequenceTableN, sequenceChart, cltChart, CLT_TRY_DEFAULT, CLT_TRY_SIZES, CLT_TRY_REPS, cltTry, HASH_TRY_DEFAULT, HASH_FACTORS, hashCount, hashMore, hashChart, cauchyChart, bytesChart, speedChart, bvmChart, bvmDistanceChart, resultsRows, resultsChart, rootChart, SCALE_TRY_DEFAULT, scaleCharts, BURST_TRY_DEFAULT, BURST_N, BURST_STRIP, stripChart, burstChart, DISCOVERY_TRY_DEFAULT, DISCOVERY_CATEGORIES, discoveryIcons, likelihoodChart, legends, tips, LINKED_TABLES, links, testRows, testCells, scheduleFrameJob, reveal, MODELS, atStart, controls, handles, sprtWalks, spamCut };
 })();
 
 var texts$ = (function () {
@@ -1238,7 +2875,7 @@ const it = {
     intro: [
       'La consegna ha due parti. La prima chiede di spiegare le differenze fra i principali modi di convergenza della teoria della probabilità (in probabilità, quasi certa, in media quadratica, in distribuzione), il loro ruolo nella legge dei grandi numeri, nel teorema del limite centrale e in altri risultati importanti della statistica, e perché nei teoremi di convergenza compare così spesso √n, in relazione all’additività della varianza e al ruolo dell’indipendenza, in probabilità e nell’inferenza. La seconda chiede la probabilità condizionata, in probabilità e in statistica, il teorema di Bayes e il ruolo e il rapporto delle tre componenti dell’inferenza bayesiana, prior, verosimiglianza e posterior: come il teorema produce i posterior, perché questo aggiornamento è centrale, ed esempi d’uso di prior e verosimiglianze con applicazioni, vantaggi, limiti e influenza sulle conclusioni.',
       'La pagina segue quest’ordine. La sezione 1 definisce e mostra i quattro modi nell’ordine del testo (da 1.1 a 1.4), li lega in una mappa delle implicazioni (1.5), ne riassume il ruolo nella legge dei grandi numeri e nel limite centrale (1.6) e in altri risultati della statistica: la consistenza degli stimatori, il teorema di Slutsky e il metodo delta, Glivenko-Cantelli, la normalità dello stimatore di massima verosimiglianza (1.7). Poi spiega √n: la varianza che si somma grazie all’indipendenza (1.8), che cosa succede senza (1.9), quando √n non basta (1.10) e quanto in fretta si converge (1.11). La sezione 2 parte dalla probabilità condizionata, con la catena di un attacco, l’indipendenza condizionata e la differenza fra un p-value e la probabilità di H0 (2.1); presenta il teorema di Bayes e le sue tre componenti (2.2); le mette al lavoro su esempi di sicurezza informatica, dall’allarme di un IDS a due filtri naive Bayes su dati veri (da 2.3 a 2.9); ne discute vantaggi, limiti e influenza del prior sulle conclusioni (2.10) e chiude con il posterior che converge, il ponte fra le due parti (2.11). Seguono le verifiche dei calcoli, il riepilogo dei test, il contesto storico e le conclusioni.',
-      'Dodici riquadri «Prova» lasciano mettere le mani sui numeri: le traiettorie dei controesempi, il limite centrale dal vivo, le collisioni di hash, la mappa delle implicazioni, la scala giusta per n, gli allarmi a raffica, il p-value contro P(H0 | dati), un allarme da regolare, gli indizi di una rete, un indirizzo da bloccare, una credenza che si aggiorna a ogni e-mail e un prior da disegnare. Tutti i numeri sono calcolati nel browser, e il programma scaricabile stampa gli stessi.',
+      'Dodici riquadri «Prova» lasciano mettere le mani sui numeri: le traiettorie dei controesempi, il limite centrale dal vivo, le collisioni di hash, la mappa delle implicazioni, la scala giusta per n, gli allarmi a raffica, il p-value contro P(H0 | dati), un allarme da regolare, gli indizi di una rete, un indirizzo da bloccare, una credenza che si aggiorna a ogni e-mail e un prior da disegnare. Tutti i numeri sono calcolati nel browser, e il programma scaricabile stampa gli stessi. Anche i grafici delle sezioni si possono muovere: hanno i loro comandi, linee da trascinare, animazioni e lo zoom (Ctrl + rotella, oppure un rettangolo trascinato); grafici e tabelle seguono i comandi, mentre i paragrafi raccontano i valori iniziali.',
     ],
     originalTitle: 'Il testo originale della consegna',
     originalNote: 'Com’è stato assegnato, in inglese; le righe spezzate dell’originale sono unite in paragrafi.',
@@ -1757,6 +3394,31 @@ const it = {
       ];
     },
   },
+  controls: {
+    rate: (v) => `Tasso dei falsi allarmi p = ${IT.pct(v, 0)}`,
+    epsilon: (v) => `Banda ε = ${IT.num(v * 100, 1)} ${v === 0.01 ? 'punto' : 'punti'}`,
+    bernoulliP: (v) => `p della Bernoulli = ${IT.pct(v, 0)}`,
+    shareP: (v) => `Quota vera p = ${IT.pct(v, 0)}`,
+    days: (v) => (v === 1 ? 'Dati: il primo giorno' : `Dati: i primi ${IT.int(v)} giorni`),
+    alpha: (v) => `α = ${IT.plain(v)}: il rischio di bloccare un utente`,
+    beta: (v) => `β = ${IT.plain(v)}: il rischio di liberare un attaccante`,
+    trueRate: (v) => `Tasso vero dei clic = ${IT.pct(v, 0)}`,
+    perDay: (v) => `E-mail al giorno: ${IT.int(v)}`,
+    coverageN: (v) => `n = ${IT.int(v)} e-mail`,
+    bytesN: 'Connessioni per media',
+    int: (v) => IT.int(v),
+    newSample: 'Nuovo campione',
+    newWalks: 'Due indirizzi simulati',
+    handWalks: 'I due esempi scritti a mano',
+    newCampaign: 'Nuova campagna',
+    handleRate: (v) => `p = ${IT.pct(v, 0)}`,
+    bandUp: 'p + ε',
+    bandDown: 'p - ε',
+    block: 'blocca',
+    clear: 'libera',
+    threshold: (v) => `soglia ${IT.num(v, 0)}`,
+    spam: (r) => `Con la soglia a log-odds ${IT.num(r.threshold, 0)}: ${IT.int(r.tp)} spam presi e ${IT.int(r.fn)} persi, ${IT.int(r.fp)} ${r.fp === 1 ? 'messaggio legittimo segnato' : 'messaggi legittimi segnati'} come spam; accuratezza ${IT.pct(r.accuracy, 1)}, precisione ${IT.pct(r.precision, 1)}, recall ${IT.pct(r.recall, 1)}.`,
+  },
   checks: {
     intro: 'Ogni numero della pagina è controllato contro un riferimento indipendente: le funzioni speciali contro SciPy 1.17.1 e mpmath a 50 cifre; l’allarme e la rete contro un calcolo esatto con le frazioni; il test di Wald, le coperture, le distanze esatte, i due filtri contro un’implementazione in Python scritta a parte; le simulazioni contro lo stesso Python con una sua copia dei generatori, che con lo stesso seme deve dare gli stessi numeri; i generatori contro il loro codice C di riferimento.',
     summary: (ok, total) => `${ok} verifiche superate su ${total}`,
@@ -1895,6 +3557,7 @@ const it = {
     falseDiscovery: 'Rifiuti sbagliati',
     trueNull: 'Nulle vere lasciate stare',
     day1: 'Il primo giorno',
+    afterDays: (d) => (d === 1 ? 'Dopo un giorno' : `Dopo ${IT.int(d)} giorni`),
     days10: 'Dieci giorni',
   },
   tips: {
@@ -1931,7 +3594,7 @@ const it = {
     root: (n, count, share) => [`n = ${IT.int(n)}`, count ? `conteggio ${IT.num(count[0], 2)} (σ √n = ${IT.num(count[1], 2)})` : null, share ? `quota ${IT.num(share[0], 5)} (σ/√n = ${IT.num(share[1], 5)})` : null].filter(Boolean).join(' · '),
     burst: (n, ind, cor) => [`n = ${IT.int(n)}`, ind === null ? null : `indipendenti ${IT.num(ind, 5)}`, cor === null ? null : `a raffiche ${IT.num(cor, 5)}`].filter(Boolean).join(' · '),
     discovery: (k, count) => `${it.legends[['trueDiscovery', 'missedEffect', 'falseDiscovery', 'trueNull'][k]]}: ${IT.int(count)} test`,
-    likelihood: (x, a, b) => [`Quota ${IT.pct(x, 1)}`, a === null ? null : `primo giorno ${IT.num(a, 3)}`, b === null ? null : `dieci giorni ${IT.num(b, 3)}`].filter(Boolean).join(' · '),
+    likelihood: (x, a, b, days = 10) => [`Quota ${IT.pct(x, 1)}`, a === null ? null : `primo giorno ${IT.num(a, 3)}`, b === null ? null : `${{ 1: 'un giorno', 10: 'dieci giorni' }[days] || `${IT.int(days)} giorni`} ${IT.num(b, 3)}`].filter(Boolean).join(' · '),
   },
   names: {
     methods: { wald: 'Wald', wilson: 'Wilson', clopper: 'Clopper-Pearson', jeffreys: 'Jeffreys' },
@@ -2018,7 +3681,7 @@ const en = {
     intro: [
       'The assignment has two parts. The first asks to explain the differences between the main modes of convergence of probability theory (in probability, almost sure, in mean square, in distribution), their role in the law of large numbers, in the central limit theorem and in other important results of statistics, and why √n appears so often in convergence theorems, in relation to the additivity of variance and to the role of independence, in probability and in inference. The second asks for conditional probability, in probability and in statistics, Bayes’ theorem and the role and relationship of the three components of Bayesian inference, prior, likelihood and posterior: how the theorem produces the posteriors, why this updating is central, and examples of the use of priors and likelihoods with their applications, advantages, limitations and influence on the conclusions.',
       'The page follows this order. Section 1 defines and shows the four modes in the order of the text (1.1 to 1.4), connects them in a map of implications (1.5), sums up their role in the law of large numbers and in the central limit (1.6) and in other results of statistics: the consistency of estimators, Slutsky’s theorem and the delta method, Glivenko-Cantelli, the normality of the maximum likelihood estimator (1.7). Then it explains √n: the variance that adds up thanks to independence (1.8), what happens without it (1.9), when √n is not enough (1.10) and how fast convergence is (1.11). Section 2 starts from conditional probability, with the chain of an attack, conditional independence and the difference between a p-value and the probability of H0 (2.1); it presents Bayes’ theorem and its three components (2.2); it puts them to work on cybersecurity examples, from the alarm of an IDS to two naive Bayes filters on real data (2.3 to 2.9); it discusses the advantages, the limitations and the influence of the prior on the conclusions (2.10) and closes with the posterior that converges, the bridge between the two parts (2.11). Then come the checks of the computations, the summary of the tests, the historical context and the conclusions.',
-      'Twelve "Try it" boxes let you get your hands on the numbers: the paths of the counterexamples, the central limit live, hash collisions, the map of implications, the right scale for n, alarms in bursts, the p-value against P(H0 | data), an alarm to tune, the clues of a network, an address to block, a belief that updates at every e-mail and a prior to draw. Every number is computed in the browser, and the downloadable program prints the same ones.',
+      'Twelve "Try it" boxes let you get your hands on the numbers: the paths of the counterexamples, the central limit live, hash collisions, the map of implications, the right scale for n, alarms in bursts, the p-value against P(H0 | data), an alarm to tune, the clues of a network, an address to block, a belief that updates at every e-mail and a prior to draw. Every number is computed in the browser, and the downloadable program prints the same ones. The charts of the sections move too: they have their own controls, lines to drag, animations and zoom (ctrl + wheel, or a rectangle dragged); charts and tables follow the controls, while the paragraphs tell the starting values.',
     ],
     originalTitle: 'The original text of the assignment',
     originalNote: 'As it was assigned, in English; the broken lines of the original are joined into paragraphs.',
@@ -2537,6 +4200,31 @@ const en = {
       ];
     },
   },
+  controls: {
+    rate: (v) => `False-alarm rate p = ${EN.pct(v, 0)}`,
+    epsilon: (v) => `Band ε = ${EN.num(v * 100, 1)} ${v === 0.01 ? 'point' : 'points'}`,
+    bernoulliP: (v) => `p of the Bernoulli = ${EN.pct(v, 0)}`,
+    shareP: (v) => `True share p = ${EN.pct(v, 0)}`,
+    days: (v) => (v === 1 ? 'Data: the first day' : `Data: the first ${EN.int(v)} days`),
+    alpha: (v) => `α = ${EN.plain(v)}: the risk of blocking a user`,
+    beta: (v) => `β = ${EN.plain(v)}: the risk of clearing an attacker`,
+    trueRate: (v) => `True click rate = ${EN.pct(v, 0)}`,
+    perDay: (v) => `E-mails per day: ${EN.int(v)}`,
+    coverageN: (v) => `n = ${EN.int(v)} e-mails`,
+    bytesN: 'Connections per mean',
+    int: (v) => EN.int(v),
+    newSample: 'New sample',
+    newWalks: 'Two simulated addresses',
+    handWalks: 'The two examples written by hand',
+    newCampaign: 'New campaign',
+    handleRate: (v) => `p = ${EN.pct(v, 0)}`,
+    bandUp: 'p + ε',
+    bandDown: 'p - ε',
+    block: 'block',
+    clear: 'clear',
+    threshold: (v) => `threshold ${EN.num(v, 0)}`,
+    spam: (r) => `With the threshold at log-odds ${EN.num(r.threshold, 0)}: ${EN.int(r.tp)} spam caught and ${EN.int(r.fn)} missed, ${EN.int(r.fp)} legitimate ${r.fp === 1 ? 'message' : 'messages'} marked as spam; accuracy ${EN.pct(r.accuracy, 1)}, precision ${EN.pct(r.precision, 1)}, recall ${EN.pct(r.recall, 1)}.`,
+  },
   checks: {
     intro: 'Every number of the page is checked against an independent reference: the special functions against SciPy 1.17.1 and mpmath at 50 digits; the alarm and the network against an exact computation with fractions; Wald’s test, the coverages, the exact distances and the two filters against an implementation in Python written apart; the simulations against the same Python with its own copy of the generators, which with the same seed must give the same numbers; the generators against their reference C code.',
     summary: (ok, total) => `${ok} of ${total} checks passed`,
@@ -2675,6 +4363,7 @@ const en = {
     falseDiscovery: 'Wrong rejections',
     trueNull: 'True nulls left alone',
     day1: 'The first day',
+    afterDays: (d) => (d === 1 ? 'After one day' : `After ${EN.int(d)} days`),
     days10: 'Ten days',
   },
   tips: {
@@ -2710,7 +4399,7 @@ const en = {
     root: (n, count, share) => [`n = ${EN.int(n)}`, count ? `count ${EN.num(count[0], 2)} (σ √n = ${EN.num(count[1], 2)})` : null, share ? `share ${EN.num(share[0], 5)} (σ/√n = ${EN.num(share[1], 5)})` : null].filter(Boolean).join(' · '),
     burst: (n, ind, cor) => [`n = ${EN.int(n)}`, ind === null ? null : `independent ${EN.num(ind, 5)}`, cor === null ? null : `in bursts ${EN.num(cor, 5)}`].filter(Boolean).join(' · '),
     discovery: (k, count) => `${en.legends[['trueDiscovery', 'missedEffect', 'falseDiscovery', 'trueNull'][k]]}: ${EN.int(count)} tests`,
-    likelihood: (x, a, b) => [`Share ${EN.pct(x, 1)}`, a === null ? null : `first day ${EN.num(a, 3)}`, b === null ? null : `ten days ${EN.num(b, 3)}`].filter(Boolean).join(' · '),
+    likelihood: (x, a, b, days = 10) => [`Share ${EN.pct(x, 1)}`, a === null ? null : `first day ${EN.num(a, 3)}`, b === null ? null : `${{ 1: 'one day', 10: 'ten days' }[days] || `${EN.int(days)} days`} ${EN.num(b, 3)}`].filter(Boolean).join(' · '),
   },
   names: {
     methods: { wald: 'Wald', wilson: 'Wilson', clopper: 'Clopper-Pearson', jeffreys: 'Jeffreys' },
@@ -2754,6 +4443,7 @@ return { originalAssignment, HW7_TEXTS };
 const hw = Homework7;
 const view = view$;
 const { HW7_TEXTS, originalAssignment } = texts$;
+const kit = kitDom$;
 
 const HEADINGS = ['h2', 'h3', 'h4'];
 const LANGUAGES = ['it', 'en'];
@@ -2815,6 +4505,8 @@ const state = {
   message: null,
   base: 'train',
   kdd: { ...view.KDD_TRY_DEFAULT },
+  // the parameters of the sections with controls, by section
+  params: {},
 };
 let text = HW7_TEXTS[state.lang];
 const regions = {};
@@ -2875,41 +4567,31 @@ const tryBox = (id, label, ...children) => h('div', { class: 'try' }, title(id, 
 const message = (error) => (error instanceof Error ? error.message : String(error));
 const pending = () => (computation.error ? h('p', { class: 'note', text: text.ui.error(computation.error) }) : h('p', { class: 'note pending', role: 'status', text: text.ui.computing }));
 
-// The width of every chart comes from the ResizeObserver, measured after
-// layout; the height is set at once, the drawing happens a few
-// milliseconds per frame.
-const charts = new Map(); // canvas -> { draw, data, width, detach, link, tip, hidden }
+// the models of the sections with controls, made again at every drawing of the page; their parameters survive it
+let sectionModels = [];
 
-// what a chart draws: its data, without the parts hidden from the legend
-const shownData = (chart) => (chart.hidden.length ? { ...chart.data, hidden: chart.hidden } : chart.data);
-
-const resizer = new ResizeObserver((entries) => {
-  for (const entry of entries) {
-    const canvas = entry.target;
-    const chart = charts.get(canvas);
-    const width = Math.round(entry.contentRect.width);
-    if (!chart || width <= 0 || width === chart.width) continue;
-    chart.width = width;
-    canvas.style.height = `${hw.chartHeight(chart.draw, shownData(chart), width)}px`;
-    view.scheduleFrameJob(() => {
-      if (charts.get(canvas) === chart && chart.width === width) chart.draw(canvas, { ...shownData(chart), width }, palette());
-    });
-  }
-});
-
-/** Ties the label under the pointer to a chart: it describes what is on screen, and leaves out the hidden parts. */
-function attachTip(canvas, chart) {
-  if (chart.detach) chart.detach();
-  const tip = chart.tip;
-  chart.detach = tip ? hw.attachChartTooltip(canvas, { draw: chart.draw, data: shownData(chart), describe: (hit) => tip(hit, chart.hidden), link: chart.link }) : null;
+/**
+ * The model of a section with controls (view.MODELS[key], chartkit): its
+ * parameters survive a change of language; `sim` is the result already
+ * computed for the starting parameters.
+ */
+function sectionModel(name, key, sim = null) {
+  const start = view.MODELS[key].params;
+  const model = kit.createModel({ ...view.MODELS[key], params: state.params[name] || start, runner: hw.runStepsAsync });
+  if (sim) model.provide(sim, start);
+  // other parameters, kept from before: their simulation starts now
+  if (state.params[name]) model.setParams(state.params[name]);
+  model.subscribe(() => {
+    state.params[name] = model.get().params;
+  });
+  sectionModels.push(model);
+  return model;
 }
 
-/** Draws a chart again at its width, with its data and hidden parts. */
-function redraw(canvas, chart) {
-  if (chart.width > 0) {
-    canvas.style.height = `${hw.chartHeight(chart.draw, shownData(chart), chart.width)}px`;
-    chart.draw(canvas, { ...shownData(chart), width: chart.width }, palette());
-  }
+/** What follows a model: update(state) now and after every change (charts updated in place, tables built again). */
+function follow(model, update) {
+  update(model.get());
+  model.subscribe(() => update(model.get()));
 }
 
 // what the reader hid in the legends of the charts that are built again (a box that changes)
@@ -2919,106 +4601,29 @@ const keep = (name) => {
   return kept[name];
 };
 
-/** The parts of the drawing covered by the hidden items of a legend. */
-const partsOf = (items, hidden) => items.flatMap((item, i) => (hidden.has(i) ? item.parts || [] : []));
+const { partsOf, hideParts } = kit;
 
-/**
- * The legend of a chart: { label, color? | paletteKey?, dashed?, box?,
- * parts }. Every item is a button: pressed (as the page opens) its parts
- * are on screen, released they are hidden; onChange(parts) receives the
- * hidden parts after every press. `hidden`, the set of the hidden items,
- * outlives the legend when its chart is built again.
- */
-function legend(items, onChange = null, hidden = new Set()) {
-  const pal = palette();
-  return h(
-    'ul',
-    { class: 'series-legend' },
-    items.map((item, i) => {
-      const color = item.paletteKey ? pal[item.paletteKey] : pal.series[(item.color ?? i) % pal.series.length];
-      let swatch = null;
-      if (item.box) swatch = 'is-box';
-      else if (item.dashed) swatch = 'is-dashed';
-      const button = h(
-        'button',
-        {
-          type: 'button',
-          'aria-pressed': String(!hidden.has(i)),
-          class: hidden.has(i) ? 'is-off' : null,
-          onclick: () => {
-            if (hidden.has(i)) hidden.delete(i);
-            else hidden.add(i);
-            button.setAttribute('aria-pressed', String(!hidden.has(i)));
-            button.classList.toggle('is-off', hidden.has(i));
-            if (onChange) onChange(partsOf(items, hidden));
-          },
-        },
-        h('span', { class: swatch, 'aria-hidden': 'true', style: { borderColor: color, backgroundColor: item.box ? color : 'transparent' } }),
-        item.label,
-      );
-      return h('li', null, button);
-    }),
-  );
-}
-
-/** Hides the cells, columns and rows of a table that belong to hidden parts (data-part), and shows the others. */
-function hideParts(tableEl, parts) {
-  if (!tableEl) return;
-  for (const el of tableEl.querySelectorAll('[data-part]')) el.hidden = parts.includes(el.dataset.part);
-}
-
-/** Hides parts of a chart. */
+/** Hides parts of a chart (a legend shared by several charts). */
 function setHidden(fig, parts) {
-  const canvas = fig.querySelector('canvas.chart');
-  const chart = charts.get(canvas);
-  if (!chart) return;
-  chart.hidden = parts;
-  attachTip(canvas, chart);
-  redraw(canvas, chart);
+  fig.kit.setHidden(parts);
 }
 
 /**
- * A chart with its legend (`items`) and its label under the pointer.
- * `table` (an id of view.LINKED_TABLES) is the table tied to it: the legend
- * hides its parts there too. `keep` is the set of hidden items that
- * outlives the chart.
+ * A chart (chartkit/kitDom.js): drawn by homework7.js, with its legend
+ * (`items`), its label under the pointer, the table tied to it (`table`, an
+ * id of view.LINKED_TABLES: the legend hides its parts there too) and zoom
+ * on every chart with continuous axes; `animation` ({ frames, at(t), ms })
+ * plays it step by step, `handles` ({ items, onChange }) are the lines to
+ * drag, `pending` says that a simulation is running. `keep` is the set of
+ * hidden items that outlives the chart.
  */
-function figure(label, draw, data, { wide = true, tip = null, items = null, note = null, link = null, table = null, keep: kept = null } = {}) {
-  const canvas = h('canvas', { class: 'chart', role: 'img', 'aria-label': label });
-  const hidden = kept || new Set();
-  const chart = { draw, data, width: -1, detach: null, link, tip, hidden: items ? partsOf(items, hidden) : [] };
-  const fig = h(
-    'figure',
-    { class: wide ? 'figure wide' : 'figure' },
-    canvas,
-    items &&
-      legend(
-        items,
-        (parts) => {
-          setHidden(fig, parts);
-          if (table) hideParts(document.getElementById(table), parts);
-        },
-        hidden,
-      ),
-    note && h('p', { class: 'figure-note', text: note }),
-    h('figcaption', { text: label }),
-  );
-  attachTip(canvas, chart);
-  charts.set(canvas, chart);
-  resizer.observe(canvas);
-  // the table may be built after the chart: hide its parts once both are on the page
-  if (table && chart.hidden.length) requestAnimationFrame(() => hideParts(document.getElementById(table), chart.hidden));
-  return fig;
+function figure(label, draw, data, { wide = true, tip = null, items = null, note = null, link = null, table = null, keep: hiddenItems = null, animation = null, handles = null, pending = false } = {}) {
+  return kit.createFigure({ label, draw, data, palette: palette(), lib: hw, schedule: view.scheduleFrameJob, lang: state.lang, tip, items, note, link, table, keep: hiddenItems, wide, animation, handles, pending });
 }
 
 /** Replaces the content of a region, releasing the charts it contained and their labels. */
 function fill(region, ...nodes) {
-  for (const canvas of region.querySelectorAll('canvas.chart')) {
-    resizer.unobserve(canvas);
-    const chart = charts.get(canvas);
-    if (chart && chart.detach) chart.detach();
-    charts.delete(canvas);
-  }
+  kit.releaseFigures(region);
   for (const drawing of region.querySelectorAll('svg.diagram')) {
     const detach = drawingLabels.get(drawing);
     if (detach) detach();
@@ -3100,19 +4705,11 @@ function live(build) {
   return { region, update };
 }
 
-/** Draws a chart again in place, with new data, label under the pointer and caption, without replacing its canvas (no flicker while a slider moves); the hidden parts stay hidden. */
+/** Draws a chart again in place, with new data, label under the pointer and caption, without replacing its canvas (no flicker while a slider moves); the hidden parts and the zoom stay. */
 function refresh(fig, data, tip, label = null) {
-  const canvas = fig.querySelector('canvas.chart');
-  const chart = charts.get(canvas);
-  if (!chart) return;
-  chart.data = data;
-  chart.tip = tip;
-  attachTip(canvas, chart);
-  if (label !== null) {
-    canvas.setAttribute('aria-label', label);
-    fig.querySelector('figcaption').textContent = label;
-  }
-  redraw(canvas, chart);
+  fig.kit.setData(data);
+  fig.kit.setTip(tip);
+  if (label !== null) fig.kit.setLabel(label);
 }
 
 /** Gives the buttons of a legend new labels (same items, same order). */
@@ -3179,20 +4776,37 @@ function probabilityBlock() {
   return [
     title('hw7-probability', 1, text.sections.probability),
     paras(P.paras(hw.deviationTable())),
-    whenComputed((s) => (!s ? pending() : [
-      h('div', { class: 'charts' }, figure(P.chartTitle, hw.drawLineChart, view.outsideChart(s.paths, F.decimal), { tip: view.tips.outside(s.paths, text.tips), items, link: view.links.outside, table: view.LINKED_TABLES.outside, keep: keep('outside') })),
-      dataTable({
-        id: view.LINKED_TABLES.outside,
-        caption: P.tableTitle,
-        columns: [
-          { key: 'n', label: P.cols.n },
-          { key: 'simulated', label: P.cols.simulated, num: true, part: part(items, 0) },
-          { key: 'exact', label: P.cols.exact, num: true, part: part(items, 1) },
-          { key: 'chebyshev', label: P.cols.chebyshev, num: true, part: part(items, 2) },
-        ],
-        rows: s.paths.checks.map((c) => ({ cells: { n: F.int(c.n), simulated: F.pct(c.outside), exact: F.pct(c.exactOutside, 2), chebyshev: F.pct(hw.deviationBounds(c.n, s.paths.rate, s.paths.epsilon).chebyshev) } })),
-      }),
-    ])),
+    whenComputed((s) => {
+      if (!s) return pending();
+      const model = sectionModel('probability', 'paths', s.paths);
+      const simOf = (m) => m.sim || s.paths;
+      const fig = figure(P.chartTitle, hw.drawLineChart, view.outsideChart(simOf(model.get()), F.decimal), { items, link: view.links.outside, table: view.LINKED_TABLES.outside, keep: keep('outside') });
+      const tableRegion = h('div');
+      follow(model, (m) => {
+        const paths = simOf(m);
+        const data = view.outsideChart(paths, F.decimal);
+        fig.kit.setData(data);
+        fig.kit.setTip(view.tips.outside(paths, text.tips));
+        fig.kit.setAnimation(view.reveal(data));
+        fig.kit.setPending(m.pending);
+        fill(
+          tableRegion,
+          dataTable({
+            id: view.LINKED_TABLES.outside,
+            caption: P.tableTitle,
+            columns: [
+              { key: 'n', label: P.cols.n },
+              { key: 'simulated', label: P.cols.simulated, num: true, part: part(items, 0) },
+              { key: 'exact', label: P.cols.exact, num: true, part: part(items, 1) },
+              { key: 'chebyshev', label: P.cols.chebyshev, num: true, part: part(items, 2) },
+            ],
+            rows: paths.checks.map((c) => ({ cells: { n: F.int(c.n), simulated: F.pct(c.outside), exact: F.pct(c.exactOutside, 2), chebyshev: F.pct(hw.deviationBounds(c.n, paths.rate, paths.epsilon).chebyshev) } })),
+          }),
+        );
+        hideParts(tableRegion.querySelector('table'), partsOf(items, keep('outside')));
+      });
+      return [kit.modelControls(model, view.controls.paths(text.controls), state.lang), h('div', { class: 'charts' }, fig), tableRegion];
+    }),
     h('p', { text: P.after }),
   ];
 }
@@ -3204,25 +4818,47 @@ function almostBlock() {
   const afterItems = view.legends.after(text.legends);
   return [
     title('hw7-almost', 1, text.sections.almost),
-    whenComputed((s) => (!s ? pending() : [
-      paras(A.paras(s.paths)),
-      h(
-        'div',
-        { class: 'charts' },
-        figure(A.chartTitle, hw.drawLineChart, view.pathsChart(s.paths, F.decimal), { tip: view.tips.paths(s.paths, text.tips), items: pathsItems, keep: keep('paths') }),
-        figure(A.chart2Title, hw.drawLineChart, view.afterChart(s.paths, F.decimal), { tip: view.tips.after(s.paths, text.tips), items: afterItems, link: view.links.after, table: view.LINKED_TABLES.after, keep: keep('after') }),
-      ),
-      dataTable({
-        id: view.LINKED_TABLES.after,
-        caption: A.tableTitle,
-        columns: [
-          { key: 'n', label: A.cols.n },
-          { key: 'outside', label: A.cols.outside, num: true, part: part(afterItems, 0) },
-          { key: 'after', label: A.cols.after, num: true, part: part(afterItems, 1) },
-        ],
-        rows: s.paths.checks.map((c) => ({ cells: { n: F.int(c.n), outside: F.pct(c.outside), after: F.pct(c.after) } })),
-      }),
-    ])),
+    whenComputed((s) => {
+      if (!s) return pending();
+      const model = sectionModel('almost', 'paths', s.paths);
+      const simOf = (m) => m.sim || s.paths;
+      // the band follows the controls at once, the paths when their simulation arrives
+      const pathsOf = (m) => view.pathsChart({ ...simOf(m), rate: m.params.rate, epsilon: m.params.epsilon }, F.decimal);
+      const moveHandle = (id, v) => model.setParams(view.handles.pathsMove(model.get().params, id, v));
+      const first = model.get();
+      const pathsFig = figure(A.chartTitle, hw.drawLineChart, pathsOf(first), { items: pathsItems, keep: keep('paths'), handles: { items: view.handles.paths(first.params, text.controls), onChange: moveHandle } });
+      const afterFig = figure(A.chart2Title, hw.drawLineChart, view.afterChart(simOf(first), F.decimal), { items: afterItems, link: view.links.after, table: view.LINKED_TABLES.after, keep: keep('after') });
+      const tableRegion = h('div');
+      follow(model, (m) => {
+        const paths = simOf(m);
+        const pathsData = pathsOf(m);
+        const after = view.afterChart(paths, F.decimal);
+        pathsFig.kit.setData(pathsData);
+        pathsFig.kit.setTip(view.tips.paths(paths, text.tips));
+        pathsFig.kit.setAnimation(view.reveal(pathsData, 80));
+        pathsFig.kit.setHandles({ items: view.handles.paths(m.params, text.controls), onChange: moveHandle });
+        afterFig.kit.setData(after);
+        afterFig.kit.setTip(view.tips.after(paths, text.tips));
+        afterFig.kit.setAnimation(view.reveal(after));
+        pathsFig.kit.setPending(m.pending);
+        afterFig.kit.setPending(m.pending);
+        fill(
+          tableRegion,
+          dataTable({
+            id: view.LINKED_TABLES.after,
+            caption: A.tableTitle,
+            columns: [
+              { key: 'n', label: A.cols.n },
+              { key: 'outside', label: A.cols.outside, num: true, part: part(afterItems, 0) },
+              { key: 'after', label: A.cols.after, num: true, part: part(afterItems, 1) },
+            ],
+            rows: paths.checks.map((c) => ({ cells: { n: F.int(c.n), outside: F.pct(c.outside), after: F.pct(c.after) } })),
+          }),
+        );
+        hideParts(tableRegion.querySelector('table'), partsOf(afterItems, keep('after')));
+      });
+      return [paras(A.paras(s.paths)), kit.modelControls(model, view.controls.paths(text.controls), state.lang), h('div', { class: 'charts' }, pathsFig, afterFig), tableRegion];
+    }),
     h('p', { text: A.after }),
   ];
 }
@@ -3296,20 +4932,36 @@ function l2Block() {
   const items = view.legends.mse(text.legends);
   return [
     title('hw7-l2', 1, text.sections.l2),
-    whenComputed((s) => (!s ? pending() : [
-      paras(Q.paras(s.paths)),
-      h('div', { class: 'charts' }, figure(Q.chartTitle, hw.drawLineChart, view.mseChart(s.paths, F.decimal), { tip: view.tips.mse(s.paths, text.tips), items, link: view.links.mse, table: view.LINKED_TABLES.mse, keep: keep('mse') })),
-      dataTable({
-        id: view.LINKED_TABLES.mse,
-        caption: Q.tableTitle,
-        columns: [
-          { key: 'n', label: Q.cols.n },
-          { key: 'simulated', label: Q.cols.simulated, num: true, part: part(items, 0) },
-          { key: 'exact', label: Q.cols.exact, num: true, part: part(items, 1) },
-        ],
-        rows: s.paths.checks.map((c) => ({ cells: { n: F.int(c.n), simulated: F.sci(c.mse, 2), exact: F.sci(c.exactMse, 2) } })),
-      }),
-    ])),
+    whenComputed((s) => {
+      if (!s) return pending();
+      const model = sectionModel('l2', 'pathsRate', s.paths);
+      const simOf = (m) => m.sim || s.paths;
+      const fig = figure(Q.chartTitle, hw.drawLineChart, view.mseChart(simOf(model.get()), F.decimal), { items, link: view.links.mse, table: view.LINKED_TABLES.mse, keep: keep('mse') });
+      const tableRegion = h('div');
+      follow(model, (m) => {
+        const paths = simOf(m);
+        const data = view.mseChart(paths, F.decimal);
+        fig.kit.setData(data);
+        fig.kit.setTip(view.tips.mse(paths, text.tips));
+        fig.kit.setAnimation(view.reveal(data));
+        fig.kit.setPending(m.pending);
+        fill(
+          tableRegion,
+          dataTable({
+            id: view.LINKED_TABLES.mse,
+            caption: Q.tableTitle,
+            columns: [
+              { key: 'n', label: Q.cols.n },
+              { key: 'simulated', label: Q.cols.simulated, num: true, part: part(items, 0) },
+              { key: 'exact', label: Q.cols.exact, num: true, part: part(items, 1) },
+            ],
+            rows: paths.checks.map((c) => ({ cells: { n: F.int(c.n), simulated: F.sci(c.mse, 2), exact: F.sci(c.exactMse, 2) } })),
+          }),
+        );
+        hideParts(tableRegion.querySelector('table'), partsOf(items, keep('mse')));
+      });
+      return [paras(Q.paras(s.paths)), kit.modelControls(model, view.controls.pathsRate(text.controls), state.lang), h('div', { class: 'charts' }, fig), tableRegion];
+    }),
     dataTable({
       caption: Q.counterTitle,
       columns: [
@@ -3334,23 +4986,38 @@ function distributionBlock() {
   const items = view.legends.clt(text.legends);
   return [
     title('hw7-distribution', 1, text.sections.distribution),
-    whenComputed((s) => (!s ? pending() : [
-      paras(D.paras(s.clt.rows)),
-      h('div', { class: 'charts' }, figure(D.chartTitle, hw.drawLineChart, view.cltChart(s.clt.rows, F.decimal), { tip: view.tips.clt(s.clt.rows, text.tips), items, link: view.links.clt, table: view.LINKED_TABLES.clt, keep: keep('clt') })),
-      dataTable({
-        id: view.LINKED_TABLES.clt,
-        caption: D.tableTitle,
-        columns: [
-          { key: 'n', label: D.cols.n },
-          { key: 'bernoulli', label: D.cols.bernoulli, num: true, part: part(items, 0) },
-          { key: 'bernoulliBound', label: D.cols.bernoulliBound, num: true, part: part(items, 1) },
-          { key: 'exponential', label: D.cols.exponential, num: true, part: part(items, 2) },
-          { key: 'exponentialBound', label: D.cols.exponentialBound, num: true, part: part(items, 3) },
-        ],
-        rows: s.clt.rows.map((r) => ({ cells: { n: F.int(r.n), bernoulli: F.num(r.bernoulli, 4), bernoulliBound: F.num(r.bernoulliBound, 4), exponential: F.num(r.exponential, 4), exponentialBound: F.num(r.exponentialBound, 4) } })),
-      }),
-      h('p', { text: D.tests(s.clt) }),
-    ])),
+    whenComputed((s) => {
+      if (!s) return pending();
+      const model = sectionModel('distribution', 'clt');
+      // the exact distances for another p take a few milliseconds
+      const rowsOf = (m) => (view.atStart('clt', m.params) ? s.clt.rows : hw.cltTable(hw.CLT_SIZES, m.params.p));
+      const fig = figure(D.chartTitle, hw.drawLineChart, view.cltChart(rowsOf(model.get()), F.decimal), { items, link: view.links.clt, table: view.LINKED_TABLES.clt, keep: keep('clt') });
+      const tableRegion = h('div');
+      follow(model, (m) => {
+        const rows = rowsOf(m);
+        const data = view.cltChart(rows, F.decimal);
+        fig.kit.setData(data);
+        fig.kit.setTip(view.tips.clt(rows, text.tips));
+        fig.kit.setAnimation(view.reveal(data));
+        fill(
+          tableRegion,
+          dataTable({
+            id: view.LINKED_TABLES.clt,
+            caption: D.tableTitle,
+            columns: [
+              { key: 'n', label: D.cols.n },
+              { key: 'bernoulli', label: D.cols.bernoulli, num: true, part: part(items, 0) },
+              { key: 'bernoulliBound', label: D.cols.bernoulliBound, num: true, part: part(items, 1) },
+              { key: 'exponential', label: D.cols.exponential, num: true, part: part(items, 2) },
+              { key: 'exponentialBound', label: D.cols.exponentialBound, num: true, part: part(items, 3) },
+            ],
+            rows: rows.map((r) => ({ cells: { n: F.int(r.n), bernoulli: F.num(r.bernoulli, 4), bernoulliBound: F.num(r.bernoulliBound, 4), exponential: F.num(r.exponential, 4), exponentialBound: F.num(r.exponentialBound, 4) } })),
+          }),
+        );
+        hideParts(tableRegion.querySelector('table'), partsOf(items, keep('clt')));
+      });
+      return [paras(D.paras(s.clt.rows)), kit.modelControls(model, view.controls.clt(text.controls), state.lang), h('div', { class: 'charts' }, fig), tableRegion, h('p', { text: D.tests(s.clt) })];
+    }),
   ];
 }
 
@@ -3548,28 +5215,45 @@ function rolesBlock() {
 function resultsBlock() {
   const R = text.results;
   const F = text.fmt;
-  const rows = view.resultsRows();
+  const start = view.resultsRows();
   const delta = [100, 1000, 10000].map((n) => hw.deltaLogOdds(n));
   const items = view.legends.results(text.legends);
+  const model = sectionModel('results', 'results');
+  const rowsOf = (m) => (view.atStart('results', m.params) ? start : view.resultsRows(m.params.p));
+  const fig = figure(R.chartTitle, hw.drawLineChart, view.resultsChart(rowsOf(model.get()), F.decimal), { items, link: view.links.results, table: view.LINKED_TABLES.results, keep: keep('results') });
+  const tableRegion = h('div');
+  follow(model, (m) => {
+    const rows = rowsOf(m);
+    const data = view.resultsChart(rows, F.decimal);
+    fig.kit.setData(data);
+    fig.kit.setTip(view.tips.results(rows, text.tips));
+    fig.kit.setAnimation(view.reveal(data, 300));
+    fill(
+      tableRegion,
+      dataTable({
+        id: view.LINKED_TABLES.results,
+        caption: R.tableTitle,
+        columns: [
+          { key: 'n', label: R.cols.n },
+          { key: 'z', label: R.cols.z, num: true, part: part(items, 0) },
+          { key: 't', label: R.cols.t, num: true, part: part(items, 1) },
+          { key: 'mle', label: R.cols.mle, num: true, part: part(items, 2) },
+          { key: 'bias', label: R.cols.bias, num: true, part: part(items, 2) },
+          { key: 'efficiency', label: R.cols.efficiency, num: true, part: part(items, 2) },
+        ],
+        rows: rows.map((r) => ({ cells: { n: F.int(r.n), z: F.num(r.z, 4), t: F.num(r.t, 4), mle: F.num(r.mle.distance, 4), bias: F.pct(r.mle.bias, 2), efficiency: F.num(r.mle.efficiency, 4) } })),
+      }),
+    );
+    hideParts(tableRegion.querySelector('table'), partsOf(items, keep('results')));
+  });
   return [
     title('hw7-results', 1, text.sections.results),
     h('p', { text: R.intro }),
     h('p', { text: R.consistency }),
-    h('p', { text: R.slutsky(rows) }),
-    h('div', { class: 'charts' }, figure(R.chartTitle, hw.drawLineChart, view.resultsChart(rows, F.decimal), { tip: view.tips.results(rows, text.tips), items, link: view.links.results, table: view.LINKED_TABLES.results, keep: keep('results') })),
-    dataTable({
-      id: view.LINKED_TABLES.results,
-      caption: R.tableTitle,
-      columns: [
-        { key: 'n', label: R.cols.n },
-        { key: 'z', label: R.cols.z, num: true, part: part(items, 0) },
-        { key: 't', label: R.cols.t, num: true, part: part(items, 1) },
-        { key: 'mle', label: R.cols.mle, num: true, part: part(items, 2) },
-        { key: 'bias', label: R.cols.bias, num: true, part: part(items, 2) },
-        { key: 'efficiency', label: R.cols.efficiency, num: true, part: part(items, 2) },
-      ],
-      rows: rows.map((r) => ({ cells: { n: F.int(r.n), z: F.num(r.z, 4), t: F.num(r.t, 4), mle: F.num(r.mle.distance, 4), bias: F.pct(r.mle.bias, 2), efficiency: F.num(r.mle.efficiency, 4) } })),
-    }),
+    h('p', { text: R.slutsky(start) }),
+    kit.modelControls(model, view.controls.results(text.controls), state.lang),
+    h('div', { class: 'charts' }, fig),
+    tableRegion,
     h('p', { text: R.delta(delta[0], delta[1]) }),
     dataTable({
       caption: R.deltaTitle,
@@ -3584,7 +5268,7 @@ function resultsBlock() {
         rows: s.gc.rows.map((r) => ({ cells: { n: F.int(r.n), meanD: F.num(r.meanD, 4), meanScaled: F.num(r.meanScaled, 3), over: F.pct(r.over, 1) } })),
       }),
     ])),
-    h('p', { text: R.mle(rows) }),
+    h('p', { text: R.mle(start) }),
   ];
 }
 
@@ -3592,30 +5276,51 @@ function rootBlock() {
   const R = text.root;
   const F = text.fmt;
   const items = view.legends.root(text.legends);
-  const sigma = Math.sqrt(hw.FALSE_ALARMS.rate * (1 - hw.FALSE_ALARMS.rate));
+  const inferenceRegion = h('div');
+  const inferenceOf = (rate) => dataTable({
+    caption: R.inferenceTitle,
+    columns: [{ key: 'n', label: R.inferenceCols.n }, { key: 'variance', label: R.inferenceCols.variance, num: true }, { key: 'se', label: R.inferenceCols.se, num: true }, { key: 'half', label: R.inferenceCols.half, num: true }],
+    rows: hw.rootTable(rate).map((r) => ({ cells: { n: F.int(r.n), variance: F.num(r.variance, 2), se: F.num(r.se, 5), half: `± ${F.pct(r.half, 2)}` } })),
+  });
+  fill(inferenceRegion, inferenceOf(hw.FALSE_ALARMS.rate));
   return [
     title('hw7-root', 1, text.sections.root),
     paras(R.paras([hw.sampleSizeFor(0.01), hw.sampleSizeFor(0.005), hw.sampleSizeFor(0.001)])),
-    whenComputed((s) => (!s ? pending() : [
-      h('div', { class: 'charts' }, figure(R.chartTitle, hw.drawLineChart, view.rootChart(s.paths, F.decimal), { tip: view.tips.root(s.paths, text.tips), items, link: view.links.root, table: view.LINKED_TABLES.root, keep: keep('root') })),
-      dataTable({
-        id: view.LINKED_TABLES.root,
-        caption: R.tableTitle,
-        columns: [
-          { key: 'n', label: R.cols.n },
-          { key: 'sdCount', label: R.cols.sdCount, num: true, part: part(items, 0) },
-          { key: 'exactCount', label: R.cols.exactCount, num: true, part: part(items, 0) },
-          { key: 'sdShare', label: R.cols.sdShare, num: true, part: part(items, 1) },
-          { key: 'exactShare', label: R.cols.exactShare, num: true, part: part(items, 1) },
-        ],
-        rows: s.paths.checks.map((c) => ({ cells: { n: F.int(c.n), sdCount: F.num(c.n * Math.sqrt(c.mse), 2), exactCount: F.num(sigma * Math.sqrt(c.n), 2), sdShare: F.num(Math.sqrt(c.mse), 5), exactShare: F.num(sigma / Math.sqrt(c.n), 5) } })),
-      }),
-    ])),
-    dataTable({
-      caption: R.inferenceTitle,
-      columns: [{ key: 'n', label: R.inferenceCols.n }, { key: 'variance', label: R.inferenceCols.variance, num: true }, { key: 'se', label: R.inferenceCols.se, num: true }, { key: 'half', label: R.inferenceCols.half, num: true }],
-      rows: hw.rootTable().map((r) => ({ cells: { n: F.int(r.n), variance: F.num(r.variance, 2), se: F.num(r.se, 5), half: `± ${F.pct(r.half, 2)}` } })),
+    whenComputed((s) => {
+      if (!s) return pending();
+      const model = sectionModel('root', 'pathsRate', s.paths);
+      const simOf = (m) => m.sim || s.paths;
+      const fig = figure(R.chartTitle, hw.drawLineChart, view.rootChart(simOf(model.get()), F.decimal), { items, link: view.links.root, table: view.LINKED_TABLES.root, keep: keep('root') });
+      const tableRegion = h('div');
+      follow(model, (m) => {
+        const paths = simOf(m);
+        const sigma = Math.sqrt(paths.rate * (1 - paths.rate));
+        const data = view.rootChart(paths, F.decimal);
+        fig.kit.setData(data);
+        fig.kit.setTip(view.tips.root(paths, text.tips));
+        fig.kit.setAnimation(view.reveal(data));
+        fig.kit.setPending(m.pending);
+        fill(
+          tableRegion,
+          dataTable({
+            id: view.LINKED_TABLES.root,
+            caption: R.tableTitle,
+            columns: [
+              { key: 'n', label: R.cols.n },
+              { key: 'sdCount', label: R.cols.sdCount, num: true, part: part(items, 0) },
+              { key: 'exactCount', label: R.cols.exactCount, num: true, part: part(items, 0) },
+              { key: 'sdShare', label: R.cols.sdShare, num: true, part: part(items, 1) },
+              { key: 'exactShare', label: R.cols.exactShare, num: true, part: part(items, 1) },
+            ],
+            rows: paths.checks.map((c) => ({ cells: { n: F.int(c.n), sdCount: F.num(c.n * Math.sqrt(c.mse), 2), exactCount: F.num(sigma * Math.sqrt(c.n), 2), sdShare: F.num(Math.sqrt(c.mse), 5), exactShare: F.num(sigma / Math.sqrt(c.n), 5) } })),
+          }),
+        );
+        hideParts(tableRegion.querySelector('table'), partsOf(items, keep('root')));
+        fill(inferenceRegion, inferenceOf(m.params.rate));
+      });
+      return [kit.modelControls(model, view.controls.pathsRate(text.controls), state.lang), h('div', { class: 'charts' }, fig), tableRegion];
     }),
+    inferenceRegion,
   ];
 }
 
@@ -3730,13 +5435,31 @@ function heavyBlock() {
     dataTable({ caption: H.factsTitle, columns: [{ key: 'what', label: '' }, { key: 'value', label: '', num: true }], rows: facts.map(([k, v]) => ({ cells: { what: H.facts[k], value: v } })) }),
     whenComputed((s) => {
       if (!s) return pending();
-      const hist = view.bytesChart(s.bytes[s.bytes.length - 1], F.decimal);
+      // a new sample of Cauchy paths takes a few milliseconds; the first one comes from the computation of the page
+      const cauchyModel = sectionModel('cauchy', 'cauchy');
+      const linesOf = (m) => (m.params.seed === hw.DEFAULT_SEED ? s.cauchy : hw.cauchyPaths(m.params.seed));
+      const cauchyFig = figure(H.cauchyTitle, hw.drawLineChart, view.cauchyChart(linesOf(cauchyModel.get()), F.decimal));
+      follow(cauchyModel, (m) => {
+        const lines = linesOf(m);
+        const data = view.cauchyChart(lines, F.decimal);
+        cauchyFig.kit.setData(data);
+        cauchyFig.kit.setTip(view.tips.cauchy(lines, text.tips));
+        cauchyFig.kit.setAnimation(view.reveal(data, 80));
+      });
+      const bytesModel = sectionModel('bytes', 'bytes');
+      const meansOf = (m) => s.bytes.find((x) => x.n === m.params.n) || s.bytes[s.bytes.length - 1];
+      const histFig = figure(H.histTitle, hw.drawHistogram, view.bytesChart(meansOf(bytesModel.get()), F.decimal), { items: view.legends.bytes(text.legends), keep: keep('bytes') });
+      follow(bytesModel, (m) => {
+        const hist = view.bytesChart(meansOf(m), F.decimal);
+        histFig.kit.setData(hist);
+        histFig.kit.setTip(view.tips.histogram(hist, text.tips, hw.BYTES_REPS));
+      });
       return [
         h(
           'div',
           { class: 'charts' },
-          figure(H.cauchyTitle, hw.drawLineChart, view.cauchyChart(s.cauchy, F.decimal), { tip: view.tips.cauchy(s.cauchy, text.tips) }),
-          figure(H.histTitle, hw.drawHistogram, hist, { tip: view.tips.histogram(hist, text.tips, hw.BYTES_REPS), items: view.legends.bytes(text.legends), keep: keep('bytes') }),
+          h('div', null, kit.modelControls(cauchyModel, view.controls.cauchy(text.controls), state.lang), cauchyFig),
+          h('div', null, kit.modelControls(bytesModel, view.controls.bytes(text.controls), state.lang), histFig),
         ),
         dataTable({
           caption: H.tableTitle,
@@ -3752,24 +5475,41 @@ function heavyBlock() {
 function speedBlock() {
   const V = text.speed;
   const F = text.fmt;
-  const rows = hw.deviationTable();
+  const start = hw.deviationTable();
   const items = view.legends.speed(text.legends);
+  const model = sectionModel('speed', 'speed');
+  const rowsOf = (m) => hw.deviationTable(m.params.rate, m.params.epsilon);
+  const fig = figure(V.chartTitle, hw.drawLineChart, view.speedChart(rowsOf(model.get()), F.decimal), { items, link: view.links.speed, table: view.LINKED_TABLES.speed, keep: keep('speed') });
+  const tableRegion = h('div');
+  follow(model, (m) => {
+    const rows = rowsOf(m);
+    const data = view.speedChart(rows, F.decimal);
+    fig.kit.setData(data);
+    fig.kit.setTip(view.tips.speed(rows, text.tips));
+    fig.kit.setAnimation(view.reveal(data));
+    fill(
+      tableRegion,
+      dataTable({
+        id: view.LINKED_TABLES.speed,
+        caption: V.tableTitle,
+        columns: [
+          { key: 'n', label: V.cols.n },
+          { key: 'exact', label: V.cols.exact, num: true, part: part(items, 0) },
+          { key: 'chebyshev', label: V.cols.chebyshev, num: true, part: part(items, 1) },
+          { key: 'hoeffding', label: V.cols.hoeffding, num: true, part: part(items, 2) },
+          { key: 'normal', label: V.cols.normal, num: true, part: part(items, 3) },
+        ],
+        rows: rows.map((r) => ({ cells: { n: F.int(r.n), exact: F.prob(r.exact), chebyshev: F.prob(r.chebyshev), hoeffding: F.prob(r.hoeffding), normal: F.prob(r.normal) } })),
+      }),
+    );
+    hideParts(tableRegion.querySelector('table'), partsOf(items, keep('speed')));
+  });
   return [
     title('hw7-speed', 1, text.sections.speed),
-    paras(V.paras(rows)),
-    h('div', { class: 'charts' }, figure(V.chartTitle, hw.drawLineChart, view.speedChart(rows, F.decimal), { tip: view.tips.speed(rows, text.tips), items, link: view.links.speed, table: view.LINKED_TABLES.speed, keep: keep('speed') })),
-    dataTable({
-      id: view.LINKED_TABLES.speed,
-      caption: V.tableTitle,
-      columns: [
-        { key: 'n', label: V.cols.n },
-        { key: 'exact', label: V.cols.exact, num: true, part: part(items, 0) },
-        { key: 'chebyshev', label: V.cols.chebyshev, num: true, part: part(items, 1) },
-        { key: 'hoeffding', label: V.cols.hoeffding, num: true, part: part(items, 2) },
-        { key: 'normal', label: V.cols.normal, num: true, part: part(items, 3) },
-      ],
-      rows: rows.map((r) => ({ cells: { n: F.int(r.n), exact: F.prob(r.exact), chebyshev: F.prob(r.chebyshev), hoeffding: F.prob(r.hoeffding), normal: F.prob(r.normal) } })),
-    }),
+    paras(V.paras(start)),
+    kit.modelControls(model, view.controls.speed(text.controls), state.lang),
+    h('div', { class: 'charts' }, fig),
+    tableRegion,
   ];
 }
 
@@ -3887,14 +5627,26 @@ function tryPvalueBox() {
 function engineBlock() {
   const E = text.engine;
   const F = text.fmt;
-  const lik = view.likelihoodChart(hw.DEFAULT_SEED, F.decimal);
-  const d1 = lik.curves.data.day1;
-  const d10 = lik.curves.data.days10;
+  // the text speaks of the first day and of ten days; the chart follows the days chosen
+  const start = view.likelihoodChart(hw.DEFAULT_SEED, F.decimal);
+  const d1 = start.curves.data.day1;
+  const d10 = start.curves.data.days10;
+  const model = sectionModel('engine', 'likelihood');
+  const likOf = (m) => view.likelihoodChart(hw.DEFAULT_SEED, F.decimal, m.params.days);
+  const first = likOf(model.get());
+  const fig = figure(E.likelihoodTitle, hw.drawLineChart, first.chart, { tip: view.tips.likelihood(first.curves, text.tips), items: view.legends.likelihood(text.legends, model.get().params.days), keep: keep('likelihood') });
+  follow(model, (m) => {
+    const lik = likOf(m);
+    fig.kit.setData(lik.chart);
+    fig.kit.setTip(view.tips.likelihood(lik.curves, text.tips));
+    relabel(fig, view.legends.likelihood(text.legends, m.params.days));
+  });
   return [
     title('hw7-engine', 1, text.sections.engine),
     h('p', { text: E.components }),
-    h('div', { class: 'charts' }, figure(E.likelihoodTitle, hw.drawLineChart, lik.chart, { tip: view.tips.likelihood(lik.curves, text.tips), items: view.legends.likelihood(text.legends), keep: keep('likelihood') })),
-    h('p', { text: E.likelihood(lik.curves) }),
+    kit.modelControls(model, view.controls.likelihood(text.controls), state.lang),
+    h('div', { class: 'charts' }, fig),
+    h('p', { text: E.likelihood(start.curves) }),
     h('p', { text: E.odds }),
     formulas(E.formulas),
     h('p', { text: E.weights(hw.priorWeight(hw.PRIORS.informed, d1.clicks, d1.sent), hw.priorWeight(hw.PRIORS.informed, d10.clicks, d10.sent)) }),
@@ -4064,36 +5816,57 @@ function tryNetworkBox() {
 function sprtBlock() {
   const W = text.sprt;
   const F = text.fmt;
-  const setup = hw.sprtSetup(hw.SPRT_DEFAULT);
-  const exact = { legit: hw.sprtExact(setup, hw.SPRT_DEFAULT.p0), attacker: hw.sprtExact(setup, hw.SPRT_DEFAULT.p1) };
-  const walks = [
-    { ...hw.sprtPath(setup, view.SPRT_EXAMPLES.legit), key: 'legit', color: 0 },
-    { ...hw.sprtPath(setup, view.SPRT_EXAMPLES.attacker), key: 'attacker', color: 1 },
-  ];
+  const start = hw.sprtSetup(hw.SPRT_DEFAULT);
+  const startExact = { legit: hw.sprtExact(start, hw.SPRT_DEFAULT.p0), attacker: hw.sprtExact(start, hw.SPRT_DEFAULT.p1) };
+  const model = sectionModel('sprt', 'sprt');
+  const setupOf = (m) => hw.sprtSetup({ ...hw.SPRT_DEFAULT, alpha: m.params.alpha, beta: m.params.beta });
+  const moveHandle = (id, v) => model.setParams(view.handles.sprtMove(model.get().params, id, v));
+  const firstSetup = setupOf(model.get());
+  const firstWalks = view.sprtWalks(firstSetup, model.get().params.seed);
+  const fig = figure(W.chartTitle, hw.drawLineChart, view.sprtChart(firstSetup, firstWalks, F.decimal), { items: view.legends.sprt(text.legends, firstWalks), keep: keep('sprt'), handles: { items: view.handles.sprt(firstSetup, text.controls), onChange: moveHandle } });
+  const tableRegion = h('div');
   const row = (who, ex, wald, simulated) => ({ cells: { who: W.who[who], block: F.prob(ex.block), clear: F.prob(ex.clear), exact: F.num(ex.mean, 2), wald: F.num(wald, 2), simulated: simulated ? F.num(simulated.meanSteps, 2) : '-' } });
+  const tableOf = (m) => {
+    const setup = setupOf(m);
+    const exact = { legit: hw.sprtExact(setup, hw.SPRT_DEFAULT.p0), attacker: hw.sprtExact(setup, hw.SPRT_DEFAULT.p1) };
+    // the simulation of the page was run with the starting errors
+    const s = computation.shown;
+    const sim = s && m.params.alpha === hw.SPRT_DEFAULT.alpha && m.params.beta === hw.SPRT_DEFAULT.beta ? s.sprt : null;
+    return dataTable({
+      caption: W.tableTitle,
+      columns: [
+        { key: 'who', label: W.cols.who },
+        { key: 'block', label: W.cols.block, num: true },
+        { key: 'clear', label: W.cols.clear, num: true },
+        { key: 'exact', label: W.cols.exact, num: true },
+        { key: 'wald', label: W.cols.wald, num: true },
+        { key: 'simulated', label: W.cols.simulated, num: true },
+      ],
+      rows: [row('legit', exact.legit, setup.waldLegit, sim && sim.legit), row('attacker', exact.attacker, setup.waldAttacker, sim && sim.attackers)],
+    });
+  };
+  follow(model, (m) => {
+    const setup = setupOf(m);
+    const walks = view.sprtWalks(setup, m.params.seed);
+    const data = view.sprtChart(setup, walks, F.decimal);
+    fig.kit.setData(data);
+    fig.kit.setTip(view.tips.sprt(setup, walks, text.tips));
+    fig.kit.setAnimation(view.reveal(data, 320));
+    fig.kit.setHandles({ items: view.handles.sprt(setup, text.controls), onChange: moveHandle });
+    fill(tableRegion, tableOf(m));
+  });
   return [
     title('hw7-sprt', 1, text.sections.sprt),
     paras(W.intro),
-    formulas(W.formulas(setup)),
-    h('div', { class: 'charts' }, figure(W.chartTitle, hw.drawLineChart, view.sprtChart(setup, walks, F.decimal), { tip: view.tips.sprt(setup, walks, text.tips), items: view.legends.sprt(text.legends, walks), keep: keep('sprt') })),
-    paras(W.paras(setup, exact.legit, exact.attacker)),
+    formulas(W.formulas(start)),
+    kit.modelControls(model, view.controls.sprt(text.controls), state.lang),
+    h('div', { class: 'charts' }, fig),
+    paras(W.paras(start, startExact.legit, startExact.attacker)),
+    tableRegion,
     whenComputed((s) => {
-      const sim = s ? s.sprt : null;
-      return [
-        dataTable({
-          caption: W.tableTitle,
-          columns: [
-            { key: 'who', label: W.cols.who },
-            { key: 'block', label: W.cols.block, num: true },
-            { key: 'clear', label: W.cols.clear, num: true },
-            { key: 'exact', label: W.cols.exact, num: true },
-            { key: 'wald', label: W.cols.wald, num: true },
-            { key: 'simulated', label: W.cols.simulated, num: true },
-          ],
-          rows: [row('legit', exact.legit, setup.waldLegit, sim && sim.legit), row('attacker', exact.attacker, setup.waldAttacker, sim && sim.attackers)],
-        }),
-        sim ? h('p', { text: W.simulation(sim) }) : pending(),
-      ];
+      // the simulated column arrives with the computation of the page
+      fill(tableRegion, tableOf(model.get()));
+      return s ? h('p', { text: W.simulation(s.sprt) }) : pending();
     }),
   ];
 }
@@ -4155,26 +5928,45 @@ function trySprtBox() {
 function rateBlock() {
   const R = text.rate;
   const F = text.fmt;
-  const c = view.campaignFacts();
+  const start = view.campaignFacts();
   const items = view.legends.campaign(text.legends);
+  const model = sectionModel('rate', 'campaign');
+  const factsOf = (m) => (view.atStart('campaign', m.params) ? start : view.campaignFacts(m.params.seed, { rate: m.params.rate, perDay: m.params.perDay }));
+  const moveHandle = (id, v) => model.setParams(view.handles.trueRateMove(model.get().params, id, v));
+  const fig = figure(R.chartTitle, hw.drawLineChart, view.campaignChart(factsOf(model.get()), F.decimal), { items, link: view.links.campaign, table: view.LINKED_TABLES.campaign, keep: keep('campaign'), handles: { items: view.handles.trueRate(model.get().params.rate, text.controls), onChange: moveHandle } });
+  const tableRegion = h('div');
+  follow(model, (m) => {
+    const c = factsOf(m);
+    const data = view.campaignChart(c, F.decimal);
+    fig.kit.setData(data);
+    fig.kit.setTip(view.tips.campaign(c, text.tips));
+    fig.kit.setAnimation(view.reveal(data, 450));
+    fig.kit.setHandles({ items: view.handles.trueRate(m.params.rate, text.controls), onChange: moveHandle });
+    fill(
+      tableRegion,
+      dataTable({
+        id: view.LINKED_TABLES.campaign,
+        caption: R.tableTitle,
+        columns: [
+          { key: 'day', label: R.cols.day },
+          { key: 'sent', label: R.cols.sent, num: true },
+          { key: 'clicks', label: R.cols.clicks, num: true },
+          { key: 'uniform', label: R.cols.uniform, num: true, part: part(items, 0) },
+          { key: 'informed', label: R.cols.informed, num: true, part: part(items, 1) },
+          { key: 'above', label: R.cols.above, num: true, part: part(items, 0) },
+        ],
+        rows: c.uniform.map((u, i) => ({ cells: { day: F.int(u.day), sent: F.int(u.sent), clicks: F.int(u.clicks), uniform: R.interval(u), informed: R.interval(c.informed[i]), above: F.pct(c.aboveUniform[i]) } })),
+      }),
+    );
+    hideParts(tableRegion.querySelector('table'), partsOf(items, keep('campaign')));
+  });
   return [
     title('hw7-rate', 1, text.sections.rate),
-    h('p', { text: R.intro(c) }),
-    paras(R.paras(c)),
-    h('div', { class: 'charts' }, figure(R.chartTitle, hw.drawLineChart, view.campaignChart(c, F.decimal), { tip: view.tips.campaign(c, text.tips), items, link: view.links.campaign, table: view.LINKED_TABLES.campaign, keep: keep('campaign') })),
-    dataTable({
-      id: view.LINKED_TABLES.campaign,
-      caption: R.tableTitle,
-      columns: [
-        { key: 'day', label: R.cols.day },
-        { key: 'sent', label: R.cols.sent, num: true },
-        { key: 'clicks', label: R.cols.clicks, num: true },
-        { key: 'uniform', label: R.cols.uniform, num: true, part: part(items, 0) },
-        { key: 'informed', label: R.cols.informed, num: true, part: part(items, 1) },
-        { key: 'above', label: R.cols.above, num: true, part: part(items, 0) },
-      ],
-      rows: c.uniform.map((u, i) => ({ cells: { day: F.int(u.day), sent: F.int(u.sent), clicks: F.int(u.clicks), uniform: R.interval(u), informed: R.interval(c.informed[i]), above: F.pct(c.aboveUniform[i]) } })),
-    }),
+    h('p', { text: R.intro(start) }),
+    paras(R.paras(start)),
+    kit.modelControls(model, view.controls.campaign(text.controls), state.lang),
+    h('div', { class: 'charts' }, fig),
+    tableRegion,
     h('p', { text: R.after }),
   ];
 }
@@ -4300,23 +6092,37 @@ function tryPriorBox() {
 function frequentistBlock() {
   const Q = text.frequentist;
   const F = text.fmt;
-  const cov = hw.coverageCurves();
+  const start = hw.coverageCurves();
+  const model = sectionModel('frequentist', 'coverage');
+  const covOf = (m) => (view.atStart('coverage', m.params) ? start : hw.coverageCurves(m.params.n));
+  const fig = figure(Q.chartTitle, hw.drawLineChart, view.coverageChart(covOf(model.get()), F.decimal), { items: view.legends.coverage(text.legends), note: Q.chartNote, keep: keep('coverage') });
+  const tableRegion = h('div');
+  follow(model, (m) => {
+    const cov = covOf(m);
+    fig.kit.setData(view.coverageChart(cov, F.decimal));
+    fig.kit.setTip(view.tips.coverage(cov, text.tips));
+    fill(
+      tableRegion,
+      dataTable({
+        caption: Q.tableTitle,
+        columns: [
+          { key: 'method', label: Q.cols.method },
+          { key: 'mean', label: Q.cols.mean, num: true },
+          { key: 'min', label: Q.cols.min, num: true },
+          { key: 'at', label: Q.cols.at, num: true },
+          { key: 'width', label: Q.cols.width, num: true },
+        ],
+        rows: hw.INTERVAL_METHODS.map((k) => ({ cells: { method: text.names.methods[k], mean: F.pct(cov.summary[k].mean), min: F.pct(cov.summary[k].min), at: `p = ${F.pct(cov.summary[k].minAt, 1)}`, width: F.pct(cov.summary[k].width) } })),
+      }),
+    );
+  });
   return [
     title('hw7-frequentist', 1, text.sections.frequentist),
     paras(Q.intro),
-    h('div', { class: 'charts' }, figure(Q.chartTitle, hw.drawLineChart, view.coverageChart(cov, F.decimal), { tip: view.tips.coverage(cov, text.tips), items: view.legends.coverage(text.legends), note: Q.chartNote, keep: keep('coverage') })),
-    dataTable({
-      caption: Q.tableTitle,
-      columns: [
-        { key: 'method', label: Q.cols.method },
-        { key: 'mean', label: Q.cols.mean, num: true },
-        { key: 'min', label: Q.cols.min, num: true },
-        { key: 'at', label: Q.cols.at, num: true },
-        { key: 'width', label: Q.cols.width, num: true },
-      ],
-      rows: hw.INTERVAL_METHODS.map((m) => ({ cells: { method: text.names.methods[m], mean: F.pct(cov.summary[m].mean), min: F.pct(cov.summary[m].min), at: `p = ${F.pct(cov.summary[m].minAt, 1)}`, width: F.pct(cov.summary[m].width) } })),
-    }),
-    paras(Q.paras(cov)),
+    kit.modelControls(model, view.controls.coverage(text.controls), state.lang),
+    h('div', { class: 'charts' }, fig),
+    tableRegion,
+    paras(Q.paras(start)),
     whenComputed((s) => (s ? h('p', { text: Q.simulation(s.coverage) }) : pending())),
   ];
 }
@@ -4332,6 +6138,16 @@ function spamBlock() {
   // the message to score: the example until the reader writes another one
   const field = h('textarea', { id: 'hw7-message', rows: 3, maxlength: 2000, ...PRIVATE_FIELD });
   field.value = state.message === null ? view.SPAM_EXAMPLE : state.message;
+  // the threshold of the filter, between two bins of log-odds: a slider, or a line to drag on the chart
+  const cutModel = sectionModel('spam', 'spam');
+  const moveCut = (id, v) => cutModel.setParams(view.handles.spamMove(cutModel.get().params, id, v));
+  const cutControls = kit.modelControls(cutModel, view.controls.spam(text.controls, sms.bins), state.lang);
+  const cutFig = figure(M.chartTitle, hw.drawGroupedBars, view.logOddsChart(sms, F.decimal), { tip: view.tips.logOdds(sms, text.tips), items, link: view.links.logOdds, table: view.LINKED_TABLES.logOdds, keep: keep('logOdds'), handles: { items: view.handles.spam(cutModel.get().params.cut, sms.bins, text.controls), onChange: moveCut } });
+  const cutLine = resultLine('');
+  follow(cutModel, (m) => {
+    cutFig.kit.setHandles({ items: view.handles.spam(m.params.cut, sms.bins, text.controls), onChange: moveCut });
+    cutLine.textContent = text.controls.spam(view.spamCut(sms.bins, m.params.cut));
+  });
   const scoreRegion = h('div');
   const update = () => {
     const score = hw.spamScore(sms.model, field.value, view.spamPrior(state.base, sms));
@@ -4374,7 +6190,9 @@ function spamBlock() {
       columns: [{ key: 'spam', label: M.wordsCols.spam }, { key: 'spamWeight', label: M.wordsCols.spamWeight, num: true }, { key: 'ham', label: M.wordsCols.ham }, { key: 'hamWeight', label: M.wordsCols.hamWeight, num: true }],
       rows: words.map((i) => ({ cells: { spam: sms.spamWords[i].token, spamWeight: F.num(sms.spamWords[i].weight, 2), ham: sms.hamWords[i].token, hamWeight: F.num(sms.hamWords[i].weight, 2) } })),
     }),
-    h('div', { class: 'charts' }, figure(M.chartTitle, hw.drawGroupedBars, view.logOddsChart(sms, F.decimal), { tip: view.tips.logOdds(sms, text.tips), items, link: view.links.logOdds, table: view.LINKED_TABLES.logOdds, keep: keep('logOdds') })),
+    cutControls,
+    h('div', { class: 'charts' }, cutFig),
+    cutLine,
     dataTable({
       id: view.LINKED_TABLES.logOdds,
       caption: M.tableTitle,
@@ -4475,28 +6293,47 @@ function bvmBlock() {
   const items = view.legends.bvm(text.legends);
   return [
     title('hw7-bvm', 1, text.sections.bvm),
-    whenComputed((s) => (!s ? pending() : [
-      paras(B.paras(s.bvm)),
-      h(
-        'div',
-        { class: 'charts' },
-        figure(B.chartTitle, hw.drawLineChart, view.bvmChart(s.bvm, F.decimal), { tip: view.tips.bvm(s.bvm, text.tips), items, link: view.links.bvm, table: view.LINKED_TABLES.bvm, keep: keep('bvm') }),
-        figure(B.chart2Title, hw.drawLineChart, view.bvmDistanceChart(s.bvm, F.decimal), { tip: view.tips.bvmDistance(s.bvm, text.tips), items: view.legends.bvmDistance(text.legends), link: view.links.bvmDistance, keep: keep('bvmDistance') }),
-      ),
-      dataTable({
-        id: view.LINKED_TABLES.bvm,
-        caption: B.tableTitle,
-        columns: [
-          { key: 'n', label: B.cols.n },
-          { key: 'clicks', label: B.cols.clicks, num: true },
-          { key: 'uniform', label: B.cols.uniform, num: true, part: part(items, 0) },
-          { key: 'wrong', label: B.cols.wrong, num: true, part: part(items, 1) },
-          { key: 'dUniform', label: B.cols.dUniform, num: true },
-          { key: 'dWrong', label: B.cols.dWrong, num: true },
-        ],
-        rows: s.bvm.map((r) => ({ cells: { n: F.int(r.n), clicks: F.int(r.clicks), uniform: B.pair(r.uniform), wrong: B.pair(r.wrong), dUniform: F.num(r.uniform.distance, 4), dWrong: F.num(r.wrong.distance, 4) } })),
-      }),
-    ])),
+    whenComputed((s) => {
+      if (!s) return pending();
+      // another true rate or sample takes a few milliseconds; the first one comes from the computation of the page
+      const model = sectionModel('bvm', 'bvm');
+      const rowsOf = (m) => (view.atStart('bvm', m.params) ? s.bvm : hw.bvmFacts(m.params.seed, { rate: m.params.rate }));
+      const moveHandle = (id, v) => model.setParams(view.handles.trueRateMove(model.get().params, id, v));
+      const first = rowsOf(model.get());
+      const meansFig = figure(B.chartTitle, hw.drawLineChart, view.bvmChart(first, F.decimal), { items, link: view.links.bvm, table: view.LINKED_TABLES.bvm, keep: keep('bvm'), handles: { items: view.handles.trueRate(model.get().params.rate, text.controls), onChange: moveHandle } });
+      const distanceFig = figure(B.chart2Title, hw.drawLineChart, view.bvmDistanceChart(first, F.decimal), { items: view.legends.bvmDistance(text.legends), link: view.links.bvmDistance, keep: keep('bvmDistance') });
+      const tableRegion = h('div');
+      follow(model, (m) => {
+        const rows = rowsOf(m);
+        const means = view.bvmChart(rows, F.decimal);
+        const distances = view.bvmDistanceChart(rows, F.decimal);
+        meansFig.kit.setData(means);
+        meansFig.kit.setTip(view.tips.bvm(rows, text.tips));
+        meansFig.kit.setAnimation(view.reveal(means));
+        meansFig.kit.setHandles({ items: view.handles.trueRate(m.params.rate, text.controls), onChange: moveHandle });
+        distanceFig.kit.setData(distances);
+        distanceFig.kit.setTip(view.tips.bvmDistance(rows, text.tips));
+        distanceFig.kit.setAnimation(view.reveal(distances));
+        fill(
+          tableRegion,
+          dataTable({
+            id: view.LINKED_TABLES.bvm,
+            caption: B.tableTitle,
+            columns: [
+              { key: 'n', label: B.cols.n },
+              { key: 'clicks', label: B.cols.clicks, num: true },
+              { key: 'uniform', label: B.cols.uniform, num: true, part: part(items, 0) },
+              { key: 'wrong', label: B.cols.wrong, num: true, part: part(items, 1) },
+              { key: 'dUniform', label: B.cols.dUniform, num: true },
+              { key: 'dWrong', label: B.cols.dWrong, num: true },
+            ],
+            rows: rows.map((r) => ({ cells: { n: F.int(r.n), clicks: F.int(r.clicks), uniform: B.pair(r.uniform), wrong: B.pair(r.wrong), dUniform: F.num(r.uniform.distance, 4), dWrong: F.num(r.wrong.distance, 4) } })),
+          }),
+        );
+        hideParts(tableRegion.querySelector('table'), partsOf(items, keep('bvm')));
+      });
+      return [paras(B.paras(s.bvm)), kit.modelControls(model, view.controls.bvm(text.controls), state.lang), h('div', { class: 'charts' }, meansFig, distanceFig), tableRegion];
+    }),
   ];
 }
 
@@ -4762,6 +6599,8 @@ function renderChrome() {
 function render() {
   text = HW7_TEXTS[state.lang];
   renderChrome();
+  sectionModels.forEach((model) => model.destroy());
+  sectionModels = [];
   waiting = [];
   const app = document.getElementById('app');
   fill(app, assignmentSection(), convergenceSection(), bayesSection(), checksSection(), testsSection(), historySection(), conclusionSection(), toTopButton());
