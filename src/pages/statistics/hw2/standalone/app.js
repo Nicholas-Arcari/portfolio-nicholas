@@ -11,6 +11,7 @@
 import * as hw from '../homework2.js';
 import * as view from '../view.js';
 import { HW2_TEXTS, originalAssignment } from '../texts.js';
+import * as kit from '../../chartkit/kitDom.js';
 
 const HEADINGS = ['h2', 'h3', 'h4'];
 const LANGUAGES = ['it', 'en'];
@@ -124,36 +125,6 @@ const check = (ok, label) => h('p', { class: ok ? 'check is-ok' : 'check is-bad'
 /** A labelled value: the label above, the (long, hexadecimal) value below. */
 const value = (label, content, extra = '') => h('div', { class: `value ${extra}`.trim() }, h('span', { class: 'value-label', text: label }), h('code', null, content));
 
-// The width of every chart comes from the ResizeObserver, measured after
-// layout: reading clientWidth right after another chart has been resized
-// would make the browser lay out the whole page again, once per chart. The
-// height is set at once, the drawing happens a few milliseconds per frame.
-const charts = new Map(); // canvas -> { draw, data, width, detach, tip, hidden }
-
-// what a chart draws: its data, without the parts hidden from the legend
-const shownData = (chart) => (chart.hidden.length ? { ...chart.data, hidden: chart.hidden } : chart.data);
-
-const resizer = new ResizeObserver((entries) => {
-  for (const entry of entries) {
-    const canvas = entry.target;
-    const chart = charts.get(canvas);
-    const width = Math.round(entry.contentRect.width);
-    if (!chart || width <= 0 || width === chart.width) continue;
-    chart.width = width;
-    canvas.style.height = `${hw.chartHeight(chart.draw, shownData(chart), width)}px`;
-    view.scheduleFrameJob(() => {
-      if (charts.get(canvas) === chart && chart.width === width) chart.draw(canvas, { ...shownData(chart), width }, palette());
-    });
-  }
-});
-
-// the label with the values of the bar or the cell under the pointer: it describes what is on screen and leaves out the hidden parts
-function attachTip(canvas, chart) {
-  if (chart.detach) chart.detach();
-  const tip = chart.tip;
-  chart.detach = tip ? hw.attachChartTooltip(canvas, { draw: chart.draw, data: shownData(chart), describe: (hit) => tip(hit, chart.hidden) }) : null;
-}
-
 // what the reader hid in the legends, by chart: the statistics are built again with a new sample
 const kept = {};
 const keep = (name) => {
@@ -161,90 +132,20 @@ const keep = (name) => {
   return kept[name];
 };
 
-/** The parts of the drawing covered by the hidden items of a legend. */
-const partsOf = (items, hidden) => items.flatMap((item, i) => (hidden.has(i) ? item.parts || [] : []));
-
 /**
- * The legend of a chart: { label, paletteKey, dashed?, box?, parts }.
- * Every item is a button: pressed (as the page opens) its parts are on
- * screen, released they are hidden; onChange(parts) receives the hidden
- * parts after every press. `hidden`, the set of the hidden items, outlives
- * the legend when its chart is built again.
+ * A chart (chartkit/kitDom.js), bars or heatmap: drawn by homework2.js,
+ * with the label under the pointer, zoom (by whole bars, by rows and
+ * columns) and, with `items`, its legend; `keep` remembers the hidden items
+ * when the chart is built again.
  */
-function legend(items, onChange = null, hidden = new Set()) {
-  const pal = palette();
-  return h(
-    'ul',
-    { class: 'series-legend' },
-    items.map((item, i) => {
-      const color = pal[item.paletteKey];
-      let swatch = null;
-      if (item.box) swatch = 'is-box';
-      else if (item.dashed) swatch = 'is-dashed';
-      const button = h(
-        'button',
-        {
-          type: 'button',
-          'aria-pressed': String(!hidden.has(i)),
-          class: hidden.has(i) ? 'is-off' : null,
-          onclick: () => {
-            if (hidden.has(i)) hidden.delete(i);
-            else hidden.add(i);
-            button.setAttribute('aria-pressed', String(!hidden.has(i)));
-            button.classList.toggle('is-off', hidden.has(i));
-            if (onChange) onChange(partsOf(items, hidden));
-          },
-        },
-        h('span', { class: swatch, 'aria-hidden': 'true', style: { borderColor: color, backgroundColor: item.box ? color : 'transparent' } }),
-        item.label,
-      );
-      return h('li', null, button);
-    }),
-  );
-}
-
-/** A chart, with the label under the pointer and, with `items`, its legend; `keep` remembers the hidden items when the chart is built again. */
 function figure(caption, draw, data, wide = false, tip = null, { items = null, keep: hiddenItems = null } = {}) {
-  const canvas = h('canvas', { class: 'chart', role: 'img', 'aria-label': caption });
-  const hidden = hiddenItems || new Set();
-  const chart = { draw, data, width: -1, detach: null, tip, hidden: items ? partsOf(items, hidden) : [] };
-  const fig = h(
-    'figure',
-    { class: wide ? 'figure wide' : 'figure' },
-    canvas,
-    items &&
-      legend(
-        items,
-        (parts) => {
-          chart.hidden = parts;
-          attachTip(canvas, chart);
-          if (chart.width > 0) chart.draw(canvas, { ...shownData(chart), width: chart.width }, palette());
-        },
-        hidden,
-      ),
-    h('figcaption', { text: caption }),
-  );
-  attachTip(canvas, chart);
-  charts.set(canvas, chart);
-  resizer.observe(canvas);
-  return fig;
+  return kit.createFigure({ label: caption, draw, data, palette: palette(), lib: hw, schedule: view.scheduleFrameJob, lang: state.lang, tip, items, keep: hiddenItems, wide });
 }
 
 /** Replaces the content of a region, releasing the charts it contained and their labels. */
 function fill(region, ...nodes) {
-  for (const canvas of region.querySelectorAll('canvas.chart')) {
-    resizer.unobserve(canvas);
-    const chart = charts.get(canvas);
-    if (chart && chart.detach) chart.detach();
-    charts.delete(canvas);
-  }
+  kit.releaseFigures(region);
   region.replaceChildren(...nodes.flat(Infinity).filter((n) => n !== null && n !== undefined && n !== false));
-}
-
-function redrawAll() {
-  for (const [canvas, chart] of charts) {
-    if (chart.width > 0) chart.draw(canvas, { ...chart.data, width: chart.width }, palette());
-  }
 }
 
 /** A table: column headers, then rows of cells, each { text | node, class?, head? } (head: a row header, th). */
@@ -1147,7 +1048,7 @@ function boot() {
   dialog.addEventListener('click', (e) => {
     if (e.target === dialog) closeIndex();
   });
-  darkQuery.addEventListener('change', redrawAll);
+  darkQuery.addEventListener('change', render);
   render();
   startComputations();
 }

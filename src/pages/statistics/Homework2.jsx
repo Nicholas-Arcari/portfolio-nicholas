@@ -10,12 +10,11 @@
 // presentazione in hw2/view.js: sono gli stessi file da cui la build ricava
 // il programma scaricabile (build/homework-standalone.js), cosi' la pagina e
 // il download non possono raccontare due cose diverse.
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useLanguage } from '../../contexts/languageContext';
 import { useTheme } from '../../contexts/themeContext';
 import HomeworkShell from './HomeworkShell';
-import { ChartLegend } from './ChartLegend';
-import { hiddenParts, useHidden } from './legendState';
+import { ChartFigure } from './chartkit/ChartFigure';
 import { goToSection } from './goToSection';
 import * as hw from './hw2/homework2';
 import * as view from './hw2/view';
@@ -79,48 +78,11 @@ const Value = ({ label, children, className = '' }) => (
   </div>
 );
 
-// Un grafico su canvas (barre o mappa di calore), ridisegnato quando cambia
-// la larghezza, con i valori del pezzo sotto il puntatore: il disegno vero
-// e' in homework2.js. La larghezza arriva dal
-// ResizeObserver, misurata dopo il layout; l'altezza e' fissata subito, il
-// disegno avviene qualche millisecondo per fotogramma. Le voci della
-// legenda (le barre, l'atteso tratteggiato) nascondono e mostrano le loro
-// parti; gli assi restano quelli.
-const Figure = ({ title, draw, data, palette, tip = null, wide = false, legend = null }) => {
-  const ref = useRef(null);
-  const [hidden, toggle] = useHidden();
-  const off = hiddenParts(legend, hidden).join(' ');
-  const shown = useMemo(() => (off ? { ...data, hidden: off.split(' ') } : data), [data, off]);
-  const describe = useMemo(() => (tip ? (hit) => tip(hit, off ? off.split(' ') : []) : null), [tip, off]);
-  useEffect(() => {
-    const canvas = ref.current;
-    let drawn = -1;
-    const observer = new ResizeObserver((entries) => {
-      const width = Math.round(entries[entries.length - 1].contentRect.width);
-      if (width <= 0 || width === drawn) return;
-      drawn = width;
-      canvas.style.height = `${hw.chartHeight(draw, shown, width)}px`;
-      view.scheduleFrameJob(() => {
-        if (canvas.isConnected && drawn === width) draw(canvas, { ...shown, width }, palette);
-      });
-    });
-    observer.observe(canvas);
-    // il riquadro con i valori della barra o della cella sotto il puntatore
-    const detach = describe ? hw.attachChartTooltip(canvas, { draw, data: shown, describe }) : null;
-    return () => {
-      drawn = -2;
-      observer.disconnect();
-      if (detach) detach();
-    };
-  }, [draw, shown, palette, describe]);
-  return (
-    <figure className={wide ? 'hw1-figure hw1-figure-wide' : 'hw1-figure'}>
-      <canvas ref={ref} className="hw1-canvas" role="img" aria-label={title} />
-      {legend && <ChartLegend items={legend} palette={palette} hidden={hidden} onToggle={toggle} />}
-      <figcaption>{title}</figcaption>
-    </figure>
-  );
-};
+// Un grafico interattivo (chartkit/ChartFigure.jsx), barre o mappa di calore:
+// disegnato da homework2.js, con il riquadro dei valori sotto il puntatore,
+// la legenda a pulsanti (le barre, l'atteso tratteggiato; gli assi restano
+// quelli) e lo zoom, per gruppi interi di barre e per righe e colonne.
+const Figure = (props) => <ChartFigure lib={hw} schedule={view.scheduleFrameJob} {...props} />;
 
 // Un test d'ipotesi: l'ipotesi nulla, i numeri e l'esito
 const TestRow = ({ label, test, text }) => {

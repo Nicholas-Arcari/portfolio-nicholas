@@ -62,6 +62,7 @@ export const HOMEWORKS = [
     library: 'homework2.js',
     global: 'Homework2',
     inner: ['wordlist.js'],
+    ui: CHARTKIT,
     contents: 'The wallet pipeline (BIP-39, BIP-32, BIP-44, secp256k1, Keccak-256, EIP-55),\n * the official test vectors, statistics and command line (node homework2.js [options]).',
     description: 'Homework #1 - Exercise 2 - Statistics: from a wallet seed to an Ethereum address, with BIP-39, BIP-32, BIP-44, secp256k1, Keccak-256 and EIP-55.',
   },
