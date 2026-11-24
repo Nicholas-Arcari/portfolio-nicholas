@@ -37,7 +37,11 @@ COME SI USA
   IT / EN in alto cambia lingua, e il pulsante Contents (Indice, in
   italiano) porta a qualunque sezione della consegna. Gli esperimenti e gli
   attacchi girano nella pagina stessa, a fette di pochi millisecondi: i
-  risultati arrivano in qualche secondo, senza bloccarla.
+  risultati arrivano in qualche secondo, senza bloccarla. I grafici si
+  ingrandiscono (Ctrl + rotella, due dita, oppure un rettangolo
+  trascinato; doppio clic per tornare alla vista intera), le barre anche a
+  gruppi, e le curve che seguono la lunghezza del messaggio o della chiave
+  si disegnano punto per punto.
 
   Da terminale, con Node.js 14 o successivo:
 
@@ -115,7 +119,10 @@ HOW TO USE IT
   IT / EN at the top switches language, and the Contents button jumps to
   any section of the assignment. The experiments and the attacks run in
   the page itself, in slices of a few milliseconds: the results arrive in
-  a few seconds, without freezing it.
+  a few seconds, without freezing it. The charts zoom (ctrl + wheel, two
+  fingers, or a rectangle dragged; double click for the whole chart
+  again), the bars by groups too, and the curves that follow the length of
+  the message or of the key are drawn point by point.
 
   From a terminal, with Node.js 14 or later:
 
