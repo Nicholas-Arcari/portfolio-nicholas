@@ -14,7 +14,7 @@ const Tex = memo(function Tex({ tex, display = false }) {
     katex.render(tex, ref.current, { displayMode: display, throwOnError: false });
   }, [tex, display]);
   // uno span anche per la formula a se': puo' stare in mezzo a un paragrafo
-  return <span ref={ref} className={display ? 'ds-math ds-math-display' : 'ds-math'} />;
+  return <span ref={ref} className={display ? 'ds-math ds-math-display' : 'ds-math'} tabIndex={display ? 0 : undefined} />;
 });
 
 export default Tex;

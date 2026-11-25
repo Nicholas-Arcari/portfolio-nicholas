@@ -71,7 +71,7 @@ const Check = ({ ok, children }) => <p className={ok ? 'hw2-check is-ok' : 'hw2-
 const Formulas = ({ title = null, children }) => (
   <>
     {title && <p className="hw1-table-title"><strong>{title}</strong></p>}
-    <pre className="hw1-formulas">{children}</pre>
+    <pre tabIndex={0} className="hw1-formulas">{children}</pre>
   </>
 );
 
@@ -110,7 +110,7 @@ const Slider = ({ id, label, valueText, max, value, onChange }) => (
 const Matrix = ({ id = null, title = null, corner = '', rows, cols, rowName, colName, cell, cellClass = null, totals = null, totalLabel = '', className = '' }) => (
   <>
     {title && <TableTitle>{title}</TableTitle>}
-    <div className="hw1-scroll hw6-matrix-box">
+    <div tabIndex={0} className="hw1-scroll hw6-matrix-box">
       <table id={id || undefined} className={`hw1-table hw1-compact hw6-matrix ${className}`}>
         <thead>
           <tr>
@@ -193,7 +193,7 @@ const Dataset = React.memo(function Dataset({ choice, setChoice, text }) {
         <button type="button" className="button alt" aria-pressed={choice.merge} onClick={() => setChoice((c) => ({ ...c, merge: !c.merge }))}>{D.mergeLabel}</button>
       </div>
       <TableTitle>{D.sampleTitle}</TableTitle>
-      <div className="hw1-scroll">
+      <div tabIndex={0} className="hw1-scroll">
         <table className="hw1-table hw1-compact hw6-records">
           <thead>
             <tr>{['n', 'protocol', 'service', 'flag', 'label', 'class'].map((k) => <th key={k} scope="col">{D.sampleCols[k]}</th>)}</tr>
@@ -215,7 +215,7 @@ const Dataset = React.memo(function Dataset({ choice, setChoice, text }) {
       <details className="hw2-details">
         <summary>{D.categoriesTitle}</summary>
         <p>{D.categoriesIntro}</p>
-        <div className="hw1-scroll">
+        <div tabIndex={0} className="hw1-scroll">
           <table className="hw1-table hw1-compact hw6-labels">
             <thead>
               <tr>{['label', 'count', 'category', 'source'].map((k) => <th key={k} scope="col">{D.categoryCols[k]}</th>)}</tr>
@@ -235,7 +235,7 @@ const Dataset = React.memo(function Dataset({ choice, setChoice, text }) {
       </details>
       <details className="hw2-details">
         <summary>{D.flagsTitle}</summary>
-        <div className="hw1-scroll">
+        <div tabIndex={0} className="hw1-scroll">
           <table className="hw1-table hw1-compact hw6-flags">
             <thead>
               <tr><th scope="col">{D.sampleCols.flag}</th><th scope="col">{D.categoryCols.count}</th><th scope="col" /></tr>
@@ -297,7 +297,7 @@ const Marginal = ({ title, levels, totals, shares, text }) => {
   return (
     <div>
       <TableTitle>{title}</TableTitle>
-      <div className="hw1-scroll">
+      <div tabIndex={0} className="hw1-scroll">
         <table className="hw1-table hw1-compact hw6-marginal">
           <thead>
             <tr><th scope="col">{C.level}</th><th scope="col">{C.count}</th><th scope="col">{C.share}</th></tr>
@@ -340,7 +340,7 @@ const Frequencies = ({ s, names, varNames, text, palette }) => {
       {profile === 'rows' ? (
         <>
           <TableTitle>{Q.rowsTitle}</TableTitle>
-          <div className="hw1-scroll hw6-matrix-box">
+          <div tabIndex={0} className="hw1-scroll hw6-matrix-box">
             <table id={view.LINKED_TABLES.profiles} className="hw1-table hw1-compact hw6-matrix">
               <thead>
                 <tr>
@@ -417,7 +417,7 @@ const Expected = ({ s, names, varNames, text, palette }) => {
       />
       <p className="hw1-note">{E.note}</p>
       <Choices label={E.chooseLabel} options={s.rows.map((i) => [i, names.x[i]])} value={row} onChange={setRow} />
-      <div className="hw1-scroll">
+      <div tabIndex={0} className="hw1-scroll">
         <table id={view.LINKED_TABLES.expected} className="hw1-table hw1-compact hw6-compare">
           <thead>
             <tr>
@@ -519,7 +519,7 @@ const TryTable = ({ text }) => {
       <Choices label={T.modeLabel} options={[['grid', T.modes.grid], ['pairs', T.modes.pairs]]} value={mode} onChange={setMode} />
       {mode === 'grid' ? (
         <>
-          <div className="hw1-scroll hw6-grid-box">
+          <div tabIndex={0} className="hw1-scroll hw6-grid-box">
             <table className="hw1-table hw1-compact hw6-grid">
               <thead>
                 <tr>
@@ -866,7 +866,7 @@ const TryDependence = ({ dependence, setDependence, text, palette }) => {
       />
       <p className="hw1-caption hw4-line" aria-live="polite"><strong>{T.result(st, n, theta, alpha)}</strong></p>
       <TableTitle>{T.tableTitle}</TableTitle>
-      <div className="hw1-scroll">
+      <div tabIndex={0} className="hw1-scroll">
         <table id={view.LINKED_TABLES.series} className="hw1-table hw1-compact hw6-series">
           <thead>
             <tr>
@@ -907,7 +907,7 @@ const Pairs = React.memo(function Pairs({ merge, text }) {
   return (
     <>
       <p>{P.intro}</p>
-      <div className="hw1-scroll">
+      <div tabIndex={0} className="hw1-scroll">
         <table className="hw1-table hw1-compact hw6-pairs-table">
           <thead>
             <tr>{['pair', 'cells', 'chi2', 'df', 'p', 'V', 'effect', 'cochran'].map((k) => <th key={k} scope="col">{P.cols[k]}</th>)}</tr>
@@ -950,7 +950,7 @@ const Simpson = React.memo(function Simpson({ facts, text, palette }) {
     <>
       <Paras list={S.intro(facts)} />
       <TableTitle>{S.tableTitle}</TableTitle>
-      <div className="hw1-scroll">
+      <div tabIndex={0} className="hw1-scroll">
         <table id={view.LINKED_TABLES.departments} className="hw1-table hw1-compact hw6-departments">
           <thead>
             <tr>

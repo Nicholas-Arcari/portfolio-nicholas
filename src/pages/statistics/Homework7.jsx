@@ -77,7 +77,7 @@ const Paras = ({ list }) => (Array.isArray(list) ? list : [list]).filter(Boolean
 
 const Check = ({ ok, children }) => <p className={ok ? 'hw2-check is-ok' : 'hw2-check is-bad'}>{children}</p>;
 
-const Formulas = ({ children }) => <pre className="hw1-formulas">{children}</pre>;
+const Formulas = ({ children }) => <pre tabIndex={0} className="hw1-formulas">{children}</pre>;
 
 const TableTitle = ({ children }) => <p className="hw1-table-title"><strong>{children}</strong></p>;
 
@@ -135,7 +135,7 @@ const DataTable = ({ id = null, title = null, className = '', columns, rows, not
   return (
     <>
       {title && <TableTitle>{title}</TableTitle>}
-      <div className="hw1-scroll">
+      <div tabIndex={0} className="hw1-scroll">
         <table id={id || undefined} className={`hw1-table hw1-compact hw7-table ${className}`}>
           <thead>
             <tr>{cols.map((c) => <th key={c.key} scope="col" className={c.num ? 'hw7-num' : undefined}>{c.label}</th>)}</tr>

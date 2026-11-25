@@ -73,7 +73,7 @@ const Check = ({ ok, children }) => <p className={ok ? 'hw2-check is-ok' : 'hw2-
 const Formulas = ({ title = null, children }) => (
   <>
     {title && <p className="hw1-table-title"><strong>{title}</strong></p>}
-    <pre className="hw1-formulas">{children}</pre>
+    <pre tabIndex={0} className="hw1-formulas">{children}</pre>
   </>
 );
 
@@ -299,7 +299,7 @@ const Stability = React.memo(function Stability({ text, palette }) {
     <>
       <Paras list={S.intro} />
       <p className="hw1-table-title"><strong>{S.tableTitle}</strong></p>
-      <div className="hw1-scroll">
+      <div tabIndex={0} className="hw1-scroll">
         <table id={view.LINKED_TABLES.cancellation} className="hw1-table hw1-compact hw4-cancellation">
           <thead>
             <tr>
@@ -397,7 +397,7 @@ const Scores = ({ params, setDist, s, text, palette }) => {
       <Paras list={S.intro(params.p)} />
       <Choices label={S.chooseLabel} options={hw.DISTRIBUTIONS.map((d) => [d, text.distNames[d]])} value={params.dist} onChange={setDist} />
       <p className="hw1-table-title"><strong>{S.tableTitle(params.p)}</strong></p>
-      <div className="hw1-scroll">
+      <div tabIndex={0} className="hw1-scroll">
         <table className="hw1-table hw1-compact hw4-laws">
           <thead>
             <tr><th>{S.cols.law}</th><th>{S.cols.values}</th><th>{S.cols.mu}</th><th>{S.cols.variance}</th><th>{S.cols.skewness}</th><th>{S.cols.kurtosis}</th><th>{S.cols.mu4}</th></tr>
@@ -598,7 +598,7 @@ const Averages = React.memo(function Averages({ s, job, text, palette }) {
       ) : (
         <>
           <p className="hw1-table-title"><strong>{A.tableTitle(s.m)}</strong></p>
-          <div className="hw1-scroll">
+          <div tabIndex={0} className="hw1-scroll">
             <table id={view.LINKED_TABLES.averages} className="hw1-table hw1-compact hw4-averages">
               <thead>
                 <tr>{['n', 'mean', 'meanZ', 'variance', 'varianceZ', 'biased', 'biasedTheory'].filter((key) => shown[key] !== false).map((key) => <th key={key}>{A.cols[key]}</th>)}</tr>
@@ -716,7 +716,7 @@ const Spread = React.memo(function Spread({ s, job, text, palette }) {
             />
           </div>
           <p className="hw1-table-title"><strong>{S.tableTitle}</strong></p>
-          <div className="hw1-scroll">
+          <div tabIndex={0} className="hw1-scroll">
             <table id={view.LINKED_TABLES.spread} className="hw1-table hw1-compact hw4-spread">
               <thead>
                 <tr>{['n', ...keys, 'skewMean'].map((key) => <th key={key}>{S.cols[key]}</th>)}</tr>
@@ -794,7 +794,7 @@ const Inference = React.memo(function Inference({ s, job, text, palette }) {
             <Figure title={I.scatterTitle(s.points[g].n, s.m)} draw={hw.drawScatter} data={charts.scatter.data} palette={palette} tip={charts.scatter.tip} legend={scatterLegend} hidden={scatterHidden} onToggle={toggleScatter} />
           </div>
           <p className="hw1-table-title"><strong>{I.tableTitle}</strong></p>
-          <div className="hw1-scroll">
+          <div tabIndex={0} className="hw1-scroll">
             <table id={view.LINKED_TABLES.inference} className="hw1-table hw1-compact hw4-inference">
               <thead>
                 <tr>{['n', 't', 'tQuantile', 'chi2', 'corr', 'corrTheory'].filter((key) => shown[key] !== false).map((key) => <th key={key}>{I.cols[key]}</th>)}</tr>

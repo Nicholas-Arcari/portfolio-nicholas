@@ -98,7 +98,7 @@ function Block({ block, labels }) {
       );
     case 'term':
       return (
-        <pre className="lab-term">
+        <pre tabIndex={0} className="lab-term">
           {block.rows.map((row, i) => (
             <React.Fragment key={i}>
               {row.kind === 'cmd' && <Command text={row.text} />}
@@ -113,7 +113,7 @@ function Block({ block, labels }) {
       return (
         <figure className="lab-code">
           {block.label && <figcaption>{block.label}</figcaption>}
-          <pre>{block.text}</pre>
+          <pre tabIndex={0}>{block.text}</pre>
         </figure>
       );
     case 'cmds':

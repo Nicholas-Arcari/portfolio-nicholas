@@ -77,7 +77,7 @@ const Markdown = ({ source }) =>
   parse(source).map((block, i) => {
     switch (block.type) {
       case 'code':
-        return <pre key={i} className="lab-text">{block.text}</pre>;
+        return <pre tabIndex={0} key={i} className="lab-text">{block.text}</pre>;
       case 'heading': {
         const Tag = HEADINGS[block.level] || 'h5';
         return <Tag key={i}><Inline text={block.text} /></Tag>;
@@ -86,7 +86,7 @@ const Markdown = ({ source }) =>
         return <hr key={i} />;
       case 'table':
         return (
-          <div key={i} className="hw1-scroll">
+          <div tabIndex={0} key={i} className="hw1-scroll">
             <table className="hw1-table lab-readme-table">
               <thead><tr>{block.head.map((c, j) => <th key={j}><Inline text={c} /></th>)}</tr></thead>
               <tbody>

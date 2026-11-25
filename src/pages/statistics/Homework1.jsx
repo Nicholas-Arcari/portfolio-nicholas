@@ -242,7 +242,7 @@ const Analyses = ({ prefix, result, text, palette }) => {
       {s.p <= view.FREQUENCY_TABLE_MAX_P ? (
         <>
           <p className="hw1-table-title"><strong>{T.frequency.tableTitle}</strong> <span className="hw1-note">{T.frequency.tableNote(s.p)}</span></p>
-          <div className="hw1-scroll">
+          <div tabIndex={0} className="hw1-scroll">
             <table id={view.frequencyTable(prefix)} className="hw1-table hw1-compact">
               <thead>
                 <tr>
@@ -556,7 +556,7 @@ const Homework1 = () => {
 
         <Title id="hw1-addition" level={1}>{S.addition}</Title>
         <p>{text.addition.intro}</p>
-        <pre className="hw1-formulas">{text.addition.formulas(TASK).join('\n')}</pre>
+        <pre tabIndex={0} className="hw1-formulas">{text.addition.formulas(TASK).join('\n')}</pre>
         <p>{text.addition.note}</p>
 
         <Title id="hw1-multiples" level={1}>{S.multiples}</Title>
@@ -584,7 +584,7 @@ const Homework1 = () => {
           <p className="hw1-note">{text.multiples.tooMany(k, view.LIST_LIMIT)}</p>
         )}
         <p className="hw1-table-title"><strong>{text.multiples.printedTitle}</strong></p>
-        <pre className="hw1-output">{report}</pre>
+        <pre tabIndex={0} className="hw1-output">{report}</pre>
 
         <Title id="hw1-fast" level={1}>{S.fast}</Title>
         <p>{text.fast.intro(k, daa.bits, daa.steps.length)}</p>

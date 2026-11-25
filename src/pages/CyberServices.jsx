@@ -175,7 +175,7 @@ const CyberServices = () => {
                   <p style={{ marginBottom: '1em', lineHeight: 1.6 }}>{t('cyberServices.imagesTrustIntro')}</p>
                   {/* Sfondo grigio traslucido e colore ereditato: unico blocco che
                       regge sia il tema chiaro sia quello scuro senza duplicare stili. */}
-                  <pre style={{
+                  <pre tabIndex={0} style={{
                     fontFamily: 'monospace', fontSize: '0.78em', lineHeight: 1.6,
                     whiteSpace: 'pre', overflowX: 'auto', margin: '0 0 1em',
                     padding: '0.9em 1em', borderLeft: '3px solid #d52349',

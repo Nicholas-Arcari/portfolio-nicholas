@@ -23,12 +23,12 @@ function Block({ block, labels }) {
   if (typeof block === 'string') return <p>{block}</p>;
   if (block.list) return <ul className="th-list">{block.list.map((item, i) => <li key={i}>{item}</li>)}</ul>;
   if (block.steps) return <ol className="th-list">{block.steps.map((item, i) => <li key={i}>{item}</li>)}</ol>;
-  if (block.formula) return <pre className="hw1-formulas">{block.formula}</pre>;
+  if (block.formula) return <pre tabIndex={0} className="hw1-formulas">{block.formula}</pre>;
   if (block.note) return <p className="th-note">{block.note}</p>;
   if (block.table) {
     const { cols, rows } = block.table;
     return (
-      <div className="hw1-scroll">
+      <div tabIndex={0} className="hw1-scroll">
         <table className="hw1-table th-table">
           <thead><tr>{cols.map((c) => <th key={c}>{c}</th>)}</tr></thead>
           <tbody>

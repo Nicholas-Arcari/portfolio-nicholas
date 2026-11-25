@@ -345,6 +345,29 @@ body.dark-mode #nav .nav-dropdown-menu li {
     }
 }
 
+/* I riquadri che scorrono (codice, tabelle, terminali, formule lunghe) si
+   raggiungono col tasto Tab, per scorrerli con le frecce: tabIndex={0} nei
+   componenti, e qui il bordo che mostra dove si e' */
+pre[tabindex]:focus-visible,
+.hw1-scroll:focus-visible,
+.ds-math-display:focus-visible {
+    outline: 2px solid var(--link-hover, #bb4b40);
+    outline-offset: 2px;
+}
+
+/* Il codice in linea degli appunti (Reti, SSA, Distributed Systems): sul fondo
+   dei riquadri colorati il grigio del testo restava sotto 4,5:1 (tema chiaro) */
+body:not(.dark-mode) .lab-doc p code,
+body:not(.dark-mode) .lab-doc li code,
+body:not(.dark-mode) .ssa-doc p code,
+body:not(.dark-mode) .ssa-doc li code,
+body:not(.dark-mode) .ssa-doc td code,
+body:not(.dark-mode) .ds-doc p code,
+body:not(.dark-mode) .ds-doc li code,
+body:not(.dark-mode) .ds-doc td code {
+    color: #4d4d4d;
+}
+
 /* Testo per i soli lettori di schermo: fuori dalla vista, ma letto (il
    terminale per intero, l'annuncio del cambio di pagina) */
 .visually-hidden {
@@ -3373,7 +3396,7 @@ body.dark-mode .lab-readme {
     font-size: 0.75em;
     letter-spacing: 1px;
     text-transform: uppercase;
-    color: #2f7f72;
+    color: #2c7a6d;
 }
 /* I comandi con la loro spiegazione; sui telefoni una riga sotto l'altra */
 .lab-cmds {

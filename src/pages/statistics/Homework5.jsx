@@ -69,7 +69,7 @@ const Check = ({ ok, children }) => <p className={ok ? 'hw2-check is-ok' : 'hw2-
 const Formulas = ({ title = null, children }) => (
   <>
     {title && <p className="hw1-table-title"><strong>{title}</strong></p>}
-    <pre className="hw1-formulas">{children}</pre>
+    <pre tabIndex={0} className="hw1-formulas">{children}</pre>
   </>
 );
 
@@ -360,7 +360,7 @@ const Convergence = React.memo(function Convergence({ text, palette }) {
         <Figure title={C.chartTitle(study.z)} draw={hw.drawLineChart} data={data} palette={palette} tip={tip} link={view.links.convergence} wide legend={legend} hidden={hidden} onToggle={toggle} animation={animation} />
       </div>
       <p className="hw1-table-title"><strong>{C.tableTitle}</strong></p>
-      <div className="hw1-scroll">
+      <div tabIndex={0} className="hw1-scroll">
         <table id={view.LINKED_TABLES.convergence} className="hw1-table hw1-compact hw5-convergence">
           <thead>
             <tr><th>{C.cols.n}</th>{rules.map((r) => <th key={r}>{text.ruleNames[r]}</th>)}</tr>
@@ -390,7 +390,7 @@ const ZTableSection = React.memo(function ZTableSection({ text }) {
     <>
       <Paras list={Z.intro} />
       <p className="hw1-table-title"><strong>{Z.title(zt)}</strong></p>
-      <div className="hw1-scroll">
+      <div tabIndex={0} className="hw1-scroll">
         <table className="hw1-table hw1-compact hw5-ztable">
           <thead>
             <tr><th>z</th>{Array.from({ length: hw.ZTABLE.cols }, (_, c) => <th key={c}>{`${F.decimal}0${c}`}</th>)}</tr>
@@ -912,7 +912,7 @@ const Compare = ({ s, job, fnKey, customStudy, text, palette }) => {
             />
           </div>
           <p className="hw1-table-title"><strong>{C.tableTitle}</strong></p>
-          <div className="hw1-scroll">
+          <div tabIndex={0} className="hw1-scroll">
             <table id={view.LINKED_TABLES.compare} className="hw1-table hw1-compact hw5-compare">
               <thead>
                 <tr>
@@ -1107,7 +1107,7 @@ const Results = ({ s, job, customStudy, text }) => {
       <Paras list={R.intro} />
       {!s && <Pending text={text} result={job} />}
       <p className="hw1-table-title"><strong>{R.tableTitle}</strong></p>
-      <div className="hw1-scroll">
+      <div tabIndex={0} className="hw1-scroll">
         <table className="hw1-table hw1-compact hw5-results">
           <thead>
             <tr><th>{R.cols.name}</th><th>{R.cols.integral}</th><th>{R.cols.riemann}</th><th>{R.cols.lebesgue}</th><th>{R.cols.riemannError}</th><th>{R.cols.lebesgueError}</th><th>{R.cols.verdict}</th></tr>
@@ -1165,7 +1165,7 @@ const Efficiency = ({ s, job, spec, fnKey, customStudy, text, palette }) => {
       {rows && (
         <>
           <p className="hw1-table-title"><strong>{E.tableTitle}</strong></p>
-          <div className="hw1-scroll">
+          <div tabIndex={0} className="hw1-scroll">
             <table className="hw1-table hw1-compact hw5-efficiency">
               <thead>
                 <tr>
@@ -1229,7 +1229,7 @@ const Pathological = React.memo(function Pathological({ text, palette }) {
         <Figure title={P.chartTitle(upper)} draw={hw.drawHistogram} data={data} palette={palette} tip={tip} wide legend={legend} />
       </div>
       <p className="hw1-table-title"><strong>{P.tableTitle}</strong></p>
-      <div className="hw1-scroll">
+      <div tabIndex={0} className="hw1-scroll">
         <table className="hw1-table hw1-compact hw5-thomae">
           <thead>
             <tr><th>{P.thomaeCols.n}</th><th>{P.thomaeCols.rational}</th><th>{P.thomaeCols.irrational}</th><th>{P.thomaeCols.lower}</th><th>{P.thomaeCols.upper}</th><th>{P.thomaeCols.doubles}</th></tr>
@@ -1264,7 +1264,7 @@ const Liouville = React.memo(function Liouville({ text }) {
       <Paras list={L.intro} />
       <Formulas>{L.formulas}</Formulas>
       <p className="hw1-table-title"><strong>{L.tableTitle}</strong></p>
-      <div className="hw1-scroll">
+      <div tabIndex={0} className="hw1-scroll">
         <table className="hw1-table hw1-compact hw5-liouville">
           <thead>
             <tr><th>{L.cols.x}</th><th>{L.cols.S}</th><th>{L.cols.ratio}</th><th>{L.cols.degree}</th></tr>
@@ -1290,7 +1290,7 @@ const Erf = React.memo(function Erf({ text }) {
       <Paras list={E.intro} />
       <Formulas>{E.formulas}</Formulas>
       <p className="hw1-table-title"><strong>{E.tableTitle}</strong></p>
-      <div className="hw1-scroll">
+      <div tabIndex={0} className="hw1-scroll">
         <table className="hw1-table hw1-compact hw5-erf">
           <thead>
             <tr><th>{E.cols.k}</th><th>{E.cols.value}</th><th>{E.cols.reference}</th><th>{E.cols.rounded}</th></tr>
@@ -1327,7 +1327,7 @@ const Series = React.memo(function Series({ text, palette }) {
       <Paras list={S.intro} />
       <Formulas>{S.formulas}</Formulas>
       <p className="hw1-table-title"><strong>{S.tableTitle}</strong></p>
-      <div className="hw1-scroll">
+      <div tabIndex={0} className="hw1-scroll">
         <table className="hw1-table hw1-compact hw5-series">
           <thead>
             <tr>
@@ -1402,7 +1402,7 @@ const Reference = React.memo(function Reference({ text }) {
       <Paras list={R.intro} />
       <p><a href={hw.NIST_URL} target="_blank" rel="noopener noreferrer">{R.link}</a></p>
       <p className="hw1-table-title"><strong>{R.tableTitle}</strong></p>
-      <div className="hw1-scroll">
+      <div tabIndex={0} className="hw1-scroll">
         <table className="hw1-table hw1-compact hw5-reference">
           <thead>
             <tr><th>{R.cols.z}</th><th>{R.cols.nist}</th><th>{R.cols.mpmath}</th><th>{R.cols.ours}</th><th>{R.cols.error}</th><th>{R.cols.nistError}</th></tr>
@@ -1443,7 +1443,7 @@ const Methods = ({ s, job, text, palette }) => {
     <>
       <Paras list={M.intro} />
       <p className="hw1-table-title"><strong>{M.tableTitle}</strong></p>
-      <div className="hw1-scroll">
+      <div tabIndex={0} className="hw1-scroll">
         <table className="hw1-table hw1-compact hw5-methods">
           <thead>
             <tr><th>{M.cols.method}</th><th>{M.cols.absolute}</th><th>{M.cols.relative}</th><th>{M.cols.exp}</th><th>{M.cols.terms}</th><th>{M.cols.time}</th></tr>

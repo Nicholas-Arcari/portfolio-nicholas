@@ -70,7 +70,7 @@ const Check = ({ ok, children }) => <p className={ok ? 'hw2-check is-ok' : 'hw2-
 const Formulas = ({ title = null, children }) => (
   <>
     {title && <p className="hw1-table-title"><strong>{title}</strong></p>}
-    <pre className="hw1-formulas">{children}</pre>
+    <pre tabIndex={0} className="hw1-formulas">{children}</pre>
   </>
 );
 
@@ -485,7 +485,7 @@ const Moments = React.memo(function Moments({ s, job, text }) {
     <>
       <p>{M.intro}</p>
       <p className="hw1-table-title"><strong>{M.tableTitle}</strong></p>
-      <div className="hw1-scroll">
+      <div tabIndex={0} className="hw1-scroll">
         <table className="hw1-table hw1-compact hw3-moments">
           <thead>
             <tr>
@@ -528,7 +528,7 @@ const Choice = React.memo(function Choice({ s, job, epsilon, text }) {
       <Paras list={C.intro} />
       <Formulas title={C.formulasTitle}>{C.formulas}</Formulas>
       <p className="hw1-table-title"><strong>{C.tableTitle(epsilon, m)}</strong></p>
-      <div className="hw1-scroll">
+      <div tabIndex={0} className="hw1-scroll">
         <table className="hw1-table hw1-compact hw3-choice">
           <thead>
             <tr>{['n', 'pB', 'mB', 'pR', 'mR', 'd', 'mD'].map((k) => <th key={k}>{C.cols[k]}</th>)}</tr>
@@ -595,7 +595,7 @@ const Convergence = React.memo(function Convergence({ s, job, epsilon, setEpsilo
       </div>
       <ChartLegend items={legend} palette={palette} hidden={hidden} onToggle={toggleHidden} />
       <p className="hw1-table-title"><strong>{C.tableTitle(epsilon)}</strong></p>
-      <div className="hw1-scroll">
+      <div tabIndex={0} className="hw1-scroll">
         <table id={view.LINKED_TABLES.lln} className="hw1-table hw1-compact hw3-lln">
           <thead>
             <tr>
@@ -781,7 +781,7 @@ const Drift = React.memo(function Drift({ s, job, text }) {
     <>
       <p>{D.intro}</p>
       <p className="hw1-table-title"><strong>{D.tableTitle}</strong></p>
-      <div className="hw1-scroll">
+      <div tabIndex={0} className="hw1-scroll">
         <table className="hw1-table hw1-compact hw3-drift">
           <thead>
             <tr>{['n', 'mean', 'sampleMean', 'skewness', 'sampleSkewness', 'distance'].map((k) => <th key={k}>{D.cols[k]}</th>)}</tr>

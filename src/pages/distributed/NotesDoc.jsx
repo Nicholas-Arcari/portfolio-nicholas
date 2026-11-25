@@ -58,7 +58,7 @@ function Block({ block, index }) {
       return (
         <figure className="lab-code ds-code" data-b={index}>
           {block.label && <figcaption>{block.label}</figcaption>}
-          <pre>{block.text}</pre>
+          <pre tabIndex={0}>{block.text}</pre>
         </figure>
       );
     case 'table':

@@ -146,7 +146,7 @@ const Bip39 = ({ analysis, pipeline, text }) => {
       <Paras list={B.intro} />
       <p className="hw1-table-title"><strong>{B.wordsTitle}</strong></p>
       {rows.length > 0 && (
-        <div className="hw1-scroll">
+        <div tabIndex={0} className="hw1-scroll">
           <table className="hw1-table hw1-compact hw2-words">
             <thead>
               <tr><th>{B.cols.position}</th><th>{B.cols.word}</th><th>{B.cols.index}</th><th>{B.cols.bits}</th></tr>
@@ -184,7 +184,7 @@ const Bip39 = ({ analysis, pipeline, text }) => {
         <p className="hw1-note">{B.noBits}</p>
       )}
       <p className="hw1-table-title"><strong>{B.seedTitle}</strong></p>
-      <pre className="hw1-formulas">{B.seedFormula}</pre>
+      <pre tabIndex={0} className="hw1-formulas">{B.seedFormula}</pre>
       <Stale text={text} />
       <Value label={B.seedLabel(pipeline.passphrase !== '')}>{hex(pipeline.seed)}</Value>
       <Paras list={B.after} />

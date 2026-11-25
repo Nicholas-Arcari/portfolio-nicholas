@@ -79,7 +79,7 @@ const Check = ({ ok, children }) => <p className={ok ? 'hw2-check is-ok' : 'hw2-
 const Formulas = ({ title = null, children }) => (
   <>
     {title && <p className="hw1-table-title"><strong>{title}</strong></p>}
-    <pre className="hw1-formulas">{children}</pre>
+    <pre tabIndex={0} className="hw1-formulas">{children}</pre>
   </>
 );
 
@@ -165,7 +165,7 @@ const Encryption = React.memo(function Encryption({ encryption, text }) {
       <Paras list={E.intro} />
       <p className="hw1-table-title"><strong>{E.tableTitle}</strong></p>
       <Stale>{text.scheme.stale}</Stale>
-      <div className="hw1-scroll">
+      <div tabIndex={0} className="hw1-scroll">
         <table className="hw1-table hw1-compact hw2a-blocks">
           <thead>
             <tr><th>{E.cols.position}</th><th>{E.cols.byte}</th><th>{E.cols.r}</th><th>{E.cols.C1}</th><th>{E.cols.C2}</th></tr>
@@ -287,7 +287,7 @@ const Substitution = ({ shift, text }) => {
   return (
     <>
       <p className="hw1-table-title"><strong>{C.tableTitle}</strong></p>
-      <div className="hw2a-subst" role="table" aria-label={C.tableTitle}>
+      <div className="hw2a-subst" role="table" aria-label={C.tableTitle} tabIndex={0}>
         <div className="hw2a-subst-row" role="row">
           <span className="hw2a-subst-head" role="rowheader">{C.plainRow}</span>
           {table.plain.map((l) => <span key={l} role="cell">{l}</span>)}
@@ -503,7 +503,7 @@ const Lengths = React.memo(function Lengths({ stats, text, palette }) {
       <Paras list={L.intro(s)} />
       <Figure wide title={L.chart} draw={hw.drawLineChart} data={chart} palette={palette} tip={tip} link={view.links.lengths} legend={legend} hidden={hidden} onToggle={toggle} animation={animation} />
       <p className="hw1-table-title"><strong>{L.tableTitle}</strong></p>
-      <div className="hw1-scroll">
+      <div tabIndex={0} className="hw1-scroll">
         <table id={view.LINKED_TABLES.lengths} className="hw1-table hw1-compact hw2a-lengths">
           <thead>
             <tr>
