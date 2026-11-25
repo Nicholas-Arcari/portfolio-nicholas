@@ -249,6 +249,45 @@ body.dark-mode .tag-chip {
     border-bottom: 0 !important;
 }
 
+/* Il sottomenu Passioni (src/components/SiteNav.jsx), sotto la sua voce e
+   centrato su di essa */
+#nav .nav-dropdown {
+    position: relative;
+}
+#nav .nav-dropdown > a {
+    cursor: pointer;
+}
+#nav .nav-dropdown-menu {
+    display: block;
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #fff;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    padding: 10px 0;
+    min-width: 200px;
+    z-index: 1000;
+    list-style: none;
+    margin: 0;
+}
+#nav .nav-dropdown-menu li {
+    padding: 5px 20px;
+    border-top: 1px solid #eee;
+}
+#nav .nav-dropdown-menu li:first-child {
+    border-top: none;
+}
+#nav .nav-dropdown-menu a {
+    display: block;
+    color: #444;
+    text-decoration: none;
+}
+body.dark-mode #nav .nav-dropdown-menu li {
+    border-top-color: #2a2a2a;
+}
+
 /* ===== SEARCH RESULTS COUNT ===== */
 .search-results-count {
     font-size: 0.85em;

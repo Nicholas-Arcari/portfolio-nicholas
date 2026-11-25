@@ -35,19 +35,9 @@ const TemplateScripts = () => {
       $('html, body').css('overflow', '');
 
       // --- 2. DROPDOWNS (Menu Desktop) ---
-      if ($nav.children('ul').length > 0) {
-        // Se dropotron è già attivo, distruggilo per ricrearlo pulito
-        if ($nav.children('ul').data('dropotron')) {
-             $nav.children('ul').dropotron('destroy');
-        }
-        
-        $nav.children('ul').dropotron({
-          mode: 'fade',
-          noOpenerFade: true,
-          hoverDelay: 150,
-          hideDelay: 350
-        });
-      }
+      // Niente dropotron: il sottomenu lo disegna React (SiteNav.jsx), e il
+      // plugin, avviato mentre il sottomenu era aperto, se lo prendeva e lo
+      // spostava fuori dal menu, sotto il naso di React.
 
       // --- 3. MOBILE: NavPanel ---
       // Creiamo il pulsante Hamburger (senza href="#navPanel" per evitare

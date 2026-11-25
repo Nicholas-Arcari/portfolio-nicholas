@@ -1,30 +1,19 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../contexts/languageContext';
 import Footer from '../components/Footer';
+import SiteHeader from '../components/SiteHeader';
+import { usePageLayout } from '../utils/usePageLayout';
 
 const NotFound = () => {
   const { t } = useLanguage();
 
-  useEffect(() => {
-    document.body.classList.remove('homepage');
-    document.body.classList.add('no-sidebar');
-    window.scrollTo(0, 0);
-
-    return () => {
-      document.body.classList.remove('no-sidebar');
-      document.body.classList.add('homepage');
-    };
-  }, []);
+  usePageLayout('no-sidebar');
 
   return (
     <div id="page-wrapper">
 
-      <section id="header">
-        <div className="container">
-          <h1 id="logo"><Link to="/">Nicholas Arcari</Link></h1>
-        </div>
-      </section>
+      <SiteHeader nav={false} />
 
       <section id="main">
         <div className="container">
