@@ -149,7 +149,8 @@ const Home = () => {
       {/* --- BANNER --- */}
       <section id="banner">
         <div className="container">
-          <p><strong>{t('home.banner')}</strong><br />{t('home.bannerText')}</p>
+          {/* lo spazio separa titolo e testo quando il tema nasconde il <br> (telefono) */}
+          <p><strong>{t('home.banner')}</strong>{' '}<br />{t('home.bannerText')}</p>
         </div>
       </section>
 
