@@ -55,7 +55,9 @@ export function attachGestures(el, handlers) {
       } catch {
         // a pointer that is already gone cannot be captured: the drag still works while it stays on the element
       }
-      e.preventDefault();
+      // the mouse: no text selected while dragging. A finger is kept by touchstart (below), and in Firefox a
+      // pointerdown cancelled for a finger keeps a second finger (the pinch) away from the element
+      if (e.pointerType !== 'touch') e.preventDefault();
     }
   };
 
