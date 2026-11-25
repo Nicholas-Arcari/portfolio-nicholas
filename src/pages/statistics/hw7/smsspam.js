@@ -16,7 +16,9 @@
 // Licenza: Creative Commons Attribution 4.0 International (UCI Machine
 // Learning Repository, https://doi.org/10.24432/C5CC84). Il readme degli
 // autori chiede di citare il loro articolo e la pagina della raccolta: la
-// citazione e' in SOURCE, e la pagina e il programma la mostrano.
+// citazione e' in SOURCE, e la pagina e il programma la mostrano. La pagina
+// della raccolta (dt.fee.unicamp.br) non e' piu' online: si cita il suo
+// indirizzo e si collega la copia dell'Internet Archive del 10/08/2022.
 
 /** Where the messages come from, as the page and the program cite them. */
 export const SOURCE = Object.freeze({
@@ -24,6 +26,8 @@ export const SOURCE = Object.freeze({
   url: 'https://archive.ics.uci.edu/dataset/228/sms+spam+collection',
   doi: 'https://doi.org/10.24432/C5CC84',
   page: 'http://www.dt.fee.unicamp.br/~tiago/smsspamcollection/',
+  // the page above is no longer online: its copy in the Internet Archive, of 10 August 2022
+  archive: 'https://web.archive.org/web/20220810124955/https://www.dt.fee.unicamp.br/~tiago/smsspamcollection/',
   paper: 'T. A. Almeida, J. M. Gómez Hidalgo, A. Yamakami, "Contributions to the Study of SMS Spam Filtering: New Collection and Results", Proceedings of the 11th ACM Symposium on Document Engineering (DocEng 2011), pp. 259-262',
   paperUrl: 'https://doi.org/10.1145/2034691.2034742',
   license: 'CC BY 4.0',

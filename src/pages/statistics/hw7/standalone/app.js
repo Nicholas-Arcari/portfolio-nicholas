@@ -1747,7 +1747,7 @@ function spamBlock() {
   return [
     title('hw7-spam', 1, text.sections.spam),
     paras(M.intro),
-    h('p', null, M.source(hw.SMS_DATA), ' ', link(hw.SMS_DATA.url, M.links.dataset), ' · ', link(hw.SMS_DATA.paperUrl, M.links.paper)),
+    h('p', null, M.source(hw.SMS_DATA), ' ', M.page(hw.SMS_DATA), ' ', link(hw.SMS_DATA.url, M.links.dataset), ' · ', link(hw.SMS_DATA.paperUrl, M.links.paper), ' · ', link(hw.SMS_DATA.archive, M.links.archive)),
     paras(M.paras(sms)),
     dataTable({
       caption: M.matrixTitle,

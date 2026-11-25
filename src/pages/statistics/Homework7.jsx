@@ -707,10 +707,12 @@ const Spam = ({ sms, text, palette }) => {
       <Title id="hw7-spam" level={1}>{text.sections.spam}</Title>
       <Paras list={M.intro} />
       <p>
-        {M.source(hw.SMS_DATA)}{' '}
+        {M.source(hw.SMS_DATA)} {M.page(hw.SMS_DATA)}{' '}
         <a href={hw.SMS_DATA.url} target="_blank" rel="noopener noreferrer">{M.links.dataset}</a>
         {' · '}
         <a href={hw.SMS_DATA.paperUrl} target="_blank" rel="noopener noreferrer">{M.links.paper}</a>
+        {' · '}
+        <a href={hw.SMS_DATA.archive} target="_blank" rel="noopener noreferrer">{M.links.archive}</a>
       </p>
       <Paras list={M.paras(sms)} />
       <DataTable

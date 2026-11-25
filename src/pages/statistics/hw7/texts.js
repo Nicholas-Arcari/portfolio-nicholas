@@ -339,7 +339,8 @@ const it = {
       'Il motore bayesiano più usato della sicurezza informatica è il filtro antispam: Sahami e colleghi lo proposero nel 1998, Paul Graham lo rese famoso nel 2002 con «A Plan for Spam». Ogni parola è una prova, e il filtro somma i loro pesi.',
     ],
     source: (d) => `I dati: la ${d.dataset}, raccolta da Almeida, Gómez Hidalgo e Yamakami: ${IT.int(d.messages)} SMS in inglese, etichettati come spam o legittimi. Licenza ${d.license}, che chiede di citare la fonte: ${d.paper}.`,
-    links: { dataset: 'La raccolta (UCI)', paper: 'L’articolo' },
+    page: (d) => `La pagina della raccolta che gli autori chiedono di citare, ${d.page}, non è più online: ne resta la copia del 10 agosto 2022 nell’Internet Archive.`,
+    links: { dataset: 'La raccolta (UCI)', paper: 'L’articolo', archive: 'La pagina della raccolta (copia d’archivio)' },
     paras: (m) => {
       const c = m.matrix;
       return [
@@ -1145,7 +1146,8 @@ const en = {
       'The most widely used Bayesian engine of cybersecurity is the spam filter: Sahami and colleagues proposed it in 1998, Paul Graham made it famous in 2002 with "A Plan for Spam". Every word is a piece of evidence, and the filter adds up their weights.',
     ],
     source: (d) => `The data: the ${d.dataset}, collected by Almeida, Gómez Hidalgo and Yamakami: ${EN.int(d.messages)} SMS in English, labelled as spam or legitimate. Licence ${d.license}, which asks to cite the source: ${d.paper}.`,
-    links: { dataset: 'The collection (UCI)', paper: 'The paper' },
+    page: (d) => `The page of the collection that the authors ask to cite, ${d.page}, is no longer online: its copy of 10 August 2022 remains in the Internet Archive.`,
+    links: { dataset: 'The collection (UCI)', paper: 'The paper', archive: 'The page of the collection (archived copy)' },
     paras: (m) => {
       const c = m.matrix;
       return [
