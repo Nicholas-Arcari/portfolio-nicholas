@@ -5,6 +5,7 @@ import retiDoc from './build/reti-doc.js'
 import distributedNotes from './build/distributed-notes.js'
 import ssaNotes from './build/ssa-notes.js'
 import i18nCheck from './build/i18n-check.js'
+import faCheck from './build/fa-check.js'
 
 // Content Security Policy del sito pubblicato. GitHub Pages non permette di
 // impostare header HTTP, quindi la politica viaggia come <meta> nell'index.html,
@@ -64,9 +65,10 @@ const cspMeta = () => ({
 // font woff2. ssaNotes: lo stesso per gli appunti di Security in Software
 // Applications, con le loro figure. i18nCheck: le traduzioni hanno la stessa
 // struttura in italiano e in inglese, e ogni chiave usata esiste ed e'
-// importata dal file che la usa.
+// importata dal file che la usa. faCheck: ogni icona di Font Awesome usata nel
+// codice c'e' nel sottoinsieme pubblicato (build/fa-subset.py).
 export default defineConfig({
-  plugins: [react(), cspMeta(), homeworkStandalone(), retiDoc(), distributedNotes(), ssaNotes(), i18nCheck()],
+  plugins: [react(), cspMeta(), homeworkStandalone(), retiDoc(), distributedNotes(), ssaNotes(), i18nCheck(), faCheck()],
   base: '/portfolio-nicholas/', // <--- Nome del repo
   build: {
     // Un font piccolo finirebbe dentro il CSS come data:, che font-src della
