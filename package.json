@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "predeploy": "node build/deploy-guard.js && npm run build",
-    "deploy": "gh-pages -d dist --nojekyll"
+    "deploy": "gh-pages -d dist --nojekyll",
+    "check": "npm run lint && npm run build && node build/check-site.mjs"
   },
   "dependencies": {
     "katex": "^0.19.1",
@@ -23,11 +24,13 @@
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
+    "axe-core": "4.11.3",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "gh-pages": "^6.3.0",
     "globals": "^16.5.0",
+    "playwright": "1.62.1",
     "vite": "^7.2.4"
   }
 }
