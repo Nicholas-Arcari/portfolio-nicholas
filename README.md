@@ -39,7 +39,7 @@ Vivo tra Salsomaggiore Terme (PR) e Roma, e cerco una posizione come **Junior Cy
 
 - **Progetti di cybersecurity:** un Security Home Lab su Raspberry Pi 5 con Wazuh e un honeypot, l'analisi della rete Tor, la ricerca sulla sicurezza hardware con Flipper Zero, **SOC Toolkit** (una suite per analisti SOC) e **Citizen Shield** (OPSEC e privacy per chi subisce cyberstalking o doxxing).
 - **Altri progetti:** **FinanzMe** (finanze personali self-hosted con open banking), **ByteBulk** (tracker di macronutrienti) e **SeedCast** (lead generation B2B che gira in locale).
-- **Università:** i piani di studio della triennale e della magistrale, il laboratorio di Reti di Calcolatori e gli homework di Statistics, ognuno con la sua pagina di teoria.
+- **Università:** i piani di studio della triennale e della magistrale, il laboratorio di Reti di Calcolatori, gli homework di Statistics, ognuno con la sua pagina di teoria, e gli appunti delle lezioni di Distributed Systems e di Security in Software Applications.
 - **Passioni:** le ricette di Mamma Niky e le pizze, i cocktail, le stampe 3D e una galleria con le mie foto di Roma (in arrivo).
 
 ## Contatti
