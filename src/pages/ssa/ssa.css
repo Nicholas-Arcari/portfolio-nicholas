@@ -1,0 +1,262 @@
+/* src/pages/ssa/ssa.css
+   Le lezioni di Security in Software Applications. Il grosso viene dalle
+   pagine di teoria di Statistics e dal laboratorio di Reti (HackerTheme.css:
+   .th-page, .th-list, .lab-code, .hw-title, ...), come per Distributed
+   Systems; qui c'e' quello che serve in piu': il riquadro con il testo della
+   slide, il codice, le figure e la figura aperta grande, le tabelle e la
+   colonna con le lezioni vicine. Il file si carica con le pagine del corso,
+   non con il resto del sito. */
+
+/* Allineato a sinistra: giustificato, un testo pieno di codice che non si
+   puo' spezzare si allarga in buchi. Un indirizzo lungo va a capo invece di
+   allargare la pagina */
+.ssa-doc p,
+.ssa-doc li {
+    text-align: left;
+    overflow-wrap: break-word;
+}
+.ssa-doc .ssa-heading-0 {
+    margin: 2.5em 0 0.8em;
+}
+.ssa-doc .ssa-heading-1 {
+    margin: 1.8em 0 0.7em;
+}
+
+/* Titoli e intestazioni di tabella sono in maiuscolo e spaziati, ma il codice
+   no: strcpy e STRCPY non sono la stessa cosa */
+.ssa-doc h3 code,
+.ssa-doc h4 code,
+.ssa-doc th code {
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+/* Il codice citato nel testo, come negli appunti di Distributed Systems */
+.ssa-doc p code,
+.ssa-doc li code,
+.ssa-doc td code,
+.ssa-doc th code,
+.ssa-doc h3 code,
+.ssa-doc h4 code {
+    padding: 0.1em 0.35em;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.06);
+    font-family: monospace;
+    font-size: 0.85em;
+    overflow-wrap: anywhere;
+}
+body.dark-mode .ssa-doc p code,
+body.dark-mode .ssa-doc li code,
+body.dark-mode .ssa-doc td code,
+body.dark-mode .ssa-doc th code,
+body.dark-mode .ssa-doc h3 code,
+body.dark-mode .ssa-doc h4 code {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Il testo della slide, parola per parola: un riquadro con il filo verde a
+   sinistra, in tondo (il template mette le citazioni in corsivo, e qui il
+   corsivo e' quello del docente) */
+.ssa-doc .ssa-quote {
+    margin: 0 0 1.5em;
+    padding: 0.9em 1.2em 0.1em;
+    border-left: 4px solid #3fa796;
+    border-radius: 0 5px 5px 0;
+    background: rgba(63, 167, 150, 0.08);
+    font-style: normal;
+}
+body.dark-mode .ssa-doc .ssa-quote {
+    border-left-color: #4fc3ad;
+    background: rgba(63, 167, 150, 0.1);
+}
+.ssa-quote p,
+.ssa-quote .ssa-list,
+.ssa-quote .ssa-figures,
+.ssa-quote .ssa-table-scroll,
+.ssa-quote .ssa-code {
+    margin-bottom: 0.8em;
+}
+.ssa-quote .ssa-list li {
+    margin-bottom: 0.2em;
+}
+
+/* Gli elenchi: un paragrafo o un elenco dentro una voce */
+.ssa-list li > p {
+    margin: 0.4em 0 0.6em;
+}
+.ssa-list .ssa-list {
+    margin: 0.3em 0 0.3em 1.2em;
+}
+.ssa-list li > .ssa-code {
+    margin: 0.5em 0 0.8em;
+}
+
+/* Il codice: il riquadro di .lab-code, con un filo rosso a sinistra e il
+   linguaggio in testa */
+.ssa-code pre {
+    border-left: 3px solid #d52349;
+    font-size: 0.82em;
+    line-height: 1.55;
+}
+body.dark-mode .ssa-code pre {
+    border-left-color: #ff6b81;
+}
+
+/* Le tabelle: larghe quanto serve, e scorrono se non ci stanno */
+.ssa-table-scroll {
+    overflow-x: auto;
+    margin: 0 0 1.5em;
+}
+.ssa-table th,
+.ssa-table td {
+    text-align: left;
+    vertical-align: top;
+}
+.ssa-table .ssa-center {
+    text-align: center;
+}
+.ssa-table .ssa-right {
+    text-align: right;
+}
+
+/* Le figure: centrate, affiancate se sono sulla stessa riga, e un clic le
+   apre grandi. Sono pulsanti: via lo stile dei pulsanti del template */
+.ssa-figures {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.8em;
+    margin: 0 0 1.5em;
+}
+.ssa-doc .ssa-figure,
+.ssa-doc .ssa-figure:hover,
+.ssa-doc .ssa-figure:active {
+    display: block;
+    flex: 0 1 auto;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 4px;
+    background: none;
+    box-shadow: none;
+    line-height: 0;
+    letter-spacing: normal;
+    text-transform: none;
+    cursor: zoom-in;
+    transition: none;
+}
+.ssa-figure img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 4px;
+    background: #fff;
+}
+.ssa-doc .ssa-figure:focus-visible {
+    outline: 2px solid #d52349;
+    outline-offset: 3px;
+}
+body.dark-mode .ssa-figure img {
+    border-color: rgba(255, 255, 255, 0.15);
+}
+/* Su un telefono la colonna e' stretta: ogni figura la occupa tutta, e le
+   sequenze di tre o piu' figure (una slide costruita passo per passo) vanno
+   a due per riga */
+@media screen and (max-width: 736px) {
+    .ssa-doc .ssa-figure {
+        width: 100% !important;
+    }
+    .ssa-doc .ssa-figures:has(> .ssa-figure:nth-child(3)) > .ssa-figure {
+        width: calc(50% - 0.5em) !important;
+    }
+}
+
+/* La figura aperta grande, sopra la pagina scurita */
+dialog.ssa-viewer {
+    width: min(96vw, 1440px);
+    max-width: none;
+    max-height: 96vh;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    overflow: visible;
+}
+dialog.ssa-viewer::backdrop {
+    background: rgba(0, 0, 0, 0.85);
+}
+.ssa-viewer-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5em;
+}
+.ssa-viewer-box img {
+    display: block;
+    max-width: 100%;
+    max-height: calc(96vh - 3.5em);
+    width: auto;
+    height: auto;
+    border-radius: 4px;
+    background: #fff;
+    cursor: default;
+}
+.ssa-viewer-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1em;
+    width: 100%;
+    color: #eee;
+    font-size: 0.9em;
+}
+dialog.ssa-viewer .ssa-viewer-close,
+dialog.ssa-viewer .ssa-viewer-close:hover {
+    margin: 0;
+    padding: 0 0.2em;
+    border: 0;
+    background: none;
+    box-shadow: none;
+    color: #eee !important;
+    font-size: 2em;
+    line-height: 1;
+    letter-spacing: normal;
+    cursor: pointer;
+}
+dialog.ssa-viewer .ssa-viewer-close:hover {
+    color: #ff6b81 !important;
+}
+
+/* Nell'elenco: come si leggono gli appunti */
+.ssa-howto {
+    margin: 0 0 2em;
+    padding: 0.9em 1.2em 0.2em;
+    border-radius: 5px;
+    background: rgba(0, 0, 0, 0.03);
+}
+body.dark-mode .ssa-howto {
+    background: rgba(255, 255, 255, 0.04);
+}
+.ssa-howto h3 {
+    margin: 0 0 0.5em;
+    font-size: 0.95em;
+}
+.ssa-howto ul {
+    margin: 0 0 0.8em 1.2em;
+    list-style: disc;
+}
+.ssa-howto li {
+    margin-bottom: 0.3em;
+    text-align: left;
+}
+
+/* La colonna destra: lezione precedente, successiva ed elenco, uno sotto
+   l'altro e larghi quanto il riquadro */
+.ssa-nav-box .button {
+    display: block;
+    width: 100%;
+    margin: 0 0 0.6em;
+}
+.ssa-nav-box .button:last-child {
+    margin-bottom: 0;
+}

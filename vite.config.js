@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import homeworkStandalone from './build/homework-standalone.js'
 import retiDoc from './build/reti-doc.js'
 import distributedNotes from './build/distributed-notes.js'
+import ssaNotes from './build/ssa-notes.js'
 
 // Content Security Policy del sito pubblicato. GitHub Pages non permette di
 // impostare header HTTP, quindi la politica viaggia come <meta> nell'index.html,
@@ -59,9 +60,10 @@ const cspMeta = () => ({
 // avere le stesse parole dei file del laboratorio. distributedNotes: gli
 // appunti di Distributed Systems devono leggersi, avere formule valide e la
 // stessa struttura in inglese e in italiano; del CSS di KaTeX restano solo i
-// font woff2.
+// font woff2. ssaNotes: lo stesso per gli appunti di Security in Software
+// Applications, con le loro figure.
 export default defineConfig({
-  plugins: [react(), cspMeta(), homeworkStandalone(), retiDoc(), distributedNotes()],
+  plugins: [react(), cspMeta(), homeworkStandalone(), retiDoc(), distributedNotes(), ssaNotes()],
   base: '/portfolio-nicholas/', // <--- Nome del repo
   build: {
     // Un font piccolo finirebbe dentro il CSS come data:, che font-src della

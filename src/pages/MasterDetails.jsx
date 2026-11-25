@@ -109,7 +109,7 @@ const MasterDetails = () => {
                       <React.Fragment key={index}>
                         <div style={{ marginBottom: '2em' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1em', flexWrap: 'wrap' }}>
-                                {/* Un corso con una pagina sua (Statistics con gli homework, Distributed Systems con le lezioni) ha il nome cliccabile */}
+                                {/* Un corso con una pagina sua (Statistics con gli homework, Distributed Systems e Security in Software Applications con le lezioni) ha il nome cliccabile */}
                                 <h3 style={{ margin: 0 }}>{course.link ? <Link to={course.link} className="course-link">{course.name}</Link> : course.name}</h3>
                                 <span style={{ display: 'flex', gap: '0.4em', flexWrap: 'wrap' }}>
                                   <span className="button alt small" style={{ pointerEvents: 'none' }}>{course.year}</span>

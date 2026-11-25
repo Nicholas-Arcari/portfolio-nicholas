@@ -43,6 +43,8 @@ const RetiList = lazy(() => import('./pages/reti/RetiList'));
 const RetiExercise = lazy(() => import('./pages/reti/RetiExercise'));
 const DistributedList = lazy(() => import('./pages/distributed/DistributedList'));
 const DistributedLecture = lazy(() => import('./pages/distributed/DistributedLecture'));
+const SsaList = lazy(() => import('./pages/ssa/SsaList'));
+const SsaLecture = lazy(() => import('./pages/ssa/SsaLecture'));
 const Theory1 = lazy(() => import('./pages/statistics/theory/Theory1'));
 const Theory2 = lazy(() => import('./pages/statistics/theory/Theory2'));
 const Theory2a = lazy(() => import('./pages/statistics/theory/Theory2a'));
@@ -93,6 +95,8 @@ function App() {
                 <Route path="/reti-di-calcolatori/:slug" element={<RetiExercise />} />
                 <Route path="/distributed-systems" element={<DistributedList />} />
                 <Route path="/distributed-systems/:slug" element={<DistributedLecture />} />
+                <Route path="/security-in-software-applications" element={<SsaList />} />
+                <Route path="/security-in-software-applications/:slug" element={<SsaLecture />} />
                 <Route path="/statistics/homework-1/theory" element={<Theory1 />} />
                 <Route path="/statistics/homework-2/theory" element={<Theory2 />} />
                 <Route path="/statistics/homework-2a/theory" element={<Theory2a />} />
