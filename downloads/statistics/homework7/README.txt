@@ -46,8 +46,10 @@ I dati
   4.0 International:
     https://archive.ics.uci.edu/dataset/228/sms+spam+collection
     https://doi.org/10.24432/C5CC84
-  La pagina della raccolta:
+  La pagina della raccolta (non piu' online; ne resta la copia del 10
+  agosto 2022 nell'Internet Archive):
     http://www.dt.fee.unicamp.br/~tiago/smsspamcollection/
+    https://web.archive.org/web/20220810124955/https://www.dt.fee.unicamp.br/~tiago/smsspamcollection/
   L'articolo da citare:
     T. A. Almeida, J. M. Gomez Hidalgo, A. Yamakami, "Contributions to the
     Study of SMS Spam Filtering: New Collection and Results", Proceedings
@@ -123,8 +125,10 @@ The data
   Attribution 4.0 International license:
     https://archive.ics.uci.edu/dataset/228/sms+spam+collection
     https://doi.org/10.24432/C5CC84
-  The page of the collection:
+  The page of the collection (no longer online; its copy of 10 August
+  2022 remains in the Internet Archive):
     http://www.dt.fee.unicamp.br/~tiago/smsspamcollection/
+    https://web.archive.org/web/20220810124955/https://www.dt.fee.unicamp.br/~tiago/smsspamcollection/
   The paper to cite:
     T. A. Almeida, J. M. Gomez Hidalgo, A. Yamakami, "Contributions to the
     Study of SMS Spam Filtering: New Collection and Results", Proceedings
