@@ -107,6 +107,17 @@ export function attachGestures(el, handlers) {
     if (handlers.key && handlers.key(e)) e.preventDefault();
   };
 
+  // With touch-action: pan-y a finger moving up or down scrolls the page, and the browser takes the
+  // gesture away from the chart (pointercancel). A finger that grabbed something (press returned
+  // true: a line to drag) and a second finger (the pinch) keep the gesture for the chart: the
+  // pointerdown comes before its touchstart, so the decision is taken when the browser asks.
+  const onTouchStart = (e) => {
+    if (drag || e.touches.length > 1) e.preventDefault();
+  };
+  const onTouchMove = (e) => {
+    if ((drag || pinch) && e.cancelable) e.preventDefault();
+  };
+
   el.addEventListener('pointerdown', onDown);
   el.addEventListener('pointermove', onMove);
   el.addEventListener('pointerup', onUp);
@@ -115,6 +126,8 @@ export function attachGestures(el, handlers) {
   el.addEventListener('dblclick', onDouble);
   el.addEventListener('wheel', onWheel, { passive: false });
   el.addEventListener('keydown', onKey);
+  el.addEventListener('touchstart', onTouchStart, { passive: false });
+  el.addEventListener('touchmove', onTouchMove, { passive: false });
   return () => {
     el.removeEventListener('pointerdown', onDown);
     el.removeEventListener('pointermove', onMove);
@@ -124,5 +137,7 @@ export function attachGestures(el, handlers) {
     el.removeEventListener('dblclick', onDouble);
     el.removeEventListener('wheel', onWheel);
     el.removeEventListener('keydown', onKey);
+    el.removeEventListener('touchstart', onTouchStart);
+    el.removeEventListener('touchmove', onTouchMove);
   };
 }
