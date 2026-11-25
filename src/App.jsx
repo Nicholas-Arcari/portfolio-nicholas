@@ -4,7 +4,7 @@ import { Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeProvider';
 import { LanguageProvider } from './contexts/LanguageProvider';
 import Home from './pages/Home';
-import TemplateScripts from './components/TemplateScripts';
+import MobileNav from './components/MobileNav';
 import SettingsBar from './components/SettingsBar';
 import PageTransition from './components/PageTransition';
 import PageError from './components/PageError';
@@ -58,7 +58,7 @@ function App() {
   return (
     <ThemeProvider>
       <LanguageProvider>
-        <TemplateScripts />
+        <MobileNav />
         <SettingsBar />
 
         <PageTransition>

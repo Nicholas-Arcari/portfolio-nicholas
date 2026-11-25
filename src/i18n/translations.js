@@ -13,6 +13,7 @@ export const translations = {
       prints3d: 'Stampe 3D',
       gallery: 'Galleria',
       github: 'GitHub',
+      menu: 'Menu',
     },
 
     // --- FOOTER ---
@@ -1927,6 +1928,7 @@ export const translations = {
       prints3d: '3D Prints',
       gallery: 'Gallery',
       github: 'GitHub',
+      menu: 'Menu',
     },
 
     // --- FOOTER ---

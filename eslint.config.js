@@ -5,11 +5,7 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  // Il JavaScript del template - jQuery e gli script di HTML5UP - non e'
-  // nostro e non e' scritto per essere analizzato: minificato, con variabili
-  // globali implicite, cento errori che nessuno correggera' mai. Lasciarli
-  // dentro significa un lint sempre rosso, che equivale a non averlo.
-  globalIgnores(['dist', 'public/assets/js']),
+  globalIgnores(['dist']),
   {
     files: ['**/*.{js,jsx}'],
     extends: [

@@ -15,6 +15,13 @@ markHistoryEntry()
 // disegnata, e le contraddirebbe.
 if ('scrollRestoration' in window.history) window.history.scrollRestoration = 'manual'
 
+// Le animazioni e le transizioni del template partono a pagina caricata: fino
+// ad allora la classe is-preload del <body> le tiene ferme (main.css). Prima
+// la toglieva il main.js del template.
+const startAnimations = () => setTimeout(() => document.body.classList.remove('is-preload'), 100)
+if (document.readyState === 'complete') startAnimations()
+else window.addEventListener('load', startAnimations, { once: true })
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <HashRouter>
