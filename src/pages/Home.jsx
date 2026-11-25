@@ -25,7 +25,7 @@ const Home = () => {
   usePageTitle();
 
   return (
-    <div id="page-wrapper">
+    <div id="page-wrapper" className="home-page">
 
       {/* --- HEADER --- */}
       <SiteHeader terminal={t('home.terminal')} current="home" />
@@ -71,12 +71,12 @@ const Home = () => {
       </section>
 
       {/* --- CTA CONTATTAMI --- */}
-      <section id="cta" style={{ padding: '2em 0', textAlign: 'center' }}>
+      <section id="cta">
         <div className="container">
-          <h3 style={{ marginBottom: '0.5em' }}>{t('home.cta.title')}</h3>
-          <p style={{ marginBottom: '1.2em', textAlign: 'center' }}>{t('home.cta.text')}</p>
+          <h3 className="cta-title">{t('home.cta.title')}</h3>
+          <p className="cta-text">{t('home.cta.text')}</p>
           <div>
-            <a href="mailto:arcari.nicholas0@gmail.com" className="button icon solid fa-envelope" style={{ marginRight: '10px' }}>
+            <a href="mailto:arcari.nicholas0@gmail.com" className="button icon solid fa-envelope cta-button">
               {t('home.cta.email')}
             </a>
             <a href="https://www.linkedin.com/in/nicholas-arcari-6245893a7" className="button alt icon brands fa-linkedin" target="_blank" rel="noopener noreferrer">
@@ -99,13 +99,13 @@ const Home = () => {
                 <header>
                     <h2><a href="#">{t('home.work.title')} <strong>{t('home.work.titleBold')}</strong></a></h2>
                     {/* Bottone Toggle Lavoro */}
-                    <div style={{ textAlign: 'left', marginTop: '15px', marginBottom: '20px' }}>
+                    <div className="section-toggle">
                         <button
                             className="button alt small"
                             onClick={() => setShowWork(!showWork)}
                         >
                             {showWork ? t('home.work.hide') : t('home.work.show')}
-                            <i className={`icon solid ${showWork ? 'fa-chevron-up' : 'fa-chevron-down'}`} style={{ marginLeft: '10px' }}></i>
+                            <i className={`icon solid ${showWork ? 'fa-chevron-up' : 'fa-chevron-down'} toggle-icon`}></i>
                         </button>
                     </div>
                 </header>
@@ -122,12 +122,12 @@ const Home = () => {
                         {t('home.work.freelanceMigration')}
                         </p>
 
-                        <p style={{ fontSize: '0.9em', color: 'var(--text-muted)', borderLeft: '3px solid #ddd', paddingLeft: '10px' }}>
+                        <p className="work-stack">
                         <strong>Tech Stack:</strong> {t('home.work.freelanceTech')}
                         </p>
 
                         {/* BOTTONE VIEW MORE FREELANCE */}
-                        <Link to="/freelance-details" className="button icon solid fa-arrow-circle-right" style={{ marginTop: '10px', marginBottom: '20px' }}>
+                        <Link to="/freelance-details" className="button icon solid fa-arrow-circle-right details-link has-gap-below">
                         {t('home.work.viewDetails')}
                         </Link>
 
@@ -148,13 +148,13 @@ const Home = () => {
                 <header>
                     <h2><a href="#">{t('home.cyber.title')} <strong>{t('home.cyber.titleBold')}</strong></a></h2>
                     {/* Bottone Toggle Cyber */}
-                    <div style={{ textAlign: 'left', marginTop: '15px', marginBottom: '20px' }}>
+                    <div className="section-toggle">
                         <button
                             className="button alt small"
                             onClick={() => setShowCyber(!showCyber)}
                         >
                             {showCyber ? t('home.cyber.hide') : t('home.cyber.show')}
-                            <i className={`icon solid ${showCyber ? 'fa-chevron-up' : 'fa-chevron-down'}`} style={{ marginLeft: '10px' }}></i>
+                            <i className={`icon solid ${showCyber ? 'fa-chevron-up' : 'fa-chevron-down'} toggle-icon`}></i>
                         </button>
                     </div>
                 </header>
@@ -246,41 +246,41 @@ const Home = () => {
               <article className="box post">
                 <header>
                     <h2><a href="#">{t('home.services.title')} <strong>{t('home.services.titleBold')}</strong></a></h2>
-                    <div style={{ textAlign: 'left', marginTop: '15px', marginBottom: '20px' }}>
+                    <div className="section-toggle">
                         <button
                             className="button alt small"
                             onClick={() => setShowServices(!showServices)}
                         >
                             {showServices ? t('home.services.hide') : t('home.services.show')}
-                            <i className={`icon solid ${showServices ? 'fa-chevron-up' : 'fa-chevron-down'}`} style={{ marginLeft: '10px' }}></i>
+                            <i className={`icon solid ${showServices ? 'fa-chevron-up' : 'fa-chevron-down'} toggle-icon`}></i>
                         </button>
                     </div>
                 </header>
 
                 {showServices && (
                     <div className="fade-in">
-                        <div className="soft-panel" style={{ textAlign: 'center', padding: '2em 1em' }}>
-                          <i className="icon solid fa-shield-alt" style={{ fontSize: '2.5em', color: 'var(--accent-text)', marginBottom: '0.5em', display: 'block' }}></i>
+                        <div className="soft-panel feature-panel">
+                          <i className="icon solid fa-shield-alt feature-icon"></i>
                           <h3>{t('home.products.cyberServices.title')}</h3>
-                          <p style={{ color: 'var(--text-muted)', textAlign: 'center' }}>{t('home.products.cyberServices.desc')}</p>
+                          <p className="feature-text">{t('home.products.cyberServices.desc')}</p>
                           <Link to="/cyber-services" className="button icon solid fa-arrow-circle-right">
                             {t('home.products.cyberServices.btn')}
                           </Link>
                         </div>
-                        <div className="soft-panel" style={{ textAlign: 'center', padding: '2em 1em', marginTop: '1.5em' }}>
-                          <i className="icon solid fa-user-shield" style={{ fontSize: '2.5em', color: 'var(--accent-text)', marginBottom: '0.5em', display: 'block' }}></i>
+                        <div className="soft-panel feature-panel is-spaced">
+                          <i className="icon solid fa-user-shield feature-icon"></i>
                           <h3>{t('home.products.citizenShield.title')}</h3>
-                          <p style={{ color: 'var(--text-muted)', textAlign: 'center' }}>{t('home.products.citizenShield.desc')}</p>
+                          <p className="feature-text">{t('home.products.citizenShield.desc')}</p>
                           <Link to="/citizen-shield" className="button icon solid fa-arrow-circle-right">
                             {t('home.products.citizenShield.btn')}
                           </Link>
                         </div>
 
                         {/* Segnaposto: il prossimo servizio di sicurezza in lavorazione */}
-                        <div className="soft-panel" style={{ textAlign: 'center', padding: '2em 1em', marginTop: '1.5em' }}>
-                          <i className="icon solid fa-hourglass-half" style={{ fontSize: '2.5em', color: 'var(--accent-text)', marginBottom: '0.5em', display: 'block' }}></i>
+                        <div className="soft-panel feature-panel is-spaced">
+                          <i className="icon solid fa-hourglass-half feature-icon"></i>
                           <h3>{t('home.services.soonTitle')}</h3>
-                          <p style={{ color: 'var(--text-muted)', textAlign: 'center', marginBottom: 0 }}>{t('home.services.soonDesc')}</p>
+                          <p className="feature-text is-last">{t('home.services.soonDesc')}</p>
                         </div>
                     </div>
                 )}
@@ -290,28 +290,28 @@ const Home = () => {
               <article className="box post">
                 <header>
                     <h2><a href="#">{t('home.finance.title')} <strong>{t('home.finance.titleBold')}</strong></a></h2>
-                    <div style={{ textAlign: 'left', marginTop: '15px', marginBottom: '20px' }}>
+                    <div className="section-toggle">
                         <button
                             className="button alt small"
                             onClick={() => setShowFinance(!showFinance)}
                         >
                             {showFinance ? t('home.finance.hide') : t('home.finance.show')}
-                            <i className={`icon solid ${showFinance ? 'fa-chevron-up' : 'fa-chevron-down'}`} style={{ marginLeft: '10px' }}></i>
+                            <i className={`icon solid ${showFinance ? 'fa-chevron-up' : 'fa-chevron-down'} toggle-icon`}></i>
                         </button>
                     </div>
                 </header>
 
                 {showFinance && (
                     <div className="fade-in">
-                        <div className="soft-panel" style={{ textAlign: 'center', padding: '2em 1em' }}>
-                          <i className="icon solid fa-chart-line" style={{ fontSize: '2.5em', color: 'var(--accent-text)', marginBottom: '0.5em', display: 'block' }}></i>
+                        <div className="soft-panel feature-panel">
+                          <i className="icon solid fa-chart-line feature-icon"></i>
                           <h3>{t('home.finance.finanzmeTitle')}</h3>
-                          <p style={{ color: 'var(--text-muted)', textAlign: 'center' }}>{t('home.finance.finanzmeDesc')}</p>
+                          <p className="feature-text">{t('home.finance.finanzmeDesc')}</p>
                           <Link to="/finanzme" className="button icon solid fa-arrow-circle-right">
                             {t('home.products.finanzMe.btn')}
                           </Link>
-                          <p style={{ fontSize: '0.9em', color: 'var(--text-subtle)', marginTop: '1em', marginBottom: 0 }}>
-                            <i className="icon solid fa-lock" style={{ marginRight: '0.4em' }}></i>
+                          <p className="feature-note">
+                            <i className="icon solid fa-lock lead-icon"></i>
                             {t('home.finance.finanzmeNote')}
                           </p>
                         </div>
@@ -325,41 +325,41 @@ const Home = () => {
               <article className="box post">
                 <header>
                     <h2><a href="#">{t('home.extra.title')} <strong>{t('home.extra.titleBold')}</strong></a></h2>
-                    <div style={{ textAlign: 'left', marginTop: '15px', marginBottom: '20px' }}>
+                    <div className="section-toggle">
                         <button
                             className="button alt small"
                             onClick={() => setShowExtra(!showExtra)}
                         >
                             {showExtra ? t('home.extra.hide') : t('home.extra.show')}
-                            <i className={`icon solid ${showExtra ? 'fa-chevron-up' : 'fa-chevron-down'}`} style={{ marginLeft: '10px' }}></i>
+                            <i className={`icon solid ${showExtra ? 'fa-chevron-up' : 'fa-chevron-down'} toggle-icon`}></i>
                         </button>
                     </div>
                 </header>
 
                 {showExtra && (
                     <div className="fade-in">
-                        <div className="soft-panel" style={{ textAlign: 'center', padding: '2em 1em' }}>
-                          <i className="icon solid fa-dumbbell" style={{ fontSize: '2.5em', color: 'var(--accent-text)', marginBottom: '0.5em', display: 'block' }}></i>
+                        <div className="soft-panel feature-panel">
+                          <i className="icon solid fa-dumbbell feature-icon"></i>
                           <h3>{t('home.extra.bytebulkTitle')}</h3>
-                          <p style={{ color: 'var(--text-muted)', textAlign: 'center' }}>{t('home.extra.bytebulkDesc')}</p>
+                          <p className="feature-text">{t('home.extra.bytebulkDesc')}</p>
                           <Link to="/bytebulk" className="button icon solid fa-arrow-circle-right">
                             {t('home.products.byteBulk.btn')}
                           </Link>
-                          <p style={{ fontSize: '0.9em', color: 'var(--text-subtle)', marginTop: '1em', marginBottom: 0 }}>
-                            <i className="icon solid fa-lock" style={{ marginRight: '0.4em' }}></i>
+                          <p className="feature-note">
+                            <i className="icon solid fa-lock lead-icon"></i>
                             {t('home.extra.bytebulkNote')}
                           </p>
                         </div>
 
-                        <div className="soft-panel" style={{ textAlign: 'center', padding: '2em 1em', marginTop: '1.5em' }}>
-                          <i className="icon solid fa-seedling" style={{ fontSize: '2.5em', color: 'var(--accent-text)', marginBottom: '0.5em', display: 'block' }}></i>
+                        <div className="soft-panel feature-panel is-spaced">
+                          <i className="icon solid fa-seedling feature-icon"></i>
                           <h3>{t('home.extra.seedcastTitle')}</h3>
-                          <p style={{ color: 'var(--text-muted)', textAlign: 'center' }}>{t('home.extra.seedcastDesc')}</p>
+                          <p className="feature-text">{t('home.extra.seedcastDesc')}</p>
                           <Link to="/seedcast" className="button icon solid fa-arrow-circle-right">
                             {t('home.products.seedCast.btn')}
                           </Link>
-                          <p style={{ fontSize: '0.9em', color: 'var(--text-subtle)', marginTop: '1em', marginBottom: 0 }}>
-                            <i className="icon solid fa-lock" style={{ marginRight: '0.4em' }}></i>
+                          <p className="feature-note">
+                            <i className="icon solid fa-lock lead-icon"></i>
                             {t('home.extra.seedcastNote')}
                           </p>
                         </div>
@@ -378,7 +378,7 @@ const Home = () => {
                       <p>{t('home.sidebar.mscDesc')}</p>
 
                       {/* BOTTONE VIEW MORE - MAGISTRALE (WIP) */}
-                      <Link to="/master-details" className="button icon solid fa-arrow-circle-right" style={{ marginTop: '10px' }}>
+                      <Link to="/master-details" className="button icon solid fa-arrow-circle-right details-link">
                         {t('home.sidebar.uniDetails')}
                       </Link>
 
@@ -390,7 +390,7 @@ const Home = () => {
                       <p>{t('home.sidebar.uniDesc')}</p>
 
                       {/* BOTTONE VIEW MORE UNIVERSITA */}
-                      <Link to="/university-details" className="button icon solid fa-arrow-circle-right" style={{ marginTop: '10px' }}>
+                      <Link to="/university-details" className="button icon solid fa-arrow-circle-right details-link">
                         {t('home.sidebar.uniDetails')}
                       </Link>
 
@@ -413,23 +413,23 @@ const Home = () => {
                       <header><h3><a href="#">{t('home.sidebar.certs')}</a></h3></header>
 
                       {/* Cisco CCNA */}
-                      <div style={{ marginBottom: '1.5em' }}>
-                        <h4 style={{ marginBottom: '0.5em', fontSize: '1.1em' }}>
-                          <i className="icon solid fa-network-wired" style={{ marginRight: '10px', color: '#00bceb' }}></i>
+                      <div className="cert">
+                        <h4 className="cert-title">
+                          <i className="icon solid fa-network-wired cert-icon is-cisco"></i>
                           Cisco CCNA 200-301
                         </h4>
-                        <p style={{ fontSize: '0.9em', marginBottom: '0.5em' }}>
+                        <p className="cert-text">
                           {t('home.sidebar.ccnaDesc')}
                         </p>
                       </div>
 
                       {/* CompTIA Security+ */}
-                      <div style={{ marginBottom: '1.5em' }}>
-                        <h4 style={{ marginBottom: '0.5em', fontSize: '1.1em' }}>
-                          <i className="icon solid fa-shield-alt" style={{ marginRight: '10px', color: '#ff3d3d' }}></i>
+                      <div className="cert">
+                        <h4 className="cert-title">
+                          <i className="icon solid fa-shield-alt cert-icon is-comptia"></i>
                           CompTIA Security+ SY0-701
                         </h4>
-                        <p style={{ fontSize: '0.9em', marginBottom: '0.5em' }}>
+                        <p className="cert-text">
                           {t('home.sidebar.secplusDesc')}
                         </p>
                       </div>

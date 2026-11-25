@@ -50,19 +50,10 @@ const Pizze = () => {
 
                   {/* BARRA DI RICERCA */}
                   <SearchInput
+                    className="search-input space-above"
                     placeholder={t('pizze.search')}
                     value={searchTerm}
                     onChange={setSearchTerm}
-                    style={{
-                      width: '100%',
-                      padding: '15px',
-                      borderRadius: '5px',
-                      border: '1px solid #ccc',
-                      backgroundColor: '#f9f9f9',
-                      fontSize: '1.1em',
-                      marginBottom: '10px',
-                      marginTop: '10px'
-                    }}
                   />
                   {searchTerm && (
                     <p className="search-results-count">
@@ -84,7 +75,7 @@ const Pizze = () => {
                       </React.Fragment>
                     ))
                   ) : (
-                    <p style={{textAlign: 'center', padding: '20px', fontStyle: 'italic'}}>
+                    <p className="empty-note">
                       {t('pizze.noResults')}
                     </p>
                   )}

@@ -28,7 +28,7 @@ const UniversityDetails = () => {
   );
 
   return (
-    <div id="page-wrapper">
+    <div id="page-wrapper" className="courses-page">
 
       {/* HEADER */}
       <SiteHeader terminal={t('university.terminal')} />
@@ -49,15 +49,6 @@ const UniversityDetails = () => {
                     placeholder={t('university.search')}
                     value={searchTerm}
                     onChange={setSearchTerm}
-                    style={{
-                      width: '100%',
-                      padding: '15px',
-                      borderRadius: '5px',
-                      border: '1px solid #ccc',
-                      backgroundColor: '#f9f9f9',
-                      fontSize: '1.1em',
-                      marginBottom: '10px'
-                    }}
                   />
                   {searchTerm && (
                     <p className="search-results-count">
@@ -69,19 +60,19 @@ const UniversityDetails = () => {
                   {filteredCourses.length > 0 ? (
                     filteredCourses.map((course, index) => (
                       <React.Fragment key={index}>
-                        <div style={{ marginBottom: '2em' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div className="course">
+                            <div className="course-head">
                                 {/* Un esame con una pagina sua (per ora Reti di Calcolatori, con il laboratorio) ha il nome cliccabile */}
-                                <h3 style={{ margin: 0 }}>{course.link ? <Link to={course.link} className="course-link">{course.name}</Link> : course.name}</h3>
-                                <span className="button alt small" style={{ pointerEvents: 'none' }}>{course.year}</span>
+                                <h3 className="course-title">{course.link ? <Link to={course.link} className="course-link">{course.name}</Link> : course.name}</h3>
+                                <span className="button alt small course-badge">{course.year}</span>
                             </div>
-                            <p style={{ marginTop: '0.5em' }}>{course.description}</p>
+                            <p className="course-text">{course.description}</p>
                         </div>
                         {index < filteredCourses.length - 1 && <hr />}
                       </React.Fragment>
                     ))
                   ) : (
-                    <p style={{textAlign: 'center', padding: '20px', fontStyle: 'italic'}}>
+                    <p className="empty-note">
                       {t('university.noResults')}
                     </p>
                   )}

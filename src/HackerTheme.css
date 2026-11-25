@@ -3,7 +3,7 @@
 /* ===== GRIGI DEL TESTO (contrasto WCAG AA) ===== */
 /* I grigi del testo secondario cambiano col tema: un grigio unico non regge
    4,5:1 sia sul bianco (e sul grigio chiaro #f0f0f0) sia sul nero del tema
-   scuro. Li usano anche gli stili scritti nelle pagine (color: var(...)). */
+   scuro. Li usano anche le classi delle pagine (color: var(...)). */
 :root {
     --text-muted: #666;      /* testo secondario: 5,7:1 sul bianco */
     --text-subtle: #6d6d6d;  /* note e didascalie: 4,5:1 anche su #f0f0f0 */
@@ -3503,4 +3503,380 @@ body.dark-mode .lab-cmds td {
 body.dark-mode .project-demo {
     border-color: rgba(255, 255, 255, 0.15);
     background: #141519;
+}
+
+/* ===== CLASSI DELLE PAGINE (prima erano stili scritti negli elementi) ===== */
+/* Uno stile scritto nell'elemento vince su qualsiasi regola; una classe no. Per
+   questo ogni pagina ha una classe sulla sua radice (#page-wrapper) e le regole
+   partono da li': due classi pesano piu' delle regole del tema scuro su testi
+   e titoli (body.dark-mode p, li, span, h1-h6), che altrimenti ridipingerebbero
+   i grigi e i rossi scelti qui. Dove il template usa un id (#content > article)
+   la regola lo ripete. Stanno in fondo al file: a parita' di peso vincono loro. */
+
+/* --- Pezzi comuni --- */
+/* La freccia dopo il testo dei pulsanti che aprono e chiudono una sezione */
+.toggle-icon {
+    margin-left: 10px;
+}
+/* L'icona davanti a un testo breve (lucchetto, documento, freccia) */
+.lead-icon {
+    margin-right: 0.4em;
+}
+/* Il messaggio al posto di un contenuto che non c'e': ricerca senza
+   risultati, homework ancora in lavorazione */
+.empty-note {
+    padding: 20px;
+    font-style: italic;
+    text-align: center;
+}
+/* Il campo di ricerca degli elenchi (src/components/SearchInput.jsx) */
+.search-input {
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+    font-size: 1.1em;
+}
+/* Pizze: un po' d'aria anche sopra */
+.search-input.space-above {
+    margin-top: 10px;
+}
+/* Cocktail classici: l'aria sta tutta sopra */
+.search-input.space-above-only {
+    margin-top: 20px;
+    margin-bottom: 0;
+}
+/* Stampe 3D: un campo per sezione, piu' piccolo; lo centra il contenitore */
+.search-input-compact {
+    width: 60%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1em;
+}
+
+/* I riquadri con l'icona grande (Home, Galleria): icona, nome, descrizione,
+   nota. Le regole di testo pesano tre classi: nel tema scuro c'e' gia'
+   "body.dark-mode .soft-panel p". */
+.soft-panel.feature-panel {
+    padding: 2em 1em;
+    text-align: center;
+}
+.soft-panel.feature-panel.is-spaced {
+    margin-top: 1.5em;
+}
+.feature-panel .feature-icon {
+    display: block;
+    margin-bottom: 0.5em;
+    font-size: 2.5em;
+    color: var(--accent-text);
+}
+.soft-panel.feature-panel .feature-text {
+    color: var(--text-muted);
+    text-align: center;
+}
+.soft-panel.feature-panel .feature-text.is-last {
+    margin-bottom: 0;
+}
+.soft-panel.feature-panel .feature-note {
+    margin-top: 1em;
+    margin-bottom: 0;
+    font-size: 0.9em;
+    color: var(--text-subtle);
+}
+
+/* La ruota (src/components/WheelOfFortune.jsx) */
+.wheel .wheel-intro {
+    font-size: 0.9em;
+    color: var(--text-muted);
+}
+.wheel .wheel-btn {
+    width: 100%;
+    margin-top: 1em;
+}
+.wheel .wheel-result {
+    margin-top: 1em;
+    text-align: center;
+}
+.wheel .wheel-result-label {
+    display: block;
+    margin-bottom: 0.2em;
+    font-size: 0.85em;
+    color: var(--text-subtle);
+}
+.wheel .wheel-result-name {
+    font-size: 1.1em;
+}
+
+/* Le pagine di messaggio: pagina che non esiste (NotFound) ed errore (PageError) */
+.notice-page .notice-card {
+    padding: 4em 2em;
+    text-align: center;
+}
+.notice-page .notice-code {
+    margin-bottom: 0.2em;
+    font-size: 6em;
+    line-height: 1;
+}
+.notice-page .notice-text {
+    text-align: center;
+}
+.notice-page .notice-action {
+    margin-top: 1.5em;
+}
+
+/* --- Home --- */
+/* Contattami */
+.home-page #cta {
+    padding: 2em 0;
+    text-align: center;
+}
+.home-page .cta-title {
+    margin-bottom: 0.5em;
+}
+.home-page .cta-text {
+    margin-bottom: 1.2em;
+    text-align: center;
+}
+.home-page .cta-button {
+    margin-right: 10px;
+}
+/* Il pulsante che apre e chiude ogni articolo */
+.home-page .section-toggle {
+    margin-top: 15px;
+    margin-bottom: 20px;
+    text-align: left;
+}
+/* Lo stack tecnico del lavoro freelance, come una citazione (non e' lo
+   .tech-stack dei progetti, che resta testo normale) */
+.home-page .work-stack {
+    padding-left: 10px;
+    border-left: 3px solid #ddd;
+    font-size: 0.9em;
+    color: var(--text-muted);
+}
+/* I pulsanti verso le pagine di dettaglio */
+.home-page .details-link {
+    margin-top: 10px;
+}
+.home-page .details-link.has-gap-below {
+    margin-bottom: 20px;
+}
+/* Le certificazioni nella colonna destra */
+.home-page .cert {
+    margin-bottom: 1.5em;
+}
+.home-page .cert-title {
+    margin-bottom: 0.5em;
+    font-size: 1.1em;
+}
+.home-page .cert-icon {
+    margin-right: 10px;
+}
+.home-page .cert-icon.is-cisco {
+    color: #00bceb;
+}
+.home-page .cert-icon.is-comptia {
+    color: #ff3d3d;
+}
+.home-page .cert-text {
+    margin-bottom: 0.5em;
+    font-size: 0.9em;
+}
+
+/* --- Esperienze di lavoro --- */
+/* Il sottotitolo di ogni lavoro */
+.freelance-page .freelance-tagline {
+    font-style: italic;
+    color: var(--text-muted);
+}
+/* I numeri chiave (KPI) di ogni lavoro: valore grande in rosso, etichetta sotto */
+.freelance-page .kpi-row {
+    margin: 2em 0;
+    align-items: flex-start;
+}
+.freelance-page .kpi {
+    text-align: left;
+}
+.freelance-page .kpi-value {
+    margin-bottom: 0.2em;
+    font-size: 2.5em;
+    line-height: 1;
+    color: var(--accent-text);
+}
+.freelance-page .kpi-label {
+    margin: 0;
+    line-height: 1.2;
+    text-align: left;
+}
+.freelance-page .disc-list {
+    padding-left: 20px;
+    list-style-type: disc;
+}
+.freelance-page .check-list {
+    padding: 0;
+    list-style: none;
+}
+
+/* --- Stampe 3D --- */
+/* La nota sulla collaborazione, come una citazione */
+.prints-page .print-callout {
+    margin-top: 1.5em;
+    padding-left: 15px;
+    border-left: 4px solid #d52349;
+    font-style: italic;
+    color: #555;
+}
+/* Titolo e pulsante di ogni sezione (stampe fatte, idee future) */
+.prints-page .print-section-header {
+    margin-bottom: 2em;
+    text-align: center;
+}
+.prints-page .print-section-title {
+    padding-bottom: 10px;
+    border-bottom: 2px solid #ddd;
+    font-size: 2.5em;
+}
+.prints-page .print-toggle {
+    margin-top: 15px;
+}
+.prints-page .print-search {
+    margin-bottom: 30px;
+    text-align: center;
+}
+/* Le schede: foto, dettagli, link al modello */
+.prints-page .print-photo {
+    display: block;
+    width: 100%;
+    height: 300px;
+    object-fit: cover;
+}
+.prints-page .print-meta {
+    padding-top: 10px;
+    font-size: 0.9em;
+    color: #555;
+}
+.prints-page .print-link-line {
+    margin: 0 0 5px;
+    word-break: break-all;
+}
+.prints-page .print-link {
+    color: var(--accent-text);
+}
+.prints-page .print-material {
+    margin-bottom: 0.5em;
+}
+.prints-page .print-rule {
+    margin-top: 10px;
+    margin-bottom: 0;
+}
+.prints-page .print-empty {
+    width: 100%;
+    text-align: center;
+}
+.prints-page .print-divider {
+    margin: 4em 0;
+}
+/* Le idee future: un po' spente, ancora da fare */
+.prints-page .print-card-future {
+    opacity: 0.9;
+}
+.prints-page .print-photo.is-future {
+    filter: grayscale(30%);
+}
+.prints-page .image-fallback.is-future {
+    filter: grayscale(30%);
+    opacity: 0.7;
+}
+
+/* --- Chi sono --- */
+/* L'articolo e' il primo di #content: il template gli toglie il padding con
+   "#content > article:first-child", e qui serve lo stesso id */
+.about-page #content > .about-card {
+    padding: 3em;
+}
+.about-page .about-photo {
+    border-radius: 15px;
+}
+.about-page .about-photo img {
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+.about-page .about-title {
+    display: inline-block;
+    margin-bottom: 0.5em;
+    border-bottom: 3px solid #d52349;
+    font-size: 2.8em;
+}
+.about-page .about-text {
+    font-size: 1.1em;
+    line-height: 1.8;
+    color: #555;
+}
+.about-page .about-contacts-block {
+    margin-top: 3em;
+}
+.about-page .about-contacts-title {
+    margin-bottom: 1em;
+    font-size: 1.5em;
+}
+.about-page .about-email {
+    font-weight: bold;
+}
+/* Le icone dei contatti, ognuna nel colore del suo marchio */
+.about-page .contact-icon {
+    width: 30px;
+    font-size: 1.2em;
+}
+.about-page .contact-icon.is-accent {
+    color: var(--accent-text);
+}
+.about-page .contact-icon.is-linkedin {
+    color: #0077b5;
+}
+.about-page .contact-icon.is-tryhackme {
+    color: #c02026;
+}
+.about-page .contact-icon.is-instagram {
+    color: #e4405f;
+}
+
+/* --- Corsi (laurea triennale e magistrale) --- */
+.courses-page .course {
+    margin-bottom: 2em;
+}
+.courses-page .course-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+/* Magistrale: piu' etichette accanto al nome, che vanno a capo */
+.courses-page .course-head.has-badges {
+    flex-wrap: wrap;
+    gap: 1em;
+}
+.courses-page .course-title {
+    margin: 0;
+}
+.courses-page .course-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4em;
+}
+/* Etichette con l'aspetto dei pulsanti, ma non cliccabili */
+.courses-page .course-badge {
+    pointer-events: none;
+}
+.courses-page .course-text {
+    margin-top: 0.5em;
+}
+
+/* --- Galleria --- */
+.galleria-page .galleria-title {
+    text-transform: none;
+}
+.galleria-page .galleria-wip-title {
+    margin-bottom: 0;
 }

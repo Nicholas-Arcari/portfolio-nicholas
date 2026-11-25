@@ -14,17 +14,17 @@ const NotFound = () => {
   usePageTitle(t('notFound.title'));
 
   return (
-    <div id="page-wrapper">
+    <div id="page-wrapper" className="notice-page">
 
       <SiteHeader nav={false} />
 
       <section id="main">
         <div className="container">
-          <article className="box post" style={{ textAlign: 'center', padding: '4em 2em' }}>
-            <h2 style={{ fontSize: '6em', marginBottom: '0.2em', lineHeight: '1' }}>404</h2>
+          <article className="box post notice-card">
+            <h2 className="notice-code">404</h2>
             <h3>{t('notFound.title')}</h3>
             <p>{t('notFound.text')}</p>
-            <Link to="/" className="button icon solid fa-home" style={{ marginTop: '1.5em' }}>
+            <Link to="/" className="button icon solid fa-home notice-action">
               {t('notFound.back')}
             </Link>
           </article>

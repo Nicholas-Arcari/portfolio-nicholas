@@ -16,15 +16,6 @@ import './ssa.css';
 import '../../i18n/settings';
 import '../../i18n/ssa';
 
-const SEARCH_STYLE = {
-  width: '100%',
-  padding: '15px',
-  borderRadius: '5px',
-  border: '1px solid #ccc',
-  backgroundColor: '#f9f9f9',
-  fontSize: '1.1em',
-  marginBottom: '10px',
-};
 
 const SsaList = () => {
   const { t, language } = useLanguage();
@@ -54,7 +45,6 @@ const SsaList = () => {
           placeholder={t('ssa.search')}
           value={searchTerm}
           onChange={setSearchTerm}
-          style={SEARCH_STYLE}
         />
         {searchTerm && (
           <p className="search-results-count">
@@ -82,7 +72,7 @@ const SsaList = () => {
             </tbody>
           </table>
         ) : (
-          <p style={{ textAlign: 'center', padding: '20px', fontStyle: 'italic' }}>
+          <p className="empty-note">
             {t('ssa.noResults')}
           </p>
         )}

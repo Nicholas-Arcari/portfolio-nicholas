@@ -43,7 +43,7 @@ const HomeworkShell = ({ slug, sidebar = null, toc = null, children }) => {
         {description && <p>{description}</p>}
 
         {children || (
-          <p style={{ textAlign: 'center', padding: '20px', fontStyle: 'italic' }}>
+          <p className="empty-note">
             {t('statistics.homeworkWip')}
           </p>
         )}

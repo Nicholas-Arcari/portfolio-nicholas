@@ -80,7 +80,7 @@ const WheelOfFortune = ({ items, title, intro, spinLabel, spinningLabel, resultL
   return (
     <div className="wheel">
       {title && <header><h3>{title}</h3></header>}
-      {intro && <p style={{ fontSize: '0.9em', color: 'var(--text-muted)' }}>{intro}</p>}
+      {intro && <p className="wheel-intro">{intro}</p>}
 
       <div className="wheel-stage">
         <div className="wheel-pointer" aria-hidden="true"></div>
@@ -110,18 +110,17 @@ const WheelOfFortune = ({ items, title, intro, spinLabel, spinningLabel, resultL
         className="button icon solid fa-sync-alt wheel-btn"
         onClick={spin}
         disabled={spinning}
-        style={{ width: '100%', marginTop: '1em' }}
       >
         {spinning ? spinningLabel : spinLabel}
       </button>
 
       {result && (
-        <div className="wheel-result fade-in" style={{ marginTop: '1em', textAlign: 'center' }}>
-          <span style={{ fontSize: '0.85em', color: 'var(--text-subtle)', display: 'block', marginBottom: '0.2em' }}>{resultLabel}</span>
+        <div className="wheel-result fade-in">
+          <span className="wheel-result-label">{resultLabel}</span>
           <button type="button" className="wheel-result-link" onClick={() => onPick(resultIndex)}>
-            <strong style={{ fontSize: '1.1em' }}>{result.sym} {result.name}</strong>
+            <strong className="wheel-result-name">{result.sym} {result.name}</strong>
             <span className="wheel-result-hint">
-              <i className="icon solid fa-arrow-circle-right" style={{ marginRight: '0.4em' }}></i>
+              <i className="icon solid fa-arrow-circle-right lead-icon"></i>
               {goToLabel}
             </span>
           </button>

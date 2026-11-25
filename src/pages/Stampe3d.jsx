@@ -38,7 +38,7 @@ const Stampe3d = () => {
   usePageTitle(t('nav.prints3d'));
 
   return (
-    <div id="page-wrapper">
+    <div id="page-wrapper" className="prints-page">
 
       {/* --- HEADER --- */}
       <SiteHeader terminal={t('stampe3d.terminal')} />
@@ -53,24 +53,24 @@ const Stampe3d = () => {
                 <header><h2>{t('stampe3d.introTitle')}</h2></header>
                 <p>{t('stampe3d.introDesc')}</p>
 
-                <p style={{ marginTop: '1.5em', fontStyle: 'italic', borderLeft: '4px solid #d52349', paddingLeft: '15px', color: '#555' }}>
+                <p className="print-callout">
                   🚀 <strong>{t('stampe3d.collabLabel')}</strong> {t('stampe3d.collabNote')}
                 </p>
              </article>
 
              {/* --- SEZIONE 1: PROGETTI ESEGUITI (ESPANDIBILE) --- */}
              <section>
-                <header style={{ marginBottom: '2em', textAlign: 'center' }}>
-                    <h2 style={{ fontSize: '2.5em', borderBottom: '2px solid #ddd', paddingBottom: '10px' }}>{t('stampe3d.executedTitle')}</h2>
+                <header className="print-section-header">
+                    <h2 className="print-section-title">{t('stampe3d.executedTitle')}</h2>
 
                     {/* BOTTONE TOGGLE ESEGUITI */}
-                    <div style={{ marginTop: '15px' }}>
+                    <div className="print-toggle">
                         <button
                             className="button alt small"
                             onClick={() => setShowExecuted(!showExecuted)}
                         >
                             {showExecuted ? t('stampe3d.hide') : t('stampe3d.show')}
-                            <i className={`icon solid ${showExecuted ? 'fa-chevron-up' : 'fa-chevron-down'}`} style={{ marginLeft: '10px' }}></i>
+                            <i className={`icon solid ${showExecuted ? 'fa-chevron-up' : 'fa-chevron-down'} toggle-icon`}></i>
                         </button>
                     </div>
                 </header>
@@ -79,18 +79,12 @@ const Stampe3d = () => {
                 {showExecuted && (
                     <div className="fade-in">
                         {/* SEARCH BAR ESEGUITI */}
-                        <div style={{ marginBottom: '30px', textAlign: 'center' }}>
+                        <div className="print-search">
                         <SearchInput
+                          className="search-input-compact"
                             placeholder={t('stampe3d.searchPlaceholder')}
                             value={searchTermExecuted}
                             onChange={setSearchTermExecuted}
-                            style={{
-                            width: '60%',
-                            padding: '10px',
-                            borderRadius: '5px',
-                            border: '1px solid #ccc',
-                            fontSize: '1em'
-                            }}
                         />
                         {searchTermExecuted && (
                             <p className="search-results-count">
@@ -106,7 +100,7 @@ const Stampe3d = () => {
                                     <article className="box feature">
                                         <span className="image featured">
                                           {project.image ? (
-                                            <img src={project.image} alt={project.title} loading="lazy" decoding="async" style={{ objectFit: 'cover', height: '300px', width: '100%', display: 'block' }} />
+                                            <img className="print-photo" src={project.image} alt={project.title} loading="lazy" decoding="async" />
                                           ) : (
                                             <span className="image-fallback"><i className="icon solid fa-cube"></i></span>
                                           )}
@@ -119,13 +113,13 @@ const Stampe3d = () => {
                                         </header>
                                         <p>{project.description}</p>
 
-                                        <div style={{ fontSize: '0.9em', color: '#555', paddingTop: '10px' }}>
+                                        <div className="print-meta">
 
                                             {/* LINK */}
                                             {project.link && (
-                                            <p style={{ margin: 0, marginBottom: '5px', wordBreak: 'break-all' }}>
+                                            <p className="print-link-line">
                                                 <strong>{t('stampe3d.link')} </strong>
-                                                <a href={project.link} target="_blank" rel="noreferrer" style={{ color: 'var(--accent-text)' }}>
+                                                <a className="print-link" href={project.link} target="_blank" rel="noreferrer">
                                                     {project.link}
                                                 </a>
                                             </p>
@@ -135,37 +129,37 @@ const Stampe3d = () => {
                                             <br />
 
                                             {/* MATERIALE */}
-                                            <p style={{ marginBottom: '0.5em' }}><strong>{t('stampe3d.material')}</strong> {project.material}</p>
+                                            <p className="print-material"><strong>{t('stampe3d.material')}</strong> {project.material}</p>
 
                                             {/* BARRA ORIZZONTALE ALLA FINE */}
-                                            <hr style={{ marginTop: '10px', marginBottom: '0' }} />
+                                            <hr className="print-rule" />
                                         </div>
                                     </article>
                                 </div>
                             ))
                             ) : (
-                            <p style={{ width: '100%', textAlign: 'center' }}>{t('stampe3d.noResults')}</p>
+                            <p className="print-empty">{t('stampe3d.noResults')}</p>
                             )}
                         </div>
                     </div>
                 )}
              </section>
 
-             <hr style={{ margin: '4em 0' }} />
+             <hr className="print-divider" />
 
              {/* --- SEZIONE 2: PROGETTI DA ESEGUIRE (ESPANDIBILE) --- */}
              <section>
-                <header style={{ marginBottom: '2em', textAlign: 'center' }}>
-                    <h2 style={{ fontSize: '2.5em', borderBottom: '2px solid #ddd', paddingBottom: '10px' }}>{t('stampe3d.futureTitle')}</h2>
+                <header className="print-section-header">
+                    <h2 className="print-section-title">{t('stampe3d.futureTitle')}</h2>
 
                     {/* BOTTONE TOGGLE FUTURI */}
-                    <div style={{ marginTop: '15px' }}>
+                    <div className="print-toggle">
                         <button
                             className="button alt small"
                             onClick={() => setShowFuture(!showFuture)}
                         >
                             {showFuture ? t('stampe3d.hide') : t('stampe3d.show')}
-                            <i className={`icon solid ${showFuture ? 'fa-chevron-up' : 'fa-chevron-down'}`} style={{ marginLeft: '10px' }}></i>
+                            <i className={`icon solid ${showFuture ? 'fa-chevron-up' : 'fa-chevron-down'} toggle-icon`}></i>
                         </button>
                     </div>
                 </header>
@@ -174,18 +168,12 @@ const Stampe3d = () => {
                 {showFuture && (
                     <div className="fade-in">
                         {/* SEARCH BAR FUTURI */}
-                        <div style={{ marginBottom: '30px', textAlign: 'center' }}>
+                        <div className="print-search">
                         <SearchInput
+                          className="search-input-compact"
                             placeholder={t('stampe3d.searchPlaceholder')}
                             value={searchTermFuture}
                             onChange={setSearchTermFuture}
-                            style={{
-                            width: '60%',
-                            padding: '10px',
-                            borderRadius: '5px',
-                            border: '1px solid #ccc',
-                            fontSize: '1em'
-                            }}
                         />
                         {searchTermFuture && (
                             <p className="search-results-count">
@@ -198,12 +186,12 @@ const Stampe3d = () => {
                             {filteredFuture.length > 0 ? (
                             filteredFuture.map((project, index) => (
                                 <div key={index} className="col-6 col-12-medium">
-                                    <article className="box feature" style={{ opacity: 0.9 }}>
+                                    <article className="box feature print-card-future">
                                         <span className="image featured">
                                           {project.image ? (
-                                            <img src={project.image} alt={project.title} loading="lazy" decoding="async" style={{ objectFit: 'cover', height: '300px', width: '100%', display: 'block', filter: 'grayscale(30%)' }} />
+                                            <img className="print-photo is-future" src={project.image} alt={project.title} loading="lazy" decoding="async" />
                                           ) : (
-                                            <span className="image-fallback" style={{ filter: 'grayscale(30%)', opacity: 0.7 }}><i className="icon solid fa-cube"></i></span>
+                                            <span className="image-fallback is-future"><i className="icon solid fa-cube"></i></span>
                                           )}
                                         </span>
                                         <header>
@@ -214,13 +202,13 @@ const Stampe3d = () => {
                                         </header>
                                         <p>{project.description}</p>
 
-                                        <div style={{ fontSize: '0.9em', color: '#555', paddingTop: '10px' }}>
+                                        <div className="print-meta">
 
                                             {/* LINK */}
                                             {project.link && (
-                                            <p style={{ margin: 0, marginBottom: '5px', wordBreak: 'break-all' }}>
+                                            <p className="print-link-line">
                                                 <strong>{t('stampe3d.link')} </strong>
-                                                <a href={project.link} target="_blank" rel="noreferrer" style={{ color: 'var(--accent-text)' }}>
+                                                <a className="print-link" href={project.link} target="_blank" rel="noreferrer">
                                                     {project.link}
                                                 </a>
                                             </p>
@@ -229,16 +217,16 @@ const Stampe3d = () => {
                                             <br />
 
                                             {/* MATERIALE */}
-                                            <p style={{ marginBottom: '0.5em' }}><strong>{t('stampe3d.material')}</strong> {project.material}</p>
+                                            <p className="print-material"><strong>{t('stampe3d.material')}</strong> {project.material}</p>
 
                                             {/* BARRA ORIZZONTALE ALLA FINE */}
-                                            <hr style={{ marginTop: '10px', marginBottom: '0' }} />
+                                            <hr className="print-rule" />
                                         </div>
                                     </article>
                                 </div>
                             ))
                             ) : (
-                            <p style={{ width: '100%', textAlign: 'center' }}>{t('stampe3d.noResults')}</p>
+                            <p className="print-empty">{t('stampe3d.noResults')}</p>
                             )}
                         </div>
                     </div>

@@ -28,7 +28,7 @@ const MasterDetails = () => {
   );
 
   return (
-    <div id="page-wrapper">
+    <div id="page-wrapper" className="courses-page">
 
       {/* HEADER */}
       <SiteHeader terminal={t('masterDetails.terminal')} />
@@ -49,15 +49,6 @@ const MasterDetails = () => {
                     placeholder={t('masterDetails.search')}
                     value={searchTerm}
                     onChange={setSearchTerm}
-                    style={{
-                      width: '100%',
-                      padding: '15px',
-                      borderRadius: '5px',
-                      border: '1px solid #ccc',
-                      backgroundColor: '#f9f9f9',
-                      fontSize: '1.1em',
-                      marginBottom: '10px'
-                    }}
                   />
                   {searchTerm && (
                     <p className="search-results-count">
@@ -69,22 +60,22 @@ const MasterDetails = () => {
                   {filteredCourses.length > 0 ? (
                     filteredCourses.map((course, index) => (
                       <React.Fragment key={index}>
-                        <div style={{ marginBottom: '2em' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1em', flexWrap: 'wrap' }}>
+                        <div className="course">
+                            <div className="course-head has-badges">
                                 {/* Un corso con una pagina sua (Statistics con gli homework, Distributed Systems e Security in Software Applications con le lezioni) ha il nome cliccabile */}
-                                <h3 style={{ margin: 0 }}>{course.link ? <Link to={course.link} className="course-link">{course.name}</Link> : course.name}</h3>
-                                <span style={{ display: 'flex', gap: '0.4em', flexWrap: 'wrap' }}>
-                                  <span className="button alt small" style={{ pointerEvents: 'none' }}>{course.year}</span>
-                                  <span className="button alt small" style={{ pointerEvents: 'none' }}>{course.cfu}</span>
+                                <h3 className="course-title">{course.link ? <Link to={course.link} className="course-link">{course.name}</Link> : course.name}</h3>
+                                <span className="course-badges">
+                                  <span className="button alt small course-badge">{course.year}</span>
+                                  <span className="button alt small course-badge">{course.cfu}</span>
                                 </span>
                             </div>
-                            <p style={{ marginTop: '0.5em' }}>{course.description}</p>
+                            <p className="course-text">{course.description}</p>
                         </div>
                         {index < filteredCourses.length - 1 && <hr />}
                       </React.Fragment>
                     ))
                   ) : (
-                    <p style={{textAlign: 'center', padding: '20px', fontStyle: 'italic'}}>
+                    <p className="empty-note">
                       {t('masterDetails.noResults')}
                     </p>
                   )}

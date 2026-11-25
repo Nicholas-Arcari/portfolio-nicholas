@@ -67,15 +67,6 @@ const Cocktail = () => {
                     placeholder={t('cocktail.search')}
                     value={searchTerm}
                     onChange={setSearchTerm}
-                    style={{
-                      width: '100%',
-                      padding: '15px',
-                      borderRadius: '5px',
-                      border: '1px solid #ccc',
-                      backgroundColor: '#f9f9f9',
-                      fontSize: '1.1em',
-                      marginBottom: '10px'
-                    }}
                   />
                   {searchTerm && (
                     <p className="search-results-count">
@@ -95,7 +86,7 @@ const Cocktail = () => {
                       </React.Fragment>
                     ))
                   ) : (
-                    <p style={{textAlign: 'center', padding: '20px', fontStyle: 'italic'}}>
+                    <p className="empty-note">
                       {t('cocktail.noResults')}
                     </p>
                   )}

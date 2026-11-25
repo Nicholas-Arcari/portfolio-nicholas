@@ -16,7 +16,7 @@ const FreelanceDetails = () => {
   usePageTitle(t('freelance.pageTitle'));
 
   return (
-    <div id="page-wrapper">
+    <div id="page-wrapper" className="freelance-page">
 
       {/* HEADER */}
       <SiteHeader terminal={t('freelance.terminal')} />
@@ -33,24 +33,24 @@ const FreelanceDetails = () => {
                <article className="box post">
                   <header>
                     <h2>{t('freelance.title')}</h2>
-                    <p style={{ fontStyle: 'italic', color: 'var(--text-muted)' }}>
+                    <p className="freelance-tagline">
                       {t('freelance.subtitle')}
                     </p>
                   </header>
 
                   {/* KPI - LAYOUT SX - CENTRO - DX */}
-                  <div className="row aln-center" style={{ margin: '2em 0', alignItems: 'flex-start' }}>
-                    <div className="col-4 col-12-small" style={{ textAlign: 'left' }}>
-                        <h3 style={{ fontSize: '2.5em', color: 'var(--accent-text)', marginBottom: '0.2em', lineHeight: '1' }}>-99%</h3>
-                        <p style={{ margin: 0, lineHeight: '1.2', textAlign: 'left' }}>{t('freelance.kpi.time')}</p>
+                  <div className="row aln-center kpi-row">
+                    <div className="col-4 col-12-small kpi">
+                        <h3 className="kpi-value">-99%</h3>
+                        <p className="kpi-label">{t('freelance.kpi.time')}</p>
                     </div>
-                    <div className="col-4 col-12-small" style={{ textAlign: 'left' }}>
-                        <h3 style={{ fontSize: '2.5em', color: 'var(--accent-text)', marginBottom: '0.2em', lineHeight: '1' }}>AI</h3>
-                        <p style={{ margin: 0, lineHeight: '1.2', textAlign: 'left' }}>{t('freelance.kpi.ai')}</p>
+                    <div className="col-4 col-12-small kpi">
+                        <h3 className="kpi-value">AI</h3>
+                        <p className="kpi-label">{t('freelance.kpi.ai')}</p>
                     </div>
-                    <div className="col-4 col-12-small" style={{ textAlign: 'left' }}>
-                        <h3 style={{ fontSize: '2.5em', color: 'var(--accent-text)', marginBottom: '0.2em', lineHeight: '1' }}>4.0 & 5.0</h3>
-                        <p style={{ margin: 0, lineHeight: '1.2', textAlign: 'left' }}>{t('freelance.kpi.industry')}</p>
+                    <div className="col-4 col-12-small kpi">
+                        <h3 className="kpi-value">4.0 & 5.0</h3>
+                        <p className="kpi-label">{t('freelance.kpi.industry')}</p>
                     </div>
                   </div>
 
@@ -74,7 +74,7 @@ const FreelanceDetails = () => {
 
                   <h4>{t('freelance.prodTitle')}</h4>
                   <p>{t('freelance.prodIntro')}</p>
-                  <ul style={{ listStyleType: 'disc', paddingLeft: '20px' }}>
+                  <ul className="disc-list">
                     {t('freelance.prodItems').map((item, i) => (
                       <li key={i}>{item}</li>
                     ))}
@@ -82,7 +82,7 @@ const FreelanceDetails = () => {
 
                   <h4>{t('freelance.commTitle')}</h4>
                   <p>{t('freelance.commIntro')}</p>
-                  <ul style={{ listStyleType: 'disc', paddingLeft: '20px' }}>
+                  <ul className="disc-list">
                     {t('freelance.commItems').map((item, i) => (
                       <li key={i}>{item}</li>
                     ))}
@@ -90,7 +90,7 @@ const FreelanceDetails = () => {
 
                   <h4>{t('freelance.adminTitle')}</h4>
                   <p>{t('freelance.adminIntro')}</p>
-                  <ul style={{ listStyleType: 'disc', paddingLeft: '20px' }}>
+                  <ul className="disc-list">
                     {t('freelance.adminItems').map((item, i) => (
                       <li key={i}>{item}</li>
                     ))}
@@ -101,7 +101,7 @@ const FreelanceDetails = () => {
                   {/* 4. CYBERSECURITY */}
                   <h3>{t('freelance.securityTitle')}</h3>
                   <p>{t('freelance.securityDesc')}</p>
-                  <ul style={{ listStyleType: 'disc', paddingLeft: '20px' }}>
+                  <ul className="disc-list">
                     {t('freelance.securityItems').map((item, i) => (
                       <li key={i}>{item}</li>
                     ))}
@@ -113,24 +113,24 @@ const FreelanceDetails = () => {
                <article className="box post">
                   <header>
                     <h2>{t('freelance.erp.title')}</h2>
-                    <p style={{ fontStyle: 'italic', color: 'var(--text-muted)' }}>
+                    <p className="freelance-tagline">
                       {t('freelance.erp.subtitle')}
                     </p>
                   </header>
 
                   {/* KPI - LAYOUT SX - CENTRO - DX */}
-                  <div className="row aln-center" style={{ margin: '2em 0', alignItems: 'flex-start' }}>
-                    <div className="col-4 col-12-small" style={{ textAlign: 'left' }}>
-                        <h3 style={{ fontSize: '2.5em', color: 'var(--accent-text)', marginBottom: '0.2em', lineHeight: '1' }}>100%</h3>
-                        <p style={{ margin: 0, lineHeight: '1.2', textAlign: 'left' }}>{t('freelance.erp.kpi.tests')}</p>
+                  <div className="row aln-center kpi-row">
+                    <div className="col-4 col-12-small kpi">
+                        <h3 className="kpi-value">100%</h3>
+                        <p className="kpi-label">{t('freelance.erp.kpi.tests')}</p>
                     </div>
-                    <div className="col-4 col-12-small" style={{ textAlign: 'left' }}>
-                        <h3 style={{ fontSize: '2.5em', color: 'var(--accent-text)', marginBottom: '0.2em', lineHeight: '1' }}>ASVS L2</h3>
-                        <p style={{ margin: 0, lineHeight: '1.2', textAlign: 'left' }}>{t('freelance.erp.kpi.security')}</p>
+                    <div className="col-4 col-12-small kpi">
+                        <h3 className="kpi-value">ASVS L2</h3>
+                        <p className="kpi-label">{t('freelance.erp.kpi.security')}</p>
                     </div>
-                    <div className="col-4 col-12-small" style={{ textAlign: 'left' }}>
-                        <h3 style={{ fontSize: '2.5em', color: 'var(--accent-text)', marginBottom: '0.2em', lineHeight: '1' }}>E2E</h3>
-                        <p style={{ margin: 0, lineHeight: '1.2', textAlign: 'left' }}>{t('freelance.erp.kpi.flow')}</p>
+                    <div className="col-4 col-12-small kpi">
+                        <h3 className="kpi-value">E2E</h3>
+                        <p className="kpi-label">{t('freelance.erp.kpi.flow')}</p>
                     </div>
                   </div>
 
@@ -154,7 +154,7 @@ const FreelanceDetails = () => {
 
                   <h4>{t('freelance.erp.salesTitle')}</h4>
                   <p>{t('freelance.erp.salesIntro')}</p>
-                  <ul style={{ listStyleType: 'disc', paddingLeft: '20px' }}>
+                  <ul className="disc-list">
                     {t('freelance.erp.salesItems').map((item, i) => (
                       <li key={i}>{item}</li>
                     ))}
@@ -162,7 +162,7 @@ const FreelanceDetails = () => {
 
                   <h4>{t('freelance.erp.prodTitle')}</h4>
                   <p>{t('freelance.erp.prodIntro')}</p>
-                  <ul style={{ listStyleType: 'disc', paddingLeft: '20px' }}>
+                  <ul className="disc-list">
                     {t('freelance.erp.prodItems').map((item, i) => (
                       <li key={i}>{item}</li>
                     ))}
@@ -170,7 +170,7 @@ const FreelanceDetails = () => {
 
                   <h4>{t('freelance.erp.adminTitle')}</h4>
                   <p>{t('freelance.erp.adminIntro')}</p>
-                  <ul style={{ listStyleType: 'disc', paddingLeft: '20px' }}>
+                  <ul className="disc-list">
                     {t('freelance.erp.adminItems').map((item, i) => (
                       <li key={i}>{item}</li>
                     ))}
@@ -181,7 +181,7 @@ const FreelanceDetails = () => {
                   {/* 4. SICUREZZA E QUALITA' */}
                   <h3>{t('freelance.erp.securityTitle')}</h3>
                   <p>{t('freelance.erp.securityDesc')}</p>
-                  <ul style={{ listStyleType: 'disc', paddingLeft: '20px' }}>
+                  <ul className="disc-list">
                     {t('freelance.erp.securityItems').map((item, i) => (
                       <li key={i}>{item}</li>
                     ))}
@@ -200,7 +200,7 @@ const FreelanceDetails = () => {
                     <article className="box highlight">
                       <header><h3>{t('freelance.sidebarTechTitle')}</h3></header>
                       <p>{t('freelance.sidebarTechDesc')}</p>
-                      <ul className="check-list" style={{ listStyle: 'none', padding: 0 }}>
+                      <ul className="check-list">
                         <li><strong>Frontend:</strong> React 19, TypeScript, Vite, Tailwind</li>
                         <li><strong>Backend:</strong> PHP 8.2, Laravel 12, Sanctum</li>
                         <li><strong>Computation:</strong> Python, Flask, networkx</li>
@@ -227,7 +227,7 @@ const FreelanceDetails = () => {
                     <article className="box highlight">
                       <header><h3>{t('freelance.erp.sidebarTechTitle')}</h3></header>
                       <p>{t('freelance.erp.sidebarTechDesc')}</p>
-                      <ul className="check-list" style={{ listStyle: 'none', padding: 0 }}>
+                      <ul className="check-list">
                         <li><strong>Backend:</strong> Java 25, Spring Boot 4, Spring Modulith</li>
                         <li><strong>Persistence:</strong> Spring Data JDBC, Flyway</li>
                         <li><strong>Frontend:</strong> React 19, TypeScript, Vite, Tailwind, shadcn/ui</li>

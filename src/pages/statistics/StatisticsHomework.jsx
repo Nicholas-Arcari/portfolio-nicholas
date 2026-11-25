@@ -17,15 +17,6 @@ import StatisticsLayout from './StatisticsLayout';
 import '../../i18n/settings';
 import '../../i18n/statistics';
 
-const SEARCH_STYLE = {
-  width: '100%',
-  padding: '15px',
-  borderRadius: '5px',
-  border: '1px solid #ccc',
-  backgroundColor: '#f9f9f9',
-  fontSize: '1.1em',
-  marginBottom: '10px',
-};
 
 const FILTERS = [
   ['all', 'statistics.filterAll'],
@@ -55,7 +46,6 @@ const StatisticsHomework = () => {
           placeholder={t('statistics.search')}
           value={searchTerm}
           onChange={setSearchTerm}
-          style={SEARCH_STYLE}
         />
         <div className="hw-filter" role="group" aria-label={t('statistics.filterLabel')}>
           <span className="hw-filter-label">{t('statistics.filterLabel')}</span>
@@ -106,7 +96,7 @@ const StatisticsHomework = () => {
             </tbody>
           </table>
         ) : (
-          <p style={{ textAlign: 'center', padding: '20px', fontStyle: 'italic' }}>
+          <p className="empty-note">
             {t('statistics.noResults')}
           </p>
         )}

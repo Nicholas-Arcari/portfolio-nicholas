@@ -52,36 +52,32 @@ const CitizenShield = () => {
         <FeatureList title={t('citizenShield.productTitle')} items={t('citizenShield.features')} />
 
         {/* Come funziona */}
-        <h3 style={{ marginBottom: '0.6em' }}>{t('citizenShield.howTitle')}</h3>
-        <ul style={{ marginBottom: '1em' }}>
+        <h3 className="product-title">{t('citizenShield.howTitle')}</h3>
+        <ul className="product-points is-tight">
           {t('citizenShield.how').map((s, i) => (
-            <li key={i} style={{ marginBottom: '0.3em', lineHeight: 1.5 }}>{s}</li>
+            <li key={i}>{s}</li>
           ))}
         </ul>
-        <p style={{ fontSize: '0.9em', color: 'var(--text-subtle)', marginBottom: '2em' }}>
-          {t('citizenShield.notes')}
-        </p>
+        <p className="product-note is-spaced">{t('citizenShield.notes')}</p>
 
         {/* L'agent locale: perche' esiste, come si esegue, cosa fa ogni modulo */}
-        <h3 style={{ marginBottom: '0.6em' }}>{t('citizenShield.agentTitle')}</h3>
-        <p style={{ marginBottom: '1.5em', lineHeight: 1.6 }}>{t('citizenShield.agentIntro')}</p>
+        <h3 className="product-title">{t('citizenShield.agentTitle')}</h3>
+        <p className="product-intro is-long">{t('citizenShield.agentIntro')}</p>
 
-        <h4 style={{ marginBottom: '0.5em' }}>{t('citizenShield.agentFlowTitle')}</h4>
-        <ol style={{ marginBottom: '1.8em' }}>
+        <h4 className="product-subtitle">{t('citizenShield.agentFlowTitle')}</h4>
+        <ol className="product-flow">
           {t('citizenShield.agentFlow').map((s, i) => (
-            <li key={i} style={{ marginBottom: '0.4em', lineHeight: 1.5 }}>{s}</li>
+            <li key={i}>{s}</li>
           ))}
         </ol>
 
-        <h4 style={{ marginBottom: '0.5em' }}>{t('citizenShield.agentModulesTitle')}</h4>
-        <ul style={{ marginBottom: '1em' }}>
+        <h4 className="product-subtitle">{t('citizenShield.agentModulesTitle')}</h4>
+        <ul className="product-points">
           {t('citizenShield.agentModules').map((m, i) => (
-            <li key={i} style={{ marginBottom: '0.5em', lineHeight: 1.5 }}>{m}</li>
+            <li key={i}>{m}</li>
           ))}
         </ul>
-        <p style={{ fontSize: '0.9em', color: 'var(--text-subtle)', marginBottom: '2em' }}>
-          {t('citizenShield.agentNote')}
-        </p>
+        <p className="product-note is-spaced">{t('citizenShield.agentNote')}</p>
       </ProductArticle>
 
       <InstallGuides
@@ -93,14 +89,14 @@ const CitizenShield = () => {
 
       {/* Le immagini dei container: da dove arrivano e come verificarle */}
       <Collapsible title={t('citizenShield.imagesTitle')} show={t('citizenShield.imagesShow')} hide={t('citizenShield.imagesHide')}>
-        <p style={{ marginBottom: '1.2em', lineHeight: 1.6 }}>{t('citizenShield.imagesIntro')}</p>
-        <ul style={{ marginBottom: '1.5em' }}>
+        <p className="product-intro">{t('citizenShield.imagesIntro')}</p>
+        <ul className="product-points is-images is-short">
           {t('citizenShield.images').map((img, i) => (
-            <li key={i} style={{ marginBottom: '0.5em', lineHeight: 1.5 }}>{img}</li>
+            <li key={i}>{img}</li>
           ))}
         </ul>
-        <h4 style={{ marginBottom: '0.5em' }}>{t('citizenShield.imagesTrustTitle')}</h4>
-        <p style={{ marginBottom: '1em', lineHeight: 1.6 }}>{t('citizenShield.imagesTrustIntro')}</p>
+        <h4 className="product-subtitle">{t('citizenShield.imagesTrustTitle')}</h4>
+        <p className="product-intro is-short">{t('citizenShield.imagesTrustIntro')}</p>
         <CommandBlock last>{t('citizenShield.imagesVerifyCmd')}</CommandBlock>
       </Collapsible>
 

@@ -15,16 +15,16 @@ const Message = () => {
   usePageTitle(t('pageError.title'));
 
   return (
-    <div id="page-wrapper">
+    <div id="page-wrapper" className="notice-page">
 
       <SiteHeader nav={false} />
 
       <section id="main">
         <div className="container">
-          <article className="box post" style={{ textAlign: 'center', padding: '4em 2em' }}>
+          <article className="box post notice-card">
             <h3>{t('pageError.title')}</h3>
-            <p style={{ textAlign: 'center' }}>{t('pageError.text')}</p>
-            <button type="button" className="button icon solid fa-redo" style={{ marginTop: '1.5em' }} onClick={() => window.location.reload()}>
+            <p className="notice-text">{t('pageError.text')}</p>
+            <button type="button" className="button icon solid fa-redo notice-action" onClick={() => window.location.reload()}>
               {t('pageError.reload')}
             </button>
           </article>

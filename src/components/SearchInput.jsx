@@ -11,7 +11,9 @@
 // onChange copre i casi in cui maxLength non basta, come la composizione IME.
 const MAX_LENGTH = 100;
 
-const SearchInput = ({ value, onChange, placeholder, style }) => (
+// L'aspetto sta in HackerTheme.css: "search-input" e' il campo grande degli
+// elenchi; le varianti (Pizze, Cocktail classici, Stampe 3D) passano la loro.
+const SearchInput = ({ value, onChange, placeholder, className = 'search-input' }) => (
   <input
     type="text"
     value={value}
@@ -21,7 +23,7 @@ const SearchInput = ({ value, onChange, placeholder, style }) => (
     maxLength={MAX_LENGTH}
     autoComplete="off"
     spellCheck={false}
-    style={style}
+    className={className}
   />
 );
 

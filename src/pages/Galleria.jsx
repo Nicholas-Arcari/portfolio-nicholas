@@ -15,7 +15,7 @@ const Galleria = () => {
   usePageTitle(t('nav.gallery'));
 
   return (
-    <div id="page-wrapper">
+    <div id="page-wrapper" className="galleria-page">
 
       {/* --- HEADER --- */}
       <SiteHeader terminal={t('galleria.terminal')} />
@@ -28,13 +28,13 @@ const Galleria = () => {
             {/* Intro */}
             <article className="box post">
               {/* amoR e' Roma letta al contrario: le maiuscole contano, quindi qui il titolo non passa in maiuscolo come gli altri */}
-              <header><h2 style={{ textTransform: 'none' }}>{t('galleria.introTitle')}</h2></header>
+              <header><h2 className="galleria-title">{t('galleria.introTitle')}</h2></header>
               <p>{t('galleria.introDesc')}</p>
 
               {/* Segnaposto finche' le foto non sono pronte, come quello dei servizi in arrivo in Home */}
-              <div className="soft-panel" style={{ textAlign: 'center', padding: '2em 1em', marginTop: '1.5em' }}>
-                <i className="icon solid fa-camera-retro" style={{ fontSize: '2.5em', color: 'var(--accent-text)', marginBottom: '0.5em', display: 'block' }}></i>
-                <h3 style={{ marginBottom: 0 }}>{t('galleria.wip')}</h3>
+              <div className="soft-panel feature-panel is-spaced">
+                <i className="icon solid fa-camera-retro feature-icon"></i>
+                <h3 className="galleria-wip-title">{t('galleria.wip')}</h3>
               </div>
             </article>
 

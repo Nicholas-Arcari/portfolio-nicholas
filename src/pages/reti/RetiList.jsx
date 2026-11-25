@@ -22,15 +22,6 @@ import '../../i18n/settings';
 // ripetevano l'elenco delle esercitazioni o parlavano del repository
 const README_BELOW = ['Stack Tecnologico', 'Topologia di Rete'];
 
-const SEARCH_STYLE = {
-  width: '100%',
-  padding: '15px',
-  borderRadius: '5px',
-  border: '1px solid #ccc',
-  backgroundColor: '#f9f9f9',
-  fontSize: '1.1em',
-  marginBottom: '10px',
-};
 
 const RetiList = () => {
   const { t, language } = useLanguage();
@@ -71,7 +62,6 @@ const RetiList = () => {
           placeholder={t('reti.search')}
           value={searchTerm}
           onChange={setSearchTerm}
-          style={SEARCH_STYLE}
         />
         {searchTerm && (
           <p className="search-results-count">
@@ -99,7 +89,7 @@ const RetiList = () => {
             </tbody>
           </table>
         ) : (
-          <p style={{ textAlign: 'center', padding: '20px', fontStyle: 'italic' }}>
+          <p className="empty-note">
             {t('reti.noResults')}
           </p>
         )}

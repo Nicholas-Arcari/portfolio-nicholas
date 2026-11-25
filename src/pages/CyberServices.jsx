@@ -64,19 +64,17 @@ const CyberServices = () => {
 
       {/* Le immagini dei container: da dove arrivano e come verificarle */}
       <Collapsible title={t('cyberServices.imagesTitle')} show={t('cyberServices.imagesShow')} hide={t('cyberServices.imagesHide')}>
-        <p style={{ marginBottom: '1.2em', lineHeight: 1.6 }}>{t('cyberServices.imagesIntro')}</p>
-        <ul style={{ marginBottom: '1.8em' }}>
+        <p className="product-intro">{t('cyberServices.imagesIntro')}</p>
+        <ul className="product-points is-images">
           {t('cyberServices.images').map((img, i) => (
-            <li key={i} style={{ marginBottom: '0.5em', lineHeight: 1.5 }}>{img}</li>
+            <li key={i}>{img}</li>
           ))}
         </ul>
 
-        <h4 style={{ marginBottom: '0.5em' }}>{t('cyberServices.imagesTrustTitle')}</h4>
-        <p style={{ marginBottom: '1em', lineHeight: 1.6 }}>{t('cyberServices.imagesTrustIntro')}</p>
+        <h4 className="product-subtitle">{t('cyberServices.imagesTrustTitle')}</h4>
+        <p className="product-intro is-short">{t('cyberServices.imagesTrustIntro')}</p>
         <CommandBlock>{t('cyberServices.imagesVerifyCmd')}</CommandBlock>
-        <p style={{ fontSize: '0.9em', color: 'var(--text-subtle)', margin: 0 }}>
-          {t('cyberServices.imagesTrustNote')}
-        </p>
+        <p className="product-note is-last">{t('cyberServices.imagesTrustNote')}</p>
       </Collapsible>
 
       <Collapsible title={t('cyberServices.faqTitle')} show={t('cyberServices.faqShow')} hide={t('cyberServices.faqHide')} spaced>

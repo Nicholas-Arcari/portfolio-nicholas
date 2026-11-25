@@ -1,0 +1,222 @@
+/* src/pages/product/product.css */
+/* Le pagine dei prodotti (ProductKit.jsx). Le regole partono da .product-page,
+   la classe della radice della pagina: con due classi pesano piu' delle regole
+   del tema scuro su testi e titoli (body.dark-mode p, li, span, h1-h6), che
+   altrimenti ridipingerebbero i grigi e i rossi scelti qui. I riquadri della
+   colonna dei contenuti ripetono #content, come la regola del template che
+   decide il loro padding (#content > article). */
+
+/* I riquadri della colonna dei contenuti e il ritorno alla Home in fondo */
+.product-page #content > .product-article {
+    padding: 4em 2em;
+}
+.product-page .product-back {
+    margin: 2em 0;
+    text-align: center;
+}
+
+/* Intestazione: icona, nome del prodotto, stato, descrizione */
+.product-page .product-hero {
+    text-align: center;
+}
+.product-page .product-hero-icon {
+    display: block;
+    margin-bottom: 0.3em;
+    font-size: 4em;
+    color: var(--accent-text);
+}
+.product-page .product-hero-title {
+    margin-bottom: 0.3em;
+    font-size: 3em;
+}
+.product-page .product-hero-title.has-status {
+    margin-bottom: 0.2em;
+}
+.product-page .product-status {
+    margin-bottom: 1em;
+    font-size: 0.85em;
+    color: var(--accent-text);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+.product-page .product-lead {
+    max-width: 640px;
+    margin: 0 auto 2em;
+    font-size: 1.2em;
+    color: var(--text-muted);
+}
+
+/* Titoli delle sezioni (h3) e dei loro blocchi (h4) */
+.product-page .product-title {
+    margin-bottom: 0.6em;
+}
+.product-page .product-subtitle {
+    margin-bottom: 0.5em;
+}
+
+/* Testi ed elenchi delle sezioni */
+.product-page .product-features {
+    margin-bottom: 2em;
+}
+.product-page .product-features > li {
+    margin-bottom: 0.3em;
+}
+.product-page .product-intro {
+    margin-bottom: 1.2em;
+    line-height: 1.6;
+}
+.product-page .product-intro.is-short {
+    margin-bottom: 1em;
+}
+.product-page .product-intro.is-long {
+    margin-bottom: 1.5em;
+}
+.product-page .product-points {
+    margin-bottom: 1em;
+}
+.product-page .product-points > li {
+    margin-bottom: 0.5em;
+    line-height: 1.5;
+}
+.product-page .product-points.is-tight > li {
+    margin-bottom: 0.3em;
+}
+/* L'elenco delle immagini dei container, prima della verifica */
+.product-page .product-points.is-images {
+    margin-bottom: 1.8em;
+}
+.product-page .product-points.is-images.is-short {
+    margin-bottom: 1.5em;
+}
+.product-page .product-flow {
+    margin-bottom: 1.8em;
+}
+.product-page .product-flow > li {
+    margin-bottom: 0.4em;
+    line-height: 1.5;
+}
+.product-page .product-note {
+    margin-bottom: 1em;
+    font-size: 0.9em;
+    color: var(--text-subtle);
+}
+.product-page .product-note.is-spaced {
+    margin-bottom: 2em;
+}
+.product-page .product-note.is-last {
+    margin: 0;
+}
+
+/* Come installare: i due pulsanti, la guida aperta, il pacchetto */
+.product-page .product-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5em;
+    margin-bottom: 1.2em;
+}
+.product-page .product-guide {
+    margin-bottom: 2em;
+}
+.product-page .product-guide-intro {
+    margin-bottom: 0.8em;
+    color: var(--text-muted);
+}
+.product-page .product-guide-steps > li {
+    margin-bottom: 0.6em;
+    line-height: 1.5;
+}
+.product-page .product-guide-note {
+    margin-top: 1em;
+    font-size: 0.9em;
+    color: var(--text-subtle);
+}
+.product-page .product-download {
+    margin: 2em 0;
+    text-align: center;
+}
+.product-page .product-download-note {
+    margin-top: 0.8em;
+    font-size: 0.85em;
+    color: var(--text-subtle);
+}
+
+/* Le sezioni a scomparsa: titolo e pulsante centrati, contenuto a sinistra */
+.product-page .product-collapsible {
+    text-align: center;
+}
+.product-page .product-collapsible.is-spaced {
+    margin-bottom: 1em;
+}
+.product-page .product-collapsible-body {
+    margin-top: 1.5em;
+    text-align: left;
+}
+
+/* Le domande frequenti */
+.product-page .product-faq-title {
+    margin-bottom: 0.8em;
+    color: var(--accent-text);
+}
+.product-page .product-faq-title.is-spaced {
+    margin: 1.8em 0 0.8em;
+}
+.product-page .product-faq-item {
+    margin-bottom: 1.2em;
+}
+.product-page .product-faq-q {
+    margin-bottom: 0.3em;
+    font-weight: bold;
+}
+.product-page .product-faq-a {
+    margin: 0;
+    color: var(--text-muted);
+}
+
+/* Il blocco di un comando: sfondo grigio traslucido e colore del testo
+   ereditato, cosi' regge sia il tema chiaro sia quello scuro */
+.product-page .product-command {
+    margin: 0 0 1em;
+    padding: 0.9em 1em;
+    border-left: 3px solid #d52349;
+    border-radius: 3px;
+    background: rgba(128, 128, 128, 0.12);
+    font-family: monospace;
+    font-size: 0.78em;
+    line-height: 1.6;
+    white-space: pre;
+    overflow-x: auto;
+}
+.product-page .product-command.is-last {
+    margin: 0;
+}
+
+/* I riquadri della colonna destra */
+.product-page .product-box-icon {
+    margin-right: 0.5em;
+    color: var(--accent-text);
+}
+.product-page .product-box-text {
+    font-size: 0.95em;
+    color: var(--text-muted);
+}
+.product-page .product-box-text.is-only {
+    margin: 0;
+}
+.product-page .product-box-button {
+    width: 100%;
+}
+.product-page .product-box-button.has-next {
+    margin-bottom: 10px;
+}
+.product-page .product-box-link {
+    margin-top: 0.9em;
+    margin-bottom: 0;
+    font-size: 0.9em;
+}
+.product-page .product-box-list {
+    margin-bottom: 0;
+    font-size: 0.9em;
+}
+.product-page .product-box-list > li {
+    margin-bottom: 0.2em;
+}
