@@ -52,7 +52,7 @@ const Ricette = () => {
 
                <article className="box post">
                   <header><h2>{t('ricette.title')} <strong>{t('ricette.titleBold')}</strong></h2></header>
-                  <span className="image featured"><img src="images/img2.webp" alt="Cucina" /></span>
+                  <span className="image featured"><img src="images/img2.webp" alt="Cucina" width="1600" height="1067" decoding="async" /></span>
 
                   <p>{t('ricette.subtitle')}</p>
 

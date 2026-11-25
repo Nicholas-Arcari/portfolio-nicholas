@@ -106,7 +106,7 @@ const Stampe3d = () => {
                                     <article className="box feature">
                                         <span className="image featured">
                                           {project.image ? (
-                                            <img src={project.image} alt={project.title} style={{ objectFit: 'cover', height: '300px', width: '100%', display: 'block' }} />
+                                            <img src={project.image} alt={project.title} loading="lazy" decoding="async" style={{ objectFit: 'cover', height: '300px', width: '100%', display: 'block' }} />
                                           ) : (
                                             <span className="image-fallback"><i className="icon solid fa-cube"></i></span>
                                           )}
@@ -201,7 +201,7 @@ const Stampe3d = () => {
                                     <article className="box feature" style={{ opacity: 0.9 }}>
                                         <span className="image featured">
                                           {project.image ? (
-                                            <img src={project.image} alt={project.title} style={{ objectFit: 'cover', height: '300px', width: '100%', display: 'block', filter: 'grayscale(30%)' }} />
+                                            <img src={project.image} alt={project.title} loading="lazy" decoding="async" style={{ objectFit: 'cover', height: '300px', width: '100%', display: 'block', filter: 'grayscale(30%)' }} />
                                           ) : (
                                             <span className="image-fallback" style={{ filter: 'grayscale(30%)', opacity: 0.7 }}><i className="icon solid fa-cube"></i></span>
                                           )}

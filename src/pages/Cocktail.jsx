@@ -58,7 +58,7 @@ const Cocktail = () => {
                {/* LISTA COCKTAIL */}
                <article className="box post">
                   <header><h2>{t('cocktail.title')} <strong>{t('cocktail.titleBold')}</strong></h2></header>
-                  <span className="image featured"><img src="images/img3.webp" alt="Cocktails" /></span>
+                  <span className="image featured"><img src="images/img3.webp" alt="Cocktails" width="1600" height="1010" decoding="async" /></span>
 
                   <p>{t('cocktail.subtitle')}</p>
 

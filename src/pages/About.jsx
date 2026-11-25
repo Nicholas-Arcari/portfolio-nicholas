@@ -38,6 +38,8 @@ const About = () => {
                     <img
                       src="images/about.webp"
                       alt="Nicholas Arcari"
+                      width="1000"
+                      height="1640"
                       style={{ borderRadius: '15px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}
                     />
                   </span>

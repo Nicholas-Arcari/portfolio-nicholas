@@ -1701,6 +1701,9 @@ input, select, textarea {
 		.image img {
 			display: block;
 			width: 100%;
+			/* le immagini dichiarano width e height (lo spazio si riserva prima che
+			   arrivino): l'altezza resta proporzionale alla larghezza */
+			height: auto;
 		}
 
 		.image.fit {
