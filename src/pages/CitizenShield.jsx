@@ -1,364 +1,113 @@
 // src/pages/CitizenShield.jsx
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useLanguage } from '../contexts/languageContext';
-import Footer from '../components/Footer';
-import VideoModal from '../components/VideoModal';
-import { VIDEO_BASE } from '../config/media';
-import SiteHeader from '../components/SiteHeader';
-import { usePageLayout } from '../utils/usePageLayout';
-import { usePageTitle } from '../utils/usePageTitle';
+import {
+  ProductPage, ProductArticle, ProductHero, FeatureList, InstallGuides,
+  Collapsible, CommandBlock, FaqSections, VideoBox, LicenseBox, ContactBox,
+} from './product/ProductKit';
 import '../i18n/citizenShield';
 
 const CitizenShield = () => {
-  const [guide, setGuide] = useState(null); // Default: nascosto; si apre al click sul bottone
-  const [showImages, setShowImages] = useState(false); // Default: nascosto
-  const [showFaq, setShowFaq] = useState(false); // Default: nascosto
-  const [video, setVideo] = useState(null); // { src, title } | null - lazy: caricato solo al click
   const { t } = useLanguage();
-
-  const faq = t('citizenShield.faq');
-
-  usePageLayout('homepage');
-  usePageTitle(t('citizenShield.heading'));
+  const downloads = `${import.meta.env.BASE_URL}downloads`;
 
   return (
-    <div id="page-wrapper">
+    <ProductPage
+      title={t('citizenShield.heading')}
+      terminal={t('citizenShield.terminal')}
+      back={t('citizenShield.back')}
+      video={{ unsupported: t('citizenShield.videoUnsupported'), close: t('citizenShield.videoClose') }}
+      sidebar={(
+        <>
+          <VideoBox
+            file="citizen-shield"
+            title={t('citizenShield.videoTitle')}
+            intro={t('citizenShield.videoIntro')}
+            windows={t('citizenShield.videoWindows')}
+            linux={t('citizenShield.videoLinux')}
+          />
+          <LicenseBox
+            title={t('citizenShield.licenseTitle')}
+            text={t('citizenShield.licenseText')}
+            eulaHref={`${downloads}/${t('citizenShield.eulaPdf')}`}
+            eulaLink={t('citizenShield.eulaLink')}
+          />
+          <ContactBox
+            title={t('citizenShield.contactTitle')}
+            text={t('citizenShield.contact')}
+            subject="Citizen%20Shield%20-%20richiesta%20accesso%20beta"
+            back={t('citizenShield.back')}
+          />
+        </>
+      )}
+    >
+      <ProductArticle>
+        <ProductHero
+          icon="fa-user-shield"
+          heading={t('citizenShield.heading')}
+          status={t('citizenShield.status')}
+          text={t('citizenShield.text')}
+        />
 
-      <SiteHeader terminal={t('citizenShield.terminal')} />
+        {/* Gli 8 moduli */}
+        <FeatureList title={t('citizenShield.productTitle')} items={t('citizenShield.features')} />
 
-      <section id="main">
-        <div className="container">
-          <div className="row">
+        {/* Come funziona */}
+        <h3 style={{ marginBottom: '0.6em' }}>{t('citizenShield.howTitle')}</h3>
+        <ul style={{ marginBottom: '1em' }}>
+          {t('citizenShield.how').map((s, i) => (
+            <li key={i} style={{ marginBottom: '0.3em', lineHeight: 1.5 }}>{s}</li>
+          ))}
+        </ul>
+        <p style={{ fontSize: '0.9em', color: 'var(--text-subtle)', marginBottom: '2em' }}>
+          {t('citizenShield.notes')}
+        </p>
 
-            {/* Content */}
-            <div id="content" className="col-8 col-12-medium">
-          <article className="box post" style={{ padding: '4em 2em' }}>
+        {/* L'agent locale: perche' esiste, come si esegue, cosa fa ogni modulo */}
+        <h3 style={{ marginBottom: '0.6em' }}>{t('citizenShield.agentTitle')}</h3>
+        <p style={{ marginBottom: '1.5em', lineHeight: 1.6 }}>{t('citizenShield.agentIntro')}</p>
 
-            <div style={{ textAlign: 'center' }}>
-              <i className="icon solid fa-user-shield" style={{ fontSize: '4em', color: 'var(--accent-text)', marginBottom: '0.3em', display: 'block' }}></i>
-              <h2 style={{ fontSize: '3em', marginBottom: '0.2em' }}>{t('citizenShield.heading')}</h2>
-              <p style={{ fontSize: '0.85em', color: 'var(--accent-text)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '1em' }}>
-                {t('citizenShield.status')}
-              </p>
-              <p style={{ fontSize: '1.2em', color: 'var(--text-muted)', maxWidth: '640px', margin: '0 auto 2em' }}>
-                {t('citizenShield.text')}
-              </p>
-            </div>
+        <h4 style={{ marginBottom: '0.5em' }}>{t('citizenShield.agentFlowTitle')}</h4>
+        <ol style={{ marginBottom: '1.8em' }}>
+          {t('citizenShield.agentFlow').map((s, i) => (
+            <li key={i} style={{ marginBottom: '0.4em', lineHeight: 1.5 }}>{s}</li>
+          ))}
+        </ol>
 
-            {/* Gli 8 moduli */}
-            <h3 style={{ marginBottom: '0.6em' }}>{t('citizenShield.productTitle')}</h3>
-            <ul style={{ marginBottom: '2em' }}>
-              {t('citizenShield.features').map((f, i) => (
-                <li key={i} style={{ marginBottom: '0.3em' }}>{f}</li>
-              ))}
-            </ul>
+        <h4 style={{ marginBottom: '0.5em' }}>{t('citizenShield.agentModulesTitle')}</h4>
+        <ul style={{ marginBottom: '1em' }}>
+          {t('citizenShield.agentModules').map((m, i) => (
+            <li key={i} style={{ marginBottom: '0.5em', lineHeight: 1.5 }}>{m}</li>
+          ))}
+        </ul>
+        <p style={{ fontSize: '0.9em', color: 'var(--text-subtle)', marginBottom: '2em' }}>
+          {t('citizenShield.agentNote')}
+        </p>
+      </ProductArticle>
 
-            {/* Come funziona */}
-            <h3 style={{ marginBottom: '0.6em' }}>{t('citizenShield.howTitle')}</h3>
-            <ul style={{ marginBottom: '1em' }}>
-              {t('citizenShield.how').map((s, i) => (
-                <li key={i} style={{ marginBottom: '0.3em', lineHeight: 1.5 }}>{s}</li>
-              ))}
-            </ul>
-            <p style={{ fontSize: '0.9em', color: 'var(--text-subtle)', marginBottom: '2em' }}>
-              {t('citizenShield.notes')}
-            </p>
-
-            {/* L'agent locale: perche' esiste, come si esegue, cosa fa ogni modulo */}
-            <h3 style={{ marginBottom: '0.6em' }}>{t('citizenShield.agentTitle')}</h3>
-            <p style={{ marginBottom: '1.5em', lineHeight: 1.6 }}>{t('citizenShield.agentIntro')}</p>
-
-            <h4 style={{ marginBottom: '0.5em' }}>{t('citizenShield.agentFlowTitle')}</h4>
-            <ol style={{ marginBottom: '1.8em' }}>
-              {t('citizenShield.agentFlow').map((s, i) => (
-                <li key={i} style={{ marginBottom: '0.4em', lineHeight: 1.5 }}>{s}</li>
-              ))}
-            </ol>
-
-            <h4 style={{ marginBottom: '0.5em' }}>{t('citizenShield.agentModulesTitle')}</h4>
-            <ul style={{ marginBottom: '1em' }}>
-              {t('citizenShield.agentModules').map((m, i) => (
-                <li key={i} style={{ marginBottom: '0.5em', lineHeight: 1.5 }}>{m}</li>
-              ))}
-            </ul>
-            <p style={{ fontSize: '0.9em', color: 'var(--text-subtle)', marginBottom: '2em' }}>
-              {t('citizenShield.agentNote')}
-            </p>
-
-          </article>
-
-          {/* "Come installare" in un article suo, come nella pagina della SOC
-              Suite: la doppia riga orizzontale che il template traccia sopra
-              ogni article dopo il primo lo separa dal resto della pagina. */}
-          <article className="box post" style={{ padding: '4em 2em' }}>
-
-            {/* Come installare - due guide */}
-            <h3 style={{ marginBottom: '0.6em' }}>{t('citizenShield.installTitle')}</h3>
-            <div style={{ display: 'flex', gap: '0.5em', marginBottom: '1.2em', flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                onClick={() => setGuide(guide === 'simple' ? null : 'simple')}
-                className={guide === 'simple' ? 'button small' : 'button alt small'}
-                aria-expanded={guide === 'simple'}
-              >
-                {t('citizenShield.tabSimple')}
-              </button>
-              <button
-                type="button"
-                onClick={() => setGuide(guide === 'tech' ? null : 'tech')}
-                className={guide === 'tech' ? 'button small' : 'button alt small'}
-                aria-expanded={guide === 'tech'}
-              >
-                {t('citizenShield.tabTech')}
-              </button>
-            </div>
-
-            {guide === 'simple' && (
-              <div className="fade-in" style={{ marginBottom: '2em' }}>
-                <p style={{ color: 'var(--text-muted)', marginBottom: '0.8em' }}>
-                  {t('citizenShield.simpleIntro')}
-                </p>
-                <ol>
-                  {t('citizenShield.simpleSteps').map((s, i) => (
-                    <li key={i} style={{ marginBottom: '0.6em', lineHeight: 1.5 }}>{s}</li>
-                  ))}
-                </ol>
-                <p style={{ fontSize: '0.9em', color: 'var(--text-subtle)', marginTop: '1em' }}>
-                  {t('citizenShield.simpleHelp')}
-                </p>
-              </div>
-            )}
-
-            {guide === 'tech' && (
-              <div className="fade-in" style={{ marginBottom: '2em' }}>
-                <p style={{ color: 'var(--text-muted)', marginBottom: '0.8em' }}>
-                  {t('citizenShield.techIntro')}
-                </p>
-                <ol>
-                  {t('citizenShield.techSteps').map((s, i) => (
-                    <li key={i} style={{ marginBottom: '0.6em', lineHeight: 1.5 }}>{s}</li>
-                  ))}
-                </ol>
-                <p style={{ fontSize: '0.9em', color: 'var(--text-subtle)', marginTop: '1em' }}>
-                  {t('citizenShield.techNotes')}
-                </p>
-              </div>
-            )}
-
-            {/* Download */}
-            <div style={{ textAlign: 'center', margin: '2em 0' }}>
-              <a
-                href={`${import.meta.env.BASE_URL}downloads/citizen-shield-deploy.zip`}
-                className="button icon solid fa-download"
-                download
-              >
-                {t('citizenShield.downloadBtn')}
-              </a>
-              <p style={{ fontSize: '0.85em', color: 'var(--text-subtle)', marginTop: '0.8em' }}>
-                {t('citizenShield.downloadNote')}
-              </p>
-            </div>
-
-          </article>
-
-          {/* FAQ come articolo #content separato: il template disegna la doppia
-              riga orizzontale sopra gli article successivi al primo, separando
-              visivamente le FAQ dal resto della pagina (light e dark mode). */}
-          {/* Dettaglio tecnico sulle immagini in un article suo: il template
-              traccia la doppia riga sopra ogni article dopo il primo, ed è
-              quella che lo separa dalle domande frequenti. Titolo e comando
-              centrati perché sono l'invito ad aprirlo; il contenuto torna a
-              sinistra, dove si legge. */}
-          <article className="box post" style={{ padding: '4em 2em' }}>
-            <div style={{ textAlign: 'center' }}>
-              <h3 style={{ marginBottom: '0.6em' }}>{t('citizenShield.imagesTitle')}</h3>
-              <button
-                type="button"
-                className="button alt small"
-                onClick={() => setShowImages(!showImages)}
-                aria-expanded={showImages}
-              >
-                {showImages ? t('citizenShield.imagesHide') : t('citizenShield.imagesShow')}
-                <i className={`icon solid ${showImages ? 'fa-chevron-up' : 'fa-chevron-down'}`} style={{ marginLeft: '10px' }}></i>
-              </button>
-
-              {showImages && (
-                <div className="fade-in" style={{ marginTop: '1.5em', textAlign: 'left' }}>
-                  <p style={{ marginBottom: '1.2em', lineHeight: 1.6 }}>{t('citizenShield.imagesIntro')}</p>
-                  <ul style={{ marginBottom: '1.5em' }}>
-                    {t('citizenShield.images').map((img, i) => (
-                      <li key={i} style={{ marginBottom: '0.5em', lineHeight: 1.5 }}>{img}</li>
-                    ))}
-                  </ul>
-                  <h4 style={{ marginBottom: '0.5em' }}>{t('citizenShield.imagesTrustTitle')}</h4>
-                  <p style={{ marginBottom: '1em', lineHeight: 1.6 }}>{t('citizenShield.imagesTrustIntro')}</p>
-                  {/* Sfondo grigio traslucido e colore ereditato: unico blocco che
-                      regge sia il tema chiaro sia quello scuro senza duplicare stili. */}
-                  <pre tabIndex={0} style={{
-                    fontFamily: 'monospace', fontSize: '0.78em', lineHeight: 1.6,
-                    whiteSpace: 'pre', overflowX: 'auto', margin: 0,
-                    padding: '0.9em 1em', borderLeft: '3px solid #d52349',
-                    background: 'rgba(128,128,128,0.12)', borderRadius: '3px',
-                  }}>{t('citizenShield.imagesVerifyCmd')}</pre>
-                </div>
-              )}
-            </div>
-
-          </article>
-
-          <article className="box post" style={{ padding: '4em 2em' }}>
-            <div style={{ marginBottom: '1em', textAlign: 'center' }}>
-              <h3 style={{ marginBottom: '0.6em' }}>{t('citizenShield.faqTitle')}</h3>
-              <button
-                type="button"
-                className="button alt small"
-                onClick={() => setShowFaq(!showFaq)}
-                aria-expanded={showFaq}
-              >
-                {showFaq ? t('citizenShield.faqHide') : t('citizenShield.faqShow')}
-                <i className={`icon solid ${showFaq ? 'fa-chevron-up' : 'fa-chevron-down'}`} style={{ marginLeft: '10px' }}></i>
-              </button>
-
-              {showFaq && (
-                <div className="fade-in" style={{ marginTop: '1.5em', textAlign: 'left' }}>
-                  <h4 style={{ marginBottom: '0.8em', color: 'var(--accent-text)' }}>{faq.techTitle}</h4>
-                  {faq.tech.map((item, i) => (
-                    <div key={`tech-${i}`} style={{ marginBottom: '1.2em' }}>
-                      <p style={{ fontWeight: 'bold', marginBottom: '0.3em' }}>{item.q}</p>
-                      <p style={{ color: 'var(--text-muted)', margin: 0 }}>{item.a}</p>
-                    </div>
-                  ))}
-
-                  <h4 style={{ margin: '1.8em 0 0.8em', color: 'var(--accent-text)' }}>{faq.generalTitle}</h4>
-                  {faq.general.map((item, i) => (
-                    <div key={`gen-${i}`} style={{ marginBottom: '1.2em' }}>
-                      <p style={{ fontWeight: 'bold', marginBottom: '0.3em' }}>{item.q}</p>
-                      <p style={{ color: 'var(--text-muted)', margin: 0 }}>{item.a}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </article>
-
-          {/* Doppia riga orizzontale sotto le FAQ (come quella disegnata sopra) */}
-          <div className="double-rule" aria-hidden="true"></div>
-
-          <div style={{ margin: '2em 0', textAlign: 'center' }}>
-            <Link to="/" className="button alt small icon solid fa-arrow-left">
-              {t('citizenShield.back')}
-            </Link>
-          </div>
-            </div>
-
-            {/* Sidebar destra: Video installazione + Accesso */}
-            <div id="sidebar" className="col-4 col-12-medium">
-
-              {/* Video: come si installa */}
-              <section>
-                <ul className="divided">
-                  <li>
-                    <article className="box highlight">
-                      <header><h3>{t('citizenShield.videoTitle')}</h3></header>
-                      <p style={{ fontSize: '0.95em', color: 'var(--text-muted)' }}>{t('citizenShield.videoIntro')}</p>
-                      <button
-                        type="button"
-                        className="button icon brands fa-windows"
-                        style={{ width: '100%', marginBottom: '10px' }}
-                        onClick={() => setVideo({
-                          src: `${VIDEO_BASE}/citizen-shield-install-windows.mp4`,
-                          title: `${t('citizenShield.videoTitle')} - ${t('citizenShield.videoWindows')}`,
-                        })}
-                      >
-                        {t('citizenShield.videoWindows')}
-                      </button>
-                      <button
-                        type="button"
-                        className="button alt icon brands fa-linux"
-                        style={{ width: '100%' }}
-                        onClick={() => setVideo({
-                          src: `${VIDEO_BASE}/citizen-shield-install-linux-macos.mp4`,
-                          title: `${t('citizenShield.videoTitle')} - ${t('citizenShield.videoLinux')}`,
-                        })}
-                      >
-                        {t('citizenShield.videoLinux')}
-                      </button>
-                    </article>
-                  </li>
-                </ul>
-              </section>
-
-              {/* Chiave di licenza */}
-              <section>
-                <ul className="divided">
-                  <li>
-                    <article className="box highlight">
-                      <header>
-                        <h3>
-                          <i className="icon solid fa-key" style={{ color: 'var(--accent-text)', marginRight: '0.5em' }}></i>
-                          {t('citizenShield.licenseTitle')}
-                        </h3>
-                      </header>
-                      <p style={{ fontSize: '0.95em', color: 'var(--text-muted)' }}>{t('citizenShield.licenseText')}</p>
-                      <p style={{ fontSize: '0.9em', marginTop: '0.9em', marginBottom: 0 }}>
-                        <a
-                          href={`${import.meta.env.BASE_URL}downloads/${t('citizenShield.eulaPdf')}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <i className="icon solid fa-file-alt" style={{ marginRight: '0.4em' }}></i>
-                          {t('citizenShield.eulaLink')}
-                        </a>
-                      </p>
-                    </article>
-                  </li>
-                </ul>
-              </section>
-
-              {/* Contatti */}
-              <section>
-                <ul className="divided">
-                  <li>
-                    <article className="box highlight">
-                      <header>
-                        <h3>
-                          <i className="icon solid fa-envelope" style={{ color: 'var(--accent-text)', marginRight: '0.5em' }}></i>
-                          {t('citizenShield.contactTitle')}
-                        </h3>
-                      </header>
-                      <p style={{ fontSize: '0.95em', color: 'var(--text-muted)' }}>{t('citizenShield.contact')}</p>
-                      <a href="mailto:arcari.nicholas0@gmail.com?subject=Citizen%20Shield%20-%20richiesta%20accesso%20beta" className="button icon solid fa-envelope" style={{ width: '100%', marginBottom: '10px' }}>
-                        Email
-                      </a>
-                      <a href="https://www.linkedin.com/in/nicholas-arcari-6245893a7" className="button alt icon brands fa-linkedin" target="_blank" rel="noopener noreferrer" style={{ width: '100%', marginBottom: '10px' }}>
-                        LinkedIn
-                      </a>
-                      <Link to="/" className="button alt small icon solid fa-arrow-left" style={{ width: '100%' }}>
-                        {t('citizenShield.back')}
-                      </Link>
-                    </article>
-                  </li>
-                </ul>
-              </section>
-
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      <VideoModal
-        open={!!video}
-        src={video?.src}
-        title={video?.title}
-        onClose={() => setVideo(null)}
-        unsupportedText={t('citizenShield.videoUnsupported')}
-        closeLabel={t('citizenShield.videoClose')}
+      <InstallGuides
+        title={t('citizenShield.installTitle')}
+        simple={{ tab: t('citizenShield.tabSimple'), intro: t('citizenShield.simpleIntro'), steps: t('citizenShield.simpleSteps'), note: t('citizenShield.simpleHelp') }}
+        tech={{ tab: t('citizenShield.tabTech'), intro: t('citizenShield.techIntro'), steps: t('citizenShield.techSteps'), note: t('citizenShield.techNotes') }}
+        download={{ href: `${downloads}/citizen-shield-deploy.zip`, label: t('citizenShield.downloadBtn'), note: t('citizenShield.downloadNote') }}
       />
 
-      <Footer />
-    </div>
+      {/* Le immagini dei container: da dove arrivano e come verificarle */}
+      <Collapsible title={t('citizenShield.imagesTitle')} show={t('citizenShield.imagesShow')} hide={t('citizenShield.imagesHide')}>
+        <p style={{ marginBottom: '1.2em', lineHeight: 1.6 }}>{t('citizenShield.imagesIntro')}</p>
+        <ul style={{ marginBottom: '1.5em' }}>
+          {t('citizenShield.images').map((img, i) => (
+            <li key={i} style={{ marginBottom: '0.5em', lineHeight: 1.5 }}>{img}</li>
+          ))}
+        </ul>
+        <h4 style={{ marginBottom: '0.5em' }}>{t('citizenShield.imagesTrustTitle')}</h4>
+        <p style={{ marginBottom: '1em', lineHeight: 1.6 }}>{t('citizenShield.imagesTrustIntro')}</p>
+        <CommandBlock last>{t('citizenShield.imagesVerifyCmd')}</CommandBlock>
+      </Collapsible>
+
+      <Collapsible title={t('citizenShield.faqTitle')} show={t('citizenShield.faqShow')} hide={t('citizenShield.faqHide')} spaced>
+        <FaqSections faq={t('citizenShield.faq')} />
+      </Collapsible>
+    </ProductPage>
   );
 };
 

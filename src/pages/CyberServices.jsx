@@ -1,347 +1,88 @@
 // src/pages/CyberServices.jsx
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useLanguage } from '../contexts/languageContext';
-import Footer from '../components/Footer';
-import VideoModal from '../components/VideoModal';
-import { VIDEO_BASE } from '../config/media';
-import SiteHeader from '../components/SiteHeader';
-import { usePageLayout } from '../utils/usePageLayout';
-import { usePageTitle } from '../utils/usePageTitle';
+import {
+  ProductPage, ProductArticle, ProductHero, FeatureList, ArchitectureSection, InstallGuides,
+  Collapsible, CommandBlock, FaqSections, VideoBox, LicenseBox, ContactBox,
+} from './product/ProductKit';
 import '../i18n/cyberServices';
 
 const CyberServices = () => {
-  const [guide, setGuide] = useState(null); // Default: nascosto; si apre al click sul bottone
-  const [showImages, setShowImages] = useState(false); // Default: nascosto
-  const [showFaq, setShowFaq] = useState(false); // Default: nascosto
-  const [video, setVideo] = useState(null); // { src, title } | null - lazy: caricato solo al click
   const { t } = useLanguage();
-
-  const faq = t('cyberServices.faq');
-
-  usePageLayout('homepage');
-  usePageTitle(t('cyberServices.heading'));
+  const downloads = `${import.meta.env.BASE_URL}downloads`;
 
   return (
-    <div id="page-wrapper">
+    <ProductPage
+      title={t('cyberServices.heading')}
+      terminal={t('cyberServices.terminal')}
+      back={t('cyberServices.back')}
+      video={{ unsupported: t('cyberServices.videoUnsupported'), close: t('cyberServices.videoClose') }}
+      sidebar={(
+        <>
+          <VideoBox
+            file="soc-suite"
+            title={t('cyberServices.videoTitle')}
+            intro={t('cyberServices.videoIntro')}
+            windows={t('cyberServices.videoWindows')}
+            linux={t('cyberServices.videoLinux')}
+          />
+          <LicenseBox
+            title={t('cyberServices.licenseTitle')}
+            text={t('cyberServices.licenseText')}
+            eulaHref={`${downloads}/${t('cyberServices.eulaPdf')}`}
+            eulaLink={t('cyberServices.eulaLink')}
+          />
+          <ContactBox
+            title={t('cyberServices.contactTitle')}
+            text={t('cyberServices.contact')}
+            subject="SOC%20Suite%20-%20richiesta%20licenza"
+            back={t('cyberServices.back')}
+          />
+        </>
+      )}
+    >
+      <ProductArticle>
+        <ProductHero icon="fa-shield-alt" heading={t('cyberServices.heading')} text={t('cyberServices.text')} />
+        <FeatureList title={t('cyberServices.productTitle')} items={t('cyberServices.features')} />
 
-      <SiteHeader terminal={t('cyberServices.terminal')} />
+        {/* Com'e' fatta: l'equivalente della sezione sull'agent nella
+            pagina di Citizen Shield, che spiegava perche' esiste e cosa
+            fa. Qui la domanda e' dove finiscono i dati. */}
+        <ArchitectureSection
+          title={t('cyberServices.architectureTitle')}
+          intro={t('cyberServices.architectureIntro')}
+          items={t('cyberServices.architecture')}
+          note={t('cyberServices.architectureNote')}
+        />
+      </ProductArticle>
 
-      <section id="main">
-        <div className="container">
-          <div className="row">
-
-            {/* Content */}
-            <div id="content" className="col-8 col-12-medium">
-          <article className="box post" style={{ padding: '4em 2em' }}>
-
-            <div style={{ textAlign: 'center' }}>
-              <i className="icon solid fa-shield-alt" style={{ fontSize: '4em', color: 'var(--accent-text)', marginBottom: '0.3em', display: 'block' }}></i>
-              <h2 style={{ fontSize: '3em', marginBottom: '0.3em' }}>{t('cyberServices.heading')}</h2>
-              <p style={{ fontSize: '1.2em', color: 'var(--text-muted)', maxWidth: '640px', margin: '0 auto 2em' }}>
-                {t('cyberServices.text')}
-              </p>
-            </div>
-
-            {/* Cosa include */}
-            <h3 style={{ marginBottom: '0.6em' }}>{t('cyberServices.productTitle')}</h3>
-            <ul style={{ marginBottom: '2em' }}>
-              {t('cyberServices.features').map((f, i) => (
-                <li key={i} style={{ marginBottom: '0.3em' }}>{f}</li>
-              ))}
-            </ul>
-
-            {/* Com'e' fatta: l'equivalente della sezione sull'agent nella
-                pagina di Citizen Shield, che spiegava perche' esiste e cosa
-                fa. Qui la domanda e' dove finiscono i dati. */}
-            <h3 style={{ marginBottom: '0.6em' }}>{t('cyberServices.architectureTitle')}</h3>
-            <p style={{ marginBottom: '1.2em', lineHeight: 1.6 }}>{t('cyberServices.architectureIntro')}</p>
-            <ul style={{ marginBottom: '1em' }}>
-              {t('cyberServices.architecture').map((a, i) => (
-                <li key={i} style={{ marginBottom: '0.5em', lineHeight: 1.5 }}>{a}</li>
-              ))}
-            </ul>
-            <p style={{ fontSize: '0.9em', color: 'var(--text-subtle)', marginBottom: '1em' }}>
-              {t('cyberServices.architectureNote')}
-            </p>
-
-          </article>
-
-          {/* L'installazione sta in un article suo: il template traccia la
-              doppia riga sopra ogni article dopo il primo, e quella del
-              blocco successivo la chiude, isolandola visivamente. */}
-          <article className="box post" style={{ padding: '4em 2em' }}>
-
-            {/* Come installare - due guide */}
-            <h3 style={{ marginBottom: '0.6em' }}>{t('cyberServices.howTitle')}</h3>
-            <div style={{ display: 'flex', gap: '0.5em', marginBottom: '1.2em', flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                onClick={() => setGuide(guide === 'simple' ? null : 'simple')}
-                className={guide === 'simple' ? 'button small' : 'button alt small'}
-                aria-expanded={guide === 'simple'}
-              >
-                {t('cyberServices.tabSimple')}
-              </button>
-              <button
-                type="button"
-                onClick={() => setGuide(guide === 'tech' ? null : 'tech')}
-                className={guide === 'tech' ? 'button small' : 'button alt small'}
-                aria-expanded={guide === 'tech'}
-              >
-                {t('cyberServices.tabTech')}
-              </button>
-            </div>
-
-            {guide === 'simple' && (
-              <div className="fade-in" style={{ marginBottom: '2em' }}>
-                <p style={{ color: 'var(--text-muted)', marginBottom: '0.8em' }}>
-                  {t('cyberServices.simpleIntro')}
-                </p>
-                <ol>
-                  {t('cyberServices.simpleSteps').map((s, i) => (
-                    <li key={i} style={{ marginBottom: '0.6em', lineHeight: 1.5 }}>{s}</li>
-                  ))}
-                </ol>
-                <p style={{ fontSize: '0.9em', color: 'var(--text-subtle)', marginTop: '1em' }}>
-                  {t('cyberServices.simpleHelp')}
-                </p>
-              </div>
-            )}
-
-            {guide === 'tech' && (
-              <div className="fade-in" style={{ marginBottom: '2em' }}>
-                <p style={{ color: 'var(--text-muted)', marginBottom: '0.8em' }}>
-                  {t('cyberServices.techIntro')}
-                </p>
-                <ol>
-                  {t('cyberServices.techSteps').map((s, i) => (
-                    <li key={i} style={{ marginBottom: '0.6em', lineHeight: 1.5 }}>{s}</li>
-                  ))}
-                </ol>
-                <p style={{ fontSize: '0.9em', color: 'var(--text-subtle)', marginTop: '1em' }}>
-                  {t('cyberServices.techNotes')}
-                </p>
-              </div>
-            )}
-
-            {/* Download */}
-            <div style={{ textAlign: 'center', margin: '2em 0' }}>
-              <a
-                href={`${import.meta.env.BASE_URL}downloads/soc-suite-deploy.zip`}
-                className="button icon solid fa-download"
-                download
-              >
-                {t('cyberServices.downloadBtn')}
-              </a>
-              <p style={{ fontSize: '0.85em', color: 'var(--text-subtle)', marginTop: '0.8em' }}>
-                {t('cyberServices.downloadNote')}
-              </p>
-            </div>
-
-          </article>
-
-          {/* FAQ come articolo #content separato: il template disegna la doppia
-              riga orizzontale sopra gli article successivi al primo, separando
-              visivamente le FAQ dal resto della pagina (light e dark mode). */}
-          {/* Dettaglio tecnico sulle immagini in un article suo: il template
-              traccia la doppia riga sopra ogni article dopo il primo, ed è
-              quella che lo separa dalle domande frequenti. Titolo e comando
-              centrati perché sono l'invito ad aprirlo; il contenuto torna a
-              sinistra, dove si legge. */}
-          <article className="box post" style={{ padding: '4em 2em' }}>
-            <div style={{ textAlign: 'center' }}>
-              <h3 style={{ marginBottom: '0.6em' }}>{t('cyberServices.imagesTitle')}</h3>
-              <button
-                type="button"
-                className="button alt small"
-                onClick={() => setShowImages(!showImages)}
-                aria-expanded={showImages}
-              >
-                {showImages ? t('cyberServices.imagesHide') : t('cyberServices.imagesShow')}
-                <i className={`icon solid ${showImages ? 'fa-chevron-up' : 'fa-chevron-down'}`} style={{ marginLeft: '10px' }}></i>
-              </button>
-
-              {showImages && (
-                <div className="fade-in" style={{ marginTop: '1.5em', textAlign: 'left' }}>
-                  <p style={{ marginBottom: '1.2em', lineHeight: 1.6 }}>{t('cyberServices.imagesIntro')}</p>
-                  <ul style={{ marginBottom: '1.8em' }}>
-                    {t('cyberServices.images').map((img, i) => (
-                      <li key={i} style={{ marginBottom: '0.5em', lineHeight: 1.5 }}>{img}</li>
-                    ))}
-                  </ul>
-
-                  <h4 style={{ marginBottom: '0.5em' }}>{t('cyberServices.imagesTrustTitle')}</h4>
-                  <p style={{ marginBottom: '1em', lineHeight: 1.6 }}>{t('cyberServices.imagesTrustIntro')}</p>
-                  {/* Sfondo grigio traslucido e colore ereditato: unico blocco che
-                      regge sia il tema chiaro sia quello scuro senza duplicare stili. */}
-                  <pre tabIndex={0} style={{
-                    fontFamily: 'monospace', fontSize: '0.78em', lineHeight: 1.6,
-                    whiteSpace: 'pre', overflowX: 'auto', margin: '0 0 1em',
-                    padding: '0.9em 1em', borderLeft: '3px solid #d52349',
-                    background: 'rgba(128,128,128,0.12)', borderRadius: '3px',
-                  }}>{t('cyberServices.imagesVerifyCmd')}</pre>
-                  <p style={{ fontSize: '0.9em', color: 'var(--text-subtle)', margin: 0 }}>
-                    {t('cyberServices.imagesTrustNote')}
-                  </p>
-                </div>
-              )}
-            </div>
-
-          </article>
-
-          <article className="box post" style={{ padding: '4em 2em' }}>
-            <div style={{ marginBottom: '1em', textAlign: 'center' }}>
-              <h3 style={{ marginBottom: '0.6em' }}>{t('cyberServices.faqTitle')}</h3>
-              <button
-                type="button"
-                className="button alt small"
-                onClick={() => setShowFaq(!showFaq)}
-                aria-expanded={showFaq}
-              >
-                {showFaq ? t('cyberServices.faqHide') : t('cyberServices.faqShow')}
-                <i className={`icon solid ${showFaq ? 'fa-chevron-up' : 'fa-chevron-down'}`} style={{ marginLeft: '10px' }}></i>
-              </button>
-
-              {showFaq && (
-                <div className="fade-in" style={{ marginTop: '1.5em', textAlign: 'left' }}>
-                  <h4 style={{ marginBottom: '0.8em', color: 'var(--accent-text)' }}>{faq.techTitle}</h4>
-                  {faq.tech.map((item, i) => (
-                    <div key={`tech-${i}`} style={{ marginBottom: '1.2em' }}>
-                      <p style={{ fontWeight: 'bold', marginBottom: '0.3em' }}>{item.q}</p>
-                      <p style={{ color: 'var(--text-muted)', margin: 0 }}>{item.a}</p>
-                    </div>
-                  ))}
-
-                  <h4 style={{ margin: '1.8em 0 0.8em', color: 'var(--accent-text)' }}>{faq.generalTitle}</h4>
-                  {faq.general.map((item, i) => (
-                    <div key={`gen-${i}`} style={{ marginBottom: '1.2em' }}>
-                      <p style={{ fontWeight: 'bold', marginBottom: '0.3em' }}>{item.q}</p>
-                      <p style={{ color: 'var(--text-muted)', margin: 0 }}>{item.a}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </article>
-
-          {/* Doppia riga orizzontale sotto le FAQ (come quella disegnata sopra) */}
-          <div className="double-rule" aria-hidden="true"></div>
-
-          <div style={{ margin: '2em 0', textAlign: 'center' }}>
-            <Link to="/" className="button alt small icon solid fa-arrow-left">
-              {t('cyberServices.back')}
-            </Link>
-          </div>
-            </div>
-
-            {/* Sidebar destra: Video installazione + Chiave di licenza */}
-            <div id="sidebar" className="col-4 col-12-medium">
-
-              {/* Video: come si installa */}
-              <section>
-                <ul className="divided">
-                  <li>
-                    <article className="box highlight">
-                      <header><h3>{t('cyberServices.videoTitle')}</h3></header>
-                      <p style={{ fontSize: '0.95em', color: 'var(--text-muted)' }}>{t('cyberServices.videoIntro')}</p>
-                      <button
-                        type="button"
-                        className="button icon brands fa-windows"
-                        style={{ width: '100%', marginBottom: '10px' }}
-                        onClick={() => setVideo({
-                          src: `${VIDEO_BASE}/soc-suite-install-windows.mp4`,
-                          title: `${t('cyberServices.videoTitle')} - ${t('cyberServices.videoWindows')}`,
-                        })}
-                      >
-                        {t('cyberServices.videoWindows')}
-                      </button>
-                      <button
-                        type="button"
-                        className="button alt icon brands fa-linux"
-                        style={{ width: '100%' }}
-                        onClick={() => setVideo({
-                          src: `${VIDEO_BASE}/soc-suite-install-linux-macos.mp4`,
-                          title: `${t('cyberServices.videoTitle')} - ${t('cyberServices.videoLinux')}`,
-                        })}
-                      >
-                        {t('cyberServices.videoLinux')}
-                      </button>
-                    </article>
-                  </li>
-                </ul>
-              </section>
-
-              {/* Chiave di licenza */}
-              <section>
-                <ul className="divided">
-                  <li>
-                    <article className="box highlight">
-                      <header>
-                        <h3>
-                          <i className="icon solid fa-key" style={{ color: 'var(--accent-text)', marginRight: '0.5em' }}></i>
-                          {t('cyberServices.licenseTitle')}
-                        </h3>
-                      </header>
-                      <p style={{ fontSize: '0.95em', color: 'var(--text-muted)' }}>{t('cyberServices.licenseText')}</p>
-                      <p style={{ fontSize: '0.9em', marginTop: '0.9em', marginBottom: 0 }}>
-                        <a
-                          href={`${import.meta.env.BASE_URL}downloads/${t('cyberServices.eulaPdf')}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <i className="icon solid fa-file-alt" style={{ marginRight: '0.4em' }}></i>
-                          {t('cyberServices.eulaLink')}
-                        </a>
-                      </p>
-                    </article>
-                  </li>
-                </ul>
-              </section>
-
-              {/* Contatti */}
-              <section>
-                <ul className="divided">
-                  <li>
-                    <article className="box highlight">
-                      <header>
-                        <h3>
-                          <i className="icon solid fa-envelope" style={{ color: 'var(--accent-text)', marginRight: '0.5em' }}></i>
-                          {t('cyberServices.contactTitle')}
-                        </h3>
-                      </header>
-                      <p style={{ fontSize: '0.95em', color: 'var(--text-muted)' }}>{t('cyberServices.contact')}</p>
-                      <a href="mailto:arcari.nicholas0@gmail.com?subject=SOC%20Suite%20-%20richiesta%20licenza" className="button icon solid fa-envelope" style={{ width: '100%', marginBottom: '10px' }}>
-                        Email
-                      </a>
-                      <a href="https://www.linkedin.com/in/nicholas-arcari-6245893a7" className="button alt icon brands fa-linkedin" target="_blank" rel="noopener noreferrer" style={{ width: '100%', marginBottom: '10px' }}>
-                        LinkedIn
-                      </a>
-                      <Link to="/" className="button alt small icon solid fa-arrow-left" style={{ width: '100%' }}>
-                        {t('cyberServices.back')}
-                      </Link>
-                    </article>
-                  </li>
-                </ul>
-              </section>
-
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      <VideoModal
-        open={!!video}
-        src={video?.src}
-        title={video?.title}
-        onClose={() => setVideo(null)}
-        unsupportedText={t('cyberServices.videoUnsupported')}
-        closeLabel={t('cyberServices.videoClose')}
+      <InstallGuides
+        title={t('cyberServices.howTitle')}
+        simple={{ tab: t('cyberServices.tabSimple'), intro: t('cyberServices.simpleIntro'), steps: t('cyberServices.simpleSteps'), note: t('cyberServices.simpleHelp') }}
+        tech={{ tab: t('cyberServices.tabTech'), intro: t('cyberServices.techIntro'), steps: t('cyberServices.techSteps'), note: t('cyberServices.techNotes') }}
+        download={{ href: `${downloads}/soc-suite-deploy.zip`, label: t('cyberServices.downloadBtn'), note: t('cyberServices.downloadNote') }}
       />
 
-      <Footer />
-    </div>
+      {/* Le immagini dei container: da dove arrivano e come verificarle */}
+      <Collapsible title={t('cyberServices.imagesTitle')} show={t('cyberServices.imagesShow')} hide={t('cyberServices.imagesHide')}>
+        <p style={{ marginBottom: '1.2em', lineHeight: 1.6 }}>{t('cyberServices.imagesIntro')}</p>
+        <ul style={{ marginBottom: '1.8em' }}>
+          {t('cyberServices.images').map((img, i) => (
+            <li key={i} style={{ marginBottom: '0.5em', lineHeight: 1.5 }}>{img}</li>
+          ))}
+        </ul>
+
+        <h4 style={{ marginBottom: '0.5em' }}>{t('cyberServices.imagesTrustTitle')}</h4>
+        <p style={{ marginBottom: '1em', lineHeight: 1.6 }}>{t('cyberServices.imagesTrustIntro')}</p>
+        <CommandBlock>{t('cyberServices.imagesVerifyCmd')}</CommandBlock>
+        <p style={{ fontSize: '0.9em', color: 'var(--text-subtle)', margin: 0 }}>
+          {t('cyberServices.imagesTrustNote')}
+        </p>
+      </Collapsible>
+
+      <Collapsible title={t('cyberServices.faqTitle')} show={t('cyberServices.faqShow')} hide={t('cyberServices.faqHide')} spaced>
+        <FaqSections faq={t('cyberServices.faq')} />
+      </Collapsible>
+    </ProductPage>
   );
 };
 
