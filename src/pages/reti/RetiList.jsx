@@ -58,7 +58,7 @@ const RetiList = () => {
   );
 
   return (
-    <StatisticsLayout terminal={t('reti.terminal')} course={retiCourse(t)} sidebar={repoBox}>
+    <StatisticsLayout title={t('reti.title')} terminal={t('reti.terminal')} course={retiCourse(t)} sidebar={repoBox}>
       <article className="box post">
         <header><h2>{t('reti.title')}</h2></header>
         <p>{t('reti.subtitle')}</p>

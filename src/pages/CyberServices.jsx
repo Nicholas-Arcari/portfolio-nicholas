@@ -7,6 +7,7 @@ import VideoModal from '../components/VideoModal';
 import { VIDEO_BASE } from '../config/media';
 import SiteHeader from '../components/SiteHeader';
 import { usePageLayout } from '../utils/usePageLayout';
+import { usePageTitle } from '../utils/usePageTitle';
 import '../i18n/cyberServices';
 
 const CyberServices = () => {
@@ -19,6 +20,7 @@ const CyberServices = () => {
   const faq = t('cyberServices.faq');
 
   usePageLayout('homepage');
+  usePageTitle(t('cyberServices.heading'));
 
   return (
     <div id="page-wrapper">

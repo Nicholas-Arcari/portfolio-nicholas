@@ -5,6 +5,7 @@ import { useLanguage } from '../contexts/languageContext';
 import Footer from '../components/Footer';
 import SiteHeader from '../components/SiteHeader';
 import { usePageLayout } from '../utils/usePageLayout';
+import { usePageTitle } from '../utils/usePageTitle';
 import '../i18n/home';
 
 const Home = () => {
@@ -21,6 +22,7 @@ const Home = () => {
   // elenchi: senza, arrivandoci dal menu a scomparsa con un'altra pagina
   // scorsa a meta', restava allo stesso punto di scorrimento.
   usePageLayout('homepage');
+  usePageTitle();
 
   return (
     <div id="page-wrapper">

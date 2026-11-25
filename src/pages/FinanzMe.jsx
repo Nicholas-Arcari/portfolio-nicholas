@@ -7,6 +7,7 @@ import VideoModal from '../components/VideoModal';
 import { VIDEO_BASE } from '../config/media';
 import SiteHeader from '../components/SiteHeader';
 import { usePageLayout } from '../utils/usePageLayout';
+import { usePageTitle } from '../utils/usePageTitle';
 import '../i18n/finanzMe';
 
 const FinanzMe = () => {
@@ -18,6 +19,7 @@ const FinanzMe = () => {
   const faq = t('finanzMe.faq');
 
   usePageLayout('homepage');
+  usePageTitle(t('finanzMe.heading'));
 
   return (
     <div id="page-wrapper">

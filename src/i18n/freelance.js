@@ -4,6 +4,7 @@ import { register } from './registry.js';
 
 register('freelance', {
   it: {
+    pageTitle: 'Esperienze di lavoro',
     terminal: [
       '> ./deploy_mgp.sh --microservices',
       '> Avvio 14 container Docker...',
@@ -113,6 +114,7 @@ register('freelance', {
     },
   },
   en: {
+    pageTitle: 'Work experience',
     terminal: [
       '> ./deploy_mgp.sh --microservices',
       '> Starting 14 Docker containers...',

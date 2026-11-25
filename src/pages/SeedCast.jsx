@@ -5,6 +5,7 @@ import { useLanguage } from '../contexts/languageContext';
 import Footer from '../components/Footer';
 import SiteHeader from '../components/SiteHeader';
 import { usePageLayout } from '../utils/usePageLayout';
+import { usePageTitle } from '../utils/usePageTitle';
 import '../i18n/seedCast';
 
 const SeedCast = () => {
@@ -15,6 +16,7 @@ const SeedCast = () => {
   const faq = t('seedCast.faq');
 
   usePageLayout('homepage');
+  usePageTitle(t('seedCast.heading'));
 
   return (
     <div id="page-wrapper">

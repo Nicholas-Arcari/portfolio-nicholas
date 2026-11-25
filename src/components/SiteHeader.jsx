@@ -6,6 +6,8 @@ import SiteNav from './SiteNav';
 // L'intestazione di ogni pagina: il logo, il terminale animato con le righe
 // della pagina (`terminal`) e il menu, con la voce `current` evidenziata. Le
 // pagine di errore mostrano solo il logo (`nav={false}`, senza terminale).
+// Il terminale riparte da capo quando le righe cambiano (la lingua): senza la
+// chiave continuerebbe a scrivere le righe nuove dal punto delle vecchie.
 const SiteHeader = ({ terminal, current, nav = true }) => (
   <section id="header">
     <div className="container">
@@ -13,7 +15,7 @@ const SiteHeader = ({ terminal, current, nav = true }) => (
       {terminal && (
         <>
           <br />
-          <TerminalText lines={terminal} />
+          <TerminalText key={terminal.join('\n')} lines={terminal} />
         </>
       )}
       {nav && <SiteNav current={current} />}

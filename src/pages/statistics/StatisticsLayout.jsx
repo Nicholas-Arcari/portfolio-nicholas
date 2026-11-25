@@ -12,9 +12,11 @@ import HomeworkIndex from './HomeworkIndex';
 import { useFollowingSidebar } from './followSidebar';
 import SiteHeader from '../../components/SiteHeader';
 import { usePageLayout } from '../../utils/usePageLayout';
+import { usePageTitle } from '../../utils/usePageTitle';
 import '../../i18n/masterDetails';
 import '../../i18n/statistics';
 
+// `title`: il titolo della scheda (usePageTitle).
 // `sidebar`: riquadri in piu' nella colonna destra, subito dopo il riepilogo
 // (es. il download del codice di un homework).
 // `course`: il riepilogo in cima alla sidebar ({ summary: [[etichetta,
@@ -23,7 +25,7 @@ import '../../i18n/statistics';
 // `index`: l'indice delle sezioni della pagina ({ sections, labels }, lo
 // stesso di HomeworkIndex): un pulsante Indice in cima alla colonna, per
 // saltare a una sezione senza tornare in cima alla pagina.
-const StatisticsLayout = ({ terminal, sidebar = null, course = null, index = null, children }) => {
+const StatisticsLayout = ({ title, terminal, sidebar = null, course = null, index = null, children }) => {
   const { t } = useLanguage();
   const sidebarRef = useRef(null);
   useFollowingSidebar(sidebarRef);
@@ -39,6 +41,7 @@ const StatisticsLayout = ({ terminal, sidebar = null, course = null, index = nul
   };
 
   usePageLayout('right-sidebar');
+  usePageTitle(title);
 
   return (
     <div id="page-wrapper">

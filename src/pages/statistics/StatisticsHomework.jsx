@@ -46,7 +46,7 @@ const StatisticsHomework = () => {
   );
 
   return (
-    <StatisticsLayout terminal={t('statistics.terminal')}>
+    <StatisticsLayout title={t('statistics.title')} terminal={t('statistics.terminal')}>
       <article className="box post">
         <header><h2>{t('statistics.title')}</h2></header>
         <p>{t('statistics.subtitle')}</p>

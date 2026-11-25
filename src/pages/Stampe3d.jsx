@@ -6,6 +6,8 @@ import SearchInput from '../components/SearchInput';
 import { useRemembered, useRememberedScroll } from '../utils/listMemory';
 import SiteHeader from '../components/SiteHeader';
 import { usePageLayout } from '../utils/usePageLayout';
+import { usePageTitle } from '../utils/usePageTitle';
+import '../i18n/nav';
 import '../i18n/settings';
 import '../i18n/stampe3d';
 
@@ -33,6 +35,7 @@ const Stampe3d = () => {
   );
 
   usePageLayout('no-sidebar', { scrollToTop: false });
+  usePageTitle(t('nav.prints3d'));
 
   return (
     <div id="page-wrapper">

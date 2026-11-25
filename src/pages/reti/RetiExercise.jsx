@@ -62,7 +62,7 @@ function ExercisePage({ ex }) {
   );
 
   return (
-    <StatisticsLayout terminal={[`> cat ${ex.file}`, ...t('reti.exerciseTerminal')]} course={retiCourse(t)} sidebar={fileBox}>
+    <StatisticsLayout title={ex.name} terminal={[`> cat ${ex.file}`, ...t('reti.exerciseTerminal')]} course={retiCourse(t)} sidebar={fileBox}>
       <article className="box post lab-doc">
         <header className="hw-title">
           <h2 ref={titleRef} tabIndex={-1}>{ex.name}</h2>
@@ -86,7 +86,7 @@ function ExercisePage({ ex }) {
 function Loading({ ex }) {
   const { t } = useLanguage();
   return (
-    <StatisticsLayout terminal={[`> cat ${ex.file}`]} course={retiCourse(t)}>
+    <StatisticsLayout title={ex.name} terminal={[`> cat ${ex.file}`]} course={retiCourse(t)}>
       <article className="box post">
         <header className="hw-title"><h2>{ex.name}</h2></header>
         <p className="hw1-note hw1-pending" role="status">{t('reti.loading')}</p>

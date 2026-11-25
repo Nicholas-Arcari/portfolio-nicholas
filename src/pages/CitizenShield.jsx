@@ -7,6 +7,7 @@ import VideoModal from '../components/VideoModal';
 import { VIDEO_BASE } from '../config/media';
 import SiteHeader from '../components/SiteHeader';
 import { usePageLayout } from '../utils/usePageLayout';
+import { usePageTitle } from '../utils/usePageTitle';
 import '../i18n/citizenShield';
 
 const CitizenShield = () => {
@@ -19,6 +20,7 @@ const CitizenShield = () => {
   const faq = t('citizenShield.faq');
 
   usePageLayout('homepage');
+  usePageTitle(t('citizenShield.heading'));
 
   return (
     <div id="page-wrapper">

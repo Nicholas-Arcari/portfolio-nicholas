@@ -101,7 +101,7 @@ function LecturePage({ lecture }) {
   );
 
   return (
-    <StatisticsLayout terminal={[`> cat ${lecture.file}.md`, ...t('distributed.lectureTerminal')]} course={dsCourse(t)} index={toc} sidebar={navBox}>
+    <StatisticsLayout title={lectureName(lecture, language, t)} terminal={[`> cat ${lecture.file}.md`, ...t('distributed.lectureTerminal')]} course={dsCourse(t)} index={toc} sidebar={navBox}>
       <article className="box post th-page ds-doc" ref={articleRef}>
         <header className="hw-title">
           <h2 ref={titleRef} tabIndex={-1}>{lectureName(lecture, language, t)}</h2>

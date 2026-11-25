@@ -4,12 +4,15 @@ import { useLanguage } from '../contexts/languageContext';
 import Footer from '../components/Footer';
 import SiteHeader from '../components/SiteHeader';
 import { usePageLayout } from '../utils/usePageLayout';
+import { usePageTitle } from '../utils/usePageTitle';
 import '../i18n/galleria';
+import '../i18n/nav';
 
 const Galleria = () => {
   const { t } = useLanguage();
 
   usePageLayout('no-sidebar');
+  usePageTitle(t('nav.gallery'));
 
   return (
     <div id="page-wrapper">

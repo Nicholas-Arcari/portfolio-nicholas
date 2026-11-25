@@ -10,6 +10,7 @@ import { jumpToItem } from '../utils/jumpToItem';
 import { PIZZA_SYMBOLS, withSymbols } from '../config/symbols';
 import SiteHeader from '../components/SiteHeader';
 import { usePageLayout } from '../utils/usePageLayout';
+import { usePageTitle } from '../utils/usePageTitle';
 import '../i18n/nav';
 import '../i18n/pizze';
 import '../i18n/settings';
@@ -21,6 +22,7 @@ const Pizze = () => {
   const { t } = useLanguage();
 
   usePageLayout('right-sidebar', { scrollToTop: false });
+  usePageTitle(t('pizze.title'));
 
   // --- DATABASE PIZZE ---
   // Simbolo assegnato per indice: coerente tra lista e ruota della fortuna

@@ -5,6 +5,7 @@ import { useLanguage } from '../contexts/languageContext';
 import Footer from '../components/Footer';
 import SiteHeader from '../components/SiteHeader';
 import { usePageLayout } from '../utils/usePageLayout';
+import { usePageTitle } from '../utils/usePageTitle';
 import '../i18n/byteBulk';
 
 const ByteBulk = () => {
@@ -15,6 +16,7 @@ const ByteBulk = () => {
   const faq = t('byteBulk.faq');
 
   usePageLayout('homepage');
+  usePageTitle(t('byteBulk.heading'));
 
   return (
     <div id="page-wrapper">

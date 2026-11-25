@@ -10,6 +10,7 @@ import { jumpToItem } from '../utils/jumpToItem';
 import { DRINK_SYMBOLS, withSymbols } from '../config/symbols';
 import SiteHeader from '../components/SiteHeader';
 import { usePageLayout } from '../utils/usePageLayout';
+import { usePageTitle } from '../utils/usePageTitle';
 import '../i18n/cocktailClassici';
 import '../i18n/settings';
 import '../i18n/wheel';
@@ -20,6 +21,7 @@ const Cocktail_classici = () => {
   useRememberedScroll();
 
   usePageLayout('right-sidebar', { scrollToTop: false });
+  usePageTitle(t('cocktailClassici.title'));
 
   // Simbolo assegnato per indice: coerente tra lista e ruota della fortuna
   const cocktailsData = withSymbols(t('cocktailClassici.cocktails'), DRINK_SYMBOLS);

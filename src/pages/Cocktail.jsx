@@ -10,7 +10,9 @@ import { jumpToItem } from '../utils/jumpToItem';
 import { DRINK_SYMBOLS, withSymbols } from '../config/symbols';
 import SiteHeader from '../components/SiteHeader';
 import { usePageLayout } from '../utils/usePageLayout';
+import { usePageTitle } from '../utils/usePageTitle';
 import '../i18n/cocktail';
+import '../i18n/nav';
 import '../i18n/settings';
 import '../i18n/wheel';
 
@@ -20,6 +22,7 @@ const Cocktail = () => {
   useRememberedScroll();
 
   usePageLayout('right-sidebar', { scrollToTop: false });
+  usePageTitle(t('nav.cocktails'));
 
   // --- DATABASE COCKTAIL TECH (from translations) ---
   // Simbolo assegnato per indice: coerente tra lista e ruota della fortuna

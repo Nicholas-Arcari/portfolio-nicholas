@@ -5,6 +5,7 @@ import { useLanguage } from '../contexts/languageContext';
 import Footer from '../components/Footer';
 import SiteHeader from '../components/SiteHeader';
 import { usePageLayout } from '../utils/usePageLayout';
+import { usePageTitle } from '../utils/usePageTitle';
 import '../i18n/freelance';
 import '../i18n/nav';
 
@@ -12,6 +13,7 @@ const FreelanceDetails = () => {
   const { t } = useLanguage();
 
   usePageLayout('right-sidebar');
+  usePageTitle(t('freelance.pageTitle'));
 
   return (
     <div id="page-wrapper">

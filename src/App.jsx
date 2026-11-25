@@ -60,6 +60,8 @@ function App() {
       <LanguageProvider>
         <MobileNav />
         <SettingsBar />
+        {/* annuncia ai lettori di schermo il titolo della pagina nuova (src/utils/usePageTitle.js) */}
+        <div id="route-announcer" className="visually-hidden" aria-live="polite" aria-atomic="true" />
 
         <PageTransition>
           <PageError>

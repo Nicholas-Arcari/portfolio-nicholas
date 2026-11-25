@@ -113,7 +113,7 @@ const TheoryPage = ({ slug, theory }) => {
   };
 
   return (
-    <StatisticsLayout terminal={[`> ./open_theory.sh --${slug}`, ...t('statistics.homeworkTerminal')]} index={toc}>
+    <StatisticsLayout title={`${hw.name} - ${t('statistics.theory')}`} terminal={[`> ./open_theory.sh --${slug}`, ...t('statistics.homeworkTerminal')]} index={toc}>
       <article ref={articleRef} className="box post th-page">
         <header className="hw-title">
           <h2 ref={titleRef} tabIndex={-1}>{`${hw.name} - ${t('statistics.theory')}`}</h2>

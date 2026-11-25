@@ -4,12 +4,14 @@ import { useLanguage } from '../contexts/languageContext';
 import Footer from '../components/Footer';
 import SiteHeader from '../components/SiteHeader';
 import { usePageLayout } from '../utils/usePageLayout';
+import { usePageTitle } from '../utils/usePageTitle';
 import '../i18n/notFound';
 
 const NotFound = () => {
   const { t } = useLanguage();
 
   usePageLayout('no-sidebar');
+  usePageTitle(t('notFound.title'));
 
   return (
     <div id="page-wrapper">

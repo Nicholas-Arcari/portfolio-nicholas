@@ -4,6 +4,7 @@ import Footer from './Footer';
 import { isReloading } from '../utils/reloadOnMissingPage';
 import SiteHeader from '../components/SiteHeader';
 import { usePageLayout } from '../utils/usePageLayout';
+import { usePageTitle } from '../utils/usePageTitle';
 import '../i18n/pageError';
 
 // Il messaggio al posto della pagina, impaginato come la pagina 404.
@@ -11,6 +12,7 @@ const Message = () => {
   const { t } = useLanguage();
 
   usePageLayout('no-sidebar');
+  usePageTitle(t('pageError.title'));
 
   return (
     <div id="page-wrapper">

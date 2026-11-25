@@ -38,7 +38,7 @@ const SsaList = () => {
   );
 
   return (
-    <StatisticsLayout terminal={t('ssa.terminal')} course={ssaCourse(t)}>
+    <StatisticsLayout title={t('ssa.title')} terminal={t('ssa.terminal')} course={ssaCourse(t)}>
       <article className="box post">
         <header><h2>{t('ssa.title')}</h2></header>
         <p>{t('ssa.subtitle')}</p>

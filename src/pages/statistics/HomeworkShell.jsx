@@ -29,7 +29,7 @@ const HomeworkShell = ({ slug, sidebar = null, toc = null, children }) => {
   };
 
   return (
-    <StatisticsLayout terminal={[`> ./open_${hw.type}.sh --${slug}`, ...t('statistics.homeworkTerminal')]} sidebar={sidebar} index={toc}>
+    <StatisticsLayout title={hw.name} terminal={[`> ./open_${hw.type}.sh --${slug}`, ...t('statistics.homeworkTerminal')]} sidebar={sidebar} index={toc}>
       <article className="box post">
         <header className="hw-title">
           <h2 ref={titleRef} tabIndex={-1}>{hw.name}</h2>

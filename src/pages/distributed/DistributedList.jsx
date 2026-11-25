@@ -36,7 +36,7 @@ const DistributedList = () => {
   );
 
   return (
-    <StatisticsLayout terminal={t('distributed.terminal')} course={dsCourse(t)}>
+    <StatisticsLayout title={t('distributed.title')} terminal={t('distributed.terminal')} course={dsCourse(t)}>
       <article className="box post">
         <header><h2>{t('distributed.title')}</h2></header>
         <p>{t('distributed.subtitle')}</p>
