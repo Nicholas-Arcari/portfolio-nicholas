@@ -966,7 +966,7 @@ export const translations = {
       terminal: [
         '> ./init_profile.sh',
         '> Caricamento Nicholas Arcari...',
-        '> Laureato in Scienze Informatiche & Cybersecurity Enthusiast',
+        '> Studente Magistrale in Cybersecurity @ Sapienza',
         '> Moduli: [WebDev, Network_Sec, DevOps]',
         '> Pronto.',
       ],
@@ -986,8 +986,8 @@ export const translations = {
           text: 'Docker, Kubernetes, \nGit/GitHub, \nBash Scripting, Linux (Ubuntu, Kali), \nGestione servizi e networking TCP/IP.',
         },
       },
-      banner: 'Laureato in Scienze Informatiche',
-      bannerText: 'con forte interesse per la Cybersecurity e esperienza in laboratorio per vulnerability assessment, sicurezza web (OWASP Top 10) e hardening di sistemi Linux.',
+      banner: 'Studente di Laurea Magistrale in Cybersecurity',
+      bannerText: 'alla Sapienza Universit\u00e0 di Roma, laureato in Scienze Informatiche, con esperienza in laboratorio per vulnerability assessment, sicurezza web (OWASP Top 10) e hardening di sistemi Linux.',
       cta: {
         title: 'Disponibile per Opportunit\u00e0',
         text: 'Attualmente alla ricerca di posizioni come Junior Cybersecurity Analyst. Se il mio profilo vi interessa, contattatemi.',
@@ -2880,7 +2880,7 @@ export const translations = {
       terminal: [
         '> ./init_profile.sh',
         '> Loading Nicholas Arcari...',
-        '> Computer Science Graduate & Cybersecurity Enthusiast',
+        '> Cybersecurity MSc Student @ Sapienza',
         '> Modules: [WebDev, Network_Sec, DevOps]',
         '> Ready.',
       ],
@@ -2900,8 +2900,8 @@ export const translations = {
           text: 'Docker, Kubernetes, \nGit/GitHub, \nBash Scripting, Linux (Ubuntu, Kali), \nService management and TCP/IP networking.',
         },
       },
-      banner: 'Computer Science Graduate',
-      bannerText: 'with a strong interest in Cybersecurity and hands-on experience in vulnerability assessment, web security (OWASP Top 10) and Linux system hardening.',
+      banner: 'Cybersecurity Master\'s Student',
+      bannerText: 'at Sapienza University of Rome, with a Bachelor\'s degree in Computer Science and hands-on experience in vulnerability assessment, web security (OWASP Top 10) and Linux system hardening.',
       cta: {
         title: 'Available for Opportunities',
         text: 'Currently seeking Junior Cybersecurity Analyst positions. If my profile interests you, get in touch.',
