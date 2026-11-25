@@ -5,6 +5,8 @@ import { useLanguage } from '../contexts/languageContext';
 import Footer from '../components/Footer';
 import SiteHeader from '../components/SiteHeader';
 import { usePageLayout } from '../utils/usePageLayout';
+import '../i18n/freelance';
+import '../i18n/nav';
 
 const FreelanceDetails = () => {
   const { t } = useLanguage();

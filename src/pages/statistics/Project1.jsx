@@ -17,6 +17,7 @@
 import React from 'react';
 import { useLanguage } from '../../contexts/languageContext';
 import HomeworkShell from './HomeworkShell';
+import '../../i18n/statistics';
 
 const DEMO = 'https://the-anomaly-guard.github.io/anomaly-guard/';
 const REPO = 'https://github.com/the-anomaly-guard/anomaly-guard';

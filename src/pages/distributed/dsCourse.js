@@ -3,6 +3,9 @@
 // ritorno al piano di studi della magistrale, con le stesse etichette di
 // Statistics.
 import { DS_LECTURES } from '../../config/distributed';
+import '../../i18n/distributed';
+import '../../i18n/masterDetails';
+import '../../i18n/statistics';
 
 export const dsCourse = (t) => ({
   summary: [

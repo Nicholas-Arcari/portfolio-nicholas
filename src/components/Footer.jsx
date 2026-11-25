@@ -1,4 +1,5 @@
 import { useLanguage } from '../contexts/languageContext';
+import '../i18n/footer';
 
 const Footer = () => {
   const { t } = useLanguage();

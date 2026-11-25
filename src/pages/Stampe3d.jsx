@@ -6,6 +6,8 @@ import SearchInput from '../components/SearchInput';
 import { useRemembered, useRememberedScroll } from '../utils/listMemory';
 import SiteHeader from '../components/SiteHeader';
 import { usePageLayout } from '../utils/usePageLayout';
+import '../i18n/settings';
+import '../i18n/stampe3d';
 
 const Stampe3d = () => {
   const { t } = useLanguage();

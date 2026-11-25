@@ -10,6 +10,10 @@ import { jumpToItem } from '../utils/jumpToItem';
 import { FOOD_SYMBOLS, withSymbols } from '../config/symbols';
 import SiteHeader from '../components/SiteHeader';
 import { usePageLayout } from '../utils/usePageLayout';
+import '../i18n/nav';
+import '../i18n/ricette';
+import '../i18n/settings';
+import '../i18n/wheel';
 
 const Ricette = () => {
   const [searchTerm, setSearchTerm] = useRemembered('search', '');

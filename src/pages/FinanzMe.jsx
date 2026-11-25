@@ -7,6 +7,7 @@ import VideoModal from '../components/VideoModal';
 import { VIDEO_BASE } from '../config/media';
 import SiteHeader from '../components/SiteHeader';
 import { usePageLayout } from '../utils/usePageLayout';
+import '../i18n/finanzMe';
 
 const FinanzMe = () => {
   const [guide, setGuide] = useState(null); // Default: nascosto; si apre al click sul bottone

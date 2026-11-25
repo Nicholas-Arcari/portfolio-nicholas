@@ -16,6 +16,7 @@ import NotesDoc, { Inline } from './NotesDoc';
 import { loadNotes } from './notesText';
 import { dsCourse, lectureName, neighbours } from './dsCourse';
 import './distributed.css';
+import '../../i18n/distributed';
 
 // Il primo blocco ancora in vista e la sua distanza dall'alto della finestra
 function blockInView(root) {

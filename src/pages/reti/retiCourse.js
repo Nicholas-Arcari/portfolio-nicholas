@@ -1,3 +1,5 @@
+import '../../i18n/reti';
+import '../../i18n/university';
 // src/pages/reti/retiCourse.js
 // Il riepilogo della sidebar delle pagine di Reti di Calcolatori e il ritorno
 // al piano di studi della triennale. Docente e anno accademico sono quelli

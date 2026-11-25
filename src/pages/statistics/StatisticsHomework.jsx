@@ -14,6 +14,8 @@ import { formatRomeDateTime } from '../../utils/romeDate';
 import SearchInput from '../../components/SearchInput';
 import { useRemembered, useRememberedScroll } from '../../utils/listMemory';
 import StatisticsLayout from './StatisticsLayout';
+import '../../i18n/settings';
+import '../../i18n/statistics';
 
 const SEARCH_STYLE = {
   width: '100%',

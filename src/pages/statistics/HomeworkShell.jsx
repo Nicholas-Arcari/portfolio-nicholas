@@ -11,6 +11,7 @@ import { STATISTICS_HOMEWORK } from '../../config/homework';
 import { formatRomeDateTime } from '../../utils/romeDate';
 import StatisticsLayout from './StatisticsLayout';
 import HomeworkIndex from './HomeworkIndex';
+import '../../i18n/statistics';
 
 // `toc`: { sections: [{ id, title, level }], labels: { button, title, close } }
 const HomeworkShell = ({ slug, sidebar = null, toc = null, children }) => {

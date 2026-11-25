@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { matchPath, useLocation } from 'react-router-dom';
-import { translations } from '../i18n/translations';
+import { translations } from '../i18n/registry';
 import { STATISTICS_HOMEWORK } from '../config/homework';
 import { LanguageContext } from './languageContext';
 

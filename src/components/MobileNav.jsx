@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import { Link, useLocation } from 'react-router-dom';
 import { useLanguage } from '../contexts/languageContext';
 import { NAV } from '../config/nav';
+import '../i18n/nav';
 
 // Il menu a scomparsa di telefoni e tablet (sotto i 980 px main.css nasconde
 // #nav): la barra in alto col pulsante (#titleBar) e il pannello che entra da

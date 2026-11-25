@@ -1,5 +1,6 @@
 import { useTheme } from '../contexts/themeContext';
 import { useLanguage } from '../contexts/languageContext';
+import '../i18n/settings';
 
 const SettingsBar = () => {
   const { theme, toggleTheme } = useTheme();

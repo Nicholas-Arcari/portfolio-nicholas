@@ -11,6 +11,8 @@ import SearchInput from '../../components/SearchInput';
 import { useRemembered, useRememberedScroll } from '../../utils/listMemory';
 import StatisticsLayout from '../statistics/StatisticsLayout';
 import { dsCourse, lectureName } from './dsCourse';
+import '../../i18n/distributed';
+import '../../i18n/settings';
 
 const SEARCH_STYLE = {
   width: '100%',

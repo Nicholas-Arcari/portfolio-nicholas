@@ -13,6 +13,7 @@ import { useLanguage } from '../../contexts/languageContext';
 import { STATISTICS_HOMEWORK } from '../../config/homework';
 import StatisticsLayout from './StatisticsLayout';
 import HomeworkIndex from './HomeworkIndex';
+import '../../i18n/statistics';
 
 const HEADINGS = ['h3', 'h4'];
 

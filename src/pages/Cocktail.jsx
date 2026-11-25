@@ -10,6 +10,9 @@ import { jumpToItem } from '../utils/jumpToItem';
 import { DRINK_SYMBOLS, withSymbols } from '../config/symbols';
 import SiteHeader from '../components/SiteHeader';
 import { usePageLayout } from '../utils/usePageLayout';
+import '../i18n/cocktail';
+import '../i18n/settings';
+import '../i18n/wheel';
 
 const Cocktail = () => {
   const { t } = useLanguage();

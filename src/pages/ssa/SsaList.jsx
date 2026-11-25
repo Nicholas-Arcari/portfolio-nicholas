@@ -13,6 +13,8 @@ import { useRemembered, useRememberedScroll } from '../../utils/listMemory';
 import StatisticsLayout from '../statistics/StatisticsLayout';
 import { SSA_PATH, ssaCourse, lectureName } from './ssaCourse';
 import './ssa.css';
+import '../../i18n/settings';
+import '../../i18n/ssa';
 
 const SEARCH_STYLE = {
   width: '100%',

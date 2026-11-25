@@ -15,6 +15,7 @@ import LabDoc from './LabDoc';
 import { parseLab } from './parseLab';
 import { labDescription, loadLabDoc, loadLabText } from './labText';
 import { retiCourse } from './retiCourse';
+import '../../i18n/reti';
 
 // Il file scaricato e' quello originale, cosi' com'e', in UTF-8
 async function downloadText(file) {

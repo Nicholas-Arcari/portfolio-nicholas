@@ -12,6 +12,8 @@ import HomeworkIndex from './HomeworkIndex';
 import { useFollowingSidebar } from './followSidebar';
 import SiteHeader from '../../components/SiteHeader';
 import { usePageLayout } from '../../utils/usePageLayout';
+import '../../i18n/masterDetails';
+import '../../i18n/statistics';
 
 // `sidebar`: riquadri in piu' nella colonna destra, subito dopo il riepilogo
 // (es. il download del codice di un homework).

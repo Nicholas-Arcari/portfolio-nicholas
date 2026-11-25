@@ -17,6 +17,7 @@ import SsaDoc, { Inline } from './SsaDoc';
 import { loadNotes } from './notesText';
 import { SSA_PATH, ssaCourse, lectureCount, lectureName, lectureNumber, neighbours } from './ssaCourse';
 import './ssa.css';
+import '../../i18n/ssa';
 
 const FIGURES = `${import.meta.env.BASE_URL}images/ssa/`;
 const OPEN_CLASS = 'hw-index-open';

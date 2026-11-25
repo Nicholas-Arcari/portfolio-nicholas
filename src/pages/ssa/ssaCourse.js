@@ -3,6 +3,9 @@
 // Applications e il ritorno al piano di studi della magistrale, con le stesse
 // etichette di Statistics e di Distributed Systems.
 import { SSA_LECTURES } from '../../config/ssa';
+import '../../i18n/masterDetails';
+import '../../i18n/ssa';
+import '../../i18n/statistics';
 
 export const SSA_PATH = '/security-in-software-applications';
 

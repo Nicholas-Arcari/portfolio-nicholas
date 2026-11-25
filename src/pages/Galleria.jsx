@@ -4,6 +4,7 @@ import { useLanguage } from '../contexts/languageContext';
 import Footer from '../components/Footer';
 import SiteHeader from '../components/SiteHeader';
 import { usePageLayout } from '../utils/usePageLayout';
+import '../i18n/galleria';
 
 const Galleria = () => {
   const { t } = useLanguage();

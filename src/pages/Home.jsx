@@ -5,6 +5,7 @@ import { useLanguage } from '../contexts/languageContext';
 import Footer from '../components/Footer';
 import SiteHeader from '../components/SiteHeader';
 import { usePageLayout } from '../utils/usePageLayout';
+import '../i18n/home';
 
 const Home = () => {
   // --- NUOVI STATI PER LE SEZIONI ESPANDIBILI ---
@@ -258,18 +259,18 @@ const Home = () => {
                     <div className="fade-in">
                         <div className="soft-panel" style={{ textAlign: 'center', padding: '2em 1em' }}>
                           <i className="icon solid fa-shield-alt" style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.5em', display: 'block' }}></i>
-                          <h3>{t('cyberServices.ctaTitle')}</h3>
-                          <p style={{ color: '#666', textAlign: 'center' }}>{t('cyberServices.ctaDesc')}</p>
+                          <h3>{t('home.products.cyberServices.title')}</h3>
+                          <p style={{ color: '#666', textAlign: 'center' }}>{t('home.products.cyberServices.desc')}</p>
                           <Link to="/cyber-services" className="button icon solid fa-arrow-circle-right">
-                            {t('cyberServices.ctaBtn')}
+                            {t('home.products.cyberServices.btn')}
                           </Link>
                         </div>
                         <div className="soft-panel" style={{ textAlign: 'center', padding: '2em 1em', marginTop: '1.5em' }}>
                           <i className="icon solid fa-user-shield" style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.5em', display: 'block' }}></i>
-                          <h3>{t('citizenShield.ctaTitle')}</h3>
-                          <p style={{ color: '#666', textAlign: 'center' }}>{t('citizenShield.ctaDesc')}</p>
+                          <h3>{t('home.products.citizenShield.title')}</h3>
+                          <p style={{ color: '#666', textAlign: 'center' }}>{t('home.products.citizenShield.desc')}</p>
                           <Link to="/citizen-shield" className="button icon solid fa-arrow-circle-right">
-                            {t('citizenShield.ctaBtn')}
+                            {t('home.products.citizenShield.btn')}
                           </Link>
                         </div>
 
@@ -305,7 +306,7 @@ const Home = () => {
                           <h3>{t('home.finance.finanzmeTitle')}</h3>
                           <p style={{ color: '#666', textAlign: 'center' }}>{t('home.finance.finanzmeDesc')}</p>
                           <Link to="/finanzme" className="button icon solid fa-arrow-circle-right">
-                            {t('finanzMe.ctaBtn')}
+                            {t('home.products.finanzMe.btn')}
                           </Link>
                           <p style={{ fontSize: '0.9em', color: '#888', marginTop: '1em', marginBottom: 0 }}>
                             <i className="icon solid fa-lock" style={{ marginRight: '0.4em' }}></i>
@@ -340,7 +341,7 @@ const Home = () => {
                           <h3>{t('home.extra.bytebulkTitle')}</h3>
                           <p style={{ color: '#666', textAlign: 'center' }}>{t('home.extra.bytebulkDesc')}</p>
                           <Link to="/bytebulk" className="button icon solid fa-arrow-circle-right">
-                            {t('byteBulk.ctaBtn')}
+                            {t('home.products.byteBulk.btn')}
                           </Link>
                           <p style={{ fontSize: '0.9em', color: '#888', marginTop: '1em', marginBottom: 0 }}>
                             <i className="icon solid fa-lock" style={{ marginRight: '0.4em' }}></i>
@@ -353,7 +354,7 @@ const Home = () => {
                           <h3>{t('home.extra.seedcastTitle')}</h3>
                           <p style={{ color: '#666', textAlign: 'center' }}>{t('home.extra.seedcastDesc')}</p>
                           <Link to="/seedcast" className="button icon solid fa-arrow-circle-right">
-                            {t('seedCast.ctaBtn')}
+                            {t('home.products.seedCast.btn')}
                           </Link>
                           <p style={{ fontSize: '0.9em', color: '#888', marginTop: '1em', marginBottom: 0 }}>
                             <i className="icon solid fa-lock" style={{ marginRight: '0.4em' }}></i>

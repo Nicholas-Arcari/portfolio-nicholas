@@ -7,6 +7,9 @@ import SearchInput from '../components/SearchInput';
 import { useRemembered, useRememberedScroll } from '../utils/listMemory';
 import SiteHeader from '../components/SiteHeader';
 import { usePageLayout } from '../utils/usePageLayout';
+import '../i18n/masterDetails';
+import '../i18n/nav';
+import '../i18n/settings';
 
 const MasterDetails = () => {
   const { t } = useLanguage();

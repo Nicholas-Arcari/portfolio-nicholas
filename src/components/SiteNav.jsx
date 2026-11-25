@@ -3,6 +3,7 @@ import { useId, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../contexts/languageContext';
 import { NAV } from '../config/nav';
+import '../i18n/nav';
 
 // Un sottomenu del menu in alto (Passioni). Si apre passando col mouse, come
 // e' sempre stato, ma anche con un clic o un tocco e da tastiera: Invio o

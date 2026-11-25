@@ -15,6 +15,8 @@ import StatisticsLayout from '../statistics/StatisticsLayout';
 import Markdown from './Markdown';
 import { README_PARTS, labDescription } from './labText';
 import { retiCourse } from './retiCourse';
+import '../../i18n/reti';
+import '../../i18n/settings';
 
 // Del README, sotto la tabella, restano solo queste sezioni: le altre
 // ripetevano l'elenco delle esercitazioni o parlavano del repository
