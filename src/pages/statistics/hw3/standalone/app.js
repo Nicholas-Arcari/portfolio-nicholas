@@ -77,6 +77,8 @@ const timers = { compute: null, sweep: null, normal: null };
 const results = new Map();
 const computation = { shown: null, error: null, running: null };
 let animation = null;
+// the chart of the kit that hosts the canvas of the animation (zoom and panning)
+let animationChart = null;
 
 // ---------------------------------------------------------------------------
 // DOM: un aiutante minimo, i grafici e il loro ridisegno
@@ -490,6 +492,18 @@ function trajectoriesBlock() {
     T.speeds.map((name, i) => h('option', { value: i, text: name, selected: i === state.anim.speed })),
   );
   controls.canvas = h('canvas', { class: 'anim', role: 'img', 'aria-label': text.sections.trajectories });
+  // the canvas in a box of the kit, as a chart of the animation of the moment (none until the simulation arrives): zoom and panning while it goes on
+  const { stage, chart } = kit.createSourceStage(
+    controls.canvas,
+    {
+      draw: (...a) => animation && animation.draw(...a),
+      frame: (...a) => (animation ? animation.frame(...a) : null),
+      height: (width) => Math.round(width * 0.6),
+      locate: (...a) => (animation ? animation.locate(...a) : null),
+    },
+    { palette: palette(), lib: hw, lang: state.lang },
+  );
+  animationChart = chart;
   controls.caption = h('p', { class: 'caption', 'aria-live': 'polite' });
   return [
     regions.trajectoriesIntro,
@@ -500,10 +514,12 @@ function trajectoriesBlock() {
     choices(T.quantityLabel, hw.QUANTITIES.map((q) => [q, text.trajectoryNames[q]]), state.anim.quantity, (quantity) => {
       state.anim.quantity = quantity;
       if (animation) animation.setQuantity(quantity);
+      // another quantity has another range of values: the view goes back to the whole chart
+      if (animationChart) animationChart.resetView();
     }),
     h('div', { class: 'controls' }, h('label', null, T.speedLabel, speed), h('span', { class: 'buttons' }, controls.play, button(T.step, 'step'), button(T.reset, 'reset'), button(T.end, 'toEnd'))),
     // posizionato: ci stanno dentro l'evidenziazione e l'etichetta sotto il puntatore
-    h('div', { class: 'figure' }, controls.canvas),
+    h('div', { class: 'figure' }, stage),
     // la legenda sotto l'animazione: le parti nascoste si ridisegnano dal primo sistema
     legend(view.legends.trajectories(text), (parts) => animation && animation.setHidden(parts), keep('trajectories')),
     controls.caption,
@@ -520,14 +536,6 @@ function updateCaption(st) {
   else if (st.k > 0 && !st.done) label = T.resume;
   controls.play.textContent = label;
 }
-
-let canvasWidth = 0;
-const canvasResizer = new ResizeObserver(() => {
-  const canvas = controls.canvas;
-  if (!animation || !canvas || canvas.clientWidth === canvasWidth) return;
-  canvasWidth = canvas.clientWidth;
-  animation.redraw();
-});
 
 /** The animation of the attackers of the last simulation started, for the chosen model. */
 function createAnimation() {
@@ -546,10 +554,13 @@ function createAnimation() {
     describe: view.tips.trajectory(text),
     hidden: partsOf(view.legends.trajectories(text), keep('trajectories')),
     onUpdate: updateCaption,
+    requestDraw: () => animationChart && animationChart.redraw(),
   });
-  canvasWidth = canvas.clientWidth;
-  canvasResizer.disconnect();
-  canvasResizer.observe(canvas);
+  // new attackers: the whole chart again
+  if (animationChart) {
+    animationChart.resetView();
+    animationChart.redraw();
+  }
 }
 
 // --- 1.5 Verifiche -----------------------------------------------------------------

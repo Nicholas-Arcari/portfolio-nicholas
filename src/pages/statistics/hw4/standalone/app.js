@@ -83,6 +83,8 @@ const timers = { compute: null, steps: null, spread: null, bessel: null };
 const results = new Map();
 const computation = { shown: null, error: null, running: null };
 let animation = null;
+// the chart of the kit that hosts the canvas of the animation (zoom and panning)
+let animationChart = null;
 
 // ---------------------------------------------------------------------------
 // DOM: un aiutante minimo, i grafici e il loro ridisegno
@@ -821,16 +823,30 @@ function trajectoriesBlock() {
     T.speeds.map((name, i) => h('option', { value: i, text: name, selected: i === state.anim.speed })),
   );
   controls.canvas = h('canvas', { class: 'anim', role: 'img', 'aria-label': text.sections.trajectories });
+  // the canvas in a box of the kit, as a chart of the animation of the moment (none until the simulation arrives): zoom and panning while it goes on
+  const { stage, chart } = kit.createSourceStage(
+    controls.canvas,
+    {
+      draw: (...a) => animation && animation.draw(...a),
+      frame: (...a) => (animation ? animation.frame(...a) : null),
+      height: (width) => Math.round(width * 0.6),
+      locate: (...a) => (animation ? animation.locate(...a) : null),
+    },
+    { palette: palette(), lib: hw, lang: state.lang },
+  );
+  animationChart = chart;
   controls.caption = h('p', { class: 'caption', 'aria-live': 'polite' });
   return [
     regions.trajectoriesIntro,
     choices(T.quantityLabel, hw.QUANTITIES.map((q) => [q, text.quantityNames[q]]), state.anim.quantity, (quantity) => {
       state.anim.quantity = quantity;
       if (animation) animation.setQuantity(quantity);
+      // another quantity has another range of values: the view goes back to the whole chart
+      if (animationChart) animationChart.resetView();
     }),
     h('div', { class: 'controls' }, h('label', null, T.speedLabel, speed), h('span', { class: 'buttons' }, controls.play, button(T.step, 'step'), button(T.reset, 'reset'), button(T.end, 'toEnd'))),
     // posizionato: ci stanno dentro l'evidenziazione e l'etichetta sotto il puntatore
-    h('div', { class: 'figure' }, controls.canvas),
+    h('div', { class: 'figure' }, stage),
     // la legenda sotto l'animazione: le parti nascoste si ridisegnano dal primo punteggio
     legend(view.legends.trajectories(text), (parts) => animation && animation.setHidden(parts), kept.trajectories),
     controls.caption,
@@ -847,14 +863,6 @@ function updateCaption(st) {
   else if (st.k > 0 && !st.done) label = T.resume;
   controls.play.textContent = label;
 }
-
-let canvasWidth = 0;
-const canvasResizer = new ResizeObserver(() => {
-  const canvas = controls.canvas;
-  if (!animation || !canvas || canvas.clientWidth === canvasWidth) return;
-  canvasWidth = canvas.clientWidth;
-  animation.redraw();
-});
 
 /** The animation of the hackers of the last simulation started. */
 function createAnimation() {
@@ -873,10 +881,13 @@ function createAnimation() {
     describe: view.tips.trajectory(text),
     hidden: partsOf(view.legends.trajectories(text), kept.trajectories),
     onUpdate: updateCaption,
+    requestDraw: () => animationChart && animationChart.redraw(),
   });
-  canvasWidth = canvas.clientWidth;
-  canvasResizer.disconnect();
-  canvasResizer.observe(canvas);
+  // new attackers: the whole chart again
+  if (animationChart) {
+    animationChart.resetView();
+    animationChart.redraw();
+  }
 }
 
 // --- 2.4 e 2.5 Le medie e il confronto -------------------------------------------------------
@@ -1092,18 +1103,25 @@ const sameFigures = (kept, data) => !!kept.fig && kept.data === data && kept.lan
 // --- 1.2 I dati da trascinare ---------------------------------------------------------
 
 let drag = null;
-let dragWidth = 0;
-const dragResizer = new ResizeObserver(() => {
-  const canvas = controls.dragCanvas;
-  if (!drag || !canvas || canvas.clientWidth === dragWidth) return;
-  dragWidth = canvas.clientWidth;
-  drag.redraw();
-});
+// the chart of the kit that hosts the canvas of the data (the zoom of the line of the values)
+let dragChart = null;
 
 function tryDragBlock() {
   const D = text.tryDrag;
   const span = 10 * (view.DRAG.hi - view.DRAG.lo);
   controls.dragCanvas = h('canvas', { class: 'drag', role: 'img', 'aria-label': text.sections.tryDrag });
+  // the canvas in a box of the kit, as a chart of the data of the moment: the zoom of the line of the values,
+  // while the mouse and one finger still drag the points
+  const { stage, chart } = kit.createSourceStage(
+    controls.dragCanvas,
+    {
+      draw: (...a) => drag && drag.draw(...a),
+      frame: (...a) => (drag ? drag.frame(...a) : null),
+      height: (width) => (drag ? drag.height(width) : Math.round(width * 0.62)),
+    },
+    { palette: palette(), lib: hw, lang: state.lang, zoom: { drag: false } },
+  );
+  dragChart = chart;
   controls.dragCaption = h('p', { class: 'caption line', 'aria-live': 'polite' });
   controls.dragSlider = slider('hw4-drag-x', (v) => drag && drag.setValue(drag.stats().k - 1, view.DRAG.lo + v / 10));
   controls.dragAdd = h('button', { type: 'button', class: 'btn alt', text: D.add, onclick: () => drag && drag.add(view.DRAG.lo + Math.round(Math.random() * span) / 10) });
@@ -1116,7 +1134,7 @@ function tryDragBlock() {
     paras(D.intro),
     h('div', { class: 'slider-row' }, controls.dragSlider.el, h('span', { class: 'buttons' }, controls.dragAdd, controls.dragRemove, reset)),
     // posizionato: ci stanno dentro l'evidenziazione e l'etichetta sotto il puntatore
-    h('div', { class: 'figure' }, controls.dragCanvas),
+    h('div', { class: 'figure' }, stage),
     // la legenda: le parti nascoste non si disegnano, e un punto nascosto non si trascina
     legend(view.legends.drag(text), (parts) => drag && drag.setHidden(parts), kept.drag),
     controls.dragCaption,
@@ -1139,10 +1157,11 @@ function createDrag() {
   drag = null;
   const canvas = controls.dragCanvas;
   if (!canvas || !canvas.isConnected) return;
-  drag = hw.createWelfordDrag(canvas, { ...view.DRAG, initial: view.DRAG.values, values: state.drag.values || view.DRAG.values, palette: palette(), decimal: text.fmt.decimal, hidden: partsOf(view.legends.drag(text), kept.drag), onChange: updateDrag });
-  dragWidth = canvas.clientWidth;
-  dragResizer.disconnect();
-  dragResizer.observe(canvas);
+  drag = hw.createWelfordDrag(canvas, { ...view.DRAG, initial: view.DRAG.values, values: state.drag.values || view.DRAG.values, palette: palette(), decimal: text.fmt.decimal, hidden: partsOf(view.legends.drag(text), kept.drag), onChange: updateDrag, requestDraw: () => dragChart && dragChart.redraw() });
+  if (dragChart) {
+    dragChart.resetView();
+    dragChart.redraw();
+  }
 }
 
 // --- 1.5 Le cifre che si perdono -------------------------------------------------------

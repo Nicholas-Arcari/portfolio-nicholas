@@ -19,6 +19,9 @@ import HomeworkShell from './HomeworkShell';
 import { ChartLegend } from './ChartLegend';
 import { hiddenParts, useHidden } from './legendState';
 import { ChartFigure } from './chartkit/ChartFigure';
+import { useChartTools } from './chartkit/ChartTools';
+import { createSourceChart } from './chartkit/kitSource';
+import { zoomPan } from './chartkit/kitPlugins';
 import * as hw from './hw3/homework3';
 import * as view from './hw3/view';
 import { HW3_TEXTS, originalAssignment } from './hw3/texts';
@@ -284,6 +287,9 @@ const Trajectories = ({ params, text, palette }) => {
   const legend = useMemo(() => view.legends.trajectories(text), [text]);
   const off = hiddenParts(legend, hidden).join(' ');
   const settingsRef = useRef({ quantity, speed: view.ANIMATION.speeds[speed], palette, decimal: text.fmt.decimal, describe: view.tips.trajectory(text), hidden: [] });
+  // the canvas is a chart of the kit (chartkit/kitSource.js): zoom and panning while the attackers go on
+  const chartRef = useRef(null);
+  const { attach, tools } = useChartTools();
 
   useEffect(() => {
     settingsRef.current = { quantity, speed: view.ANIMATION.speeds[speed], palette, decimal: text.fmt.decimal, describe: view.tips.trajectory(text), hidden: off ? off.split(' ') : [] };
@@ -295,30 +301,38 @@ const Trajectories = ({ params, text, palette }) => {
   useEffect(() => {
     const canvas = canvasRef.current;
     const settings = settingsRef.current;
-    const anim = hw.createTrajectoryAnimation(canvas, { ...view.animationOptions(params, model), ...settings, onUpdate: setStatus });
+    let chart = null;
+    const anim = hw.createTrajectoryAnimation(canvas, { ...view.animationOptions(params, model), ...settings, onUpdate: setStatus , requestDraw: () => chart && chart.redraw() });
     animRef.current = anim;
-    let width = canvas.clientWidth;
-    const observer = new ResizeObserver(() => {
-      if (canvas.clientWidth === width) return;
-      width = canvas.clientWidth;
-      anim.redraw();
+    chart = createSourceChart(canvas, anim, { palette: settings.palette, pointerLabel: hw.attachPointerLabel, plugins: [zoomPan()] });
+    chartRef.current = chart;
+    const detachTools = attach(chart);
+    const observer = new ResizeObserver((entries) => {
+      const width = Math.round(entries[entries.length - 1].contentRect.width);
+      if (width > 0) chart.resize(width);
     });
     observer.observe(canvas);
     return () => {
       observer.disconnect();
+      detachTools();
+      chart.destroy();
       anim.destroy();
       animRef.current = null;
+      chartRef.current = null;
     };
-  }, [params, model]);
+  }, [params, model, attach]);
 
   useEffect(() => {
     if (animRef.current) animRef.current.setQuantity(quantity);
+    // another quantity has another range of values: the view goes back to the whole chart
+    if (chartRef.current) chartRef.current.resetView();
   }, [quantity]);
   useEffect(() => {
     if (animRef.current) animRef.current.setSpeed(view.ANIMATION.speeds[speed]);
   }, [speed]);
   useEffect(() => {
     if (animRef.current) animRef.current.setPalette(palette);
+    if (chartRef.current) chartRef.current.setPalette(palette);
   }, [palette]);
   useEffect(() => {
     if (!animRef.current) return;
@@ -354,7 +368,12 @@ const Trajectories = ({ params, text, palette }) => {
       </div>
       {/* posizionato: ci stanno dentro l'evidenziazione e l'etichetta sotto il puntatore */}
       <div className="hw1-figure">
-        <canvas ref={canvasRef} className="hw1-canvas hw3-anim" role="img" aria-label={text.sections.trajectories} />
+        <div className="kit-stage kit-source">
+          <div className="kit-plot">
+            <canvas ref={canvasRef} className="hw1-canvas hw3-anim" role="img" aria-label={text.sections.trajectories} />
+          </div>
+          {tools}
+        </div>
       </div>
       <ChartLegend items={legend} palette={palette} hidden={hidden} onToggle={toggleHidden} />
       <p className="hw1-caption" aria-live={playing ? 'off' : 'polite'}>{status ? T.caption(status, text.trajectoryNames[status.quantity]) : ''}</p>

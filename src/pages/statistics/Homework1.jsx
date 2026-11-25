@@ -16,6 +16,9 @@ import HomeworkShell from './HomeworkShell';
 import { ChartLegend } from './ChartLegend';
 import { useHidden } from './legendState';
 import { ChartFigure } from './chartkit/ChartFigure';
+import { useChartTools } from './chartkit/ChartTools';
+import { createSourceChart } from './chartkit/kitSource';
+import { zoomPan } from './chartkit/kitPlugins';
 import * as hw from './hw1/homework1';
 import * as view from './hw1/view';
 import { HW1_TEXTS, originalAssignment } from './hw1/texts';
@@ -68,35 +71,44 @@ const Pending = ({ text }) => <p className="hw1-note hw1-pending" role="status">
 // zoom, per gruppi interi di barre e per righe e colonne.
 const Figure = (props) => <ChartFigure lib={hw} schedule={view.scheduleFrameJob} {...props} />;
 
-// L'animazione al rallentatore: il disegno e' di homework1.js, qui i controlli
+// L'animazione al rallentatore: il disegno e' di homework1.js, qui i controlli.
+// Il canvas e' un grafico del kit (chartkit/kitSource.js): si ingrandisce e si
+// sposta come gli altri, mentre l'animazione va avanti.
 const Animation = ({ curve, G, k, Q, text, palette }) => {
   const canvasRef = useRef(null);
   const animRef = useRef(null);
+  const chartRef = useRef(null);
   const speedRef = useRef(1);
   const paletteRef = useRef(palette);
   const [method, setMethod] = useState('double-and-add');
   const [speed, setSpeed] = useState(1);
   const [status, setStatus] = useState(null);
+  const { attach, tools } = useChartTools();
 
   useEffect(() => {
     const canvas = canvasRef.current;
+    let chart = null;
     const anim = hw.createAnimation(canvas, {
-      curve, G, k, method, speed: speedRef.current, palette: paletteRef.current, onUpdate: setStatus,
+      curve, G, k, method, speed: speedRef.current, palette: paletteRef.current, onUpdate: setStatus, requestDraw: () => chart && chart.redraw(),
     });
     animRef.current = anim;
-    let width = canvas.clientWidth;
-    const observer = new ResizeObserver(() => {
-      if (canvas.clientWidth === width) return;
-      width = canvas.clientWidth;
-      anim.redraw();
+    chart = createSourceChart(canvas, anim, { palette: paletteRef.current, pointerLabel: hw.attachPointerLabel, plugins: [zoomPan()] });
+    chartRef.current = chart;
+    const detachTools = attach(chart);
+    const observer = new ResizeObserver((entries) => {
+      const width = Math.round(entries[entries.length - 1].contentRect.width);
+      if (width > 0) chart.resize(width);
     });
     observer.observe(canvas);
     return () => {
       observer.disconnect();
+      detachTools();
+      chart.destroy();
       anim.destroy();
       animRef.current = null;
+      chartRef.current = null;
     };
-  }, [curve, G, k, method]);
+  }, [curve, G, k, method, attach]);
 
   useEffect(() => {
     speedRef.current = speed;
@@ -106,6 +118,7 @@ const Animation = ({ curve, G, k, Q, text, palette }) => {
   useEffect(() => {
     paletteRef.current = palette;
     if (animRef.current) animRef.current.setPalette(palette);
+    if (chartRef.current) chartRef.current.setPalette(palette);
   }, [palette]);
 
   const g = text.guru;
@@ -150,7 +163,12 @@ const Animation = ({ curve, G, k, Q, text, palette }) => {
           ))}
         </p>
       )}
-      <canvas ref={canvasRef} className="hw1-canvas hw1-anim" role="img" aria-label={text.sections.guru} />
+      <div className="kit-stage kit-source hw1-anim-stage">
+        <div className="kit-plot">
+          <canvas ref={canvasRef} className="hw1-canvas hw1-anim" role="img" aria-label={text.sections.guru} />
+        </div>
+        {tools}
+      </div>
       <p className="hw1-caption" aria-live="polite">{caption}</p>
     </>
   );

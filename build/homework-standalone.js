@@ -42,7 +42,7 @@ const STATIC_FILES = ['index.html', 'style.css', 'README.txt'];
  * a preparare lo scheletro di un homework prima della consegna.
  */
 // il kit dei grafici interattivi, nell'ordine in cui i moduli dipendono l'uno dall'altro
-const CHARTKIT = ['kitView.js', 'kitGestures.js', 'kitChart.js', 'kitPlugins.js', 'kitPlayer.js', 'kitSpec.js', 'kitLabels.js', 'kitReveal.js', 'kitDom.js'].map((file) => `../chartkit/${file}`);
+const CHARTKIT = ['kitView.js', 'kitGestures.js', 'kitChart.js', 'kitPlugins.js', 'kitPlayer.js', 'kitSpec.js', 'kitLabels.js', 'kitReveal.js', 'kitSource.js', 'kitDom.js'].map((file) => `../chartkit/${file}`);
 
 export const HOMEWORKS = [
   {

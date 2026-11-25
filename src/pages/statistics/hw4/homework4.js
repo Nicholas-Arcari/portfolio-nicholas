@@ -2269,24 +2269,24 @@ export function createScoreAnimation(canvas, options) {
   let layer = null;
   let drawnK = -1;
   let geometry = null;
+  let geometryKey = '';
 
   const firstStep = () => (quantity === 'mean' ? 1 : 2);
   const value = (j) => (quantity === 'mean' ? currentMean[j] : k > 1 ? currentSS[j] / (k - 1) : NaN);
 
-  const layout = () => {
+  // where everything lies at this width, and what it shows: all the steps and the fixed range of the quantity,
+  // or a zoomed view ({ x: [first, last step], y: [lo, hi] }) of the chart of the trajectories
+  const layout = (view, width) => {
     const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
-    const width = canvas.clientWidth || 640;
     const height = Math.round(width * ANIM_ASPECT);
-    canvas.width = Math.round(width * dpr);
-    canvas.height = Math.round(height * dpr);
-    canvas.style.height = `${height}px`;
     const m = ANIM_MARGIN;
     const inner = width - m.left - m.right;
     const plotW = Math.round(inner * (1 - ANIM_PANEL)) - 8;
     const panelX = m.left + plotW + 8;
     const panelW = width - m.right - panelX;
     const h = height - m.top - m.bottom;
-    const [y0, y1] = ranges[quantity];
+    const [x0, x1] = view && view.x ? view.x : [0, n];
+    const [y0, y1] = view && view.y ? view.y : ranges[quantity];
     return {
       dpr,
       width,
@@ -2295,7 +2295,10 @@ export function createScoreAnimation(canvas, options) {
       panelX,
       panelW,
       h,
-      px: (step) => m.left + (plotW * step) / n,
+      zoomed: !!(view && (view.x || view.y)),
+      x0,
+      x1,
+      px: (step) => m.left + (plotW * (step - x0)) / (x1 - x0),
       py: (v) => m.top + h * (1 - (v - y0) / (y1 - y0)),
       y0,
       y1,
@@ -2311,7 +2314,13 @@ export function createScoreAnimation(canvas, options) {
     ctx.rect(ANIM_MARGIN.left, ANIM_MARGIN.top, G.plotW, G.h);
     ctx.clip();
     const first = Math.max(firstStep(), from);
-    const stride = Math.max(1, Math.floor((to - first) / (2 * G.plotW)));
+    const lo = G.zoomed ? Math.max(first, Math.floor(G.x0)) : first;
+    const hi = G.zoomed ? Math.min(to, Math.ceil(G.x1)) : to;
+    if (hi <= lo) {
+      ctx.restore();
+      return;
+    }
+    const stride = G.zoomed ? Math.max(1, Math.floor((G.x1 - G.x0) / (2 * G.plotW))) : Math.max(1, Math.floor((to - first) / (2 * G.plotW)));
     for (let j = D - 1; j >= 0; j--) {
       if (hidden.includes(j === 0 ? 'first' : 'others')) continue;
       const path = paths[quantity][j];
@@ -2319,9 +2328,9 @@ export function createScoreAnimation(canvas, options) {
       ctx.globalAlpha = j === 0 ? 1 : 0.32;
       ctx.lineWidth = j === 0 ? 2 : 1;
       ctx.beginPath();
-      ctx.moveTo(G.px(first), G.py(path[first]));
-      for (let s = first + stride; s < to; s += stride) ctx.lineTo(G.px(s), G.py(path[s]));
-      ctx.lineTo(G.px(to), G.py(path[to]));
+      ctx.moveTo(G.px(lo), G.py(path[lo]));
+      for (let s = lo + stride; s < hi; s += stride) ctx.lineTo(G.px(s), G.py(path[s]));
+      ctx.lineTo(G.px(hi), G.py(path[hi]));
       ctx.stroke();
     }
     ctx.restore();
@@ -2384,16 +2393,23 @@ export function createScoreAnimation(canvas, options) {
   let describe = options.describe || null;
   let detachLabel = null;
 
-  const render = () => {
-    if (!geometry) {
-      geometry = layout();
+  const paint = (target, view, width) => {
+    const key = JSON.stringify([width, view, quantity]);
+    if (!geometry || geometryKey !== key) {
+      geometry = layout(view, width);
+      geometryKey = key;
       drawnK = -1;
     }
     const G = geometry;
-    if (!layer || layer.width !== canvas.width || layer.height !== canvas.height) {
+    if (target.width !== Math.round(G.width * G.dpr) || target.height !== Math.round(G.height * G.dpr)) {
+      target.width = Math.round(G.width * G.dpr);
+      target.height = Math.round(G.height * G.dpr);
+    }
+    target.style.height = `${G.height}px`;
+    if (!layer || layer.width !== target.width || layer.height !== target.height) {
       layer = layer || document.createElement('canvas');
-      layer.width = canvas.width;
-      layer.height = canvas.height;
+      layer.width = target.width;
+      layer.height = target.height;
       drawnK = -1;
     }
     if (drawnK > k || drawnK < 0) {
@@ -2405,7 +2421,7 @@ export function createScoreAnimation(canvas, options) {
       drawnK = k;
     }
 
-    const ctx = canvas.getContext('2d');
+    const ctx = target.getContext('2d');
     ctx.setTransform(G.dpr, 0, 0, G.dpr, 0, 0);
     const m = ANIM_MARGIN;
     ctx.fillStyle = palette.background;
@@ -2423,7 +2439,7 @@ export function createScoreAnimation(canvas, options) {
       ctx.fillText(axisLabel(v, decimal), m.left - 4, G.py(v) + 4);
     }
     ctx.textAlign = 'center';
-    for (const v of [0, Math.round(n / 2), n]) ctx.fillText(axisLabel(v, decimal), G.px(v), m.top + G.h + 15);
+    for (const v of G.zoomed ? niceTicks(G.x0, G.x1, 4).filter((s) => s >= G.x0 && s <= G.x1) : [0, Math.round(n / 2), n]) ctx.fillText(axisLabel(v, decimal), G.px(v), m.top + G.h + 15);
     ctx.strokeRect(m.left, m.top, G.plotW, G.h);
     ctx.strokeRect(G.panelX, m.top, G.panelW, G.h);
 
@@ -2508,6 +2524,12 @@ export function createScoreAnimation(canvas, options) {
       });
       ctx.stroke();
     }
+  };
+
+  // the drawing: by the chart of the kit that hosts the canvas (requestDraw: zoom and panning), or here, everything
+  const requestDraw = options.requestDraw || (() => paint(canvas, null, canvas.clientWidth || 640));
+  const render = () => {
+    requestDraw();
     onUpdate(status());
     // the label under a still pointer follows the frames
     if (detachLabel) detachLabel.refresh();
@@ -2528,12 +2550,14 @@ export function createScoreAnimation(canvas, options) {
       return text ? { rect: { x: G.panelX, y: yTop, width: G.panelW, height: G.py(from) - yTop }, text } : null;
     }
     if (x < m.left || x > m.left + G.plotW || k < firstStep()) return null;
-    const step = Math.max(firstStep(), Math.min(k, Math.round(((x - m.left) / G.plotW) * n)));
+    const step = Math.max(G.zoomed ? Math.max(firstStep(), Math.ceil(G.x0)) : firstStep(), Math.min(G.zoomed ? Math.min(k, Math.floor(G.x1)) : k, Math.round(G.x0 + ((x - m.left) / G.plotW) * (G.x1 - G.x0))));
+    // a step not reached yet (a zoomed view beyond the animation) has nothing to tell
+    if (step > k) return null;
     const theory = quantityTheory(law, quantity, step);
     const text = describe({ kind: 'step', quantity, step, first: paths[quantity][0][step], mean: theory.mean, sd: theory.sd, show: { first: !hidden.includes('first'), band: !hidden.includes('band') } });
     return text ? { rect: { x: G.px(step) - 3, y: m.top, width: 6, height: G.h }, text } : null;
   };
-  detachLabel = typeof document !== 'undefined' && canvas.parentElement ? attachPointerLabel(canvas, locate) : null;
+  detachLabel = typeof document !== 'undefined' && canvas.parentElement && !options.requestDraw ? attachPointerLabel(canvas, locate) : null;
 
   const advance = (target) => {
     if (!generators) generators = Array.from({ length: A }, (_, j) => hackerScores(seed, law, j));
@@ -2637,6 +2661,14 @@ export function createScoreAnimation(canvas, options) {
       render();
     },
     status,
+    // a source of the kit (chartkit/kitSource.js): the frame on screen in a view, and what is under the pointer
+    draw: (target, view, width) => paint(target, view, width),
+    frame(view, width) {
+      const G = layout(view, width);
+      return { plot: { x: ANIM_MARGIN.left, y: ANIM_MARGIN.top, w: G.plotW, h: G.h }, x: { min: G.x0, max: G.x1, log: false }, y: { min: G.y0, max: G.y1, log: false }, zoom: 'xy' };
+    },
+    height: (width) => Math.round(width * ANIM_ASPECT),
+    locate: (x, y) => locate(x, y),
     destroy() {
       playing = false;
       cancelAnimationFrame(frame);
@@ -2682,6 +2714,7 @@ export function createWelfordDrag(canvas, options = {}) {
   let dragging = -1;
   let positions = [];
   let geometry = null;
+  let geometryKey = '';
 
   const clamp = (v) => Math.min(hi, Math.max(lo, Math.round(v * 10) / 10));
   const fmt = (v, digits = 2) => {
@@ -2701,17 +2734,16 @@ export function createWelfordDrag(canvas, options = {}) {
     return { k, x, values: [...values], previousMean: before.mean, mean: all.mean, delta, after, increment: delta * after, previousSS: before.ss, ss: all.ss, direct, variance: all.variance };
   };
 
-  const layout = () => {
+  // on a phone the rectangle and the bars do not fit side by side: a taller canvas, the bars below
+  const heightOf = (width) => Math.round(width * (width < 520 ? 1.15 : DRAG_ASPECT));
+  // where everything lies at this width; the line of the values shows lo to hi, or the x range of a zoomed view
+  const layout = (view, width) => {
     const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
-    const width = canvas.clientWidth || 640;
-    // on a phone the rectangle and the bars do not fit side by side: a taller canvas, the bars below
     const narrow = width < 520;
-    const height = Math.round(width * (narrow ? 1.15 : DRAG_ASPECT));
-    canvas.width = Math.round(width * dpr);
-    canvas.height = Math.round(height * dpr);
-    canvas.style.height = `${height}px`;
+    const height = heightOf(width);
     const left = 26;
     const right = width - 26;
+    const [x0, x1] = view && view.x ? view.x : [lo, hi];
     return {
       dpr,
       width,
@@ -2719,10 +2751,13 @@ export function createWelfordDrag(canvas, options = {}) {
       left,
       right,
       narrow,
+      zoomed: !!(view && view.x),
+      x0,
+      x1,
       lineY: Math.round(height * (narrow ? 0.24 : 0.34)),
       lowerTop: Math.round(height * (narrow ? 0.46 : 0.56)),
-      px: (v) => left + ((v - lo) / (hi - lo)) * (right - left),
-      value: (X) => lo + ((X - left) / (right - left)) * (hi - lo),
+      px: (v) => left + ((v - x0) / (x1 - x0)) * (right - left),
+      value: (X) => x0 + ((X - left) / (right - left)) * (x1 - x0),
     };
   };
 
@@ -2749,11 +2784,20 @@ export function createWelfordDrag(canvas, options = {}) {
     ctx.fillText(label, mid, y - 6);
   };
 
-  const render = () => {
-    if (!geometry) geometry = layout();
+  const paint = (target, view, width) => {
+    const key = JSON.stringify([width, view]);
+    if (!geometry || geometryKey !== key) {
+      geometry = layout(view, width);
+      geometryKey = key;
+    }
     const G = geometry;
+    if (target.width !== Math.round(G.width * G.dpr) || target.height !== Math.round(G.height * G.dpr)) {
+      target.width = Math.round(G.width * G.dpr);
+      target.height = Math.round(G.height * G.dpr);
+    }
+    target.style.height = `${G.height}px`;
     const S = stats();
-    const ctx = canvas.getContext('2d');
+    const ctx = target.getContext('2d');
     ctx.setTransform(G.dpr, 0, 0, G.dpr, 0, 0);
     ctx.fillStyle = palette.background;
     ctx.fillRect(0, 0, G.width, G.height);
@@ -2768,12 +2812,30 @@ export function createWelfordDrag(canvas, options = {}) {
     ctx.lineTo(G.right, G.lineY);
     ctx.stroke();
     ctx.textAlign = 'center';
-    for (let v = Math.ceil(lo); v <= hi; v++) {
+    if (!G.zoomed) {
+      for (let v = Math.ceil(lo); v <= hi; v++) {
+        ctx.beginPath();
+        ctx.moveTo(G.px(v), G.lineY - 3);
+        ctx.lineTo(G.px(v), G.lineY + 3);
+        ctx.stroke();
+        ctx.fillText(String(v), G.px(v), G.lineY + 15);
+      }
+    } else {
+      // a zoomed view: about eight ticks, in steps of 1, 0.5, 0.2 or 0.1 (the values move by tenths)
+      const step = [1, 0.5, 0.2, 0.1].find((u) => (G.x1 - G.x0) / u >= 6) || 0.1;
+      for (let i = Math.ceil(G.x0 / step - 1e-9); i * step <= G.x1 + 1e-9; i++) {
+        const v = Number((i * step).toFixed(1));
+        ctx.beginPath();
+        ctx.moveTo(G.px(v), G.lineY - 3);
+        ctx.lineTo(G.px(v), G.lineY + 3);
+        ctx.stroke();
+        ctx.fillText(fmt(v, 1), G.px(v), G.lineY + 15);
+      }
+      // the means, the deviations and the points stay over the line, inside the canvas
+      ctx.save();
       ctx.beginPath();
-      ctx.moveTo(G.px(v), G.lineY - 3);
-      ctx.lineTo(G.px(v), G.lineY + 3);
-      ctx.stroke();
-      ctx.fillText(String(v), G.px(v), G.lineY + 15);
+      ctx.rect(G.left - DRAG_RADIUS - 3, 0, G.right - G.left + 2 * DRAG_RADIUS + 6, G.lowerTop - 4);
+      ctx.clip();
     }
 
     // the two means: the old one dashed, the new one solid
@@ -2808,11 +2870,12 @@ export function createWelfordDrag(canvas, options = {}) {
     if (!off('after')) arrow(ctx, G.px(S.mean), G.px(S.x), G.lineY + 56, palette.series[4], `x_${S.k} - M_${S.k} = ${fmt(S.after)}`);
 
     // the points, stacked when they overlap
-    // a point hidden from the legend is neither drawn nor dragged
+    // a point hidden from the legend, or outside a zoomed view, is neither drawn nor dragged
     positions = [];
     values.forEach((v, i) => {
       if (off(i === values.length - 1 ? 'new' : 'points')) return;
       const X = G.px(v);
+      if (G.zoomed && (X < G.left - DRAG_RADIUS || X > G.right + DRAG_RADIUS)) return;
       let level = 0;
       for (const q of positions) if (Math.abs(q.x - X) < 2 * DRAG_RADIUS + 1) level = Math.max(level, q.level + 1);
       positions.push({ i, x: X, y: G.lineY - DRAG_RADIUS - 3 - level * (2 * DRAG_RADIUS + 2), level });
@@ -2827,6 +2890,8 @@ export function createWelfordDrag(canvas, options = {}) {
       ctx.lineWidth = 1.5;
       ctx.stroke();
     }
+
+    if (G.zoomed) ctx.restore();
 
     // below on the left: the rectangle delta x (x_k - M_k), the square delta x delta without a strip of 1/k
     const lowerH = G.height - G.lowerTop - 10;
@@ -2891,6 +2956,10 @@ export function createWelfordDrag(canvas, options = {}) {
     row(y2, [[S.direct, palette.series[2], !off('directSS')]], `Σ (x_i - M_${S.k})² = SS_${S.k}`, S.direct);
   };
 
+  // the drawing: by the chart of the kit that hosts the canvas (requestDraw: zoom and panning), or here, the whole line
+  const requestDraw = options.requestDraw || (() => paint(canvas, null, canvas.clientWidth || 640));
+  const render = () => requestDraw();
+
   const locate = (x, y) => {
     let best = -1;
     let dist = (DRAG_RADIUS + 8) ** 2;
@@ -2911,13 +2980,25 @@ export function createWelfordDrag(canvas, options = {}) {
     render();
     onChange(stats());
   };
+  // the fingers on the canvas: with two (the pinch of the kit) no point is dragged
+  const fingers = new Set();
   const onDown = (e) => {
+    if (e.pointerType === 'touch') fingers.add(e.pointerId);
+    if (fingers.size > 1) {
+      if (dragging >= 0) {
+        dragging = -1;
+        render();
+      }
+      return;
+    }
     const [x, y] = point(e);
     const i = locate(x, y);
     if (i < 0) return;
     dragging = i;
     if (canvas.setPointerCapture) canvas.setPointerCapture(e.pointerId);
-    e.preventDefault();
+    // the mouse: no text selected while dragging (a finger is kept by touch-action; in Firefox a pointerdown
+    // cancelled for a finger keeps a second finger, the pinch of the kit, away)
+    if (e.pointerType !== 'touch') e.preventDefault();
     render();
   };
   const onMove = (e) => {
@@ -2927,6 +3008,8 @@ export function createWelfordDrag(canvas, options = {}) {
       return;
     }
     canvas.style.cursor = 'grabbing';
+    // the geometry of the last drawing (none just after a redraw, until the next frame)
+    if (!geometry) return;
     const v = clamp(geometry.value(x));
     if (values[dragging] !== v) {
       values = values.slice();
@@ -2934,7 +3017,8 @@ export function createWelfordDrag(canvas, options = {}) {
       changed();
     }
   };
-  const onUp = () => {
+  const onUp = (e) => {
+    if (e && e.pointerType === 'touch') fingers.delete(e.pointerId);
     if (dragging < 0) return;
     dragging = -1;
     render();
@@ -2978,6 +3062,13 @@ export function createWelfordDrag(canvas, options = {}) {
       geometry = null;
       render();
     },
+    // a source of the kit (chartkit/kitSource.js): the drawing in a view, which zooms only the line of the values
+    draw: (target, view, width) => paint(target, view, width),
+    frame(view, width) {
+      const G = layout(view, width);
+      return { plot: { x: G.left, y: 0, w: G.right - G.left, h: G.lowerTop - 4 }, x: { min: G.x0, max: G.x1, log: false }, y: { min: 0, max: 1, log: false }, zoom: 'x' };
+    },
+    height: (width) => heightOf(width),
     // the legend under the canvas: the hidden parts are not drawn, and a hidden point cannot be dragged
     setHidden(parts) {
       hidden = parts;

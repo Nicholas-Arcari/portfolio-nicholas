@@ -208,6 +208,8 @@ export function createChart(canvas, deps) {
 
   // the gestures go to the plugins in order: the first that takes a press follows it to the end
   let active = null;
+  // the cursor is the kit's only when a plugin asked for one: a canvas that sets its own (a point to grab) keeps it
+  let cursorSet = false;
   const detachGestures = attachGestures(canvas, {
     hover(p) {
       let cursor = '';
@@ -218,11 +220,13 @@ export function createChart(canvas, deps) {
           break;
         }
       }
-      api.setCursor(cursor);
+      if (cursor || cursorSet) api.setCursor(cursor);
+      cursorSet = !!cursor;
     },
     leave() {
       for (const plugin of plugins) if (plugin.leave) plugin.leave();
-      api.setCursor('');
+      if (cursorSet) api.setCursor('');
+      cursorSet = false;
     },
     press(p) {
       active = plugins.find((plugin) => plugin.pointerDown && plugin.pointerDown(p)) || null;

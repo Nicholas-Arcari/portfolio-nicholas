@@ -9,6 +9,7 @@
 //
 // Ogni testo entra con textContent, mai come HTML.
 import { createChart } from './kitChart.js';
+import { createSourceChart } from './kitSource.js';
 import { kitLabels } from './kitLabels.js';
 import { createPlayer } from './kitPlayer.js';
 import { handles as handlesPlugin, zoomPan } from './kitPlugins.js';
@@ -359,5 +360,62 @@ export function createFigure(options) {
 /** Releases the charts and the controls inside a region that is about to be replaced. */
 export function releaseFigures(region) {
   for (const figure of region.querySelectorAll('figure.kit-figure')) if (figure.kit) figure.kit.destroy();
-  for (const box of region.querySelectorAll('.kit-controls')) if (box.kitRelease) box.kitRelease();
+  for (const box of region.querySelectorAll('.kit-controls, .kit-stage')) if (box.kitRelease) box.kitRelease();
+}
+
+/**
+ * A canvas that draws itself (an animation, an editor: kitSource.js) as a
+ * chart of the kit, in the program: the canvas goes into a box of its own
+ * (kit-plot) with the buttons of the zoom and the hint, and the controller
+ * follows its width. `options`: palette, lib (the library of the homework),
+ * lang, plugins (zoomPan(zoom) by default), zoom (the options of that
+ * zoomPan: { drag: false } leaves the mouse and one finger to the canvas,
+ * panKeys: 'shift' moves the view with shift + arrows), schedule. Returns { stage, chart }:
+ * the stage takes the place of the canvas in the page, and carries
+ * kitRelease (releaseFigures calls it).
+ */
+export function createSourceStage(canvas, source, { palette, lib, lang = 'en', plugins = null, zoom = {}, schedule = null }) {
+  const labels = kitLabels(lang);
+  const plot = el('div', { class: 'kit-plot' }, canvas);
+  const zoomIn = el('button', { type: 'button', 'aria-label': labels.zoomIn, title: labels.zoomIn, text: '+' });
+  const zoomOut = el('button', { type: 'button', 'aria-label': labels.zoomOut, title: labels.zoomOut, text: '-', disabled: true });
+  const reset = el('button', { type: 'button', 'aria-label': labels.reset, title: labels.reset, text: '⤢', disabled: true });
+  const tools = el('div', { class: 'kit-tools', role: 'group', 'aria-label': labels.tools, hidden: true }, zoomIn, zoomOut, reset);
+  const hint = el('p', { class: 'kit-hint', 'aria-live': 'polite', text: labels.hint, hidden: true });
+  const stage = el('div', { class: 'kit-stage kit-source' }, plot, tools, hint);
+  const chart = createSourceChart(canvas, source, { palette, pointerLabel: lib.attachPointerLabel, plugins: plugins || [zoomPan(zoom)], schedule });
+  zoomIn.addEventListener('click', () => chart.zoomBy(1.5));
+  zoomOut.addEventListener('click', () => chart.zoomBy(1 / 1.5));
+  reset.addEventListener('click', () => chart.resetView());
+  chart.on('render', ({ frame }) => {
+    tools.hidden = !frame;
+  });
+  chart.on('view', () => {
+    const zoomed = chart.isZoomed();
+    tools.classList.toggle('is-zoomed', zoomed);
+    zoomOut.disabled = !zoomed;
+    reset.disabled = !zoomed;
+  });
+  let hintTimer = 0;
+  chart.on('hint', () => {
+    hint.hidden = false;
+    clearTimeout(hintTimer);
+    hintTimer = setTimeout(() => {
+      hint.hidden = true;
+    }, HINT_MS);
+  });
+  const observer = typeof ResizeObserver === 'function'
+    ? new ResizeObserver((entries) => {
+      const width = Math.round(entries[entries.length - 1].contentRect.width);
+      if (width > 0) chart.resize(width);
+    })
+    : null;
+  if (observer) observer.observe(canvas);
+  stage.kitRelease = () => {
+    clearTimeout(hintTimer);
+    if (observer) observer.disconnect();
+    chart.destroy();
+    stage.kitRelease = null;
+  };
+  return { stage, chart };
 }

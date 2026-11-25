@@ -806,6 +806,8 @@ body.dark-mode .hw1-key strong { color: #ff6b81; }
 .hw1-bit.is-current { background: #d52349; color: #fff; }
 .hw1-canvas { display: block; width: 100%; max-width: 100%; }
 .hw1-anim { max-width: 560px; margin: 0 auto; border-radius: 6px; }
+/* l'animazione dentro il riquadro del kit: e' il riquadro a restare largo al massimo 560px, con i pulsanti dello zoom sul suo angolo */
+.hw1-anim-stage { max-width: 560px; margin: 0 auto; }
 .hw1-caption { min-height: 3.2em; font-size: 0.9em; margin-top: 0.6em; overflow-wrap: anywhere; }
 .hw1-charts {
     display: grid;
@@ -2589,6 +2591,10 @@ body.dark-mode .hw7-field textarea {
     touch-action: none;
     border-radius: 4px;
 }
+/* nel riquadro del kit il dito continua a disegnare il prior, senza far scorrere la pagina */
+.kit-plot canvas.hw7-editor {
+    touch-action: none;
+}
 .hw7-editor:focus-visible {
     outline: 2px solid #d52349;
     outline-offset: 2px;
@@ -2631,7 +2637,8 @@ body.dark-mode .hw7-table tr.hw7-towards-spam > td {
     outline: 2px solid #d52349;
     outline-offset: 2px;
 }
-.kit-figure .kit-tools {
+.kit-figure .kit-tools,
+.kit-source .kit-tools {
     position: absolute;
     top: 6px;
     right: 6px;
@@ -2642,16 +2649,21 @@ body.dark-mode .hw7-table tr.hw7-towards-spam > td {
     z-index: 3;
 }
 .kit-figure:hover .kit-tools,
+.kit-source:hover .kit-tools,
 .kit-figure:focus-within .kit-tools,
-.kit-figure .kit-tools.is-zoomed {
+.kit-source:focus-within .kit-tools,
+.kit-figure .kit-tools.is-zoomed,
+.kit-source .kit-tools.is-zoomed {
     opacity: 1;
 }
 @media (hover: none) {
-    .kit-figure .kit-tools {
+    .kit-figure .kit-tools,
+    .kit-source .kit-tools {
         opacity: 1;
     }
 }
-.kit-figure .kit-tools button {
+.kit-figure .kit-tools button ,
+.kit-source .kit-tools button  {
     min-width: 28px;
     height: 28px;
     margin: 0;
@@ -2667,21 +2679,25 @@ body.dark-mode .hw7-table tr.hw7-towards-spam > td {
     text-transform: none;
     cursor: pointer;
 }
-.kit-figure .kit-tools button:hover:not(:disabled) {
+.kit-figure .kit-tools button:hover:not(:disabled) ,
+.kit-source .kit-tools button:hover:not(:disabled)  {
     border-color: #d52349;
     background: rgba(255, 255, 255, 0.92);
     color: #d52349 !important;
 }
-.kit-figure .kit-tools button:disabled {
+.kit-figure .kit-tools button:disabled ,
+.kit-source .kit-tools button:disabled  {
     opacity: 0.4;
     cursor: default;
 }
-body.dark-mode .kit-figure .kit-tools button {
+body.dark-mode .kit-figure .kit-tools button ,
+body.dark-mode .kit-source .kit-tools button  {
     border-color: #3a3a3a;
     background: rgba(30, 30, 30, 0.92);
     color: #dddddd !important;
 }
-body.dark-mode .kit-figure .kit-tools button:hover:not(:disabled) {
+body.dark-mode .kit-figure .kit-tools button:hover:not(:disabled) ,
+body.dark-mode .kit-source .kit-tools button:hover:not(:disabled)  {
     background: rgba(30, 30, 30, 0.92);
     color: #ff6b81 !important;
 }

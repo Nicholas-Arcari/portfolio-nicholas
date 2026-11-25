@@ -31,6 +31,9 @@ import { useHidden } from './legendState';
 import { ChartFigure } from './chartkit/ChartFigure';
 import { ChartControls } from './chartkit/ChartControls';
 import { useModel } from './chartkit/useModel';
+import { useChartTools } from './chartkit/ChartTools';
+import { createSourceChart } from './chartkit/kitSource';
+import { zoomPan } from './chartkit/kitPlugins';
 import * as hw from './hw7/homework7';
 import * as view from './hw7/view';
 import { HW7_TEXTS, originalAssignment } from './hw7/texts';
@@ -156,23 +159,34 @@ const DataTable = ({ id = null, title = null, className = '', columns, rows, not
 const PriorEditor = ({ heights, onChange, palette, decimal, label, handleLabel }) => {
   const ref = useRef(null);
   const controls = useRef(null);
+  // the canvas is a chart of the kit (chartkit/kitSource.js): zoom with ctrl + wheel, the buttons or two fingers;
+  // the mouse and one finger still draw the prior, and shift + arrows move a zoomed view
+  const chartRef = useRef(null);
+  const { attach, tools } = useChartTools();
   const change = useRef(onChange);
   useEffect(() => {
     change.current = onChange;
   }, [onChange]);
   useEffect(() => {
     const canvas = ref.current;
-    const editor = hw.attachPriorEditor(canvas, { heights, onChange: (h) => change.current(h), palette, decimal, label: handleLabel });
+    let chart = null;
+    const editor = hw.attachPriorEditor(canvas, { heights, onChange: (h) => change.current(h), palette, decimal, label: handleLabel, requestDraw: () => chart && chart.redraw() });
     controls.current = editor;
+    chart = createSourceChart(canvas, editor, { palette, pointerLabel: hw.attachPointerLabel, plugins: [zoomPan({ drag: false, panKeys: 'shift' })] });
+    chartRef.current = chart;
+    const detachTools = attach(chart);
     const observer = new ResizeObserver((entries) => {
       const width = Math.round(entries[entries.length - 1].contentRect.width);
-      if (width > 0) editor.redraw(width);
+      if (width > 0) chart.resize(width);
     });
     observer.observe(canvas);
     return () => {
       observer.disconnect();
+      detachTools();
+      chart.destroy();
       editor.destroy();
       controls.current = null;
+      chartRef.current = null;
     };
     // the editor is created once; the effects below pass it the new values
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -182,11 +196,19 @@ const PriorEditor = ({ heights, onChange, palette, decimal, label, handleLabel }
   }, [heights]);
   useEffect(() => {
     if (controls.current) controls.current.setPalette(palette);
+    if (chartRef.current) chartRef.current.setPalette(palette);
   }, [palette]);
   useEffect(() => {
     if (controls.current) controls.current.setDecimal(decimal);
   }, [decimal]);
-  return <canvas ref={ref} className="hw1-canvas hw7-editor" tabIndex={0} role="slider" aria-label={label} aria-valuemin={0} aria-valuemax={1} />;
+  return (
+    <div className="kit-stage kit-source">
+      <div className="kit-plot">
+        <canvas ref={ref} className="hw1-canvas hw7-editor" tabIndex={0} role="slider" aria-label={label} aria-valuemin={0} aria-valuemax={1} />
+      </div>
+      {tools}
+    </div>
+  );
 };
 
 // L'etichetta sotto il puntatore di un disegno SVG (la rete, la mappa), la

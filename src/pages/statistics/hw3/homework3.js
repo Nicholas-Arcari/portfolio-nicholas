@@ -1859,23 +1859,23 @@ export function createTrajectoryAnimation(canvas, options) {
   let layer = null;
   let drawnK = -1;
   let geometry = null;
+  let geometryKey = '';
 
   const value = (S, step) => (quantity === 'sum' ? S : quantity === 'mean' ? S * inverse[step] : S * inverseRoot[step]);
 
-  const layout = () => {
+  // where everything lies at this width, and what it shows: all the steps and the fixed range of the quantity,
+  // or a zoomed view ({ x: [first, last step], y: [lo, hi] }) of the chart of the trajectories
+  const layout = (view, width) => {
     const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
-    const width = canvas.clientWidth || 640;
     const height = Math.round(width * ANIM_ASPECT);
-    canvas.width = Math.round(width * dpr);
-    canvas.height = Math.round(height * dpr);
-    canvas.style.height = `${height}px`;
     const m = ANIM_MARGIN;
     const inner = width - m.left - m.right;
     const plotW = Math.round(inner * (1 - ANIM_PANEL)) - 8;
     const panelX = m.left + plotW + 8;
     const panelW = width - m.right - panelX;
     const h = height - m.top - m.bottom;
-    const [y0, y1] = ranges[quantity];
+    const [x0, x1] = view && view.x ? view.x : [0, n];
+    const [y0, y1] = view && view.y ? view.y : ranges[quantity];
     return {
       dpr,
       width,
@@ -1884,7 +1884,10 @@ export function createTrajectoryAnimation(canvas, options) {
       panelX,
       panelW,
       h,
-      px: (step) => m.left + (plotW * step) / n,
+      zoomed: !!(view && (view.x || view.y)),
+      x0,
+      x1,
+      px: (step) => m.left + (plotW * (step - x0)) / (x1 - x0),
       py: (v) => m.top + h * (1 - (v - y0) / (y1 - y0)),
       y0,
       y1,
@@ -1900,7 +1903,13 @@ export function createTrajectoryAnimation(canvas, options) {
     ctx.rect(ANIM_MARGIN.left, ANIM_MARGIN.top, G.plotW, G.h);
     ctx.clip();
     const first = quantity === 'sum' ? Math.max(0, from) : Math.max(1, from);
-    const stride = Math.max(1, Math.floor((to - first) / (2 * G.plotW)));
+    const lo = G.zoomed ? Math.max(first, Math.floor(G.x0)) : first;
+    const hi = G.zoomed ? Math.min(to, Math.ceil(G.x1)) : to;
+    if (hi <= lo) {
+      ctx.restore();
+      return;
+    }
+    const stride = G.zoomed ? Math.max(1, Math.floor((G.x1 - G.x0) / (2 * G.plotW))) : Math.max(1, Math.floor((to - first) / (2 * G.plotW)));
     for (let j = D - 1; j >= 0; j--) {
       if (hidden.includes(j === 0 ? 'first' : 'others')) continue;
       const path = paths[j];
@@ -1908,9 +1917,9 @@ export function createTrajectoryAnimation(canvas, options) {
       ctx.globalAlpha = j === 0 ? 1 : 0.32;
       ctx.lineWidth = j === 0 ? 2 : 1;
       ctx.beginPath();
-      ctx.moveTo(G.px(first), G.py(value(path[first], first)));
-      for (let s = first + stride; s < to; s += stride) ctx.lineTo(G.px(s), G.py(value(path[s], s)));
-      ctx.lineTo(G.px(to), G.py(value(path[to], to)));
+      ctx.moveTo(G.px(lo), G.py(value(path[lo], lo)));
+      for (let s = lo + stride; s < hi; s += stride) ctx.lineTo(G.px(s), G.py(value(path[s], s)));
+      ctx.lineTo(G.px(hi), G.py(value(path[hi], hi)));
       ctx.stroke();
     }
     ctx.restore();
@@ -1970,16 +1979,23 @@ export function createTrajectoryAnimation(canvas, options) {
     };
   };
 
-  const render = () => {
-    if (!geometry) {
-      geometry = layout();
+  const paint = (target, view, width) => {
+    const key = JSON.stringify([width, view, quantity]);
+    if (!geometry || geometryKey !== key) {
+      geometry = layout(view, width);
+      geometryKey = key;
       drawnK = -1;
     }
     const G = geometry;
-    if (!layer || layer.width !== canvas.width || layer.height !== canvas.height) {
+    if (target.width !== Math.round(G.width * G.dpr) || target.height !== Math.round(G.height * G.dpr)) {
+      target.width = Math.round(G.width * G.dpr);
+      target.height = Math.round(G.height * G.dpr);
+    }
+    target.style.height = `${G.height}px`;
+    if (!layer || layer.width !== target.width || layer.height !== target.height) {
       layer = layer || document.createElement('canvas');
-      layer.width = canvas.width;
-      layer.height = canvas.height;
+      layer.width = target.width;
+      layer.height = target.height;
       drawnK = -1;
     }
     if (drawnK > k || drawnK < 0) {
@@ -1991,7 +2007,7 @@ export function createTrajectoryAnimation(canvas, options) {
       drawnK = k;
     }
 
-    const ctx = canvas.getContext('2d');
+    const ctx = target.getContext('2d');
     ctx.setTransform(G.dpr, 0, 0, G.dpr, 0, 0);
     const m = ANIM_MARGIN;
     ctx.fillStyle = palette.background;
@@ -2009,7 +2025,7 @@ export function createTrajectoryAnimation(canvas, options) {
       ctx.fillText(axisLabel(v, decimal), m.left - 4, G.py(v) + 4);
     }
     ctx.textAlign = 'center';
-    for (const v of [0, Math.round(n / 2), n]) ctx.fillText(axisLabel(v, decimal), G.px(v), m.top + G.h + 15);
+    for (const v of G.zoomed ? niceTicks(G.x0, G.x1, 4).filter((s) => s >= G.x0 && s <= G.x1) : [0, Math.round(n / 2), n]) ctx.fillText(axisLabel(v, decimal), G.px(v), m.top + G.h + 15);
     ctx.strokeRect(m.left, m.top, G.plotW, G.h);
     ctx.strokeRect(G.panelX, m.top, G.panelW, G.h);
 
@@ -2095,6 +2111,12 @@ export function createTrajectoryAnimation(canvas, options) {
         ctx.stroke();
       }
     }
+  };
+
+  // the drawing: by the chart of the kit that hosts the canvas (requestDraw: zoom and panning), or here, everything
+  const requestDraw = options.requestDraw || (() => paint(canvas, null, canvas.clientWidth || 640));
+  const render = () => {
+    requestDraw();
     onUpdate(status());
     // the label under a still pointer follows the frames
     if (detachLabel) detachLabel.refresh();
@@ -2118,13 +2140,15 @@ export function createTrajectoryAnimation(canvas, options) {
       return text ? { rect: { x: G.panelX, y: yTop, width: G.panelW, height: G.py(from) - yTop }, text } : null;
     }
     if (x < m.left || x > m.left + G.plotW) return null;
-    const step = Math.max(1, Math.min(k, Math.round(((x - m.left) / G.plotW) * n)));
+    const step = Math.max(G.zoomed ? Math.max(1, Math.ceil(G.x0)) : 1, Math.min(G.zoomed ? Math.min(k, Math.floor(G.x1)) : k, Math.round(G.x0 + ((x - m.left) / G.plotW) * (G.x1 - G.x0))));
+    // a step not reached yet (a zoomed view beyond the animation) has nothing to tell
+    if (step > k) return null;
     if (k === 0) return null;
     const theory = quantityMoments(mom, step, quantity);
     const text = describe({ kind: 'step', quantity, step, first: value(paths[0][step], step), mean: theory.mean, sd: theory.sd, show: { first: !hidden.includes('first'), band: !hidden.includes('band') } });
     return text ? { rect: { x: G.px(step) - 3, y: m.top, width: 6, height: G.h }, text } : null;
   };
-  const detachLabel = typeof document !== 'undefined' && canvas.parentElement ? attachPointerLabel(canvas, locate) : null;
+  const detachLabel = typeof document !== 'undefined' && canvas.parentElement && !options.requestDraw ? attachPointerLabel(canvas, locate) : null;
 
   const advance = (target) => {
     if (!generators) generators = Array.from({ length: A }, (_, j) => attackerGenerator(seed, model, j));
@@ -2222,6 +2246,14 @@ export function createTrajectoryAnimation(canvas, options) {
       render();
     },
     status,
+    // a source of the kit (chartkit/kitSource.js): the frame on screen in a view, and what is under the pointer
+    draw: (target, view, width) => paint(target, view, width),
+    frame(view, width) {
+      const G = layout(view, width);
+      return { plot: { x: ANIM_MARGIN.left, y: ANIM_MARGIN.top, w: G.plotW, h: G.h }, x: { min: G.x0, max: G.x1, log: false }, y: { min: G.y0, max: G.y1, log: false }, zoom: 'xy' };
+    },
+    height: (width) => Math.round(width * ANIM_ASPECT),
+    locate: (x, y) => locate(x, y),
     destroy() {
       playing = false;
       cancelAnimationFrame(frame);

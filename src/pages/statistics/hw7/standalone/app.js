@@ -1620,9 +1620,12 @@ function tryPriorBox() {
     }),
   );
   if (priorEditor) {
-    priorEditor.observer.disconnect();
+    if (priorEditor.stage.kitRelease) priorEditor.stage.kitRelease();
     priorEditor.editor.destroy();
   }
+  // the chart of the kit that hosts the canvas (chartkit/kitSource.js): zoom with ctrl + wheel, the buttons or two
+  // fingers; the mouse and one finger still draw the prior, and shift + arrows move a zoomed view
+  let editorChart = null;
   const canvas = h('canvas', { class: 'editor', tabindex: 0, role: 'slider', 'aria-label': T.editorLabel, 'aria-valuemin': 0, 'aria-valuemax': 1 });
   const editor = hw.attachPriorEditor(canvas, {
     heights: p.heights,
@@ -1638,20 +1641,18 @@ function tryPriorBox() {
     palette: palette(),
     decimal: F.decimal,
     label: T.handle,
+    requestDraw: () => editorChart && editorChart.redraw(),
   });
-  const observer = new ResizeObserver((entries) => {
-    const width = Math.round(entries[entries.length - 1].contentRect.width);
-    if (width > 0) editor.redraw(width);
-  });
-  observer.observe(canvas);
-  priorEditor = { editor, observer };
+  const { stage, chart } = kit.createSourceStage(canvas, editor, { palette: palette(), lib: hw, lang: state.lang, zoom: { drag: false, panKeys: 'shift' } });
+  editorChart = chart;
+  priorEditor = { editor, stage };
   buildShapes();
   return tryBox(
     'hw7-try-prior',
     text.sections.tryPrior,
     h('p', { text: T.intro }),
     shapes,
-    canvas,
+    stage,
     choices(T.dataLabel, view.PRIOR_DATA.map((k) => [k, T.data[k]]), p.data, (k) => {
       p.data = k;
       update();

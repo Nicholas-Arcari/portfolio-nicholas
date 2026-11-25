@@ -70,6 +70,8 @@ const state = {
 };
 let text = HW1_TEXTS[state.lang];
 let animation = null;
+// the chart of the kit that hosts the canvas of the animation (zoom and panning)
+let animationChart = null;
 const regions = {};
 const controls = {};
 const results = new Map();
@@ -142,6 +144,7 @@ function redrawAll() {
   // the charts take the colours of the theme, and the animation too, where it is
   for (const fig of document.querySelectorAll('#app figure')) if (fig.kit) fig.kit.chart.setPalette(palette());
   if (animation) animation.setPalette(palette());
+  if (animationChart) animationChart.setPalette(palette());
 }
 
 function select(options, value, onChange) {
@@ -359,10 +362,6 @@ function updateTask() {
 // 2. OPTIONAL - GURU LEVEL
 // ---------------------------------------------------------------------------
 
-const animationResizer = new ResizeObserver(() => {
-  if (animation) animation.redraw();
-});
-
 function guruSection() {
   regions.guru = h('div');
   return h(
@@ -380,7 +379,6 @@ function rebuildAnimation(curve, G, k, Q) {
     animation.destroy();
     animation = null;
   }
-  animationResizer.disconnect();
   const g = text.guru;
   const bits = k.toString(2);
   const canvas = h('canvas', { class: 'chart anim', role: 'img', 'aria-label': text.sections.guru });
@@ -407,6 +405,10 @@ function rebuildAnimation(curve, G, k, Q) {
     state.speed = SPEEDS.includes(Number(value)) ? Number(value) : 1;
     animation.setSpeed(state.speed);
   });
+  // the canvas in a box of the kit, as a chart: zoom and panning while the animation goes on
+  const { stage, chart } = kit.createSourceStage(canvas, { draw: (...a) => animation.draw(...a), frame: (...a) => animation.frame(...a), height: (...a) => animation.height(...a) }, { palette: palette(), lib: hw, lang: state.lang });
+  stage.classList.add('anim-stage');
+  animationChart = chart;
   fill(
     regions.guru,
     h(
@@ -423,7 +425,7 @@ function rebuildAnimation(curve, G, k, Q) {
       ),
     ),
     state.method === 'double-and-add' ? bitsLine : null,
-    canvas,
+    stage,
     caption,
   );
   const onUpdate = (status) => {
@@ -434,8 +436,7 @@ function rebuildAnimation(curve, G, k, Q) {
     const current = state.method === 'double-and-add' && status.op ? status.op.bitIndex : null;
     bitsLine.querySelectorAll('.bit').forEach((el, i) => el.classList.toggle('is-current', i === current));
   };
-  animation = hw.createAnimation(canvas, { curve, G, k, method: state.method, speed: state.speed, palette: palette(), onUpdate });
-  animationResizer.observe(canvas);
+  animation = hw.createAnimation(canvas, { curve, G, k, method: state.method, speed: state.speed, palette: palette(), onUpdate, requestDraw: () => animationChart && animationChart.redraw() });
 }
 
 // ---------------------------------------------------------------------------

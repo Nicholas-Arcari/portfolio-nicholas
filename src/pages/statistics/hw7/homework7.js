@@ -3295,7 +3295,7 @@ const HANDLE_RADIUS = 7;
  * up and down move it). onChange(heights) after every change. Returns the
  * controls: setHeights, setPalette, setDecimal, redraw, destroy.
  */
-export function attachPriorEditor(canvas, { heights: initial, onChange = () => {}, palette: initialPalette = DEFAULT_PALETTE, decimal: initialDecimal = '.', label = (i, h) => `${i}: ${h}` }) {
+export function attachPriorEditor(canvas, { heights: initial, onChange = () => {}, palette: initialPalette = DEFAULT_PALETTE, decimal: initialDecimal = '.', label = (i, h) => `${i}: ${h}`, requestDraw: request = null }) {
   let heights = [...initial];
   let palette = { ...DEFAULT_PALETTE, ...initialPalette };
   let decimal = initialDecimal;
@@ -3303,17 +3303,37 @@ export function attachPriorEditor(canvas, { heights: initial, onChange = () => {
   let selected = 0;
   let focused = false;
   let width = 0;
-  const geometry = () => {
-    const w = width || canvas.clientWidth || 480;
+  // the view drawn last (null: the whole square), which the pointer reads too
+  let shown = null;
+  const geometry = (view = shown, known = width) => {
+    const w = known || canvas.clientWidth || 480;
     const height = Math.round(w * EDITOR_ASPECT);
     const m = EDITOR_MARGIN;
     const pw = w - m.left - m.right;
     const ph = height - m.top - m.bottom;
-    return { w, height, px: (x) => m.left + x * pw, py: (h) => m.top + (1 - h) * ph, height1: (y) => clamp(1 - (y - m.top) / ph, 0, 1), m, pw, ph };
+    const [x0, x1] = view && view.x ? view.x : [0, 1];
+    const [y0, y1] = view && view.y ? view.y : [0, 1];
+    return {
+      w,
+      height,
+      zoomed: !!(view && (view.x || view.y)),
+      x0,
+      x1,
+      y0,
+      y1,
+      px: (x) => m.left + ((x - x0) / (x1 - x0)) * pw,
+      py: (h) => m.top + (1 - (h - y0) / (y1 - y0)) * ph,
+      height1: (y) => clamp(y0 + (1 - (y - m.top) / ph) * (y1 - y0), 0, 1),
+      m,
+      pw,
+      ph,
+    };
   };
-  const render = () => {
-    const G = geometry();
-    const { ctx } = setupCanvas(canvas, EDITOR_ASPECT, G.w);
+  const paint = (target, view, known) => {
+    shown = view;
+    if (known) width = known;
+    const G = geometry(view, known);
+    const { ctx } = setupCanvas(target, EDITOR_ASPECT, G.w);
     ctx.fillStyle = palette.background;
     ctx.fillRect(0, 0, G.w, G.height);
     ctx.font = '11px sans-serif';
@@ -3321,8 +3341,8 @@ export function attachPriorEditor(canvas, { heights: initial, onChange = () => {
     ctx.fillStyle = palette.text;
     ctx.lineWidth = 1;
     ctx.textAlign = 'center';
-    for (let i = 0; i <= 5; i++) {
-      const x = i / 5;
+    // the ticks of x: six without zoom, round values in a zoomed view
+    for (const x of G.zoomed ? niceTicks(G.x0, G.x1, 5).filter((v) => v >= G.x0 && v <= G.x1) : [0, 1, 2, 3, 4, 5].map((i) => i / 5)) {
       ctx.beginPath();
       ctx.moveTo(G.px(x), G.m.top);
       ctx.lineTo(G.px(x), G.m.top + G.ph);
@@ -3330,6 +3350,13 @@ export function attachPriorEditor(canvas, { heights: initial, onChange = () => {
       xTickLabel(ctx, axisLabel(x, decimal), G.px(x), G.m.top + G.ph + 16, G.w);
     }
     ctx.strokeRect(G.m.left, G.m.top, G.pw, G.ph);
+    if (G.zoomed) {
+      // the shape and the handles stay inside the frame
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(G.m.left, G.m.top, G.pw, G.ph);
+      ctx.clip();
+    }
     // the shape, filled
     const color = palette.series[0];
     ctx.beginPath();
@@ -3363,8 +3390,11 @@ export function attachPriorEditor(canvas, { heights: initial, onChange = () => {
         ctx.stroke();
       }
     });
-    canvas.setAttribute('aria-valuetext', label(selected, heights[selected]));
+    if (G.zoomed) ctx.restore();
+    target.setAttribute('aria-valuetext', label(selected, heights[selected]));
   };
+  // the drawing: by the chart of the kit that hosts the canvas (requestDraw: zoom and panning), or here, the whole square
+  const render = () => (request ? request() : paint(canvas, null, width));
   const changed = () => {
     render();
     onChange([...heights]);
@@ -3386,19 +3416,30 @@ export function attachPriorEditor(canvas, { heights: initial, onChange = () => {
     });
     // anywhere in the column of a handle picks it too: easier with a finger
     if (best < 0) {
-      const i = Math.round(((x - G.m.left) / G.pw) * (HANDLES - 1));
+      const i = Math.round((G.x0 + ((x - G.m.left) / G.pw) * (G.x1 - G.x0)) * (HANDLES - 1));
       if (i >= 0 && i < HANDLES && Math.abs(G.px(HANDLE_X[i]) - x) < 14 && y >= G.m.top - 8 && y <= G.m.top + G.ph + 8) best = i;
     }
     return best;
   };
+  const fingers = new Set();
   const onDown = (e) => {
+    if (e.pointerType === 'touch') fingers.add(e.pointerId);
+    if (fingers.size > 1) {
+      if (dragging >= 0) {
+        dragging = -1;
+        render();
+      }
+      return;
+    }
     const [x, y] = point(e);
     const i = locate(x, y);
     if (i < 0) return;
     dragging = i;
     selected = i;
     if (canvas.setPointerCapture) canvas.setPointerCapture(e.pointerId);
-    e.preventDefault();
+    // the mouse: no text selected while drawing (a finger is kept by touch-action: none; in Firefox a
+    // pointerdown cancelled for a finger keeps a second finger, the pinch of the kit, away)
+    if (e.pointerType !== 'touch') e.preventDefault();
     heights[i] = geometry().height1(y);
     changed();
   };
@@ -3414,12 +3455,14 @@ export function attachPriorEditor(canvas, { heights: initial, onChange = () => {
       changed();
     }
   };
-  const onUp = () => {
+  const onUp = (e) => {
+    if (e && e.pointerType === 'touch') fingers.delete(e.pointerId);
     if (dragging < 0) return;
     dragging = -1;
     render();
   };
   const onKey = (e) => {
+    if (e.shiftKey) return;
     if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
       selected = clamp(selected + (e.key === 'ArrowLeft' ? -1 : 1), 0, HANDLES - 1);
       render();
@@ -3462,6 +3505,13 @@ export function attachPriorEditor(canvas, { heights: initial, onChange = () => {
       width = nextWidth;
       render();
     },
+    // a source of the kit (chartkit/kitSource.js): the drawing in a view
+    draw: (target, view, known) => paint(target, view, known),
+    frame(view, known) {
+      const G = geometry(view, known);
+      return { plot: { x: G.m.left, y: G.m.top, w: G.pw, h: G.ph }, x: { min: G.x0, max: G.x1, log: false }, y: { min: G.y0, max: G.y1, log: false }, zoom: 'xy' };
+    },
+    height: (known) => Math.round(known * EDITOR_ASPECT),
     destroy() {
       canvas.removeEventListener('pointerdown', onDown);
       canvas.removeEventListener('pointermove', onMove);

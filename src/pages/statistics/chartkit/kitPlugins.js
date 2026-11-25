@@ -17,9 +17,12 @@ const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
  * it is enlarged (with shift it always selects); a double click and the
  * keys 0 or Escape go back to the whole chart; + and - zoom, the arrows
  * move. A plain wheel scrolls the page, and the chart says (event 'hint')
- * how to zoom instead.
+ * how to zoom instead. On a canvas where dragging already means something
+ * (a point to move, a curve to draw) `drag: false` leaves the drag to it,
+ * and `panKeys: 'shift'` moves the view only with shift + arrows, when the
+ * arrows are taken too.
  */
-export function zoomPan() {
+export function zoomPan({ drag = true, panKeys = 'arrows' } = {}) {
   let chart = null;
   let mode = null; // 'pan' or 'box' during a drag
   let box = null;
@@ -31,12 +34,12 @@ export function zoomPan() {
     },
     hover(p) {
       const f = chart.getFrame();
-      if (!inPlot(f, p.x, p.y)) return '';
+      if (!drag || !inPlot(f, p.x, p.y)) return '';
       return chart.isZoomed() && !p.shift ? 'grab' : 'zoom-in';
     },
     pointerDown(p) {
       const f = chart.getFrame();
-      if (!f || p.pointerType === 'touch' || !inPlot(f, p.x, p.y)) return false;
+      if (!drag || !f || p.pointerType === 'touch' || !inPlot(f, p.x, p.y)) return false;
       if (chart.isZoomed() && !p.shift) {
         mode = 'pan';
         last = p;
@@ -121,7 +124,7 @@ export function zoomPan() {
         return true;
       }
       const step = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
-      if (!step || !chart.isZoomed()) return false;
+      if (!step || !chart.isZoomed() || (panKeys === 'shift' && !e.shiftKey)) return false;
       chart.setView(panView(chart.getView(), f, chart.getFullView(), -step[0] * f.plot.w * 0.1, -step[1] * f.plot.h * 0.1));
       return true;
     },
