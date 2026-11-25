@@ -37,21 +37,21 @@ const Home = () => {
           <div className="row aln-center">
             <div className="col-4 col-6-medium col-12-small">
               <section>
-                <span className="image featured"><img src="images/img5.jpg" alt="Cybersecurity" /></span>
+                <span className="image featured"><img src="images/img5.webp" alt="Cybersecurity" /></span>
                 <header><h3>{t('home.features.cyber.title')}</h3></header>
                 <p>{t('home.features.cyber.text')}</p>
               </section>
             </div>
             <div className="col-4 col-6-medium col-12-small">
               <section>
-                <span className="image featured"><img src="images/img6.jpg" alt="Web Development" /></span>
+                <span className="image featured"><img src="images/img6.webp" alt="Web Development" /></span>
                 <header><h3>{t('home.features.fullstack.title')}</h3></header>
                 <p>{t('home.features.fullstack.text')}</p>
               </section>
             </div>
             <div className="col-4 col-6-medium col-12-small">
               <section>
-                <span className="image featured"><img src="images/img7.jpg" alt="DevOps" /></span>
+                <span className="image featured"><img src="images/img7.webp" alt="DevOps" /></span>
                 <header><h3>{t('home.features.devops.title')}</h3></header>
                 <p>{t('home.features.devops.text')}</p>
               </section>
@@ -161,7 +161,7 @@ const Home = () => {
                 {showCyber && (
                     <div className="cyber-content-wrapper fade-in">
                       <br /><br />
-                        <a href="https://github.com/Nicholas-Arcari" className="image featured"><img src="images/img1.jpg" alt="Cybersecurity Lab" /></a>
+                        <a href="https://github.com/Nicholas-Arcari" className="image featured"><img src="images/img1.webp" alt="Cybersecurity Lab" /></a>
                         <p>{t('home.cyber.intro')}</p>
                         <hr />
 

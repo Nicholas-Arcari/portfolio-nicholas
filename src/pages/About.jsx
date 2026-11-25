@@ -33,7 +33,7 @@ const About = () => {
                   {/* MODIFICA QUI: Applicato borderRadius anche al contenitore (span) per curvare la cornice */}
                   <span className="image fit" style={{ borderRadius: '15px' }}>
                     <img
-                      src="images/test.jpg"
+                      src="images/about.webp"
                       alt="Nicholas Arcari"
                       style={{ borderRadius: '15px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}
                     />
