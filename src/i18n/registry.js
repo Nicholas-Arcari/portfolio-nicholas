@@ -4,6 +4,8 @@
 // arrivano insieme alla pagina, invece di stare tutte nel pacchetto iniziale
 // del sito, e la Home scarica solo le sue.
 // Regola: un file che chiama t('sezione.chiave') importa '<...>/i18n/sezione'.
+// La build la controlla (build/i18n-check.js), insieme alla stessa struttura
+// in italiano e in inglese e all'esistenza di ogni chiave usata.
 export const translations = { it: {}, en: {} };
 
 export function register(section, { it, en }) {
