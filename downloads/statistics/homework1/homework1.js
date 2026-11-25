@@ -1526,16 +1526,51 @@ function setupCanvas(canvas, aspect, knownWidth = 0) {
   return { ctx, width, height };
 }
 
-function drawScene(canvas, state, palette) {
+const SCENE_MARGIN = { left: 30, right: 10, top: 10, bottom: 26 };
+
+/**
+ * Where the square of drawScene lies on a canvas of this width (the canvas
+ * is square), and the cells it shows: all p x p, or those of a zoomed view
+ * ({ x: [x0, x1], y: [y0, y1] } in cells, from 0 to p), stretched over the
+ * same square.
+ */
+function sceneLayout(p, width, view = null) {
+  const margin = SCENE_MARGIN;
+  const size = Math.min(width - margin.left - margin.right, width - margin.top - margin.bottom);
+  const [x0, x1] = view && view.x ? view.x : [0, p];
+  const [y0, y1] = view && view.y ? view.y : [0, p];
+  const cellX = size / (x1 - x0);
+  const cellY = size / (y1 - y0);
+  return {
+    margin,
+    size,
+    x0,
+    x1,
+    y0,
+    y1,
+    cellX,
+    cellY,
+    zoomed: !!(view && (view.x || view.y)),
+    X: (x) => margin.left + (x + 0.5 - x0) * cellX,
+    Y: (y) => margin.top + size - (y + 0.5 - y0) * cellY,
+  };
+}
+
+/** Where the square of the animation lies on a canvas of this width, and the cells it shows: its frame for the interactive charts (chartkit). */
+function sceneFrame(p, width, view = null) {
+  const L = sceneLayout(p, width, view);
+  return { plot: { x: L.margin.left, y: L.margin.top, w: L.size, h: L.size }, x: { min: L.x0, max: L.x1, log: false }, y: { min: L.y0, max: L.y1, log: false }, zoom: 'xy' };
+}
+
+function drawScene(canvas, state, palette, view = null, knownWidth = 0) {
   const { curve, points, subgroupLabels, op, phase, t, reached } = state;
   const { p } = curve;
-  const { ctx, width, height } = setupCanvas(canvas, 1);
-  const margin = { left: 30, right: 10, top: 10, bottom: 26 };
-  const size = Math.min(width - margin.left - margin.right, height - margin.top - margin.bottom);
-  const cell = size / p;
-  const X = (x) => margin.left + (x + 0.5) * cell;
-  const Y = (y) => margin.top + size - (y + 0.5) * cell;
-  const small = p <= 31;
+  const { ctx, width, height } = setupCanvas(canvas, 1, knownWidth);
+  const L = sceneLayout(p, width, view);
+  const { margin, size, X, Y } = L;
+  const cell = Math.min(L.cellX, L.cellY);
+  // the grid and the names of the multiples when the cells are wide enough: up to p = 31, or in a zoomed view
+  const small = L.zoomed ? cell >= 10 : p <= 31;
   const dot = Math.max(2, Math.min(cell * 0.32, 7));
 
   ctx.fillStyle = palette.background;
@@ -1544,7 +1579,7 @@ function drawScene(canvas, state, palette) {
   // frame and grid
   ctx.strokeStyle = palette.grid;
   ctx.lineWidth = 1;
-  if (small) {
+  if (small && !L.zoomed) {
     for (let i = 0; i <= p; i++) {
       ctx.beginPath();
       ctx.moveTo(margin.left + i * cell, margin.top);
@@ -1553,19 +1588,51 @@ function drawScene(canvas, state, palette) {
       ctx.lineTo(margin.left + size, margin.top + i * cell);
       ctx.stroke();
     }
+  } else if (small) {
+    // a zoomed view: the edges of the cells in view
+    ctx.beginPath();
+    for (let i = Math.ceil(L.x0); i <= Math.floor(L.x1); i++) {
+      ctx.moveTo(margin.left + (i - L.x0) * L.cellX, margin.top);
+      ctx.lineTo(margin.left + (i - L.x0) * L.cellX, margin.top + size);
+    }
+    for (let i = Math.ceil(L.y0); i <= Math.floor(L.y1); i++) {
+      ctx.moveTo(margin.left, margin.top + size - (i - L.y0) * L.cellY);
+      ctx.lineTo(margin.left + size, margin.top + size - (i - L.y0) * L.cellY);
+    }
+    ctx.stroke();
+    ctx.strokeRect(margin.left, margin.top, size, size);
   } else {
     ctx.strokeRect(margin.left, margin.top, size, size);
   }
   ctx.fillStyle = palette.text;
   ctx.font = '11px sans-serif';
   ctx.textAlign = 'center';
-  const tickEvery = small ? 4 : Math.ceil(p / 5 / 10) * 10;
-  for (let v = 0; v < p; v += tickEvery) {
-    ctx.fillText(String(v), X(v), margin.top + size + 15);
+  if (!L.zoomed) {
+    const tickEvery = small ? 4 : Math.ceil(p / 5 / 10) * 10;
+    for (let v = 0; v < p; v += tickEvery) {
+      ctx.fillText(String(v), X(v), margin.top + size + 15);
+      ctx.textAlign = 'right';
+      ctx.fillText(String(v), margin.left - 5, Y(v) + 4);
+      ctx.textAlign = 'center';
+    }
+  } else {
+    // a zoomed view: the values of the cells in view, about five per axis
+    const every = (span) => (span <= 12 ? 1 : span <= 30 ? 4 : Math.ceil(span / 5 / 10) * 10);
+    const ex = every(L.x1 - L.x0);
+    for (let v = Math.max(0, Math.ceil((L.x0 - 0.5) / ex) * ex); v < p && v + 0.5 <= L.x1; v += ex) ctx.fillText(String(v), X(v), margin.top + size + 15);
     ctx.textAlign = 'right';
-    ctx.fillText(String(v), margin.left - 5, Y(v) + 4);
+    const ey = every(L.y1 - L.y0);
+    for (let v = Math.max(0, Math.ceil((L.y0 - 0.5) / ey) * ey); v < p && v + 0.5 <= L.y1; v += ey) ctx.fillText(String(v), margin.left - 5, Y(v) + 4);
     ctx.textAlign = 'center';
+    // the points, the lines and the names stay inside the square
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(margin.left, margin.top, size, size);
+    ctx.clip();
   }
+  const finish = () => {
+    if (L.zoomed) ctx.restore();
+  };
 
   // the curve, and the multiples of G reached so far
   ctx.fillStyle = palette.muted;
@@ -1612,6 +1679,7 @@ function drawScene(canvas, state, palette) {
       ctx.textAlign = 'left';
       ctx.fillText(`Q = ${last.multiple}G`, X(last.point.x) + dot + 7, Y(last.point.y) + 4);
     }
+    finish();
     return;
   }
 
@@ -1669,6 +1737,7 @@ function drawScene(canvas, state, palette) {
     ctx.textAlign = 'left';
     ctx.fillText(`${op.multiple}G`, X(op.result.x) + dot + 6, Y(op.result.y) + 4);
   }
+  finish();
 }
 
 /**
@@ -1703,9 +1772,15 @@ function createAnimation(canvas, options) {
     return { op, phase: phases[phaseIndex] ? phases[phaseIndex][0] : null, duration: phases[phaseIndex] ? phases[phaseIndex][1] : 0 };
   };
 
+  const scene = () => {
+    const { op, phase } = current();
+    return { curve, points, subgroupLabels, op, phase, t, reached };
+  };
+  // the drawing: by the chart of the kit that hosts the canvas (requestDraw: zoom and panning), or here, the whole square
+  const requestDraw = options.requestDraw || (() => drawScene(canvas, scene(), palette));
   const render = () => {
     const { op, phase } = current();
-    drawScene(canvas, { curve, points, subgroupLabels, op, phase, t, reached }, palette);
+    requestDraw();
     onUpdate({ op, opIndex, opCount: ops.length, phase, playing, done: opIndex >= ops.length });
   };
 
@@ -1786,6 +1861,12 @@ function createAnimation(canvas, options) {
       render();
     },
     redraw: render,
+    // a source of the kit (chartkit/kitSource.js): the state as it is now, in a view
+    draw(target, view, width, pal) {
+      drawScene(target, scene(), pal ? { ...DEFAULT_PALETTE, ...pal } : palette, view, width);
+    },
+    frame: (view, width) => sceneFrame(curve.p, width, view),
+    height: (width) => Math.round(width),
     destroy() {
       playing = false;
       cancelAnimationFrame(frame);
@@ -2385,7 +2466,7 @@ function runCli(argv, print = console.log) {
 /** True under Node, where the downloadable program can run runCli. */
 const isNode = typeof process !== 'undefined' && !!(process.versions && process.versions.node);
 
-return { TASK, EXTENSION_PRIMES, EXPLORATION_PRIMES, P_MAX, POOLED_MAX_P, isPrime, mod, modInv, makeCurve, INFINITY, isOnCurve, formatPoint, assertPoint, negate, samePoint, addDetailed, add, curvePoints, groupOrder, pointOrder, explorationCurve, defaultBasePoint, multiples, doubleAndAdd, scalarMultiply, bruteForceLog, prng, bitLength, expectedBitFraction, pearson, spearman, chiSquarePValue, twoSidedNormalTail, SIMULATIONS, exploreSteps, explore, exploreAsync, DEFAULT_PALETTE, animationOps, createAnimation, drawBarChart, chartHeight, chartHitTest, chartHitAt, chartFrame, withView, attachChartTooltip, attachPointerLabel, drawHeatmap, reportLines, runCli, isNode };
+return { TASK, EXTENSION_PRIMES, EXPLORATION_PRIMES, P_MAX, POOLED_MAX_P, isPrime, mod, modInv, makeCurve, INFINITY, isOnCurve, formatPoint, assertPoint, negate, samePoint, addDetailed, add, curvePoints, groupOrder, pointOrder, explorationCurve, defaultBasePoint, multiples, doubleAndAdd, scalarMultiply, bruteForceLog, prng, bitLength, expectedBitFraction, pearson, spearman, chiSquarePValue, twoSidedNormalTail, SIMULATIONS, exploreSteps, explore, exploreAsync, DEFAULT_PALETTE, animationOps, sceneFrame, createAnimation, drawBarChart, chartHeight, chartHitTest, chartHitAt, chartFrame, withView, attachChartTooltip, attachPointerLabel, drawHeatmap, reportLines, runCli, isNode };
 })();
 
 // src/pages/statistics/hw1/standalone/cli.js

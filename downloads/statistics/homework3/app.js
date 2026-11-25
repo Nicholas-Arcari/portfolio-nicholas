@@ -234,7 +234,9 @@ function attachGestures(el, handlers) {
       } catch {
         // a pointer that is already gone cannot be captured: the drag still works while it stays on the element
       }
-      e.preventDefault();
+      // the mouse: no text selected while dragging. A finger is kept by touchstart (below), and in Firefox a
+      // pointerdown cancelled for a finger keeps a second finger (the pinch) away from the element
+      if (e.pointerType !== 'touch') e.preventDefault();
     }
   };
 
@@ -537,6 +539,8 @@ function createChart(canvas, deps) {
 
   // the gestures go to the plugins in order: the first that takes a press follows it to the end
   let active = null;
+  // the cursor is the kit's only when a plugin asked for one: a canvas that sets its own (a point to grab) keeps it
+  let cursorSet = false;
   const detachGestures = attachGestures(canvas, {
     hover(p) {
       let cursor = '';
@@ -547,11 +551,13 @@ function createChart(canvas, deps) {
           break;
         }
       }
-      api.setCursor(cursor);
+      if (cursor || cursorSet) api.setCursor(cursor);
+      cursorSet = !!cursor;
     },
     leave() {
       for (const plugin of plugins) if (plugin.leave) plugin.leave();
-      api.setCursor('');
+      if (cursorSet) api.setCursor('');
+      cursorSet = false;
     },
     press(p) {
       active = plugins.find((plugin) => plugin.pointerDown && plugin.pointerDown(p)) || null;
@@ -601,9 +607,12 @@ const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
  * it is enlarged (with shift it always selects); a double click and the
  * keys 0 or Escape go back to the whole chart; + and - zoom, the arrows
  * move. A plain wheel scrolls the page, and the chart says (event 'hint')
- * how to zoom instead.
+ * how to zoom instead. On a canvas where dragging already means something
+ * (a point to move, a curve to draw) `drag: false` leaves the drag to it,
+ * and `panKeys: 'shift'` moves the view only with shift + arrows, when the
+ * arrows are taken too.
  */
-function zoomPan() {
+function zoomPan({ drag = true, panKeys = 'arrows' } = {}) {
   let chart = null;
   let mode = null; // 'pan' or 'box' during a drag
   let box = null;
@@ -615,12 +624,12 @@ function zoomPan() {
     },
     hover(p) {
       const f = chart.getFrame();
-      if (!inPlot(f, p.x, p.y)) return '';
+      if (!drag || !inPlot(f, p.x, p.y)) return '';
       return chart.isZoomed() && !p.shift ? 'grab' : 'zoom-in';
     },
     pointerDown(p) {
       const f = chart.getFrame();
-      if (!f || p.pointerType === 'touch' || !inPlot(f, p.x, p.y)) return false;
+      if (!drag || !f || p.pointerType === 'touch' || !inPlot(f, p.x, p.y)) return false;
       if (chart.isZoomed() && !p.shift) {
         mode = 'pan';
         last = p;
@@ -705,7 +714,7 @@ function zoomPan() {
         return true;
       }
       const step = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
-      if (!step || !chart.isZoomed()) return false;
+      if (!step || !chart.isZoomed() || (panKeys === 'shift' && !e.shiftKey)) return false;
       chart.setView(panView(chart.getView(), f, chart.getFullView(), -step[0] * f.plot.w * 0.1, -step[1] * f.plot.h * 0.1));
       return true;
     },
@@ -1199,6 +1208,49 @@ function reveal(chart, ms = 110) {
 return { reveal };
 })();
 
+var kitSource$ = (function () {
+'use strict';
+
+// src/pages/statistics/chartkit/kitSource.js
+// Una tela che si disegna da sola (un'animazione, un editor da trascinare)
+// come grafico del kit: lo stato e i suoi comandi restano suoi, il kit le
+// da' la vista (zoom e spostamento), la tela trasparente, i gesti, i
+// plugin e l'etichetta sotto il puntatore. Il controllore e' lo stesso
+// degli altri grafici (kitChart.js): la tela gli passa solo le sue funzioni.
+
+const { createChart } = kitChart$;
+
+/**
+ * Makes `canvas` a chart of the kit, drawn by `source`:
+ *   draw(canvas, view, width, palette)   its state as it is now, in this view (null: the whole of it)
+ *   frame(view, width)                   where the plot lies and what it shows, as chartFrame of the libraries
+ *   height(width)                        the height of the canvas at this width
+ *   locate(x, y, view, width)            optional: what is under the pointer, { rect, text } or null
+ * `options`: palette, pointerLabel (the attachPointerLabel of the library),
+ * plugins (zoomPan, ...), schedule. The source asks for a new drawing with
+ * chart.redraw() when its state changes. Returns the chart (kitChart.js).
+ */
+function createSourceChart(canvas, source, { palette, pointerLabel, plugins = [], schedule = null }) {
+  const viewOf = (data) => data.view || null;
+  return createChart(canvas, {
+    draw: (target, data, pal) => source.draw(target, viewOf(data), data.width, pal),
+    data: { view: null },
+    palette,
+    frame: (draw, data, width) => source.frame(viewOf(data), width),
+    withView: (draw, data, view) => ({ ...data, view }),
+    height: (draw, data, width) => source.height(width),
+    hitTest: (draw, data, width, x, y) => (source.locate ? source.locate(x, y, viewOf(data), width) : null),
+    hitAt: () => null,
+    pointerLabel,
+    describe: source.locate ? (hit) => hit.text : null,
+    plugins,
+    schedule,
+  });
+}
+
+return { createSourceChart };
+})();
+
 var kitDom$ = (function () {
 'use strict';
 
@@ -1213,6 +1265,7 @@ var kitDom$ = (function () {
 //
 // Ogni testo entra con textContent, mai come HTML.
 const { createChart } = kitChart$;
+const { createSourceChart } = kitSource$;
 const { kitLabels } = kitLabels$;
 const { createPlayer } = kitPlayer$;
 const { handles: handlesPlugin, zoomPan } = kitPlugins$;
@@ -1563,10 +1616,67 @@ function createFigure(options) {
 /** Releases the charts and the controls inside a region that is about to be replaced. */
 function releaseFigures(region) {
   for (const figure of region.querySelectorAll('figure.kit-figure')) if (figure.kit) figure.kit.destroy();
-  for (const box of region.querySelectorAll('.kit-controls')) if (box.kitRelease) box.kitRelease();
+  for (const box of region.querySelectorAll('.kit-controls, .kit-stage')) if (box.kitRelease) box.kitRelease();
 }
 
-return { createModel, partsOf, hideParts, legend, controlsOf, modelControls, createFigure, releaseFigures };
+/**
+ * A canvas that draws itself (an animation, an editor: kitSource.js) as a
+ * chart of the kit, in the program: the canvas goes into a box of its own
+ * (kit-plot) with the buttons of the zoom and the hint, and the controller
+ * follows its width. `options`: palette, lib (the library of the homework),
+ * lang, plugins (zoomPan(zoom) by default), zoom (the options of that
+ * zoomPan: { drag: false } leaves the mouse and one finger to the canvas,
+ * panKeys: 'shift' moves the view with shift + arrows), schedule. Returns { stage, chart }:
+ * the stage takes the place of the canvas in the page, and carries
+ * kitRelease (releaseFigures calls it).
+ */
+function createSourceStage(canvas, source, { palette, lib, lang = 'en', plugins = null, zoom = {}, schedule = null }) {
+  const labels = kitLabels(lang);
+  const plot = el('div', { class: 'kit-plot' }, canvas);
+  const zoomIn = el('button', { type: 'button', 'aria-label': labels.zoomIn, title: labels.zoomIn, text: '+' });
+  const zoomOut = el('button', { type: 'button', 'aria-label': labels.zoomOut, title: labels.zoomOut, text: '-', disabled: true });
+  const reset = el('button', { type: 'button', 'aria-label': labels.reset, title: labels.reset, text: '⤢', disabled: true });
+  const tools = el('div', { class: 'kit-tools', role: 'group', 'aria-label': labels.tools, hidden: true }, zoomIn, zoomOut, reset);
+  const hint = el('p', { class: 'kit-hint', 'aria-live': 'polite', text: labels.hint, hidden: true });
+  const stage = el('div', { class: 'kit-stage kit-source' }, plot, tools, hint);
+  const chart = createSourceChart(canvas, source, { palette, pointerLabel: lib.attachPointerLabel, plugins: plugins || [zoomPan(zoom)], schedule });
+  zoomIn.addEventListener('click', () => chart.zoomBy(1.5));
+  zoomOut.addEventListener('click', () => chart.zoomBy(1 / 1.5));
+  reset.addEventListener('click', () => chart.resetView());
+  chart.on('render', ({ frame }) => {
+    tools.hidden = !frame;
+  });
+  chart.on('view', () => {
+    const zoomed = chart.isZoomed();
+    tools.classList.toggle('is-zoomed', zoomed);
+    zoomOut.disabled = !zoomed;
+    reset.disabled = !zoomed;
+  });
+  let hintTimer = 0;
+  chart.on('hint', () => {
+    hint.hidden = false;
+    clearTimeout(hintTimer);
+    hintTimer = setTimeout(() => {
+      hint.hidden = true;
+    }, HINT_MS);
+  });
+  const observer = typeof ResizeObserver === 'function'
+    ? new ResizeObserver((entries) => {
+      const width = Math.round(entries[entries.length - 1].contentRect.width);
+      if (width > 0) chart.resize(width);
+    })
+    : null;
+  if (observer) observer.observe(canvas);
+  stage.kitRelease = () => {
+    clearTimeout(hintTimer);
+    if (observer) observer.disconnect();
+    chart.destroy();
+    stage.kitRelease = null;
+  };
+  return { stage, chart };
+}
+
+return { createModel, partsOf, hideParts, legend, controlsOf, modelControls, createFigure, releaseFigures, createSourceStage };
 })();
 
 var view$ = (function () {
@@ -3711,6 +3821,8 @@ const timers = { compute: null, sweep: null, normal: null };
 const results = new Map();
 const computation = { shown: null, error: null, running: null };
 let animation = null;
+// the chart of the kit that hosts the canvas of the animation (zoom and panning)
+let animationChart = null;
 
 // ---------------------------------------------------------------------------
 // DOM: un aiutante minimo, i grafici e il loro ridisegno
@@ -4124,6 +4236,18 @@ function trajectoriesBlock() {
     T.speeds.map((name, i) => h('option', { value: i, text: name, selected: i === state.anim.speed })),
   );
   controls.canvas = h('canvas', { class: 'anim', role: 'img', 'aria-label': text.sections.trajectories });
+  // the canvas in a box of the kit, as a chart of the animation of the moment (none until the simulation arrives): zoom and panning while it goes on
+  const { stage, chart } = kit.createSourceStage(
+    controls.canvas,
+    {
+      draw: (...a) => animation && animation.draw(...a),
+      frame: (...a) => (animation ? animation.frame(...a) : null),
+      height: (width) => Math.round(width * 0.6),
+      locate: (...a) => (animation ? animation.locate(...a) : null),
+    },
+    { palette: palette(), lib: hw, lang: state.lang },
+  );
+  animationChart = chart;
   controls.caption = h('p', { class: 'caption', 'aria-live': 'polite' });
   return [
     regions.trajectoriesIntro,
@@ -4134,10 +4258,12 @@ function trajectoriesBlock() {
     choices(T.quantityLabel, hw.QUANTITIES.map((q) => [q, text.trajectoryNames[q]]), state.anim.quantity, (quantity) => {
       state.anim.quantity = quantity;
       if (animation) animation.setQuantity(quantity);
+      // another quantity has another range of values: the view goes back to the whole chart
+      if (animationChart) animationChart.resetView();
     }),
     h('div', { class: 'controls' }, h('label', null, T.speedLabel, speed), h('span', { class: 'buttons' }, controls.play, button(T.step, 'step'), button(T.reset, 'reset'), button(T.end, 'toEnd'))),
     // posizionato: ci stanno dentro l'evidenziazione e l'etichetta sotto il puntatore
-    h('div', { class: 'figure' }, controls.canvas),
+    h('div', { class: 'figure' }, stage),
     // la legenda sotto l'animazione: le parti nascoste si ridisegnano dal primo sistema
     legend(view.legends.trajectories(text), (parts) => animation && animation.setHidden(parts), keep('trajectories')),
     controls.caption,
@@ -4154,14 +4280,6 @@ function updateCaption(st) {
   else if (st.k > 0 && !st.done) label = T.resume;
   controls.play.textContent = label;
 }
-
-let canvasWidth = 0;
-const canvasResizer = new ResizeObserver(() => {
-  const canvas = controls.canvas;
-  if (!animation || !canvas || canvas.clientWidth === canvasWidth) return;
-  canvasWidth = canvas.clientWidth;
-  animation.redraw();
-});
 
 /** The animation of the attackers of the last simulation started, for the chosen model. */
 function createAnimation() {
@@ -4180,10 +4298,13 @@ function createAnimation() {
     describe: view.tips.trajectory(text),
     hidden: partsOf(view.legends.trajectories(text), keep('trajectories')),
     onUpdate: updateCaption,
+    requestDraw: () => animationChart && animationChart.redraw(),
   });
-  canvasWidth = canvas.clientWidth;
-  canvasResizer.disconnect();
-  canvasResizer.observe(canvas);
+  // new attackers: the whole chart again
+  if (animationChart) {
+    animationChart.resetView();
+    animationChart.redraw();
+  }
 }
 
 // --- 1.5 Verifiche -----------------------------------------------------------------

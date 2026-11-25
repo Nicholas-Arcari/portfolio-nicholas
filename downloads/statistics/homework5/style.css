@@ -1384,7 +1384,8 @@ canvas.drag {
   outline-offset: 2px;
 }
 
-.kit-figure .kit-tools {
+.kit-figure .kit-tools,
+.kit-source .kit-tools {
   position: absolute;
   top: 6px;
   right: 6px;
@@ -1395,23 +1396,29 @@ canvas.drag {
   transition: opacity 0.15s ease;
 }
 
-.kit-figure .kit-tools[hidden] {
+.kit-figure .kit-tools[hidden],
+.kit-source .kit-tools[hidden] {
   display: none;
 }
 
 .kit-figure:hover .kit-tools,
+.kit-source:hover .kit-tools,
 .kit-figure:focus-within .kit-tools,
-.kit-figure .kit-tools.is-zoomed {
+.kit-source:focus-within .kit-tools,
+.kit-figure .kit-tools.is-zoomed,
+.kit-source .kit-tools.is-zoomed {
   opacity: 1;
 }
 
 @media (hover: none) {
-  .kit-figure .kit-tools {
+  .kit-figure .kit-tools,
+  .kit-source .kit-tools {
     opacity: 1;
   }
 }
 
-.kit-figure .kit-tools button {
+.kit-figure .kit-tools button ,
+.kit-source .kit-tools button  {
   min-width: 28px;
   height: 28px;
   padding: 0 7px;
@@ -1423,12 +1430,14 @@ canvas.drag {
   cursor: pointer;
 }
 
-.kit-figure .kit-tools button:hover:not(:disabled) {
+.kit-figure .kit-tools button:hover:not(:disabled) ,
+.kit-source .kit-tools button:hover:not(:disabled)  {
   border-color: var(--accent);
   color: var(--accent);
 }
 
-.kit-figure .kit-tools button:disabled {
+.kit-figure .kit-tools button:disabled ,
+.kit-source .kit-tools button:disabled  {
   opacity: 0.4;
   cursor: default;
 }
