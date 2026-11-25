@@ -2953,6 +2953,61 @@ body.dark-mode .hw1-table tr.is-marked > :last-child {
     font-weight: 600;
     color: #d52349;
 }
+/* Il riassunto in cima a una teoria lunga */
+.th-summary {
+    margin: 1.5em 0 1em;
+    padding: 0.9em 1.1em 0.2em;
+    border-left: 3px solid #d52349;
+    border-radius: 4px;
+    background: rgba(213, 35, 73, 0.05);
+}
+.th-summary h3 {
+    margin: 0 0 0.6em;
+}
+.th-fold-all {
+    margin: 0 0 1em;
+}
+/* Le sezioni che partono chiuse: il titolo, con la sua freccia, apre e chiude */
+.th-page .th-fold > summary {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5em;
+    cursor: pointer;
+    list-style: none;
+}
+.th-page .th-fold > summary::-webkit-details-marker {
+    display: none;
+}
+.th-page .th-fold > summary::before {
+    content: '';
+    flex: none;
+    width: 0;
+    height: 0;
+    border-top: 0.32em solid transparent;
+    border-bottom: 0.32em solid transparent;
+    border-left: 0.48em solid #d52349;
+    transform: translateY(-0.12em);
+    transition: transform 0.15s;
+}
+.th-page .th-fold[open] > summary::before {
+    transform: translateY(-0.12em) rotate(90deg);
+}
+.th-page .th-fold > summary > h3,
+.th-page .th-fold > summary > h4 {
+    margin: 0;
+}
+.th-page .th-fold > summary:focus-visible {
+    outline: 2px solid #d52349;
+    outline-offset: 3px;
+}
+.th-page .th-fold[open] > summary {
+    margin-bottom: 0.9em;
+}
+@media (prefers-reduced-motion: reduce) {
+    .th-page .th-fold > summary::before {
+        transition: none;
+    }
+}
 body.dark-mode .th-outline li {
     border-bottom-color: rgba(255, 255, 255, 0.1);
 }
@@ -2962,6 +3017,13 @@ body.dark-mode .th-qa details {
 body.dark-mode .th-outline .th-time,
 body.dark-mode .th-answer-label {
     color: #ff6b81;
+}
+body.dark-mode .th-summary {
+    border-left-color: #ff6b81;
+    background: rgba(255, 107, 129, 0.08);
+}
+body.dark-mode .th-page .th-fold > summary::before {
+    border-left-color: #ff6b81;
 }
 
 /* Il filtro per tipo sotto la barra di ricerca dell'elenco di Statistics:

@@ -48,6 +48,8 @@ function scrollToSection(target) {
 export function goToSection(id) {
   const target = document.getElementById(id);
   if (!target) return;
+  // a section that starts closed (the theory of HW7) opens before the jump, with the ones around it
+  for (let fold = target.closest('details'); fold; fold = fold.parentElement && fold.parentElement.closest('details')) fold.open = true;
   target.focus({ preventScroll: true });
   scrollToSection(target);
   target.classList.remove('hw-index-target');

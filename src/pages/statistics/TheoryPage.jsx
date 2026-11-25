@@ -3,8 +3,11 @@
 // la scaletta per presentarlo alla cattedra e le domande probabili, con le
 // risposte nascoste finche' non si aprono (cosi' ci si interroga da soli).
 // Il contenuto, in italiano e in inglese, sta in theory/homeworkN.js; come
-// gli homework, la pagina si apre in inglese.
-import React, { useMemo, useRef } from 'react';
+// gli homework, la pagina si apre in inglese. Una teoria lunga puo' avere un
+// riassunto (summary) e le sezioni chiuse (collapsed): il titolo le apre,
+// l'indice apre quella a cui porta, un pulsante le apre o le chiude tutte, e
+// prima di stampare si aprono da sole.
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../../contexts/languageContext';
 import { STATISTICS_HOMEWORK } from '../../config/homework';
@@ -69,10 +72,33 @@ const TheoryPage = ({ slug, theory }) => {
   const hw = STATISTICS_HOMEWORK.find((h) => h.slug === slug);
   const text = theory[language];
   const titleRef = useRef(null);
+  const articleRef = useRef(null);
+  const collapsed = !!theory.collapsed;
+  // the sections with content start closed: how many there are, and how many are open
+  const foldCount = collapsed ? text.sections.filter((s) => s.blocks && s.blocks.length).length : 0;
+  const [openCount, setOpenCount] = useState(0);
+  const folds = () => (articleRef.current ? [...articleRef.current.querySelectorAll('details.th-fold')] : []);
+  const countOpen = () => setOpenCount(folds().filter((d) => d.open).length);
+  const allOpen = foldCount > 0 && openCount === foldCount;
+  const toggleAll = () => {
+    const open = !allOpen;
+    for (const d of folds()) d.open = open;
+    countOpen();
+  };
+  // on paper every section is open
+  useEffect(() => {
+    if (!collapsed) return undefined;
+    const openAll = () => {
+      const all = articleRef.current ? articleRef.current.querySelectorAll('details.th-fold') : [];
+      for (const d of all) d.open = true;
+    };
+    window.addEventListener('beforeprint', openAll);
+    return () => window.removeEventListener('beforeprint', openAll);
+  }, [collapsed]);
 
   const toc = useMemo(
     () => ({
-      sections: text.sections.map(({ id, title, level }) => ({ id, title, level })),
+      sections: [...(text.summary ? [{ id: 'th-summary', title: t('statistics.theorySummary'), level: 0 }] : []), ...text.sections.map(({ id, title, level }) => ({ id, title, level }))],
       labels: { button: t('statistics.theoryIndex'), title: t('statistics.theoryIndexTitle'), close: t('statistics.theoryClose') },
     }),
     [text, t],
@@ -87,7 +113,7 @@ const TheoryPage = ({ slug, theory }) => {
 
   return (
     <StatisticsLayout terminal={[`> ./open_theory.sh --${slug}`, ...t('statistics.homeworkTerminal')]} index={toc}>
-      <article className="box post th-page">
+      <article ref={articleRef} className="box post th-page">
         <header className="hw-title">
           <h2 ref={titleRef} tabIndex={-1}>{`${hw.name} - ${t('statistics.theory')}`}</h2>
           <HomeworkIndex sections={toc.sections} labels={toc.labels} />
@@ -98,12 +124,38 @@ const TheoryPage = ({ slug, theory }) => {
           <Link to={`/statistics/${slug}`} className="button alt icon solid fa-flask">{t('statistics.theoryOpenHomework')}</Link>
         </p>
 
+        {text.summary && (
+          <section className="th-summary" aria-labelledby="th-summary">
+            <h3 id="th-summary" tabIndex={-1} className="hw1-anchor">{t('statistics.theorySummary')}</h3>
+            <ul className="th-list">
+              {text.summary.map((item, i) => <li key={i}>{item}</li>)}
+            </ul>
+          </section>
+        )}
+        {foldCount > 0 && (
+          <p className="th-fold-all">
+            <button type="button" className="button alt small" onClick={toggleAll} aria-pressed={allOpen}>{allOpen ? t('statistics.theoryCloseAll') : t('statistics.theoryOpenAll')}</button>
+          </p>
+        )}
+
         {text.sections.map((section) => {
           const Tag = HEADINGS[section.level];
+          const className = section.level === 0 ? 'th-section' : 'th-subsection';
+          const heading = <Tag id={section.id} tabIndex={-1} className="hw1-anchor">{section.title}</Tag>;
+          const blocks = (section.blocks || []).map((block, i) => <Block key={i} block={block} labels={labels} />);
+          // a section with content that starts closed: its title, in the summary of the details, opens it
+          if (collapsed && blocks.length) {
+            return (
+              <details key={section.id} className={`${className} th-fold`} onToggle={countOpen}>
+                <summary>{heading}</summary>
+                {blocks}
+              </details>
+            );
+          }
           return (
-            <section key={section.id} className={section.level === 0 ? 'th-section' : 'th-subsection'}>
-              <Tag id={section.id} tabIndex={-1} className="hw1-anchor">{section.title}</Tag>
-              {(section.blocks || []).map((block, i) => <Block key={i} block={block} labels={labels} />)}
+            <section key={section.id} className={className}>
+              {heading}
+              {blocks}
             </section>
           );
         })}

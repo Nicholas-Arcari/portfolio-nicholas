@@ -16,7 +16,17 @@
 const en = {
   intro: [
     'This page collects the theory behind Homework #7, so that it can be studied and explained at the desk. The first part is about limits: the four main modes of convergence of probability theory (in probability, almost sure, in mean square, in distribution), how they are related, their role in the law of large numbers, in the central limit theorem and in other results of statistics (consistency, Slutsky, the delta method, Glivenko-Cantelli, the asymptotics of maximum likelihood), and why √n appears in so many theorems. The second part is about inference: conditional probability in probability theory and in statistics, Bayes’ theorem with its three components, prior, likelihood and posterior, and how they influence the conclusions. Some of it repeats the homework page on purpose.',
-    'Section 1 is the theory, section 2 an outline for presenting the homework in about five minutes, section 3 the questions the professor is likely to ask, with short answers to say aloud. The answers stay closed: try to answer first, then open them. The numbers quoted are those of the homework page with its initial values and seed 2026: 1,000 simulated detection rules with a false-alarm rate of 3%, the 22,544 connections of the NSL-KDD test set, the 5,574 SMS of the SMS Spam Collection.',
+    'Section 1 is the theory, section 2 an outline for presenting the homework in about five minutes, section 3 the questions the professor is likely to ask, with short answers to say aloud. The answers stay closed: try to answer first, then open them. The sections start closed too: the summary below gives the essentials, and a click on a title, or the index, opens a section. The numbers quoted are those of the homework page with its initial values and seed 2026: 1,000 simulated detection rules with a false-alarm rate of 3%, the 22,544 connections of the NSL-KDD test set, the 5,574 SMS of the SMS Spam Collection.',
+  ],
+  summary: [
+    'Four modes of convergence: almost sure ⇒ in probability ⇒ in distribution, and in mean square ⇒ in probability (Chebyshev); convergence in distribution to a constant gives convergence in probability. Every other arrow fails, each with its counterexample: Bernoulli(1/n), the typewriter, the spike, (-1)^n Z.',
+    'Law of large numbers: the mean of independent variables with mean μ converges to μ, in mean square (Var = σ²/n), in probability (the weak law) and almost surely (the strong law, which only needs E|X| < ∞). Without a finite mean there is no law: the mean of Cauchy values is Cauchy again.',
+    'Central limit theorem: √n (X̄_n - μ)/σ → N(0, 1) in distribution, never in probability. How fast depends on the shape: for Bernoulli(0.03) the Kolmogorov distance from the normal law is 0.448 at n = 10 and 0.048 at n = 1,000.',
+    'Why √n: with independent (or just uncorrelated) terms the variances add up, Var(S_n) = nσ², so the standard error of the mean is σ/√n. Correlated data, such as alarms in bursts, are worth less: n_eff = n (1 - ρ)/(1 + ρ). Heavy tails need far more data than √n suggests.',
+    'How fast: Chebyshev σ²/(nε²), Hoeffding 2 exp(-2nε²) for bounded values, Berry-Esseen C ρ/(σ³ √n) for the normal approximation.',
+    'Conditional probability: P(A | B) = P(A ∩ B)/P(B), with the chain rule and total probability. Independence and conditional independence are different (explaining away). Frequentist statistics conditions on the hypothesis (the p-value), Bayesian statistics on the data.',
+    'Bayes’ theorem: posterior ∝ likelihood × prior, that is posterior odds = prior odds × likelihood ratio. The base rate weighs: an IDS alarm with sensitivity 95% and false positives 3%, on traffic where 1% of the connections are attacks, is an attack only 24.2% of the time.',
+    'The prior weighs a lot with few data and fades as they grow: after 7 clicks out of 40 the priors disagree, after ten days the reasonable ones agree within half a point, and by Bernstein-von Mises the posterior becomes normal around the estimate whatever the prior.',
   ],
   sections: [
     { id: 'th-theory', level: 0, title: '1. Theory' },
@@ -283,7 +293,17 @@ const en = {
 const it = {
   intro: [
     'Questa pagina raccoglie la teoria dietro all’Homework #7, per studiarla e spiegarla all’esame. La prima parte riguarda i limiti: le quattro principali forme di convergenza della teoria della probabilità (in probabilità, quasi certa, in media quadratica, in distribuzione), come sono legate, il loro ruolo nella legge dei grandi numeri, nel teorema del limite centrale e in altri risultati della statistica (la consistenza, Slutsky, il metodo delta, Glivenko-Cantelli, l’asintotica della massima verosimiglianza), e perché √n compare in tanti teoremi. La seconda riguarda l’inferenza: la probabilità condizionata nella teoria della probabilità e in statistica, il teorema di Bayes con le sue tre componenti, prior, verosimiglianza e posterior, e la loro influenza sulle conclusioni. Una parte ripete di proposito la pagina dell’homework.',
-    'La sezione 1 è la teoria, la sezione 2 una scaletta per presentare l’homework in circa cinque minuti, la sezione 3 le domande che il professore farà probabilmente, con risposte brevi da dire a voce. Le risposte restano chiuse: provate prima a rispondere, poi apritele. I numeri citati sono quelli della pagina dell’homework con i valori iniziali e il seme 2026: 1.000 regole di rilevamento simulate con un tasso di falsi allarmi del 3%, le 22.544 connessioni del test set di NSL-KDD, i 5.574 SMS della SMS Spam Collection.',
+    'La sezione 1 è la teoria, la sezione 2 una scaletta per presentare l’homework in circa cinque minuti, la sezione 3 le domande che il professore farà probabilmente, con risposte brevi da dire a voce. Le risposte restano chiuse: provate prima a rispondere, poi apritele. Anche le sezioni partono chiuse: il riassunto qui sotto dice l’essenziale, e un clic su un titolo, o l’indice, apre una sezione. I numeri citati sono quelli della pagina dell’homework con i valori iniziali e il seme 2026: 1.000 regole di rilevamento simulate con un tasso di falsi allarmi del 3%, le 22.544 connessioni del test set di NSL-KDD, i 5.574 SMS della SMS Spam Collection.',
+  ],
+  summary: [
+    'Quattro forme di convergenza: quasi certa ⇒ in probabilità ⇒ in distribuzione, e in media quadratica ⇒ in probabilità (Chebyshev); la convergenza in distribuzione a una costante dà quella in probabilità. Ogni altra freccia cade, ciascuna con il suo controesempio: Bernoulli(1/n), la macchina da scrivere, il picco, (-1)^n Z.',
+    'Legge dei grandi numeri: la media di variabili indipendenti di media μ converge a μ, in media quadratica (Var = σ²/n), in probabilità (la legge debole) e quasi certamente (la legge forte, che chiede solo E|X| < ∞). Senza una media finita la legge non vale: la media di valori di Cauchy è di nuovo di Cauchy.',
+    'Teorema del limite centrale: √n (X̄_n - μ)/σ → N(0, 1) in distribuzione, mai in probabilità. Quanto in fretta dipende dalla forma: per una Bernoulli(0,03) la distanza di Kolmogorov dalla normale è 0,448 a n = 10 e 0,048 a n = 1.000.',
+    'Perché √n: con termini indipendenti (o solo incorrelati) le varianze si sommano, Var(S_n) = nσ², e l’errore standard della media è σ/√n. Dati correlati, come gli allarmi a raffica, valgono meno: n_eff = n (1 - ρ)/(1 + ρ). Le code pesanti chiedono molti più dati di quanti ne suggerisca √n.',
+    'Quanto in fretta: Chebyshev σ²/(nε²), Hoeffding 2 exp(-2nε²) per valori limitati, Berry-Esseen C ρ/(σ³ √n) per l’approssimazione normale.',
+    'Probabilità condizionata: P(A | B) = P(A ∩ B)/P(B), con la regola della catena e la probabilità totale. Indipendenza e indipendenza condizionata sono diverse (explaining away). La statistica frequentista condiziona all’ipotesi (il p-value), quella bayesiana ai dati.',
+    'Il teorema di Bayes: posterior ∝ verosimiglianza × prior, cioè quote a posteriori = quote a priori × rapporto di verosimiglianza. Il tasso di base pesa: un allarme dell’IDS con sensibilità del 95% e falsi positivi del 3%, su un traffico in cui l’1% delle connessioni sono attacchi, è un attacco solo nel 24,2% dei casi.',
+    'Il prior pesa molto con pochi dati e sbiadisce quando crescono: dopo 7 clic su 40 i prior non sono d’accordo, dopo dieci giorni quelli ragionevoli coincidono entro mezzo punto, e per Bernstein-von Mises il posterior diventa normale attorno alla stima, qualunque sia il prior.',
   ],
   sections: [
     { id: 'th-theory', level: 0, title: '1. Teoria' },
@@ -547,5 +567,6 @@ const it = {
   ],
 };
 
-const THEORY = { en, it };
+// the sections start closed under a short summary: the page is as long as that of HW5
+const THEORY = { en, it, collapsed: true };
 export default THEORY;
