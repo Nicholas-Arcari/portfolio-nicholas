@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import homeworkStandalone from './build/homework-standalone.js'
 import retiDoc from './build/reti-doc.js'
+import distributedNotes from './build/distributed-notes.js'
 
 // Content Security Policy del sito pubblicato. GitHub Pages non permette di
 // impostare header HTTP, quindi la politica viaggia come <meta> nell'index.html,
@@ -55,11 +56,19 @@ const cspMeta = () => ({
 // homeworkStandalone: i programmi scaricabili degli homework di Statistics (zip
 // e versione online in downloads/statistics/), generati dagli stessi sorgenti
 // delle pagine. retiDoc: le pagine impaginate del laboratorio di Reti devono
-// avere le stesse parole dei file del laboratorio.
+// avere le stesse parole dei file del laboratorio. distributedNotes: gli
+// appunti di Distributed Systems devono leggersi, avere formule valide e la
+// stessa struttura in inglese e in italiano; del CSS di KaTeX restano solo i
+// font woff2.
 export default defineConfig({
-  plugins: [react(), cspMeta(), homeworkStandalone(), retiDoc()],
+  plugins: [react(), cspMeta(), homeworkStandalone(), retiDoc(), distributedNotes()],
   base: '/portfolio-nicholas/', // <--- Nome del repo
   build: {
+    // Un font piccolo finirebbe dentro il CSS come data:, che font-src della
+    // CSP non ammette (succedeva a KaTeX_Size3, le parentesi alte delle
+    // formule): i font restano sempre file a se'. Per il resto vale la
+    // soglia normale.
+    assetsInlineLimit: (file) => (/\.woff2?$/.test(file) ? false : undefined),
     rollupOptions: {
       output: {
         // React, React DOM e il router cambiano di rado: in un file a parte

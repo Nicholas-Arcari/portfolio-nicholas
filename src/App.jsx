@@ -41,6 +41,8 @@ const Homework7 = lazy(() => import('./pages/statistics/Homework7'));
 const Project1 = lazy(() => import('./pages/statistics/Project1'));
 const RetiList = lazy(() => import('./pages/reti/RetiList'));
 const RetiExercise = lazy(() => import('./pages/reti/RetiExercise'));
+const DistributedList = lazy(() => import('./pages/distributed/DistributedList'));
+const DistributedLecture = lazy(() => import('./pages/distributed/DistributedLecture'));
 const Theory1 = lazy(() => import('./pages/statistics/theory/Theory1'));
 const Theory2 = lazy(() => import('./pages/statistics/theory/Theory2'));
 const Theory2a = lazy(() => import('./pages/statistics/theory/Theory2a'));
@@ -89,6 +91,8 @@ function App() {
                 <Route path="/statistics/project-1" element={<Project1 />} />
                 <Route path="/reti-di-calcolatori" element={<RetiList />} />
                 <Route path="/reti-di-calcolatori/:slug" element={<RetiExercise />} />
+                <Route path="/distributed-systems" element={<DistributedList />} />
+                <Route path="/distributed-systems/:slug" element={<DistributedLecture />} />
                 <Route path="/statistics/homework-1/theory" element={<Theory1 />} />
                 <Route path="/statistics/homework-2/theory" element={<Theory2 />} />
                 <Route path="/statistics/homework-2a/theory" element={<Theory2a />} />

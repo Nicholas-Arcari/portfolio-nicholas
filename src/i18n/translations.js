@@ -58,7 +58,7 @@ export const translations = {
       courses: [
         { name: 'Cryptography', year: '1° anno', cfu: '6 CFU', description: 'Fondamenti di crittografia moderna: cifrari simmetrici e asimmetrici, funzioni hash, firme digitali e protocolli di scambio delle chiavi.' },
         { name: 'Network Infrastructures', year: '1° anno', cfu: '6 CFU', description: 'Architetture di rete, protocolli di routing e commutazione, progettazione e messa in sicurezza delle infrastrutture di comunicazione.' },
-        { name: 'Distributed Systems', year: '1° anno', cfu: '6 CFU', description: 'Sistemi distribuiti: concorrenza, consistenza, tolleranza ai guasti, algoritmi di consenso e coordinamento tra nodi.' },
+        { name: 'Distributed Systems', link: '/distributed-systems', year: '1° anno', cfu: '6 CFU', description: 'Sistemi distribuiti: concorrenza, consistenza, tolleranza ai guasti, algoritmi di consenso e coordinamento tra nodi.' },
         { name: 'Statistics', link: '/statistics', year: '1° anno', cfu: '6 CFU', description: 'Metodi statistici e probabilistici applicati all\'analisi dei dati e alla valutazione quantitativa del rischio.' },
         { name: 'Security in Software Applications', year: '1° anno', cfu: '6 CFU', description: 'Vulnerabilità del software e come prevenirle: corruzione della memoria, injection, analisi statica e dinamica, fuzzing e pratiche di sviluppo sicuro.' },
         { name: 'Cyber and Computer Law', year: '1° anno', cfu: '6 CFU', description: 'Diritto dell\'informatica: protezione dei dati personali, reati informatici, prova digitale e profili di responsabilità.' },
@@ -136,6 +136,33 @@ export const translations = {
       sidebarBack: 'Torna al piano di studi',
       sidebarBackDesc: 'Tutti gli insegnamenti della laurea magistrale.',
       sidebarBackBtn: 'Piano di studi',
+    },
+
+    // --- DISTRIBUTED SYSTEMS: gli appunti delle lezioni (laurea magistrale) ---
+    distributed: {
+      terminal: [
+        '> ./load_module.sh --distributed-systems',
+        '> Caricamento appunti delle lezioni...',
+        '> Lingue: EN, IT',
+        '> Pronto.',
+      ],
+      lectureTerminal: ['> Formule: LaTeX', '> Pronto.'],
+      title: 'Distributed Systems - Lezioni',
+      subtitle: 'Gli appunti delle lezioni del corso di Distributed Systems, in inglese e in italiano. Seleziona una riga per aprire la lezione.',
+      search: 'Cerca una lezione (es. Paxos, vector clock, broadcast)...',
+      colName: 'Lezione',
+      colDescription: 'Argomenti',
+      noResults: 'Nessuna lezione trovata.',
+      lecture: 'Lezione',
+      of: 'di',
+      navTitle: 'Le lezioni',
+      index: 'Indice',
+      indexTitle: 'Indice della lezione',
+      close: 'Chiudi',
+      backToList: 'Tutte le lezioni',
+      backToTop: 'Torna su',
+      loading: 'Caricamento...',
+      loadError: 'Non riesco a caricare il testo della lezione. Ricarica la pagina.',
     },
 
     // --- RETI DI CALCOLATORI: il laboratorio (laurea triennale) ---
@@ -1853,7 +1880,7 @@ export const translations = {
       courses: [
         { name: 'Cryptography', year: '1st year', cfu: '6 ECTS', description: 'Foundations of modern cryptography: symmetric and asymmetric ciphers, hash functions, digital signatures and key exchange protocols.' },
         { name: 'Network Infrastructures', year: '1st year', cfu: '6 ECTS', description: 'Network architectures, routing and switching protocols, design and hardening of communication infrastructures.' },
-        { name: 'Distributed Systems', year: '1st year', cfu: '6 ECTS', description: 'Distributed systems: concurrency, consistency, fault tolerance, consensus algorithms and coordination between nodes.' },
+        { name: 'Distributed Systems', link: '/distributed-systems', year: '1st year', cfu: '6 ECTS', description: 'Distributed systems: concurrency, consistency, fault tolerance, consensus algorithms and coordination between nodes.' },
         { name: 'Statistics', link: '/statistics', year: '1st year', cfu: '6 ECTS', description: 'Statistical and probabilistic methods applied to data analysis and quantitative risk assessment.' },
         { name: 'Security in Software Applications', year: '1st year', cfu: '6 ECTS', description: 'Software vulnerabilities and how to prevent them: memory corruption, injection flaws, static and dynamic analysis, fuzzing and secure development practices.' },
         { name: 'Cyber and Computer Law', year: '1st year', cfu: '6 ECTS', description: 'IT law: personal data protection, computer crime, digital evidence and liability.' },
@@ -1931,6 +1958,33 @@ export const translations = {
       sidebarBack: 'Back to the study plan',
       sidebarBackDesc: 'All the courses of the master\'s degree.',
       sidebarBackBtn: 'Study plan',
+    },
+
+    // --- DISTRIBUTED SYSTEMS: gli appunti delle lezioni (laurea magistrale) ---
+    distributed: {
+      terminal: [
+        '> ./load_module.sh --distributed-systems',
+        '> Loading lecture notes...',
+        '> Languages: EN, IT',
+        '> Ready.',
+      ],
+      lectureTerminal: ['> Formulas: LaTeX', '> Ready.'],
+      title: 'Distributed Systems - Lectures',
+      subtitle: 'The lecture notes of the Distributed Systems course, in English and in Italian. Select a row to open the lecture.',
+      search: 'Search a lecture (e.g. Paxos, vector clock, broadcast)...',
+      colName: 'Lecture',
+      colDescription: 'Topics',
+      noResults: 'No lecture found.',
+      lecture: 'Lecture',
+      of: 'of',
+      navTitle: 'Lectures',
+      index: 'Contents',
+      indexTitle: 'Lecture contents',
+      close: 'Close',
+      backToList: 'All lectures',
+      backToTop: 'Back to top',
+      loading: 'Loading...',
+      loadError: 'The text of this lecture could not be loaded. Reload the page.',
     },
 
     // --- RETI DI CALCOLATORI: il laboratorio (laurea triennale) ---

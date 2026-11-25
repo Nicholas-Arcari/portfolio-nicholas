@@ -1,0 +1,113 @@
+/* src/pages/distributed/distributed.css
+   Le lezioni di Distributed Systems. Il grosso viene dalle pagine di teoria
+   di Statistics e dal laboratorio di Reti (HackerTheme.css: .th-page,
+   .th-list, .lab-code, .hw-title, ...); qui c'e' solo quello che serve in
+   piu': le formule di KaTeX, il codice citato nel testo, gli elenchi dentro
+   gli elenchi e la colonna con le lezioni vicine. Il file si carica con la
+   pagina della lezione, non con il resto del sito. */
+
+/* Allineato a sinistra: giustificato, un testo pieno di formule che non si
+   possono spezzare si allarga in buchi */
+.ds-doc p,
+.ds-doc li {
+    text-align: left;
+}
+.ds-doc .ds-heading-0 {
+    margin: 2.5em 0 0.8em;
+}
+.ds-doc .ds-heading-1 {
+    margin: 1.6em 0 0.6em;
+}
+
+/* Le formule nel testo: la grandezza di KaTeX (1.21em) e' pensata per un
+   testo in Times; accanto al carattere del sito sta meglio un po' meno */
+.ds-doc .katex {
+    font-size: 1.1em;
+}
+/* Una formula a se': centrata, e se e' piu' larga della colonna scorre dentro
+   il suo riquadro invece di allargare la pagina */
+.ds-math-display {
+    display: block;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0.2em 0;
+}
+.ds-math-display > .katex-display {
+    margin: 0.7em 0;
+}
+.ds-formula {
+    margin: 0 0 1.5em;
+    text-align: center;
+}
+
+/* Titoli e intestazioni di tabella sono in maiuscolo e spaziati, ma formule e
+   codice no: f e F, n e N, val e VAL non sono la stessa cosa */
+.ds-doc .katex,
+.ds-doc h3 code,
+.ds-doc h4 code,
+.ds-doc th code {
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+/* Il codice citato nel testo, come nelle esercitazioni di Reti */
+.ds-doc p code,
+.ds-doc li code,
+.ds-doc td code,
+.ds-doc h3 code,
+.ds-doc h4 code {
+    padding: 0.1em 0.35em;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.06);
+    font-family: monospace;
+    font-size: 0.85em;
+    overflow-wrap: anywhere;
+}
+body.dark-mode .ds-doc p code,
+body.dark-mode .ds-doc li code,
+body.dark-mode .ds-doc td code,
+body.dark-mode .ds-doc h3 code,
+body.dark-mode .ds-doc h4 code {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Gli pseudo-codici: il riquadro di .lab-code, con un filo rosso a sinistra
+   che li distingue dalle formule */
+.ds-code pre {
+    border-left: 3px solid #d52349;
+    font-size: 0.82em;
+    line-height: 1.55;
+}
+body.dark-mode .ds-code pre {
+    border-left-color: #ff6b81;
+}
+
+/* Un elenco dentro una voce di elenco */
+.ds-list .ds-list {
+    margin: 0.4em 0 0.2em 1.2em;
+}
+.ds-list li > .ds-math-display {
+    margin-top: 0.2em;
+}
+
+/* Le tabelle: larghe quanto serve, e scorrono se non ci stanno */
+.ds-table-scroll {
+    overflow-x: auto;
+    margin: 0 0 1.5em;
+}
+.ds-table th,
+.ds-table td {
+    text-align: left;
+    vertical-align: top;
+}
+
+/* La colonna destra: lezione precedente, successiva ed elenco, uno sotto
+   l'altro e larghi quanto il riquadro */
+.ds-nav-box .button {
+    display: block;
+    width: 100%;
+    margin: 0 0 0.6em;
+}
+.ds-nav-box .button:last-child {
+    margin-bottom: 0;
+}
