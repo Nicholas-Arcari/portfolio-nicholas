@@ -34,9 +34,9 @@ const CyberServices = () => {
           <article className="box post" style={{ padding: '4em 2em' }}>
 
             <div style={{ textAlign: 'center' }}>
-              <i className="icon solid fa-shield-alt" style={{ fontSize: '4em', color: '#d52349', marginBottom: '0.3em', display: 'block' }}></i>
+              <i className="icon solid fa-shield-alt" style={{ fontSize: '4em', color: 'var(--accent-text)', marginBottom: '0.3em', display: 'block' }}></i>
               <h2 style={{ fontSize: '3em', marginBottom: '0.3em' }}>{t('cyberServices.heading')}</h2>
-              <p style={{ fontSize: '1.2em', color: '#666', maxWidth: '640px', margin: '0 auto 2em' }}>
+              <p style={{ fontSize: '1.2em', color: 'var(--text-muted)', maxWidth: '640px', margin: '0 auto 2em' }}>
                 {t('cyberServices.text')}
               </p>
             </div>
@@ -59,7 +59,7 @@ const CyberServices = () => {
                 <li key={i} style={{ marginBottom: '0.5em', lineHeight: 1.5 }}>{a}</li>
               ))}
             </ul>
-            <p style={{ fontSize: '0.9em', color: '#888', marginBottom: '1em' }}>
+            <p style={{ fontSize: '0.9em', color: 'var(--text-subtle)', marginBottom: '1em' }}>
               {t('cyberServices.architectureNote')}
             </p>
 
@@ -93,7 +93,7 @@ const CyberServices = () => {
 
             {guide === 'simple' && (
               <div className="fade-in" style={{ marginBottom: '2em' }}>
-                <p style={{ color: '#666', marginBottom: '0.8em' }}>
+                <p style={{ color: 'var(--text-muted)', marginBottom: '0.8em' }}>
                   {t('cyberServices.simpleIntro')}
                 </p>
                 <ol>
@@ -101,7 +101,7 @@ const CyberServices = () => {
                     <li key={i} style={{ marginBottom: '0.6em', lineHeight: 1.5 }}>{s}</li>
                   ))}
                 </ol>
-                <p style={{ fontSize: '0.9em', color: '#888', marginTop: '1em' }}>
+                <p style={{ fontSize: '0.9em', color: 'var(--text-subtle)', marginTop: '1em' }}>
                   {t('cyberServices.simpleHelp')}
                 </p>
               </div>
@@ -109,7 +109,7 @@ const CyberServices = () => {
 
             {guide === 'tech' && (
               <div className="fade-in" style={{ marginBottom: '2em' }}>
-                <p style={{ color: '#666', marginBottom: '0.8em' }}>
+                <p style={{ color: 'var(--text-muted)', marginBottom: '0.8em' }}>
                   {t('cyberServices.techIntro')}
                 </p>
                 <ol>
@@ -117,7 +117,7 @@ const CyberServices = () => {
                     <li key={i} style={{ marginBottom: '0.6em', lineHeight: 1.5 }}>{s}</li>
                   ))}
                 </ol>
-                <p style={{ fontSize: '0.9em', color: '#888', marginTop: '1em' }}>
+                <p style={{ fontSize: '0.9em', color: 'var(--text-subtle)', marginTop: '1em' }}>
                   {t('cyberServices.techNotes')}
                 </p>
               </div>
@@ -132,7 +132,7 @@ const CyberServices = () => {
               >
                 {t('cyberServices.downloadBtn')}
               </a>
-              <p style={{ fontSize: '0.85em', color: '#888', marginTop: '0.8em' }}>
+              <p style={{ fontSize: '0.85em', color: 'var(--text-subtle)', marginTop: '0.8em' }}>
                 {t('cyberServices.downloadNote')}
               </p>
             </div>
@@ -179,7 +179,7 @@ const CyberServices = () => {
                     padding: '0.9em 1em', borderLeft: '3px solid #d52349',
                     background: 'rgba(128,128,128,0.12)', borderRadius: '3px',
                   }}>{t('cyberServices.imagesVerifyCmd')}</pre>
-                  <p style={{ fontSize: '0.9em', color: '#888', margin: 0 }}>
+                  <p style={{ fontSize: '0.9em', color: 'var(--text-subtle)', margin: 0 }}>
                     {t('cyberServices.imagesTrustNote')}
                   </p>
                 </div>
@@ -203,19 +203,19 @@ const CyberServices = () => {
 
               {showFaq && (
                 <div className="fade-in" style={{ marginTop: '1.5em', textAlign: 'left' }}>
-                  <h4 style={{ marginBottom: '0.8em', color: '#d52349' }}>{faq.techTitle}</h4>
+                  <h4 style={{ marginBottom: '0.8em', color: 'var(--accent-text)' }}>{faq.techTitle}</h4>
                   {faq.tech.map((item, i) => (
                     <div key={`tech-${i}`} style={{ marginBottom: '1.2em' }}>
                       <p style={{ fontWeight: 'bold', marginBottom: '0.3em' }}>{item.q}</p>
-                      <p style={{ color: '#666', margin: 0 }}>{item.a}</p>
+                      <p style={{ color: 'var(--text-muted)', margin: 0 }}>{item.a}</p>
                     </div>
                   ))}
 
-                  <h4 style={{ margin: '1.8em 0 0.8em', color: '#d52349' }}>{faq.generalTitle}</h4>
+                  <h4 style={{ margin: '1.8em 0 0.8em', color: 'var(--accent-text)' }}>{faq.generalTitle}</h4>
                   {faq.general.map((item, i) => (
                     <div key={`gen-${i}`} style={{ marginBottom: '1.2em' }}>
                       <p style={{ fontWeight: 'bold', marginBottom: '0.3em' }}>{item.q}</p>
-                      <p style={{ color: '#666', margin: 0 }}>{item.a}</p>
+                      <p style={{ color: 'var(--text-muted)', margin: 0 }}>{item.a}</p>
                     </div>
                   ))}
                 </div>
@@ -242,7 +242,7 @@ const CyberServices = () => {
                   <li>
                     <article className="box highlight">
                       <header><h3>{t('cyberServices.videoTitle')}</h3></header>
-                      <p style={{ fontSize: '0.95em', color: '#666' }}>{t('cyberServices.videoIntro')}</p>
+                      <p style={{ fontSize: '0.95em', color: 'var(--text-muted)' }}>{t('cyberServices.videoIntro')}</p>
                       <button
                         type="button"
                         className="button icon brands fa-windows"
@@ -277,11 +277,11 @@ const CyberServices = () => {
                     <article className="box highlight">
                       <header>
                         <h3>
-                          <i className="icon solid fa-key" style={{ color: '#d52349', marginRight: '0.5em' }}></i>
+                          <i className="icon solid fa-key" style={{ color: 'var(--accent-text)', marginRight: '0.5em' }}></i>
                           {t('cyberServices.licenseTitle')}
                         </h3>
                       </header>
-                      <p style={{ fontSize: '0.95em', color: '#666' }}>{t('cyberServices.licenseText')}</p>
+                      <p style={{ fontSize: '0.95em', color: 'var(--text-muted)' }}>{t('cyberServices.licenseText')}</p>
                       <p style={{ fontSize: '0.9em', marginTop: '0.9em', marginBottom: 0 }}>
                         <a
                           href={`${import.meta.env.BASE_URL}downloads/${t('cyberServices.eulaPdf')}`}
@@ -304,11 +304,11 @@ const CyberServices = () => {
                     <article className="box highlight">
                       <header>
                         <h3>
-                          <i className="icon solid fa-envelope" style={{ color: '#d52349', marginRight: '0.5em' }}></i>
+                          <i className="icon solid fa-envelope" style={{ color: 'var(--accent-text)', marginRight: '0.5em' }}></i>
                           {t('cyberServices.contactTitle')}
                         </h3>
                       </header>
-                      <p style={{ fontSize: '0.95em', color: '#666' }}>{t('cyberServices.contact')}</p>
+                      <p style={{ fontSize: '0.95em', color: 'var(--text-muted)' }}>{t('cyberServices.contact')}</p>
                       <a href="mailto:arcari.nicholas0@gmail.com?subject=SOC%20Suite%20-%20richiesta%20licenza" className="button icon solid fa-envelope" style={{ width: '100%', marginBottom: '10px' }}>
                         Email
                       </a>

@@ -1,5 +1,22 @@
 /* src/HackerTheme.css */
 
+/* ===== GRIGI DEL TESTO (contrasto WCAG AA) ===== */
+/* I grigi del testo secondario cambiano col tema: un grigio unico non regge
+   4,5:1 sia sul bianco (e sul grigio chiaro #f0f0f0) sia sul nero del tema
+   scuro. Li usano anche gli stili scritti nelle pagine (color: var(...)). */
+:root {
+    --text-muted: #666;      /* testo secondario: 5,7:1 sul bianco */
+    --text-subtle: #6d6d6d;  /* note e didascalie: 4,5:1 anche su #f0f0f0 */
+    --link-hover: #bb4b40;   /* il corallo dei link al passaggio del mouse */
+    --accent-text: #d52349;  /* il rosso del testo: 5:1 sul bianco */
+}
+body.dark-mode {
+    --text-muted: #9a9a9a;
+    --text-subtle: #8f8f8f;
+    --link-hover: #ed786a;
+    --accent-text: #e94560;
+}
+
 /* ===== PAGE TRANSITION ===== */
 /* Un'animazione, non una transizione: parte da sola al montaggio, che e' il
    momento in cui serve. Il componente cambia `key` a ogni percorso, quindi
@@ -119,7 +136,7 @@ body.dark-mode .wheel-result strong {
 .wheel-result-hint {
     display: block;
     font-size: 0.8em;
-    color: #888;
+    color: var(--text-subtle);
     margin-top: 0.2em;
 }
 /* La riga raggiunta: margine sopra perche' sotto i 980px la barra del menu e'
@@ -182,7 +199,7 @@ body.dark-mode .wheel-result strong {
     padding: 0 0.2em;
     font-size: 1.7em;
     line-height: 1;
-    color: #888;
+    color: var(--text-subtle);
     min-width: auto;
     height: auto;
 }
@@ -291,7 +308,7 @@ body.dark-mode #nav .nav-dropdown-menu li {
 /* ===== SEARCH RESULTS COUNT ===== */
 .search-results-count {
     font-size: 0.85em;
-    color: #999;
+    color: var(--text-subtle);
     margin-top: 8px;
 }
 
@@ -325,12 +342,12 @@ body.dark-mode #nav .nav-dropdown-menu li {
 .footer-privacy,
 .footer-license {
     font-size: 0.8em;
-    color: #999;
+    color: var(--text-subtle);
     margin: 0.3em 0 0 0;
     text-align: center;
 }
 .footer-license a {
-    color: #999;
+    color: var(--text-subtle);
     text-decoration: underline;
 }
 
@@ -418,8 +435,8 @@ body.dark-mode .about-contacts .fa-tiktok {
     width: 48px;
     height: 48px;
     border-radius: 50%;
-    border: 2px solid #ed786a;
-    background: #ed786a;
+    border: 2px solid #bb4b40;
+    background: #bb4b40;
     color: #fff;
     cursor: pointer;
     display: flex;
@@ -435,8 +452,8 @@ body.dark-mode .about-contacts .fa-tiktok {
    generica "button:hover" del template e i pulsanti sembrerebbero colorati
    solo al passaggio del mouse */
 .settings-btn:hover {
-    background: #fd887a;
-    border-color: #fd887a;
+    background: #c35347;
+    border-color: #c35347;
     box-shadow: 0 4px 14px rgba(0,0,0,0.3);
 }
 
@@ -540,6 +557,9 @@ body.dark-mode h1, body.dark-mode h2, body.dark-mode h3,
 body.dark-mode h4, body.dark-mode h5, body.dark-mode h6 {
     color: #efefef;
 }
+body.dark-mode strong, body.dark-mode b {
+    color: #d4d4d4;
+}
 body.dark-mode h2 strong {
     color: #ff6b81;
 }
@@ -570,13 +590,13 @@ body.dark-mode .box.excerpt {
 
 /* Buttons */
 body.dark-mode .button {
-    background: #e94560;
+    background: #d12b4d;
     color: #fff !important;
-    border-color: #e94560;
+    border-color: #d12b4d;
 }
 body.dark-mode .button:hover {
-    background: #ff6b81;
-    border-color: #ff6b81;
+    background: #da3554;
+    border-color: #da3554;
 }
 body.dark-mode .button.alt {
     background: transparent;
@@ -645,20 +665,24 @@ body.dark-mode #copyright .links li,
 body.dark-mode .footer-privacy,
 body.dark-mode .footer-license,
 body.dark-mode .footer-license a {
-    color: #525252;
+    color: #858585;
 }
 
 /* Sidebar: il separatore fra sezioni segue la regola comune piu sopra */
 
 /* Settings buttons in dark mode */
 body.dark-mode .settings-btn {
-    background: #e94560;
-    border-color: #e94560;
+    background: #d12b4d;
+    border-color: #d12b4d;
+    color: #fff;
+    color: #fff;
+}
+body.dark-mode .settings-btn .lang-label {
     color: #fff;
 }
 body.dark-mode .settings-btn:hover {
-    background: #ff6b81;
-    border-color: #ff6b81;
+    background: #da3554;
+    border-color: #da3554;
 }
 
 /* Dropdown menu */
@@ -734,7 +758,7 @@ body.dark-mode ::-webkit-scrollbar-thumb {
 .hw-row:hover { background: rgba(213, 35, 73, 0.06); }
 body.dark-mode .hw-table th,
 body.dark-mode .hw-table td { border-bottom-color: #2a2a2a; }
-.hw-note { font-size: 0.85em; color: #888; }
+.hw-note { font-size: 0.85em; color: var(--text-subtle); }
 .hw-dates { display: flex; flex-wrap: wrap; gap: 0.4em 1.5em; }
 /* In fondo a ogni homework: ritorno all'elenco e all'inizio della pagina */
 .hw-bottom-actions { display: flex; flex-wrap: wrap; gap: 0.8em 1em; margin-top: 1.5em; }
@@ -759,7 +783,7 @@ body.dark-mode .hw-table td { border-bottom-color: #2a2a2a; }
 .hw1-section { margin-top: 2.5em; }
 .hw1-section h3 { margin-bottom: 0.6em; }
 .hw1-section h4 { margin: 1.2em 0 0.4em; }
-.hw1-note { font-size: 0.85em; color: #888; }
+.hw1-note { font-size: 0.85em; color: var(--text-subtle); }
 .hw1-controls {
     display: flex;
     flex-wrap: wrap;
@@ -803,7 +827,7 @@ body.dark-mode .hw1-controls input {
     border-radius: 4px;
     border: 2px solid transparent;
     background: rgba(0, 0, 0, 0.05);
-    color: #888;
+    color: var(--text-subtle);
 }
 .hw1-chip.in-subgroup { background: rgba(92, 107, 192, 0.15); color: inherit; }
 .hw1-chip.is-g { border-color: #f0a500; }
@@ -854,7 +878,7 @@ body.dark-mode .hw1-key strong { color: #ff6b81; }
     gap: 1em 1.5em;
 }
 .hw1-figure { position: relative; margin: 0; min-width: 0; }
-.hw1-figure figcaption { font-size: 0.8em; color: #888; margin-top: 0.3em; }
+.hw1-figure figcaption { font-size: 0.8em; color: var(--text-subtle); margin-top: 0.3em; }
 
 /* Il nome di un corso con una pagina sua (Statistics) e' un link: rosso
    anche nel tema chiaro, come nel tema scuro, perche' si capisca a colpo
@@ -968,7 +992,7 @@ dialog.hw-index .hw-index-close:hover {
     padding: 0 0.2em;
     font-size: 1.7em;
     line-height: 1;
-    color: #888 !important;
+    color: var(--text-subtle) !important;
     min-width: auto;
     height: auto;
     letter-spacing: normal;
@@ -1191,7 +1215,7 @@ body.dark-mode .hw1-scroll {
     z-index: 1;
 }
 .hw1-compact thead th {
-    background: #878787;
+    background: #6e6e6e;
 }
 .hw1-compact tr.is-empty td {
     color: #aaa;
@@ -1233,14 +1257,14 @@ body.dark-mode .hw1-scroll {
     letter-spacing: 1px;
     vertical-align: middle;
     color: #fff;
-    background: #777;
+    background: #6e6e6e;
 }
 .hw1-badge.is-valid,
 .hw1-badge.is-descriptive {
     background: #2e7d6b;
 }
 .hw1-badge.is-invalid {
-    background: #b26a00;
+    background: #a96505;
 }
 body.dark-mode span.hw1-badge {
     color: #fff;
@@ -1433,7 +1457,7 @@ body.dark-mode p.hw2-check.is-bad {
     font-weight: 600;
     letter-spacing: 1px;
     text-transform: uppercase;
-    color: #888;
+    color: var(--text-subtle);
 }
 .hw2-flow-node:last-child {
     border-color: #d52349;
@@ -1486,7 +1510,7 @@ body.dark-mode .hw2 .hw2-flow-arrow button {
     display: block;
     font-size: 0.8em;
     font-weight: 600;
-    color: #888;
+    color: var(--text-subtle);
 }
 .hw2-value code {
     display: block;
@@ -1496,7 +1520,7 @@ body.dark-mode .hw2 .hw2-flow-arrow button {
     line-height: 1.5;
 }
 .hw2-value.is-muted code {
-    color: #888;
+    color: var(--text-subtle);
 }
 .hw2-value mark {
     background: rgba(213, 35, 73, 0.14);
@@ -1504,7 +1528,7 @@ body.dark-mode .hw2 .hw2-flow-arrow button {
     border-radius: 2px;
 }
 .hw2-dropped {
-    color: #999;
+    color: var(--text-subtle);
 }
 body.dark-mode .hw2-value code {
     background: rgba(255, 255, 255, 0.05);
@@ -1514,7 +1538,7 @@ body.dark-mode .hw2-value mark {
     background: rgba(255, 107, 129, 0.2);
 }
 body.dark-mode span.hw2-dropped {
-    color: #666;
+    color: var(--text-subtle);
 }
 
 /* BIP-39: i bit della frase, con il checksum evidenziato */
@@ -1581,7 +1605,7 @@ body.dark-mode .hw2-compare tr.is-current {
 }
 .hw2-grid small {
     font-size: 0.75em;
-    color: #888;
+    color: var(--text-subtle);
 }
 .hw2-grid span.is-digit {
     color: #aaa;
@@ -1805,8 +1829,8 @@ body.dark-mode .hw2-legend-context::before {
     background: #d52349;
 }
 body.dark-mode .hw2a-nonces .button.alt[aria-pressed="true"] {
-    background: #e94560;
-    border-color: #e94560;
+    background: #d12b4d;
+    border-color: #d12b4d;
     color: #fff !important;
 }
 
@@ -1858,7 +1882,7 @@ body.dark-mode .hw2a-nonces .button.alt[aria-pressed="true"] {
 .hw2a-subst-row.is-cipher .hw2a-subst-head {
     min-width: 4.6em;
     background: transparent;
-    color: #888;
+    color: var(--text-subtle);
     font-family: inherit;
     font-size: 0.8em;
     font-weight: 600;
@@ -1887,7 +1911,7 @@ body.dark-mode .hw2a-subst-row.is-cipher .hw2a-subst-head {
     padding: 0;
     list-style: none;
     font-size: 0.8em;
-    color: #888;
+    color: var(--text-subtle);
 }
 .hw2a-legend li {
     margin: 0;
@@ -2050,8 +2074,8 @@ body.dark-mode .hw3-field input {
     background: #d52349;
 }
 body.dark-mode .hw3-choices .button.alt[aria-pressed="true"] {
-    background: #e94560;
-    border-color: #e94560;
+    background: #d12b4d;
+    border-color: #d12b4d;
     color: #fff !important;
 }
 /* I cursori su n e su epsilon */
@@ -2124,7 +2148,7 @@ body.dark-mode .hw3-over {
 /* l'intervallo al 95% sotto la frazione, piu' piccolo */
 .hw3-interval {
     display: block;
-    color: #888;
+    color: var(--text-subtle);
     font-size: 0.85em;
 }
 /* intestazioni e pulsanti con formule: il maiuscolo del tema cambierebbe i
@@ -2241,7 +2265,7 @@ body.dark-mode .hw4-digit-row {
 }
 .hw4-digit-note {
     font-size: 0.8em;
-    color: #888;
+    color: var(--text-subtle);
 }
 .hw4-digit-ok {
     color: #2e7d6b;
@@ -2252,7 +2276,7 @@ body.dark-mode .hw4-digit-row {
     font-weight: 700;
 }
 .hw4-digit-common {
-    color: #9e9e9e;
+    color: var(--text-subtle);
 }
 body.dark-mode .hw4-digit-ok {
     color: #4fb39c;
@@ -2261,7 +2285,7 @@ body.dark-mode .hw4-digit-bad {
     color: #ff8a80;
 }
 body.dark-mode .hw4-digit-common {
-    color: #777;
+    color: var(--text-subtle);
 }
 /* intestazioni con formule: il maiuscolo del tema cambierebbe i simboli
    (M_n diventerebbe M_N, mu una M greca, sigma una S greca) */
@@ -2357,7 +2381,7 @@ body.dark-mode .hw5-compare td.hw5-win {
 }
 .hw5-coins small {
     font-size: 0.7em;
-    color: #888;
+    color: var(--text-subtle);
     white-space: nowrap;
 }
 .hw5-coin {
@@ -2375,7 +2399,15 @@ body.dark-mode .hw5-compare td.hw5-win {
     box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.18);
 }
 .hw5-coin.is-copper {
-    background: #c47a4a;
+    background: #ab6333;
+    color: #fff;
+}
+/* nel tema scuro la regola generica sugli span faceva grigio il testo
+   delle monete: resta quello del tema chiaro */
+body.dark-mode .hw5-coin {
+    color: #3a2a12;
+}
+body.dark-mode .hw5-coin.is-copper {
     color: #fff;
 }
 .hw5-coin.is-gold {
@@ -2484,6 +2516,20 @@ body.dark-mode .hw6-residuals td.hw6-res-n3 { background: rgba(121, 134, 203, 0.
 /* la riga del campione scelto, nella tabella della dipendenza regolabile */
 .hw6-series tr.is-current > * {
     background: rgba(213, 35, 73, 0.1);
+}
+/* Sulle celle e sui riquadri colorati degli homework (rosa e azzurro chiari)
+   il grigio del testo restava sotto 4,5:1: nel tema chiaro diventa #333 */
+body:not(.dark-mode) .hw6-residuals td[class*="hw6-res-"],
+body:not(.dark-mode) .hw6-series tr.is-current > *,
+body:not(.dark-mode) .hw5-ztable td.is-mark,
+body:not(.dark-mode) .hw1-table tr.is-marked > th,
+body:not(.dark-mode) .hw1-table tr.is-marked > td,
+body:not(.dark-mode) .hw5-reference tr.hw5-misprint > *,
+body:not(.dark-mode) .hw1-discussion-table tr.is-marked > td,
+body:not(.dark-mode) .hw1-chip.in-subgroup,
+body:not(.dark-mode) .hw2-value mark,
+body:not(.dark-mode) .hw2-structure {
+    color: #333;
 }
 body.dark-mode .hw6-series tr.is-current > * {
     background: rgba(233, 69, 96, 0.2);
@@ -2648,7 +2694,7 @@ body.dark-mode .hw7-field textarea {
     color: #c62828;
 }
 .hw7-table tr.hw7-unknown > * {
-    color: #888888;
+    color: var(--text-subtle);
 }
 body.dark-mode .hw7-table tr.hw7-holds > td,
 body.dark-mode .hw7-table tr.hw7-towards-ham > td {
@@ -2825,6 +2871,12 @@ body.dark-mode .kit-source .kit-tools button:hover:not(:disabled)  {
 .kit-figure .kit-player .button[aria-pressed="true"] {
     background: #d52349;
 }
+/* nel tema scuro .button.alt impone il grigio: sul rosso dei pulsanti
+   premuti non si leggeva */
+body.dark-mode .button.alt[aria-pressed="true"],
+body.dark-mode .kit-figure .kit-player .button[aria-pressed="true"] {
+    color: #fff !important;
+}
 /* il tema toglie l'aspetto nativo a ogni input: il cursore lo riprende, altrimenti la barra non si vede */
 .kit-figure .kit-player .kit-position {
     -webkit-appearance: auto;
@@ -2841,7 +2893,7 @@ body.dark-mode .kit-source .kit-tools button:hover:not(:disabled)  {
     accent-color: #d52349;
 }
 .kit-figure .kit-player .kit-step {
-    color: #888888;
+    color: var(--text-subtle);
     font-size: 0.75em;
     white-space: nowrap;
 }
@@ -3099,8 +3151,8 @@ body.dark-mode .th-page .th-fold > summary::before {
     background: #d52349;
 }
 body.dark-mode .hw-filter .button.alt[aria-pressed="true"] {
-    background: #e94560;
-    border-color: #e94560;
+    background: #d12b4d;
+    border-color: #d12b4d;
     color: #fff !important;
 }
 
@@ -3193,7 +3245,7 @@ body.dark-mode .lab-readme {
 .lab-author {
     font-family: monospace;
     font-size: 0.85em;
-    color: #888;
+    color: var(--text-subtle);
     margin: 0 0 1.5em;
 }
 /* I comandi citati nel testo, in carattere fisso su un fondo appena visibile */
@@ -3267,7 +3319,7 @@ body.dark-mode .lab-readme {
     margin: 0 0 0.3em;
     font-family: monospace;
     font-size: 0.8em;
-    color: #888;
+    color: var(--text-subtle);
 }
 .lab-code pre {
     margin: 0;

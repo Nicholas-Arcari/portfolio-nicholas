@@ -34,12 +34,12 @@ const CitizenShield = () => {
           <article className="box post" style={{ padding: '4em 2em' }}>
 
             <div style={{ textAlign: 'center' }}>
-              <i className="icon solid fa-user-shield" style={{ fontSize: '4em', color: '#d52349', marginBottom: '0.3em', display: 'block' }}></i>
+              <i className="icon solid fa-user-shield" style={{ fontSize: '4em', color: 'var(--accent-text)', marginBottom: '0.3em', display: 'block' }}></i>
               <h2 style={{ fontSize: '3em', marginBottom: '0.2em' }}>{t('citizenShield.heading')}</h2>
-              <p style={{ fontSize: '0.85em', color: '#d52349', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '1em' }}>
+              <p style={{ fontSize: '0.85em', color: 'var(--accent-text)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '1em' }}>
                 {t('citizenShield.status')}
               </p>
-              <p style={{ fontSize: '1.2em', color: '#666', maxWidth: '640px', margin: '0 auto 2em' }}>
+              <p style={{ fontSize: '1.2em', color: 'var(--text-muted)', maxWidth: '640px', margin: '0 auto 2em' }}>
                 {t('citizenShield.text')}
               </p>
             </div>
@@ -59,7 +59,7 @@ const CitizenShield = () => {
                 <li key={i} style={{ marginBottom: '0.3em', lineHeight: 1.5 }}>{s}</li>
               ))}
             </ul>
-            <p style={{ fontSize: '0.9em', color: '#888', marginBottom: '2em' }}>
+            <p style={{ fontSize: '0.9em', color: 'var(--text-subtle)', marginBottom: '2em' }}>
               {t('citizenShield.notes')}
             </p>
 
@@ -80,7 +80,7 @@ const CitizenShield = () => {
                 <li key={i} style={{ marginBottom: '0.5em', lineHeight: 1.5 }}>{m}</li>
               ))}
             </ul>
-            <p style={{ fontSize: '0.9em', color: '#888', marginBottom: '2em' }}>
+            <p style={{ fontSize: '0.9em', color: 'var(--text-subtle)', marginBottom: '2em' }}>
               {t('citizenShield.agentNote')}
             </p>
 
@@ -114,7 +114,7 @@ const CitizenShield = () => {
 
             {guide === 'simple' && (
               <div className="fade-in" style={{ marginBottom: '2em' }}>
-                <p style={{ color: '#666', marginBottom: '0.8em' }}>
+                <p style={{ color: 'var(--text-muted)', marginBottom: '0.8em' }}>
                   {t('citizenShield.simpleIntro')}
                 </p>
                 <ol>
@@ -122,7 +122,7 @@ const CitizenShield = () => {
                     <li key={i} style={{ marginBottom: '0.6em', lineHeight: 1.5 }}>{s}</li>
                   ))}
                 </ol>
-                <p style={{ fontSize: '0.9em', color: '#888', marginTop: '1em' }}>
+                <p style={{ fontSize: '0.9em', color: 'var(--text-subtle)', marginTop: '1em' }}>
                   {t('citizenShield.simpleHelp')}
                 </p>
               </div>
@@ -130,7 +130,7 @@ const CitizenShield = () => {
 
             {guide === 'tech' && (
               <div className="fade-in" style={{ marginBottom: '2em' }}>
-                <p style={{ color: '#666', marginBottom: '0.8em' }}>
+                <p style={{ color: 'var(--text-muted)', marginBottom: '0.8em' }}>
                   {t('citizenShield.techIntro')}
                 </p>
                 <ol>
@@ -138,7 +138,7 @@ const CitizenShield = () => {
                     <li key={i} style={{ marginBottom: '0.6em', lineHeight: 1.5 }}>{s}</li>
                   ))}
                 </ol>
-                <p style={{ fontSize: '0.9em', color: '#888', marginTop: '1em' }}>
+                <p style={{ fontSize: '0.9em', color: 'var(--text-subtle)', marginTop: '1em' }}>
                   {t('citizenShield.techNotes')}
                 </p>
               </div>
@@ -153,7 +153,7 @@ const CitizenShield = () => {
               >
                 {t('citizenShield.downloadBtn')}
               </a>
-              <p style={{ fontSize: '0.85em', color: '#888', marginTop: '0.8em' }}>
+              <p style={{ fontSize: '0.85em', color: 'var(--text-subtle)', marginTop: '0.8em' }}>
                 {t('citizenShield.downloadNote')}
               </p>
             </div>
@@ -220,19 +220,19 @@ const CitizenShield = () => {
 
               {showFaq && (
                 <div className="fade-in" style={{ marginTop: '1.5em', textAlign: 'left' }}>
-                  <h4 style={{ marginBottom: '0.8em', color: '#d52349' }}>{faq.techTitle}</h4>
+                  <h4 style={{ marginBottom: '0.8em', color: 'var(--accent-text)' }}>{faq.techTitle}</h4>
                   {faq.tech.map((item, i) => (
                     <div key={`tech-${i}`} style={{ marginBottom: '1.2em' }}>
                       <p style={{ fontWeight: 'bold', marginBottom: '0.3em' }}>{item.q}</p>
-                      <p style={{ color: '#666', margin: 0 }}>{item.a}</p>
+                      <p style={{ color: 'var(--text-muted)', margin: 0 }}>{item.a}</p>
                     </div>
                   ))}
 
-                  <h4 style={{ margin: '1.8em 0 0.8em', color: '#d52349' }}>{faq.generalTitle}</h4>
+                  <h4 style={{ margin: '1.8em 0 0.8em', color: 'var(--accent-text)' }}>{faq.generalTitle}</h4>
                   {faq.general.map((item, i) => (
                     <div key={`gen-${i}`} style={{ marginBottom: '1.2em' }}>
                       <p style={{ fontWeight: 'bold', marginBottom: '0.3em' }}>{item.q}</p>
-                      <p style={{ color: '#666', margin: 0 }}>{item.a}</p>
+                      <p style={{ color: 'var(--text-muted)', margin: 0 }}>{item.a}</p>
                     </div>
                   ))}
                 </div>
@@ -259,7 +259,7 @@ const CitizenShield = () => {
                   <li>
                     <article className="box highlight">
                       <header><h3>{t('citizenShield.videoTitle')}</h3></header>
-                      <p style={{ fontSize: '0.95em', color: '#666' }}>{t('citizenShield.videoIntro')}</p>
+                      <p style={{ fontSize: '0.95em', color: 'var(--text-muted)' }}>{t('citizenShield.videoIntro')}</p>
                       <button
                         type="button"
                         className="button icon brands fa-windows"
@@ -294,11 +294,11 @@ const CitizenShield = () => {
                     <article className="box highlight">
                       <header>
                         <h3>
-                          <i className="icon solid fa-key" style={{ color: '#d52349', marginRight: '0.5em' }}></i>
+                          <i className="icon solid fa-key" style={{ color: 'var(--accent-text)', marginRight: '0.5em' }}></i>
                           {t('citizenShield.licenseTitle')}
                         </h3>
                       </header>
-                      <p style={{ fontSize: '0.95em', color: '#666' }}>{t('citizenShield.licenseText')}</p>
+                      <p style={{ fontSize: '0.95em', color: 'var(--text-muted)' }}>{t('citizenShield.licenseText')}</p>
                       <p style={{ fontSize: '0.9em', marginTop: '0.9em', marginBottom: 0 }}>
                         <a
                           href={`${import.meta.env.BASE_URL}downloads/${t('citizenShield.eulaPdf')}`}
@@ -321,11 +321,11 @@ const CitizenShield = () => {
                     <article className="box highlight">
                       <header>
                         <h3>
-                          <i className="icon solid fa-envelope" style={{ color: '#d52349', marginRight: '0.5em' }}></i>
+                          <i className="icon solid fa-envelope" style={{ color: 'var(--accent-text)', marginRight: '0.5em' }}></i>
                           {t('citizenShield.contactTitle')}
                         </h3>
                       </header>
-                      <p style={{ fontSize: '0.95em', color: '#666' }}>{t('citizenShield.contact')}</p>
+                      <p style={{ fontSize: '0.95em', color: 'var(--text-muted)' }}>{t('citizenShield.contact')}</p>
                       <a href="mailto:arcari.nicholas0@gmail.com?subject=Citizen%20Shield%20-%20richiesta%20accesso%20beta" className="button icon solid fa-envelope" style={{ width: '100%', marginBottom: '10px' }}>
                         Email
                       </a>

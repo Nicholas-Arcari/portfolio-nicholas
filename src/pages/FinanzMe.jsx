@@ -33,12 +33,12 @@ const FinanzMe = () => {
           <article className="box post" style={{ padding: '4em 2em' }}>
 
             <div style={{ textAlign: 'center' }}>
-              <i className="icon solid fa-chart-line" style={{ fontSize: '4em', color: '#d52349', marginBottom: '0.3em', display: 'block' }}></i>
+              <i className="icon solid fa-chart-line" style={{ fontSize: '4em', color: 'var(--accent-text)', marginBottom: '0.3em', display: 'block' }}></i>
               <h2 style={{ fontSize: '3em', marginBottom: '0.2em' }}>{t('finanzMe.heading')}</h2>
-              <p style={{ fontSize: '0.85em', color: '#d52349', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '1em' }}>
+              <p style={{ fontSize: '0.85em', color: 'var(--accent-text)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '1em' }}>
                 {t('finanzMe.status')}
               </p>
-              <p style={{ fontSize: '1.2em', color: '#666', maxWidth: '640px', margin: '0 auto 2em' }}>
+              <p style={{ fontSize: '1.2em', color: 'var(--text-muted)', maxWidth: '640px', margin: '0 auto 2em' }}>
                 {t('finanzMe.text')}
               </p>
             </div>
@@ -62,7 +62,7 @@ const FinanzMe = () => {
                 <li key={i} style={{ marginBottom: '0.5em', lineHeight: 1.5 }}>{a}</li>
               ))}
             </ul>
-            <p style={{ fontSize: '0.9em', color: '#888', marginBottom: '1em' }}>
+            <p style={{ fontSize: '0.9em', color: 'var(--text-subtle)', marginBottom: '1em' }}>
               {t('finanzMe.architectureNote')}
             </p>
 
@@ -95,7 +95,7 @@ const FinanzMe = () => {
 
             {guide === 'simple' && (
               <div className="fade-in" style={{ marginBottom: '2em' }}>
-                <p style={{ color: '#666', marginBottom: '0.8em' }}>
+                <p style={{ color: 'var(--text-muted)', marginBottom: '0.8em' }}>
                   {t('finanzMe.simpleIntro')}
                 </p>
                 <ol>
@@ -103,7 +103,7 @@ const FinanzMe = () => {
                     <li key={i} style={{ marginBottom: '0.6em', lineHeight: 1.5 }}>{s}</li>
                   ))}
                 </ol>
-                <p style={{ fontSize: '0.9em', color: '#888', marginTop: '1em' }}>
+                <p style={{ fontSize: '0.9em', color: 'var(--text-subtle)', marginTop: '1em' }}>
                   {t('finanzMe.simpleHelp')}
                 </p>
               </div>
@@ -111,7 +111,7 @@ const FinanzMe = () => {
 
             {guide === 'tech' && (
               <div className="fade-in" style={{ marginBottom: '2em' }}>
-                <p style={{ color: '#666', marginBottom: '0.8em' }}>
+                <p style={{ color: 'var(--text-muted)', marginBottom: '0.8em' }}>
                   {t('finanzMe.techIntro')}
                 </p>
                 <ol>
@@ -119,7 +119,7 @@ const FinanzMe = () => {
                     <li key={i} style={{ marginBottom: '0.6em', lineHeight: 1.5 }}>{s}</li>
                   ))}
                 </ol>
-                <p style={{ fontSize: '0.9em', color: '#888', marginTop: '1em' }}>
+                <p style={{ fontSize: '0.9em', color: 'var(--text-subtle)', marginTop: '1em' }}>
                   {t('finanzMe.techNotes')}
                 </p>
               </div>
@@ -147,19 +147,19 @@ const FinanzMe = () => {
 
               {showFaq && (
                 <div className="fade-in" style={{ marginTop: '1.5em', textAlign: 'left' }}>
-                  <h4 style={{ marginBottom: '0.8em', color: '#d52349' }}>{faq.techTitle}</h4>
+                  <h4 style={{ marginBottom: '0.8em', color: 'var(--accent-text)' }}>{faq.techTitle}</h4>
                   {faq.tech.map((item, i) => (
                     <div key={`tech-${i}`} style={{ marginBottom: '1.2em' }}>
                       <p style={{ fontWeight: 'bold', marginBottom: '0.3em' }}>{item.q}</p>
-                      <p style={{ color: '#666', margin: 0 }}>{item.a}</p>
+                      <p style={{ color: 'var(--text-muted)', margin: 0 }}>{item.a}</p>
                     </div>
                   ))}
 
-                  <h4 style={{ margin: '1.8em 0 0.8em', color: '#d52349' }}>{faq.generalTitle}</h4>
+                  <h4 style={{ margin: '1.8em 0 0.8em', color: 'var(--accent-text)' }}>{faq.generalTitle}</h4>
                   {faq.general.map((item, i) => (
                     <div key={`gen-${i}`} style={{ marginBottom: '1.2em' }}>
                       <p style={{ fontWeight: 'bold', marginBottom: '0.3em' }}>{item.q}</p>
-                      <p style={{ color: '#666', margin: 0 }}>{item.a}</p>
+                      <p style={{ color: 'var(--text-muted)', margin: 0 }}>{item.a}</p>
                     </div>
                   ))}
                 </div>
@@ -186,7 +186,7 @@ const FinanzMe = () => {
                   <li>
                     <article className="box highlight">
                       <header><h3>{t('finanzMe.videoTitle')}</h3></header>
-                      <p style={{ fontSize: '0.95em', color: '#666' }}>{t('finanzMe.videoIntro')}</p>
+                      <p style={{ fontSize: '0.95em', color: 'var(--text-muted)' }}>{t('finanzMe.videoIntro')}</p>
                       <button
                         type="button"
                         className="button icon brands fa-windows"
@@ -221,11 +221,11 @@ const FinanzMe = () => {
                     <article className="box highlight">
                       <header>
                         <h3>
-                          <i className="icon solid fa-lock" style={{ color: '#d52349', marginRight: '0.5em' }}></i>
+                          <i className="icon solid fa-lock" style={{ color: 'var(--accent-text)', marginRight: '0.5em' }}></i>
                           {t('finanzMe.accessTitle')}
                         </h3>
                       </header>
-                      <p style={{ fontSize: '0.95em', color: '#666', margin: 0 }}>{t('finanzMe.contactNote')}</p>
+                      <p style={{ fontSize: '0.95em', color: 'var(--text-muted)', margin: 0 }}>{t('finanzMe.contactNote')}</p>
                     </article>
                   </li>
                 </ul>
@@ -238,11 +238,11 @@ const FinanzMe = () => {
                     <article className="box highlight">
                       <header>
                         <h3>
-                          <i className="icon solid fa-envelope" style={{ color: '#d52349', marginRight: '0.5em' }}></i>
+                          <i className="icon solid fa-envelope" style={{ color: 'var(--accent-text)', marginRight: '0.5em' }}></i>
                           {t('finanzMe.contactTitle')}
                         </h3>
                       </header>
-                      <p style={{ fontSize: '0.95em', color: '#666' }}>{t('finanzMe.contact')}</p>
+                      <p style={{ fontSize: '0.95em', color: 'var(--text-muted)' }}>{t('finanzMe.contact')}</p>
                       <a href="mailto:arcari.nicholas0@gmail.com?subject=FinanzMe%20-%20informazioni" className="button icon solid fa-envelope" style={{ width: '100%', marginBottom: '10px' }}>
                         Email
                       </a>

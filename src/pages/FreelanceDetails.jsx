@@ -31,7 +31,7 @@ const FreelanceDetails = () => {
                <article className="box post">
                   <header>
                     <h2>{t('freelance.title')}</h2>
-                    <p style={{ fontStyle: 'italic', color: '#666' }}>
+                    <p style={{ fontStyle: 'italic', color: 'var(--text-muted)' }}>
                       {t('freelance.subtitle')}
                     </p>
                   </header>
@@ -39,15 +39,15 @@ const FreelanceDetails = () => {
                   {/* KPI - LAYOUT SX - CENTRO - DX */}
                   <div className="row aln-center" style={{ margin: '2em 0', alignItems: 'flex-start' }}>
                     <div className="col-4 col-12-small" style={{ textAlign: 'left' }}>
-                        <h3 style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.2em', lineHeight: '1' }}>-99%</h3>
+                        <h3 style={{ fontSize: '2.5em', color: 'var(--accent-text)', marginBottom: '0.2em', lineHeight: '1' }}>-99%</h3>
                         <p style={{ margin: 0, lineHeight: '1.2', textAlign: 'left' }}>{t('freelance.kpi.time')}</p>
                     </div>
                     <div className="col-4 col-12-small" style={{ textAlign: 'left' }}>
-                        <h3 style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.2em', lineHeight: '1' }}>AI</h3>
+                        <h3 style={{ fontSize: '2.5em', color: 'var(--accent-text)', marginBottom: '0.2em', lineHeight: '1' }}>AI</h3>
                         <p style={{ margin: 0, lineHeight: '1.2', textAlign: 'left' }}>{t('freelance.kpi.ai')}</p>
                     </div>
                     <div className="col-4 col-12-small" style={{ textAlign: 'left' }}>
-                        <h3 style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.2em', lineHeight: '1' }}>4.0 & 5.0</h3>
+                        <h3 style={{ fontSize: '2.5em', color: 'var(--accent-text)', marginBottom: '0.2em', lineHeight: '1' }}>4.0 & 5.0</h3>
                         <p style={{ margin: 0, lineHeight: '1.2', textAlign: 'left' }}>{t('freelance.kpi.industry')}</p>
                     </div>
                   </div>
@@ -111,7 +111,7 @@ const FreelanceDetails = () => {
                <article className="box post">
                   <header>
                     <h2>{t('freelance.erp.title')}</h2>
-                    <p style={{ fontStyle: 'italic', color: '#666' }}>
+                    <p style={{ fontStyle: 'italic', color: 'var(--text-muted)' }}>
                       {t('freelance.erp.subtitle')}
                     </p>
                   </header>
@@ -119,15 +119,15 @@ const FreelanceDetails = () => {
                   {/* KPI - LAYOUT SX - CENTRO - DX */}
                   <div className="row aln-center" style={{ margin: '2em 0', alignItems: 'flex-start' }}>
                     <div className="col-4 col-12-small" style={{ textAlign: 'left' }}>
-                        <h3 style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.2em', lineHeight: '1' }}>100%</h3>
+                        <h3 style={{ fontSize: '2.5em', color: 'var(--accent-text)', marginBottom: '0.2em', lineHeight: '1' }}>100%</h3>
                         <p style={{ margin: 0, lineHeight: '1.2', textAlign: 'left' }}>{t('freelance.erp.kpi.tests')}</p>
                     </div>
                     <div className="col-4 col-12-small" style={{ textAlign: 'left' }}>
-                        <h3 style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.2em', lineHeight: '1' }}>ASVS L2</h3>
+                        <h3 style={{ fontSize: '2.5em', color: 'var(--accent-text)', marginBottom: '0.2em', lineHeight: '1' }}>ASVS L2</h3>
                         <p style={{ margin: 0, lineHeight: '1.2', textAlign: 'left' }}>{t('freelance.erp.kpi.security')}</p>
                     </div>
                     <div className="col-4 col-12-small" style={{ textAlign: 'left' }}>
-                        <h3 style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.2em', lineHeight: '1' }}>E2E</h3>
+                        <h3 style={{ fontSize: '2.5em', color: 'var(--accent-text)', marginBottom: '0.2em', lineHeight: '1' }}>E2E</h3>
                         <p style={{ margin: 0, lineHeight: '1.2', textAlign: 'left' }}>{t('freelance.erp.kpi.flow')}</p>
                     </div>
                   </div>

@@ -80,7 +80,7 @@ const WheelOfFortune = ({ items, title, intro, spinLabel, spinningLabel, resultL
   return (
     <div className="wheel">
       {title && <header><h3>{title}</h3></header>}
-      {intro && <p style={{ fontSize: '0.9em', color: '#666' }}>{intro}</p>}
+      {intro && <p style={{ fontSize: '0.9em', color: 'var(--text-muted)' }}>{intro}</p>}
 
       <div className="wheel-stage">
         <div className="wheel-pointer" aria-hidden="true"></div>
@@ -117,7 +117,7 @@ const WheelOfFortune = ({ items, title, intro, spinLabel, spinningLabel, resultL
 
       {result && (
         <div className="wheel-result fade-in" style={{ marginTop: '1em', textAlign: 'center' }}>
-          <span style={{ fontSize: '0.85em', color: '#888', display: 'block', marginBottom: '0.2em' }}>{resultLabel}</span>
+          <span style={{ fontSize: '0.85em', color: 'var(--text-subtle)', display: 'block', marginBottom: '0.2em' }}>{resultLabel}</span>
           <button type="button" className="wheel-result-link" onClick={() => onPick(resultIndex)}>
             <strong style={{ fontSize: '1.1em' }}>{result.sym} {result.name}</strong>
             <span className="wheel-result-hint">

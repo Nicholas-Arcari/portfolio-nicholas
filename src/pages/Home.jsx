@@ -120,7 +120,7 @@ const Home = () => {
                         {t('home.work.freelanceMigration')}
                         </p>
 
-                        <p style={{ fontSize: '0.9em', color: '#666', borderLeft: '3px solid #ddd', paddingLeft: '10px' }}>
+                        <p style={{ fontSize: '0.9em', color: 'var(--text-muted)', borderLeft: '3px solid #ddd', paddingLeft: '10px' }}>
                         <strong>Tech Stack:</strong> {t('home.work.freelanceTech')}
                         </p>
 
@@ -258,17 +258,17 @@ const Home = () => {
                 {showServices && (
                     <div className="fade-in">
                         <div className="soft-panel" style={{ textAlign: 'center', padding: '2em 1em' }}>
-                          <i className="icon solid fa-shield-alt" style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.5em', display: 'block' }}></i>
+                          <i className="icon solid fa-shield-alt" style={{ fontSize: '2.5em', color: 'var(--accent-text)', marginBottom: '0.5em', display: 'block' }}></i>
                           <h3>{t('home.products.cyberServices.title')}</h3>
-                          <p style={{ color: '#666', textAlign: 'center' }}>{t('home.products.cyberServices.desc')}</p>
+                          <p style={{ color: 'var(--text-muted)', textAlign: 'center' }}>{t('home.products.cyberServices.desc')}</p>
                           <Link to="/cyber-services" className="button icon solid fa-arrow-circle-right">
                             {t('home.products.cyberServices.btn')}
                           </Link>
                         </div>
                         <div className="soft-panel" style={{ textAlign: 'center', padding: '2em 1em', marginTop: '1.5em' }}>
-                          <i className="icon solid fa-user-shield" style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.5em', display: 'block' }}></i>
+                          <i className="icon solid fa-user-shield" style={{ fontSize: '2.5em', color: 'var(--accent-text)', marginBottom: '0.5em', display: 'block' }}></i>
                           <h3>{t('home.products.citizenShield.title')}</h3>
-                          <p style={{ color: '#666', textAlign: 'center' }}>{t('home.products.citizenShield.desc')}</p>
+                          <p style={{ color: 'var(--text-muted)', textAlign: 'center' }}>{t('home.products.citizenShield.desc')}</p>
                           <Link to="/citizen-shield" className="button icon solid fa-arrow-circle-right">
                             {t('home.products.citizenShield.btn')}
                           </Link>
@@ -276,9 +276,9 @@ const Home = () => {
 
                         {/* Segnaposto: il prossimo servizio di sicurezza in lavorazione */}
                         <div className="soft-panel" style={{ textAlign: 'center', padding: '2em 1em', marginTop: '1.5em' }}>
-                          <i className="icon solid fa-hourglass-half" style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.5em', display: 'block' }}></i>
+                          <i className="icon solid fa-hourglass-half" style={{ fontSize: '2.5em', color: 'var(--accent-text)', marginBottom: '0.5em', display: 'block' }}></i>
                           <h3>{t('home.services.soonTitle')}</h3>
-                          <p style={{ color: '#666', textAlign: 'center', marginBottom: 0 }}>{t('home.services.soonDesc')}</p>
+                          <p style={{ color: 'var(--text-muted)', textAlign: 'center', marginBottom: 0 }}>{t('home.services.soonDesc')}</p>
                         </div>
                     </div>
                 )}
@@ -302,13 +302,13 @@ const Home = () => {
                 {showFinance && (
                     <div className="fade-in">
                         <div className="soft-panel" style={{ textAlign: 'center', padding: '2em 1em' }}>
-                          <i className="icon solid fa-chart-line" style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.5em', display: 'block' }}></i>
+                          <i className="icon solid fa-chart-line" style={{ fontSize: '2.5em', color: 'var(--accent-text)', marginBottom: '0.5em', display: 'block' }}></i>
                           <h3>{t('home.finance.finanzmeTitle')}</h3>
-                          <p style={{ color: '#666', textAlign: 'center' }}>{t('home.finance.finanzmeDesc')}</p>
+                          <p style={{ color: 'var(--text-muted)', textAlign: 'center' }}>{t('home.finance.finanzmeDesc')}</p>
                           <Link to="/finanzme" className="button icon solid fa-arrow-circle-right">
                             {t('home.products.finanzMe.btn')}
                           </Link>
-                          <p style={{ fontSize: '0.9em', color: '#888', marginTop: '1em', marginBottom: 0 }}>
+                          <p style={{ fontSize: '0.9em', color: 'var(--text-subtle)', marginTop: '1em', marginBottom: 0 }}>
                             <i className="icon solid fa-lock" style={{ marginRight: '0.4em' }}></i>
                             {t('home.finance.finanzmeNote')}
                           </p>
@@ -337,26 +337,26 @@ const Home = () => {
                 {showExtra && (
                     <div className="fade-in">
                         <div className="soft-panel" style={{ textAlign: 'center', padding: '2em 1em' }}>
-                          <i className="icon solid fa-dumbbell" style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.5em', display: 'block' }}></i>
+                          <i className="icon solid fa-dumbbell" style={{ fontSize: '2.5em', color: 'var(--accent-text)', marginBottom: '0.5em', display: 'block' }}></i>
                           <h3>{t('home.extra.bytebulkTitle')}</h3>
-                          <p style={{ color: '#666', textAlign: 'center' }}>{t('home.extra.bytebulkDesc')}</p>
+                          <p style={{ color: 'var(--text-muted)', textAlign: 'center' }}>{t('home.extra.bytebulkDesc')}</p>
                           <Link to="/bytebulk" className="button icon solid fa-arrow-circle-right">
                             {t('home.products.byteBulk.btn')}
                           </Link>
-                          <p style={{ fontSize: '0.9em', color: '#888', marginTop: '1em', marginBottom: 0 }}>
+                          <p style={{ fontSize: '0.9em', color: 'var(--text-subtle)', marginTop: '1em', marginBottom: 0 }}>
                             <i className="icon solid fa-lock" style={{ marginRight: '0.4em' }}></i>
                             {t('home.extra.bytebulkNote')}
                           </p>
                         </div>
 
                         <div className="soft-panel" style={{ textAlign: 'center', padding: '2em 1em', marginTop: '1.5em' }}>
-                          <i className="icon solid fa-seedling" style={{ fontSize: '2.5em', color: '#d52349', marginBottom: '0.5em', display: 'block' }}></i>
+                          <i className="icon solid fa-seedling" style={{ fontSize: '2.5em', color: 'var(--accent-text)', marginBottom: '0.5em', display: 'block' }}></i>
                           <h3>{t('home.extra.seedcastTitle')}</h3>
-                          <p style={{ color: '#666', textAlign: 'center' }}>{t('home.extra.seedcastDesc')}</p>
+                          <p style={{ color: 'var(--text-muted)', textAlign: 'center' }}>{t('home.extra.seedcastDesc')}</p>
                           <Link to="/seedcast" className="button icon solid fa-arrow-circle-right">
                             {t('home.products.seedCast.btn')}
                           </Link>
-                          <p style={{ fontSize: '0.9em', color: '#888', marginTop: '1em', marginBottom: 0 }}>
+                          <p style={{ fontSize: '0.9em', color: 'var(--text-subtle)', marginTop: '1em', marginBottom: 0 }}>
                             <i className="icon solid fa-lock" style={{ marginRight: '0.4em' }}></i>
                             {t('home.extra.seedcastNote')}
                           </p>

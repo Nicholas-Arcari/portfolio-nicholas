@@ -300,7 +300,7 @@ input, select, textarea {
 	body, input, textarea, select {
 		font-family: 'Source Sans Pro';
 		font-weight: 300;
-		color: #777;
+		color: #6b6b6b;
 		line-height: 1.65em;
 		font-size: 15pt;
 	}
@@ -309,6 +309,11 @@ input, select, textarea {
 		font-weight: 600;
 		text-transform: uppercase;
 		color: #888;
+	}
+
+	/* h3-h6 non sono testo grande: serve 4,5:1 (WCAG AA) */
+	h3, h4, h5, h6 {
+		color: #6d6d6d;
 	}
 
 	h1 a, h2 a, h3 a, h4 a, h5 a, h6 a {
@@ -349,12 +354,12 @@ input, select, textarea {
 		}
 
 		a:hover {
-			color: #ed786a;
+			color: var(--link-hover, #bb4b40);
 			border-bottom-color: rgba(255, 255, 255, 0);
 		}
 
 			a:hover strong {
-				color: #ed786a;
+				color: var(--link-hover, #bb4b40);
 			}
 
 	strong, b {
@@ -1834,7 +1839,7 @@ input, select, textarea {
 				top: 2.6em;
 				display: block;
 				font-size: 0.8em;
-				background: #878787;
+				background: #6e6e6e;
 				color: #e4e4e4;
 				width: 2em;
 				height: 2em;
@@ -1857,7 +1862,7 @@ input, select, textarea {
 	form label {
 		font-weight: 600;
 		text-transform: uppercase;
-		color: #888;
+		color: var(--text-subtle, #6d6d6d);
 		display: block;
 		margin: 0 0 1em 0;
 	}
@@ -1940,7 +1945,7 @@ input, select, textarea {
 		}
 
 		table thead {
-			background: #878787;
+			background: #6e6e6e;
 			color: #fff;
 			font-weight: 400;
 			text-transform: uppercase;
@@ -1969,7 +1974,7 @@ input, select, textarea {
 		-webkit-appearance: none;
 		position: relative;
 		display: inline-block;
-		background: #ed786a;
+		background: #bb4b40;
 		color: #fff !important;
 		text-transform: uppercase;
 		border-radius: 4px;
@@ -2000,7 +2005,7 @@ input, select, textarea {
 		input[type="reset"]:hover,
 		button:hover,
 		.button:hover {
-			background: #fd887a;
+			background: #c35347;
 		}
 
 		input[type="button"]:active,
@@ -2008,7 +2013,7 @@ input, select, textarea {
 		input[type="reset"]:active,
 		button:active,
 		.button:active {
-			background: #ed786a;
+			background: #bb4b40;
 		}
 
 		input[type="button"].alt,
@@ -2016,7 +2021,7 @@ input, select, textarea {
 		input[type="reset"].alt,
 		button.alt,
 		.button.alt {
-			background: #878787;
+			background: #6e6e6e;
 		}
 
 			input[type="button"].alt:hover,
@@ -2024,7 +2029,7 @@ input, select, textarea {
 			input[type="reset"].alt:hover,
 			button.alt:hover,
 			.button.alt:hover {
-				background: #979797;
+				background: #767676;
 			}
 
 			input[type="button"].alt:active,
@@ -2032,7 +2037,7 @@ input, select, textarea {
 			input[type="reset"].alt:active,
 			button.alt:active,
 			.button.alt:active {
-				background: #878787;
+				background: #6e6e6e;
 			}
 
 /* Box */
@@ -2042,7 +2047,7 @@ input, select, textarea {
 	}
 
 	.box.excerpt .date {
-		background: #878787;
+		background: #6e6e6e;
 		color: #fff;
 		font-weight: 400;
 		text-transform: uppercase;
@@ -2130,7 +2135,7 @@ input, select, textarea {
 		#header p {
 			text-transform: uppercase;
 			font-weight: 400;
-			color: #888;
+			color: var(--text-subtle, #6d6d6d);
 			margin: 2.5em 0 0 0;
 			font-size: 0.85em;
 			letter-spacing: 3px;

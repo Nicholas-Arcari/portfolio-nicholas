@@ -63,22 +63,22 @@ const About = () => {
                 <ul className="about-contacts">
 
                   <li>
-                    <i className="icon solid fa-envelope" style={{ width: '30px', color: '#d52349', fontSize: '1.2em' }}></i>
+                    <i className="icon solid fa-envelope" style={{ width: '30px', color: 'var(--accent-text)', fontSize: '1.2em' }}></i>
                     <a href="mailto:arcari.nicholas0@gmail.com" style={{ fontWeight: 'bold' }}>arcari.nicholas0@gmail.com</a>
                   </li>
 
                   <li>
-                    <i className="icon solid fa-phone" style={{ width: '30px', color: '#d52349', fontSize: '1.2em' }}></i>
+                    <i className="icon solid fa-phone" style={{ width: '30px', color: 'var(--accent-text)', fontSize: '1.2em' }}></i>
                     <span>+39 351 714 0966</span>
                   </li>
 
                   <li>
-                    <i className="icon solid fa-map-marker-alt" style={{ width: '30px', color: '#d52349', fontSize: '1.2em' }}></i>
+                    <i className="icon solid fa-map-marker-alt" style={{ width: '30px', color: 'var(--accent-text)', fontSize: '1.2em' }}></i>
                     <span>{t('about.location')}</span>
                   </li>
 
                   <li>
-                    <i className="icon solid fa-map-marker-alt" style={{ width: '30px', color: '#d52349', fontSize: '1.2em' }}></i>
+                    <i className="icon solid fa-map-marker-alt" style={{ width: '30px', color: 'var(--accent-text)', fontSize: '1.2em' }}></i>
                     <span>{t('about.location2')}</span>
                   </li>
 
@@ -113,7 +113,7 @@ const About = () => {
                   </li>
 
                   <li>
-                    <i className="icon solid fa-user-friends" style={{ width: '30px', color: '#d52349', fontSize: '1.2em' }}></i>
+                    <i className="icon solid fa-user-friends" style={{ width: '30px', color: 'var(--accent-text)', fontSize: '1.2em' }}></i>
                     <a href="https://bump.app/p/pDMoXGCBts0zZ" target="_blank" rel="noreferrer">Bump</a>
                   </li>
 

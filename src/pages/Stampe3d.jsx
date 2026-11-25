@@ -122,7 +122,7 @@ const Stampe3d = () => {
                                             {project.link && (
                                             <p style={{ margin: 0, marginBottom: '5px', wordBreak: 'break-all' }}>
                                                 <strong>{t('stampe3d.link')} </strong>
-                                                <a href={project.link} target="_blank" rel="noreferrer" style={{ color: '#d52349' }}>
+                                                <a href={project.link} target="_blank" rel="noreferrer" style={{ color: 'var(--accent-text)' }}>
                                                     {project.link}
                                                 </a>
                                             </p>
@@ -217,7 +217,7 @@ const Stampe3d = () => {
                                             {project.link && (
                                             <p style={{ margin: 0, marginBottom: '5px', wordBreak: 'break-all' }}>
                                                 <strong>{t('stampe3d.link')} </strong>
-                                                <a href={project.link} target="_blank" rel="noreferrer" style={{ color: '#d52349' }}>
+                                                <a href={project.link} target="_blank" rel="noreferrer" style={{ color: 'var(--accent-text)' }}>
                                                     {project.link}
                                                 </a>
                                             </p>
