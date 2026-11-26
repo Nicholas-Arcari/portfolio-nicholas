@@ -12,7 +12,7 @@
 const MAX_LENGTH = 100;
 
 // L'aspetto sta in HackerTheme.css: "search-input" e' il campo grande degli
-// elenchi; le varianti (Pizze, Cocktail classici, Stampe 3D) passano la loro.
+// elenchi, uguale ovunque; Stampe 3D passa il suo, piu' piccolo.
 const SearchInput = ({ value, onChange, placeholder, className = 'search-input' }) => (
   <input
     type="text"

@@ -3529,7 +3529,8 @@ body.dark-mode .project-demo {
     font-style: italic;
     text-align: center;
 }
-/* Il campo di ricerca degli elenchi (src/components/SearchInput.jsx) */
+/* Il campo di ricerca degli elenchi (src/components/SearchInput.jsx), uguale
+   su tutte le pagine con un elenco filtrabile */
 .search-input {
     width: 100%;
     margin-bottom: 10px;
@@ -3538,15 +3539,6 @@ body.dark-mode .project-demo {
     border-radius: 5px;
     background-color: #f9f9f9;
     font-size: 1.1em;
-}
-/* Pizze: un po' d'aria anche sopra */
-.search-input.space-above {
-    margin-top: 10px;
-}
-/* Cocktail classici: l'aria sta tutta sopra */
-.search-input.space-above-only {
-    margin-top: 20px;
-    margin-bottom: 0;
 }
 /* Stampe 3D: un campo per sezione, piu' piccolo; lo centra il contenitore */
 .search-input-compact {

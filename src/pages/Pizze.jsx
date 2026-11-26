@@ -50,7 +50,6 @@ const Pizze = () => {
 
                   {/* BARRA DI RICERCA */}
                   <SearchInput
-                    className="search-input space-above"
                     placeholder={t('pizze.search')}
                     value={searchTerm}
                     onChange={setSearchTerm}

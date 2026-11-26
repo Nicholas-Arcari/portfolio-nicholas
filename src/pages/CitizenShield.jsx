@@ -90,7 +90,7 @@ const CitizenShield = () => {
       {/* Le immagini dei container: da dove arrivano e come verificarle */}
       <Collapsible title={t('citizenShield.imagesTitle')} show={t('citizenShield.imagesShow')} hide={t('citizenShield.imagesHide')}>
         <p className="product-intro">{t('citizenShield.imagesIntro')}</p>
-        <ul className="product-points is-images is-short">
+        <ul className="product-points is-images">
           {t('citizenShield.images').map((img, i) => (
             <li key={i}>{img}</li>
           ))}

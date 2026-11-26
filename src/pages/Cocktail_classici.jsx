@@ -52,7 +52,6 @@ const Cocktail_classici = () => {
 
                   {/* BARRA DI RICERCA */}
                   <SearchInput
-                    className="search-input space-above-only"
                     placeholder={t('cocktailClassici.search')}
                     value={searchTerm}
                     onChange={setSearchTerm}
