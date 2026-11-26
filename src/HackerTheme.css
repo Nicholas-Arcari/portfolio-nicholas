@@ -3514,6 +3514,32 @@ body.dark-mode .project-demo {
    la regola lo ripete. Stanno in fondo al file: a parita' di peso vincono loro. */
 
 /* --- Pezzi comuni --- */
+/* Il link per saltare al contenuto (SkipLink.jsx): fuori dalla vista, sopra il
+   bordo della pagina, finche' non riceve il focus da tastiera; allora compare
+   in alto a sinistra, sopra anche la barra del menu del telefono (z 10001).
+   Pesa un id perche' ogni <a> ha colore e bordo suoi, anche nel tema scuro. */
+#root .skip-link {
+    position: absolute;
+    top: 0.75em;
+    left: 0.75em;
+    z-index: 10010;
+    padding: 0.6em 1.1em;
+    border: 0;
+    border-radius: 6px;
+    background: #bb4b40;
+    color: #fff;
+    font-weight: 600;
+    text-decoration: none;
+    transform: translateY(-300%);
+}
+#root .skip-link:focus {
+    transform: none;
+}
+/* Il contenuto raggiunto dal link riceve il focus solo per far partire la
+   lettura da li': nessun riquadro attorno a tutta la sezione */
+#main:focus {
+    outline: none;
+}
 /* La freccia dopo il testo dei pulsanti che aprono e chiudono una sezione */
 .toggle-icon {
     margin-left: 10px;

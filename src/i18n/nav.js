@@ -13,6 +13,7 @@ register('nav', {
     gallery: 'Galleria',
     github: 'GitHub',
     menu: 'Menu',
+    skip: 'Salta al contenuto',
   },
   en: {
     home: 'Home',
@@ -24,5 +25,6 @@ register('nav', {
     gallery: 'Gallery',
     github: 'GitHub',
     menu: 'Menu',
+    skip: 'Skip to content',
   },
 });

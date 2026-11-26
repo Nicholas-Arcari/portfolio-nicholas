@@ -6,6 +6,7 @@ import { LanguageProvider } from './contexts/LanguageProvider';
 import Home from './pages/Home';
 import MobileNav from './components/MobileNav';
 import SettingsBar from './components/SettingsBar';
+import SkipLink from './components/SkipLink';
 import PageTransition from './components/PageTransition';
 import PageError from './components/PageError';
 import './HackerTheme.css';
@@ -59,6 +60,7 @@ function App() {
     <ThemeProvider>
       <LanguageProvider>
         <MobileNav />
+        <SkipLink />
         <SettingsBar />
         {/* annuncia ai lettori di schermo il titolo della pagina nuova (src/utils/usePageTitle.js) */}
         <div id="route-announcer" className="visually-hidden" aria-live="polite" aria-atomic="true" />
