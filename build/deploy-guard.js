@@ -8,7 +8,13 @@
 // una modifica non committata o un file nuovo finirebbero nella build senza
 // stare in nessun commit. Il nome del branch non conta (si puo' pubblicare
 // anche da un worktree): conta che il commit sia origin/main.
+//
+// Anche i pacchetti installati devono essere quelli di package-lock.json: la
+// build impacchetta React e il router da node_modules, e una cartella rimasta
+// indietro (dopo un aggiornamento di sicurezza fatto altrove) pubblicherebbe le
+// versioni vecchie anche con il lockfile giusto.
 import { execFileSync } from 'node:child_process';
+import { existsSync, readFileSync } from 'node:fs';
 
 const git = (...args) => execFileSync('git', args, { encoding: 'utf8' }).trim();
 
@@ -33,4 +39,17 @@ if (head !== main) {
   fail(`il commit da pubblicare non e' origin/main: ${ahead} commit in piu', ${behind} in meno. Fai push o pull e riprova`);
 }
 
-console.log(`deploy-guard: pubblico ${head.slice(0, 7)}, uguale a origin/main`);
+// ogni pacchetto del lockfile installato, e nella versione del lockfile
+const locked = JSON.parse(readFileSync('package-lock.json', 'utf8')).packages;
+const stale = Object.entries(locked)
+  .filter(([path, info]) => path.startsWith('node_modules/') && !info.optional && !info.link)
+  .filter(([path, info]) => {
+    const manifest = `${path}/package.json`;
+    return !existsSync(manifest) || JSON.parse(readFileSync(manifest, 'utf8')).version !== info.version;
+  })
+  .map(([path, info]) => `${path.replace(/^.*node_modules\//, '')} (lockfile ${info.version})`);
+if (stale.length) {
+  fail(`node_modules non corrisponde a package-lock.json (${stale.length} pacchetti: ${stale.slice(0, 5).join(', ')}${stale.length > 5 ? ', ...' : ''}). Esegui npm ci e riprova`);
+}
+
+console.log(`deploy-guard: pubblico ${head.slice(0, 7)}, uguale a origin/main, con i pacchetti del lockfile`);
