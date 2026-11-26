@@ -36,24 +36,27 @@ const Home = () => {
           <header>
             <h2>{t('home.features.title')} <strong>{t('home.features.titleBold')}</strong></h2>
           </header>
+          {/* Le tre immagini sono le prime che si vedono (sul telefono la prima e'
+              l'elemento piu' grande della schermata): niente caricamento ritardato,
+              e la prima parte con la precedenza piu' alta. */}
           <div className="row aln-center">
             <div className="col-4 col-6-medium col-12-small">
               <section>
-                <span className="image featured"><img src="images/img5.webp" alt="Cybersecurity" width="1000" height="700" loading="lazy" decoding="async" /></span>
+                <span className="image featured"><img src="images/img5.webp" alt="Cybersecurity" width="800" height="560" fetchPriority="high" decoding="async" /></span>
                 <header><h3>{t('home.features.cyber.title')}</h3></header>
                 <p>{t('home.features.cyber.text')}</p>
               </section>
             </div>
             <div className="col-4 col-6-medium col-12-small">
               <section>
-                <span className="image featured"><img src="images/img6.webp" alt="Web Development" width="1000" height="666" loading="lazy" decoding="async" /></span>
+                <span className="image featured"><img src="images/img6.webp" alt="Web Development" width="1000" height="666" decoding="async" /></span>
                 <header><h3>{t('home.features.fullstack.title')}</h3></header>
                 <p>{t('home.features.fullstack.text')}</p>
               </section>
             </div>
             <div className="col-4 col-6-medium col-12-small">
               <section>
-                <span className="image featured"><img src="images/img7.webp" alt="DevOps" width="1000" height="667" loading="lazy" decoding="async" /></span>
+                <span className="image featured"><img src="images/img7.webp" alt="DevOps" width="1000" height="667" decoding="async" /></span>
                 <header><h3>{t('home.features.devops.title')}</h3></header>
                 <p>{t('home.features.devops.text')}</p>
               </section>
