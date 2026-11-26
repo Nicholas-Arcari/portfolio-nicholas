@@ -42,6 +42,23 @@ Vivo tra Salsomaggiore Terme (PR) e Roma, e cerco una posizione come **Junior Cy
 - **Università:** i piani di studio della triennale e della magistrale, il laboratorio di Reti di Calcolatori, gli homework di Statistics, ognuno con la sua pagina di teoria, e gli appunti delle lezioni di Distributed Systems e di Security in Software Applications.
 - **Passioni:** le ricette di Mamma Niky e le pizze, i cocktail, le stampe 3D e una galleria con le mie foto di Roma (in arrivo).
 
+## Com'è fatto il sito
+
+React 19 e Vite, sul template Strongly Typed di HTML5 UP, pubblicato su GitHub Pages. Gli indirizzi delle pagine stanno dopo `#/`. Font, icone e script sono serviti dal sito stesso, senza richieste a servizi esterni, e una Content Security Policy ammette solo il sito (più i video delle release e la demo di The Anomaly Guard).
+
+| Comando | Cosa fa |
+|---|---|
+| `npm ci` | installa i pacchetti esattamente come nel lockfile |
+| `npm run dev` | il server di sviluppo |
+| `npm run check` | lint, build e visita di tutte le pagine in italiano e in inglese, con il controllo di accessibilità (axe) nei due temi |
+| `npm run deploy` | pubblica su GitHub Pages; parte solo da un `main` uguale a `origin/main`, senza modifiche in sospeso e con i pacchetti del lockfile |
+| `python3 build/fa-subset.py` | rigenera Font Awesome ridotto alle icone usate (serve fontTools con brotli); la build avvisa quando va rilanciato |
+
+- `src/i18n/`: i testi in italiano e in inglese, un file per sezione. La build si ferma se le due lingue non hanno le stesse chiavi o se una chiave usata non esiste.
+- `src/components/`: intestazione, menu (anche quello del telefono), piede e i pezzi comuni; `src/pages/product/` è il kit delle pagine dei prodotti.
+- `src/HackerTheme.css`: il tema scuro, i colori (contrasto WCAG AA) e le classi delle pagine; `public/assets/css/main.css` è il CSS del template.
+- `build/`: i plugin della build (la Content Security Policy, i programmi scaricabili degli homework, i controlli su appunti, traduzioni e icone) e i controlli prima della pubblicazione.
+
 ## Contatti
 
 - Email: [arcari.nicholas0@gmail.com](mailto:arcari.nicholas0@gmail.com)
