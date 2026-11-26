@@ -8,14 +8,31 @@ import { LanguageContext } from './languageContext';
 // localStorage (per esempio "constructor") restituirebbe un oggetto che non e'
 // un dizionario, e le pagine che si aspettano un elenco cadrebbero. Si accetta
 // solo una lingua che esiste; come per il tema, se la memoria del sito e'
-// bloccata l'accesso lancia un'eccezione, e allora vale l'italiano.
-const readLanguage = () => {
+// bloccata l'accesso lancia un'eccezione, e allora decide il browser.
+const readSaved = () => {
   try {
-    return localStorage.getItem('lang') === 'en' ? 'en' : 'it';
+    const saved = localStorage.getItem('lang');
+    return saved === 'it' || saved === 'en' ? saved : null;
   } catch {
-    return 'it';
+    return null;
   }
 };
+
+// Senza una scelta salvata vale la lingua del browser: la prima fra italiano e
+// inglese nell'elenco delle lingue preferite, e l'inglese per chi non ha
+// nessuna delle due (chi non legge l'italiano legge piu' spesso l'inglese).
+// La scelta si salva solo col pulsante IT / EN.
+const browserLanguage = () => {
+  const preferred = navigator.languages?.length ? navigator.languages : [navigator.language || ''];
+  for (const tag of preferred) {
+    const code = String(tag).toLowerCase();
+    if (code.startsWith('it')) return 'it';
+    if (code.startsWith('en')) return 'en';
+  }
+  return 'en';
+};
+
+const readLanguage = () => readSaved() || browserLanguage();
 
 // Gli homework si aprono sempre in inglese, qualunque sia la lingua del resto
 // del sito. Il pulsante IT / EN li porta in italiano solo finche' si resta
