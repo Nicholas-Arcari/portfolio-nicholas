@@ -103,6 +103,7 @@ const Home = () => {
                         <button
                             className="button alt small"
                             onClick={() => setShowWork(!showWork)}
+                            aria-expanded={showWork}
                         >
                             {showWork ? t('home.work.hide') : t('home.work.show')}
                             <i className={`icon solid ${showWork ? 'fa-chevron-up' : 'fa-chevron-down'} toggle-icon`}></i>
@@ -152,6 +153,7 @@ const Home = () => {
                         <button
                             className="button alt small"
                             onClick={() => setShowCyber(!showCyber)}
+                            aria-expanded={showCyber}
                         >
                             {showCyber ? t('home.cyber.hide') : t('home.cyber.show')}
                             <i className={`icon solid ${showCyber ? 'fa-chevron-up' : 'fa-chevron-down'} toggle-icon`}></i>
@@ -250,6 +252,7 @@ const Home = () => {
                         <button
                             className="button alt small"
                             onClick={() => setShowServices(!showServices)}
+                            aria-expanded={showServices}
                         >
                             {showServices ? t('home.services.hide') : t('home.services.show')}
                             <i className={`icon solid ${showServices ? 'fa-chevron-up' : 'fa-chevron-down'} toggle-icon`}></i>
@@ -294,6 +297,7 @@ const Home = () => {
                         <button
                             className="button alt small"
                             onClick={() => setShowFinance(!showFinance)}
+                            aria-expanded={showFinance}
                         >
                             {showFinance ? t('home.finance.hide') : t('home.finance.show')}
                             <i className={`icon solid ${showFinance ? 'fa-chevron-up' : 'fa-chevron-down'} toggle-icon`}></i>
@@ -329,6 +333,7 @@ const Home = () => {
                         <button
                             className="button alt small"
                             onClick={() => setShowExtra(!showExtra)}
+                            aria-expanded={showExtra}
                         >
                             {showExtra ? t('home.extra.hide') : t('home.extra.show')}
                             <i className={`icon solid ${showExtra ? 'fa-chevron-up' : 'fa-chevron-down'} toggle-icon`}></i>

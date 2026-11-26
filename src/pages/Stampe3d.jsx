@@ -68,6 +68,7 @@ const Stampe3d = () => {
                         <button
                             className="button alt small"
                             onClick={() => setShowExecuted(!showExecuted)}
+                            aria-expanded={showExecuted}
                         >
                             {showExecuted ? t('stampe3d.hide') : t('stampe3d.show')}
                             <i className={`icon solid ${showExecuted ? 'fa-chevron-up' : 'fa-chevron-down'} toggle-icon`}></i>
@@ -157,6 +158,7 @@ const Stampe3d = () => {
                         <button
                             className="button alt small"
                             onClick={() => setShowFuture(!showFuture)}
+                            aria-expanded={showFuture}
                         >
                             {showFuture ? t('stampe3d.hide') : t('stampe3d.show')}
                             <i className={`icon solid ${showFuture ? 'fa-chevron-up' : 'fa-chevron-down'} toggle-icon`}></i>
