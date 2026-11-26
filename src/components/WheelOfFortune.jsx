@@ -114,18 +114,23 @@ const WheelOfFortune = ({ items, title, intro, spinLabel, spinningLabel, resultL
         {spinning ? spinningLabel : spinLabel}
       </button>
 
-      {result && (
-        <div className="wheel-result fade-in">
-          <span className="wheel-result-label">{resultLabel}</span>
-          <button type="button" className="wheel-result-link" onClick={() => onPick(resultIndex)}>
-            <strong className="wheel-result-name">{result.sym} {result.name}</strong>
-            <span className="wheel-result-hint">
-              <i className="icon solid fa-arrow-circle-right lead-icon"></i>
-              {goToLabel}
-            </span>
-          </button>
-        </div>
-      )}
+      {/* Il risultato compare quando la ruota si ferma: la regione "live" c'e'
+          gia' prima, vuota, cosi' i lettori di schermo lo annunciano appena
+          arriva invece di lasciarlo trovare a chi lo cerca. */}
+      <div aria-live="polite" aria-atomic="true">
+        {result && (
+          <div className="wheel-result fade-in">
+            <span className="wheel-result-label">{resultLabel}</span>
+            <button type="button" className="wheel-result-link" onClick={() => onPick(resultIndex)}>
+              <strong className="wheel-result-name">{result.sym} {result.name}</strong>
+              <span className="wheel-result-hint">
+                <i className="icon solid fa-arrow-circle-right lead-icon"></i>
+                {goToLabel}
+              </span>
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
