@@ -3737,6 +3737,40 @@ body.dark-mode .project-demo {
     padding: 0;
     list-style: none;
 }
+/* Il secondo lavoro sta in una riga sua (FreelanceDetails.jsx): il suo stack
+   parte cosi' alla stessa altezza del titolo. Le linee di separazione del
+   template valgono solo per #content e #sidebar, che sono unici: qui le
+   stesse, con gli stessi spazi alle stesse larghezze (main.css), per
+   l'articolo e i riquadri della seconda riga. */
+.freelance-page .work-content > article,
+.freelance-page .work-sidebar > section {
+    border-top: solid 2px #e5e5e5;
+    box-shadow: inset 0px 8px 0px 0px #fff, inset 0px 10px 0px 0px #e5e5e5;
+    margin: 5em 0 0 0;
+    padding: 5em 0 0 0;
+}
+@media screen and (max-width: 736px) {
+    .freelance-page .work-content > article,
+    .freelance-page .work-sidebar > section {
+        margin: 3em 0 0 0;
+        padding: 3em 0 0 0;
+    }
+}
+/* Con le colonne affiancate il margine sotto l'ultimo elenco del primo lavoro
+   (e sotto la sua ultima voce) si fondeva con la linea di separazione del
+   secondo, nella stessa colonna; ora resterebbe dentro la prima riga e si
+   sommerebbe: senza, la distanza fra i due lavori e' quella di sempre. */
+@media screen and (min-width: 981px) {
+    .freelance-page #content > article > :last-child,
+    .freelance-page #content > article > :last-child > :last-child {
+        margin-bottom: 0;
+    }
+}
+body.dark-mode .freelance-page .work-content > article,
+body.dark-mode .freelance-page .work-sidebar > section {
+    border-top-color: #3d3d3d;
+    box-shadow: inset 0px 8px 0px 0px #111111, inset 0px 10px 0px 0px #3d3d3d !important;
+}
 
 /* --- Stampe 3D --- */
 /* La nota sulla collaborazione, come una citazione */

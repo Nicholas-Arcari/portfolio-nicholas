@@ -24,6 +24,13 @@ const FreelanceDetails = () => {
       {/* MAIN */}
       <section id="main">
         <div className="container">
+          {/* Una riga per lavoro: l'articolo a sinistra e il suo stack a
+              destra, cosi' lo stack di ogni lavoro parte all'altezza del suo
+              titolo a qualunque larghezza, senza misure in JavaScript. Sotto
+              i 980px le colonne si impilano e ogni stack segue il suo
+              articolo. La prima riga usa #content e #sidebar del template;
+              la seconda ha le stesse linee di separazione e gli stessi spazi
+              (.work-content e .work-sidebar, HackerTheme.css). */}
           <div className="row">
 
             {/* CONTENT */}
@@ -108,6 +115,45 @@ const FreelanceDetails = () => {
                   </ul>
 
                </article>
+            </div>
+
+            {/* SIDEBAR */}
+            <div id="sidebar" className="col-4 col-12-medium">
+
+               {/* Box Tecnologie */}
+               <section>
+                <ul className="divided">
+                  <li>
+                    <article className="box highlight">
+                      <header><h3>{t('freelance.sidebarTechTitle')}</h3></header>
+                      <p>{t('freelance.sidebarTechDesc')}</p>
+                      <ul className="check-list">
+                        <li><strong>Frontend:</strong> React 19, TypeScript, Vite, Tailwind</li>
+                        <li><strong>Backend:</strong> PHP 8.2, Laravel 12, Sanctum</li>
+                        <li><strong>Computation:</strong> Python, Flask, networkx</li>
+                        <li><strong>Solver:</strong> Python, FastAPI, MiniZinc, OR-Tools</li>
+                        <li><strong>OPC-UA:</strong> Python, FastAPI, opcua</li>
+                        <li><strong>AI Service:</strong> Python, FastAPI, Ollama</li>
+                        <li><strong>PDF Service:</strong> Python, Flask, ReportLab</li>
+                        <li><strong>DB:</strong> MySQL 8.4</li>
+                        <li><strong>Real-Time:</strong> Laravel Reverb (WebSocket)</li>
+                        <li><strong>Infra:</strong> Docker (14 container), k3s, Nginx</li>
+                        <li><strong>Monitoring:</strong> Grafana, Loki, Promtail</li>
+                        <li><strong>Licensing:</strong> Servizio dedicato, JWT firmati, feature-gating</li>
+                        <li><strong>Security:</strong> Wazuh, Suricata, SonarQube, Trivy, Snyk</li>
+                      </ul>
+                    </article>
+                  </li>
+                </ul>
+              </section>
+
+            </div>
+
+          </div>
+
+          <div className="row">
+
+            <div className="col-8 col-12-medium work-content">
 
                {/* GESTIONALE ERP/CRM */}
                <article className="box post">
@@ -190,35 +236,7 @@ const FreelanceDetails = () => {
                </article>
             </div>
 
-            {/* SIDEBAR */}
-            <div id="sidebar" className="col-4 col-12-medium">
-
-               {/* Box Tecnologie */}
-               <section>
-                <ul className="divided">
-                  <li>
-                    <article className="box highlight">
-                      <header><h3>{t('freelance.sidebarTechTitle')}</h3></header>
-                      <p>{t('freelance.sidebarTechDesc')}</p>
-                      <ul className="check-list">
-                        <li><strong>Frontend:</strong> React 19, TypeScript, Vite, Tailwind</li>
-                        <li><strong>Backend:</strong> PHP 8.2, Laravel 12, Sanctum</li>
-                        <li><strong>Computation:</strong> Python, Flask, networkx</li>
-                        <li><strong>Solver:</strong> Python, FastAPI, MiniZinc, OR-Tools</li>
-                        <li><strong>OPC-UA:</strong> Python, FastAPI, opcua</li>
-                        <li><strong>AI Service:</strong> Python, FastAPI, Ollama</li>
-                        <li><strong>PDF Service:</strong> Python, Flask, ReportLab</li>
-                        <li><strong>DB:</strong> MySQL 8.4</li>
-                        <li><strong>Real-Time:</strong> Laravel Reverb (WebSocket)</li>
-                        <li><strong>Infra:</strong> Docker (14 container), k3s, Nginx</li>
-                        <li><strong>Monitoring:</strong> Grafana, Loki, Promtail</li>
-                        <li><strong>Licensing:</strong> Servizio dedicato, JWT firmati, feature-gating</li>
-                        <li><strong>Security:</strong> Wazuh, Suricata, SonarQube, Trivy, Snyk</li>
-                      </ul>
-                    </article>
-                  </li>
-                </ul>
-              </section>
+            <div className="col-4 col-12-medium work-sidebar">
 
                {/* Box Tecnologie Gestionale */}
                <section>
