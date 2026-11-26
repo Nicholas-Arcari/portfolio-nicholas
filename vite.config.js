@@ -79,9 +79,16 @@ export default defineConfig({
     rollupOptions: {
       output: {
         // React, React DOM e il router cambiano di rado: in un file a parte
-        // restano nella cache del browser anche quando il sito si aggiorna
+        // restano nella cache del browser anche quando il sito si aggiorna.
+        // Lo stesso per i due dataset dell'Homework #7 (gli SMS della SMS Spam
+        // Collection e i record di NSL-KDD, circa 650 KB): ognuno nel suo
+        // file, scaricato insieme alla pagina ma tenuto in cache quando
+        // cambiano solo il codice o i testi. I sorgenti restano gli stessi, e
+        // con loro la copia d'archivio (build/homework-standalone.js).
         manualChunks(id) {
           if (/[\\/]node_modules[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/.test(id)) return 'react';
+          const dataset = id.match(/[\\/]src[\\/]pages[\\/]statistics[\\/]hw7[\\/](smsspam|nslkdd)\.js$/);
+          if (dataset) return `hw7-${dataset[1]}`;
           return undefined;
         },
       },
