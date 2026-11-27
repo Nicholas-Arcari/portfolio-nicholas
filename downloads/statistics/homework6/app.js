@@ -386,6 +386,13 @@ function createChart(canvas, deps) {
   overlay.setAttribute('aria-hidden', 'true');
   Object.assign(overlay.style, { position: 'absolute', pointerEvents: 'none', left: '0px', top: '0px' });
   canvas.after(overlay);
+  // Chromium looks at what lies on top to decide whether a finger has to wait for the page: over the
+  // overlay, which had no touch listeners, it did not wait, so touchstart and touchmove came uncancelable
+  // and a finger dragging a line scrolled the page too. Two empty listeners that may cancel make it wait;
+  // the events still go to the chart below (pointer-events: none), where kitGestures decides
+  const waitForPage = () => {};
+  overlay.addEventListener('touchstart', waitForPage, { passive: false });
+  overlay.addEventListener('touchmove', waitForPage, { passive: false });
 
   const emit = (name, payload) => (listeners[name] || []).forEach((fn) => fn(payload));
   const shown = () => (hidden.length ? { ...data, hidden } : data);

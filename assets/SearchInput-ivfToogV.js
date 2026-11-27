@@ -1,0 +1,1 @@
+import{j as p}from"./react-Bazz6KG_.js";const e=100,i=({value:a,onChange:s,placeholder:t,className:n="search-input"})=>p.jsx("input",{type:"text",value:a,onChange:o=>s(o.target.value.slice(0,e)),placeholder:t,"aria-label":t,maxLength:e,autoComplete:"off",spellCheck:!1,className:n});export{i as S};
