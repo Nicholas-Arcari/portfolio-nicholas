@@ -82,15 +82,17 @@ export default defineConfig({
       output: {
         // React, React DOM e il router cambiano di rado: in un file a parte
         // restano nella cache del browser anche quando il sito si aggiorna.
-        // Lo stesso per i dataset degli homework di Statistics: i record di
-        // NSL-KDD dell'Homework #6 e, nel #7, gli SMS della SMS Spam
-        // Collection e la sua versione di NSL-KDD (circa 750 KB in tutto).
-        // Ognuno nel suo file, scaricato insieme alla pagina ma tenuto in cache
-        // quando cambiano solo il codice o i testi. I sorgenti restano gli
-        // stessi, e con loro la copia d'archivio (build/homework-standalone.js).
+        // Lo stesso per i dati degli homework di Statistics: il testo di Alice
+        // nel Paese delle Meraviglie dell'Homework #2 (il corpus della
+        // crittanalisi del cifrario di Cesare), i record di NSL-KDD
+        // dell'Homework #6 e, nel #7, gli SMS della SMS Spam Collection e la
+        // sua versione di NSL-KDD (circa 900 KB in tutto). Ognuno nel suo
+        // file, scaricato insieme alla pagina ma tenuto in cache quando
+        // cambiano solo il codice o i testi. I sorgenti restano gli stessi, e
+        // con loro la copia d'archivio (build/homework-standalone.js).
         manualChunks(id) {
           if (/[\\/]node_modules[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/.test(id)) return 'react';
-          const dataset = id.match(/[\\/]src[\\/]pages[\\/]statistics[\\/](hw6|hw7)[\\/](smsspam|nslkdd)\.js$/);
+          const dataset = id.match(/[\\/]src[\\/]pages[\\/]statistics[\\/](hw2a|hw6|hw7)[\\/](corpus|smsspam|nslkdd)\.js$/);
           if (dataset) return `${dataset[1]}-${dataset[2]}`;
           return undefined;
         },
