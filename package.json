@@ -11,7 +11,8 @@
     "preview": "vite preview",
     "predeploy": "node build/deploy-guard.js && npm run build",
     "deploy": "gh-pages -d dist --nojekyll",
-    "check": "npm run lint && npm run build && node build/check-site.mjs"
+    "check": "npm run lint && npm run build && node build/check-site.mjs",
+    "check:charts": "npm run build && node build/check-charts.mjs"
   },
   "dependencies": {
     "katex": "^0.19.1",

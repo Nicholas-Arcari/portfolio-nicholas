@@ -51,6 +51,7 @@ React 19 e Vite, sul template Strongly Typed di HTML5 UP, pubblicato su GitHub P
 | `npm ci` | installa i pacchetti esattamente come nel lockfile |
 | `npm run dev` | il server di sviluppo |
 | `npm run check` | lint, build e visita di tutte le pagine in italiano e in inglese, con il controllo di accessibilità (axe) nei due temi |
+| `npm run check:charts` | build e prova dei grafici di Statistics: ogni homework, pagina e zip, in Chromium e in Firefox, con il mouse e con le dita; `node build/check-charts.mjs --live` prova il sito pubblicato |
 | `npm run deploy` | pubblica su GitHub Pages; parte solo da un `main` uguale a `origin/main`, senza modifiche in sospeso e con i pacchetti del lockfile |
 | `python3 build/fa-subset.py` | rigenera Font Awesome ridotto alle icone usate (serve fontTools con brotli); la build avvisa quando va rilanciato |
 
