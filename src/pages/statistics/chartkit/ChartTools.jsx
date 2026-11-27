@@ -37,16 +37,17 @@ export function useChartTools() {
     };
   }, []);
 
-  const tool = (fn) => () => {
-    if (chartRef.current) fn(chartRef.current);
-  };
+  // the buttons read the chart only when pressed: handlers, never called while rendering
+  const zoomIn = () => chartRef.current && chartRef.current.zoomBy(1.5);
+  const zoomOut = () => chartRef.current && chartRef.current.zoomBy(1 / 1.5);
+  const reset = () => chartRef.current && chartRef.current.resetView();
   const tools = (
     <>
       {zoom.can && (
         <div className={zoom.zoomed ? 'kit-tools is-zoomed' : 'kit-tools'} role="group" aria-label={labels.tools}>
-          <button type="button" onClick={tool((c) => c.zoomBy(1.5))} aria-label={labels.zoomIn} title={labels.zoomIn}>+</button>
-          <button type="button" onClick={tool((c) => c.zoomBy(1 / 1.5))} aria-label={labels.zoomOut} title={labels.zoomOut} disabled={!zoom.zoomed}>-</button>
-          <button type="button" onClick={tool((c) => c.resetView())} aria-label={labels.reset} title={labels.reset} disabled={!zoom.zoomed}>⤢</button>
+          <button type="button" onClick={zoomIn} aria-label={labels.zoomIn} title={labels.zoomIn}>+</button>
+          <button type="button" onClick={zoomOut} aria-label={labels.zoomOut} title={labels.zoomOut} disabled={!zoom.zoomed}>-</button>
+          <button type="button" onClick={reset} aria-label={labels.reset} title={labels.reset} disabled={!zoom.zoomed}>⤢</button>
         </div>
       )}
       {hint && <p className="kit-hint" aria-live="polite">{labels.hint}</p>}
