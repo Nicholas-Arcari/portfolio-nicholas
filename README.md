@@ -57,6 +57,7 @@ React 19 e Vite, sul template Strongly Typed di HTML5 UP, pubblicato su GitHub P
 
 - `src/i18n/`: i testi in italiano e in inglese, un file per sezione. La build si ferma se le due lingue non hanno le stesse chiavi o se una chiave usata non esiste.
 - `src/components/`: intestazione, menu (anche quello del telefono), piede e i pezzi comuni; `src/pages/product/` è il kit delle pagine dei prodotti.
+- `src/pages/statistics/`: gli homework di Statistics. Ogni `hwN/` ha la libreria dei calcoli e dei grafici, i testi nelle due lingue e, in `standalone/`, il programma scaricabile, che `build/homework-standalone.js` genera a ogni build dagli stessi sorgenti della pagina: una cartella che si apre con un doppio clic, anche offline, o si usa da riga di comando con Node, e la stessa in uno zip. `chartkit/` è il kit dei grafici, uguale nella pagina e nel programma: zoom e spostamento, linee da trascinare, animazioni e controlli, con il mouse e con le dita; `npm run check:charts` li prova.
 - `src/HackerTheme.css`: il tema scuro, i colori (contrasto WCAG AA) e le classi delle pagine; `public/assets/css/main.css` è il CSS del template.
 - `build/`: i plugin della build (la Content Security Policy, i programmi scaricabili degli homework, i controlli su appunti, traduzioni e icone) e i controlli prima della pubblicazione.
 
